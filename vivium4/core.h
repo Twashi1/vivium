@@ -47,7 +47,7 @@
 #define VIVIUM_VK_CHECK(command, message, ...) \
 	if (VkResult result = command; result != VK_SUCCESS)							\
 		std::cout << VIVIUM_DETAIL(													\
-			std::format("[VULKAN:{}] {}\n", string_VkResult(result), msg),			\
+			std::format("[VULKAN:{}] {}\n", string_VkResult(result), message),		\
 			__VA_ARGS__																\
 		)
 #define VIVIUM_CHECK_HANDLE(handle) \

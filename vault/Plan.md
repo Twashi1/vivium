@@ -69,36 +69,30 @@ command.stop();
 Allocator allocator;
 
 // An invisible panel, for alignment purposes only
-auto windowPanel = GUI::Panel();
+auto windowPanel = GUI::Panel::Create(allocator, GUI::Panel::Specification{});
 // Will make window span the entire screen (SPECIAL!)
-windowPanel.setParent(Window::getPanel(window));
+GUI::setParent(windowPanel, Window::getPanel(window), GUI::Anchor::LEFT | GUI::Anchor::TOP);
 
 auto panel = GUI::InterfacePanel(allocator);
-panel.name = "Buttons";
 // Will not update if aspect ratio of parent changes
-panel.scaleType = GUI::ABSOLUTE;
-panel.dimensions = {0.2 * windowPanel.width(), windowPanel.height()};
+GUI::properties(panel).scaleType = GUI::ABSOLUTE;
+GUI::properties(panel).dimensions = {0.2 * windowPanel.width(), windowPanel.height()};
 // Padding from window
-panel.positionType = GUI::RELATIVE;
-panel.position = {0.01, 0.01};
+GUI::properties(panel).positionType = GUI::RELATIVE;
+GUI::properties(panel).position = {0.01, 0.01};
 
-panel.clearParent();
-panel.setParent(nullptr);
-
-windowPanel.addChild(panel);
-
-// Panel will stick to top left
-// Will throw error if panel has a parent
-windowPanel.anchor(GUI::ANCHOR::LEFT | GUI::ANCHOR::TOP, panel);
+// Will store a pointer to the properties of the windowPanel, and use those
+// for alignment purposes, panel sticks to top left
+panel.anchor(GUI::ANCHOR::LEFT | GUI::ANCHOR::TOP, windowPanel);
 
 auto btn = GUI::Button(allocator);
-btn.scaleType = GUI::RELATIVE;
 // Will adjust even if aspect ratio of parent changes
-btn.dimensions = GUI::Square(0.5); // Square spanning 1/2 width and ? height
-btn.addEvent(GUI::ON_CLICK, func);
-btn.addEvent(GUI::ON_CLICK, func2);
+GUI::Properties(btn).scaleType = GUI::RELATIVE;
+GUI::Properties(btn).dimensions = GUI::Square(0.5); // Square spanning 1/2 width and ? height
+btn.addListener(GUI::ON_CLICK, func);
+btn.addListener(GUI::ON_CLICK, func2);
 
-windowPanel.addChild(btn);
+btn.anchor(GUI::ANCHOR::LEFT | GUI::ANCHOR::TOP, windowPanel);
 
 // Draw the window panel, and draw all its children (GUI::INFINITE is default)
 // Cap on recursion depth at `BIG_NUMBER` (specified in options somewhere)
@@ -111,35 +105,30 @@ GUI::close(windowPanel);
 
 ### Elements
 
-#### Base
-Base class of all GUI objects
+#### Properties
+Structure to store basic information about every GUI element
 
-##### Properties
-- `vec2 dimensions`
-- `vector<Base*> children`
-- `Base* parent`
-- `vec2 position`
-- `GUI::SCALE_TYPE scaleType`
-- `GUI::POSITION_TYPE positionType`
+##### Attributes
+- `f2 dimensions`
+- `vector<Properties*> children`
+- `Properties* parent`
+- `f2 position`
+- `Scale scaleType`
+- `Position positionType`
 - `bool isVisible`
 
-```c++
-
-```
-
 #### List
-For an automatically resizing list of GUI objects
+For an automatically resizing and spaced list of GUI elements
 
 ```c++
 auto list = GUI::List(allocator);
-list.scaleType = GUI::RELATIVE;
-// List will automatically grow/shrink in height to contain its elements
-list.dimensions = {1.0, 0.0};
+// Will fill the panel its assigned to
+GUI::Properties(list).scaleType = GUI::RELATIVE;
+// List will automatically grow/shrink elements in height to fit specified dimensions
+GUI::Properties(list).dimensions = {1.0, 0.0};
 
-// Equivelant to addChild
-list.setParent(panel);
-// TODO: appendChild, or pass vector of GUI objects (as void*, as polymorphic elements)?
-list.appendChild(button1, button2, button3);
+panel.anchor(GUI::Anchor::LEFT | GUI::Anchor::TOP, list);
+list.elements = Vivium::Map([](button) {return &GUI::Properties(button); }, { button1, button2, button3 });
 ```
 
 #### Button
@@ -261,13 +250,22 @@ Exemplar program
 using namespace Vivium;
 
 int void main() {
-	Engine::Handle engine = Engine::create(Engine::Options{});
-	Window::Handle window = Window::create(Window::Options{});
+	// Future potential to allow for linear/pool/rbtree?
+	Storage::Scoped<Allocator::Linear> storage = Storage::Scoped<Allocator::Linear>();
+	Engine::Handle engine = Engine::create(storage, Engine::Options{});
+	Window::Handle window = Window::create(storage, Window::Options{});
 
-	Engine::setWindow(engine, window);
+	Engine::setPrimaryWindow(engine, window);
+
+	// Renderer contains command buffer
+	Renderer::Handle renderer = Renderer::create(storage);
+	Renderer::setContext(engine, window);
+
+	// Device contains logical device (at the least)
+	Device::Handle device = Device::create(storage, engine);
 
 	while (Window::isOpen(window)) {
-		Graphics::Commands::drawIndexed(engine, ...);
+		Graphics::Commands::drawIndexed(renderer, ...);
 	}
 
 	Window::close(window);

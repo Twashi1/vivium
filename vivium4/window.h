@@ -4,76 +4,71 @@
 
 #include "core.h"
 #include "math/vec2.h"
-#include "allocator.h"
+#include "storage.h"
 
 namespace Vivium {
-	namespace Engine {
-		struct Resource;
-	}
-
 	namespace Window {
 		struct Options {
 			I32x2 dimensions;
 			const char* title;
 			int multisampleCount;
 
-			Options()
-				: dimensions({ 400, 600 }), title("Vivium4"), multisampleCount(2)
-			{}
+			Options();
 		};
 
 		// TODO: probably best to make vulkan window resource separate from main window?
-		class Resource {
-		private:
-			struct SwapChainSupportDetails {
-				VkSurfaceCapabilitiesKHR capabilities;
-				std::vector<VkSurfaceFormatKHR> formats;
-				std::vector<VkPresentModeKHR> presentModes;
-			};
-
+		struct Resource {
 			// GLFW window
-			GLFWwindow* m_glfw;
+			GLFWwindow* glfwWindow;
 
 			// Vulkan window
-			VkSurfaceKHR m_surface;
-			VkSwapchainKHR m_swapChain;
-			std::vector<VkImage> m_swapChainImages;
-			std::vector<VkImageView> m_swapChainImageViews;
-			VkFormat m_swapChainFormat;
-			VkExtent2D m_swapChainExtent;
-			std::vector<VkFramebuffer> m_swapChainFramebuffers;
+			VkSurfaceKHR surface;
+			VkSwapchainKHR swapChain;
+			std::vector<VkImage> swapChainImages;
+			std::vector<VkImageView> swapChainImageViews;
+			VkFormat swapChainFormat;
+			VkExtent2D swapChainExtent;
+			std::vector<VkFramebuffer> swapChainFramebuffers;
 
-			VkImage m_multisampleColorImage;
-			VkImageView m_multisampleColorImageView;
-			VkDeviceMemory m_multisampleColorMemory;
-			VkSampleCountFlagBits m_multisampleCount;
+			VkImage multisampleColorImage;
+			VkImageView multisampleColorImageView;
+			VkDeviceMemory multisampleColorMemory;
+			VkSampleCountFlagBits multisampleCount;
 
-			bool m_wasFramebufferResized;
+			bool wasFramebufferResized;
 
 			// TODO: more
 
-			// General
-			I32x2 m_dimensions;
+			I32x2 dimensions;
 
-			void m_querySwapChainSupport();
+			void createSwapChain(Engine::Handle engine);
+			void createImageViews(Engine::Handle engine);
+			void createMultisampleColorImages(Engine::Handle engine);
 
-		public:
 			void setTitle(const std::string& name);
 			void setDimensions(I32x2 dimensions);
+
+			void createSurface(Engine::Handle engine);
+			void initVulkan(Engine::Handle engine);
 
 			I32x2 getDimensions() const;
 
 			bool isNull() const;
 			void close();
-
-			friend Engine::Resource;
 		};
 
 		typedef Resource* Handle;
 
-		template <typename AllocatorBase>
-		Handle create(Allocator<AllocatorBase>* allocator);
-		template <typename AllocatorBase>
-		void close(Handle handle, Allocator<AllocatorBase>* allocator);
+		template <typename Storage>
+		Handle create(Storage storage, Options options)
+		{
+			return storage.getHandle<Resource>(options);
+		}
+
+		template <typename Storage>
+		void close(Storage storage, Handle handle)
+		{
+			return storage.freeHandle<Resource>(handle)
+		}
 	}
 }

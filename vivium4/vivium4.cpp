@@ -4,8 +4,10 @@ using namespace Vivium;
 
 int main()
 {
-	Engine::Handle engine = Engine::create(Engine::Options{});
-	Window::Handle window = Window::create(Window::Options{});
+	Storage::Scoped<Allocator::Linear> scoped;
+
+	Engine::Handle engine = Engine::create(scoped, Engine::Options{});
+	Window::Handle window = Window::create(scoped, Window::Options{});
 
 	while (Window::isOpen(window)) {
 		Engine::beginCommand(engine, window);
@@ -15,8 +17,8 @@ int main()
 		Engine::endCommand(engine);
 	}
 
-	Window::close(window);
-	Engine::close(engine);
+	Window::close(scoped, window);
+	Engine::close(scoped, engine);
 
 	return NULL;
 }
