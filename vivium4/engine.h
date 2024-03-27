@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <set>
 #include <span>
 
 #include "storage.h"
@@ -39,6 +40,10 @@ namespace Vivium {
 			VkRenderPass renderPass;
 			VkCommandPool commandPool;
 
+			VkQueue graphicsQueue;
+			VkQueue presentQueue;
+			VkQueue transferQueue;
+
 			std::vector<VkCommandBuffer> commandBuffers;
 
 			std::vector<VkSemaphore> imageAvailableSemaphores;
@@ -68,7 +73,7 @@ namespace Vivium {
 			SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, Window::Handle window);
 
 			void pickPhysicalDevice(const std::vector<const char*>& extensions, Window::Handle window);
-			void createLogicalDevice();
+			void createLogicalDevice(Window::Handle window, const std::span<const char* const> extensions, const std::span<const char* const> validationLayers);
 
 			void createRenderPass();
 
@@ -82,6 +87,9 @@ namespace Vivium {
 			std::vector<const char*> createInstance(const std::span<const char* const> validationLayers, const std::span<const char* const> defaultExtensions);
 			void setupDebugMessenger();
 
+			uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+
+			// Public
 			void create(Options options, Window::Handle window);
 
 			bool isNull() const;

@@ -184,6 +184,57 @@ namespace Vivium {
 			VIVIUM_ASSERT(physicalDevice != VK_NULL_HANDLE, "Failed to find suitable GPU");
 		}
 
+		void Resource::createLogicalDevice(Window::Handle window, const std::span<const char* const> extensions, const std::span<const char* const> validationLayers)
+		{
+			QueueFamilyIndices indices = findQueueFamilies(physicalDevice, window);
+
+			std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+			std::set<uint32_t> uniqueQueueFamilies = {
+				indices.graphicsFamily,
+				indices.presentFamily,
+				indices.transferFamily
+			};
+
+			float queuePriority = 1.0f;
+
+			for (uint32_t queueFamily : uniqueQueueFamilies) {
+				VkDeviceQueueCreateInfo queueCreateInfo{};
+				queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+				queueCreateInfo.queueFamilyIndex = queueFamily;
+				queueCreateInfo.queueCount = 1;
+				queueCreateInfo.pQueuePriorities = &queuePriority;
+				queueCreateInfos.push_back(queueCreateInfo);
+			}
+
+			VkPhysicalDeviceFeatures deviceFeatures{};
+
+			VkDeviceCreateInfo createInfo{};
+			createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+
+			createInfo.queueCreateInfoCount = queueCreateInfos.size();
+			createInfo.pQueueCreateInfos = queueCreateInfos.data();
+
+			createInfo.pEnabledFeatures = &deviceFeatures;
+
+			createInfo.enabledExtensionCount = extensions.size();
+			createInfo.ppEnabledExtensionNames = extensions.data();
+
+			if (enableValidationLayers) {
+				createInfo.enabledLayerCount = validationLayers.size();
+				createInfo.ppEnabledLayerNames = validationLayers.data();
+			}
+			else {
+				createInfo.enabledLayerCount = 0;
+			}
+
+			VIVIUM_VK_CHECK(vkCreateDevice(physicalDevice, &createInfo, nullptr, &device),
+				"Failed to create logical device");
+
+			vkGetDeviceQueue(device, indices.graphicsFamily, 0, &graphicsQueue);
+			vkGetDeviceQueue(device, indices.presentFamily, 0, &presentQueue);
+			vkGetDeviceQueue(device, indices.transferFamily, 0, &transferQueue);
+		}
+
 		std::vector<const char*> Resource::createInstance(const std::span<const char* const> validationLayers, const std::span<const char* const> defaultExtensions)
 		{
 			if (enableValidationLayers && !checkValidationLayerSupport(validationLayers)) {
@@ -255,6 +306,26 @@ namespace Vivium {
 
 			VIVIUM_VK_CHECK(result, "Failed to create debug messenger");
 		}
+
+		uint32_t Resource::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
+		{
+			VkPhysicalDeviceMemoryProperties memoryProperties;
+			vkGetPhysicalDeviceMemoryProperties(
+				physicalDevice,
+				&memoryProperties
+			);
+
+			for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
+				if ((typeFilter & (1 << i)) &&
+					(memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+					return i;
+				}
+			}
+
+			VIVIUM_LOG(Log::FATAL, "Failed to find suitable memory type");
+
+			return NULL;
+		}
 		
 		void Resource::create(Options options, Window::Handle window)
 		{
@@ -276,7 +347,7 @@ namespace Vivium {
 
 			// TODO: set options
 
-			createLogicalDevice();
+			createLogicalDevice(window, extensions, validationLayers);
 
 			/*
 

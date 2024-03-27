@@ -7,6 +7,12 @@
 #include "storage.h"
 
 namespace Vivium {
+	namespace Engine {
+		struct Resource;
+
+		typedef Resource* Handle;
+	}
+
 	namespace Window {
 		struct Options {
 			I32x2 dimensions;
@@ -26,7 +32,7 @@ namespace Vivium {
 			VkSwapchainKHR swapChain;
 			std::vector<VkImage> swapChainImages;
 			std::vector<VkImageView> swapChainImageViews;
-			VkFormat swapChainFormat;
+			VkFormat swapChainImageFormat;
 			VkExtent2D swapChainExtent;
 			std::vector<VkFramebuffer> swapChainFramebuffers;
 
@@ -44,6 +50,10 @@ namespace Vivium {
 			void createSwapChain(Engine::Handle engine);
 			void createImageViews(Engine::Handle engine);
 			void createMultisampleColorImages(Engine::Handle engine);
+
+			static VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+			static VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+			VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
 			void setTitle(const std::string& name);
 			void setDimensions(I32x2 dimensions);
