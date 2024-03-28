@@ -4,16 +4,17 @@ using namespace Vivium;
 
 int main(void) {
 	Allocator::Linear storage;
-	Engine::Handle engine = Engine::create(storage, Engine::Options{});
 	Window::Handle window = Window::create(window, Window::Options{});
+	Engine::Handle engine = Engine::create(storage, Engine::Options{}, window);
 
-	Engine::setWindow(engine, window);
-
-	while (Window::isOpen(window)) {
-		Engine::beginFrame();
-		Engine::endFrame();
+	while (Window::isOpen(window, engine)) {
+		Engine::beginFrame(engine, window);
+		Engine::beginRender(engine, window);
+		Engine::endRender(engine);
+		Engine::endFrame(engine, window);
 	}
 
 	Window::close(storage, window);
-	Engine::close(storage, engine);
+	Engine::close(storage, engine, window);
+	storage.free();
 }

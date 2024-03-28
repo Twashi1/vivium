@@ -49,6 +49,8 @@ namespace Vivium {
 			capacity = 0;
 			offset = 0;
 		}
+		
+		void Linear::free(void* data) {}
 	}
 
 	namespace Storage {

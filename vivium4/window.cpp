@@ -4,7 +4,7 @@
 namespace Vivium {
 	namespace Window {
 		Options::Options()
-			: dimensions({ 400, 600 }), title("Vivium4"), multisampleCount(2)
+			: dimensions({ 400, 600 }), title("Vivium4"), multisampleCount(VK_SAMPLE_COUNT_2_BIT)
 		{}
 
 		bool Resource::isNull() const
@@ -12,9 +12,22 @@ namespace Vivium {
 			return surface == VK_NULL_HANDLE;
 		}
 
-		void Resource::close()
+		void Resource::close(Engine::Handle engine)
 		{
-			// TODO
+			deleteSwapChain(engine);
+		}
+
+		void Resource::framebufferResizeCallback(GLFWwindow* glfwWindow, int width, int height)
+		{
+			Handle window = reinterpret_cast<Resource*>(glfwGetWindowUserPointer(glfwWindow));
+
+			VIVIUM_ASSERT(window != VIVIUM_NULL_HANDLE, "GLFW window had no associated Vivium window");
+
+			VIVIUM_CHECK_RESOURCE(window);
+
+			window->wasFramebufferResized = true;
+			// NOTE: not necessary really
+			window->dimensions = I32x2(width, height);
 		}
 
 		void Resource::createSwapChain(Engine::Handle engine)
@@ -189,6 +202,134 @@ namespace Vivium {
 			}
 		}
 
+		void Resource::createRenderPass(Engine::Handle engine)
+		{
+			// TODO: lots of code required for making this work when not multisampling
+			VkAttachmentDescription colorAttachment{};
+			colorAttachment.format = swapChainImageFormat;
+			colorAttachment.samples = multisampleCount;
+			colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+			colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+			colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+			colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+			colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+			VkAttachmentReference colorAttachmentRef{};
+			colorAttachmentRef.attachment = 0;
+			colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+			VkAttachmentDescription colorAttachmentResolve{};
+			colorAttachmentResolve.format = swapChainImageFormat;
+			colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
+			colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+			colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+			colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+			colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+			colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+			VkAttachmentReference colorAttachmentResolveRef{};
+			colorAttachmentResolveRef.attachment = 1;
+			colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+			VkSubpassDescription subpass{};
+			subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+			subpass.colorAttachmentCount = 1;
+			subpass.pColorAttachments = &colorAttachmentRef;
+			subpass.pResolveAttachments = &colorAttachmentResolveRef;
+
+			VkSubpassDependency dependency{};
+			dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+			dependency.dstSubpass = 0;
+			dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			dependency.srcAccessMask = VK_ACCESS_NONE;
+			dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+			VkAttachmentDescription attachments[2] = {
+				colorAttachment,
+				colorAttachmentResolve
+			};
+
+			VkRenderPassCreateInfo renderPassInfo{};
+			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+			renderPassInfo.attachmentCount = 2;
+			renderPassInfo.pAttachments = attachments;
+			renderPassInfo.subpassCount = 1;
+			renderPassInfo.pSubpasses = &subpass;
+			renderPassInfo.dependencyCount = 1;
+			renderPassInfo.pDependencies = &dependency;
+
+			VIVIUM_VK_CHECK(vkCreateRenderPass(engine->device, &renderPassInfo, nullptr, &engine->renderPass),
+				"Failed to create render pass");
+		}
+
+		void Resource::createFramebuffers(Engine::Handle engine)
+		{
+			swapChainFramebuffers.resize(swapChainImages.size());
+
+			for (uint32_t i = 0; i < swapChainImages.size(); i++) {
+				std::vector<VkImageView> attachments;
+
+				if (!(multisampleCount & VK_SAMPLE_COUNT_1_BIT)) {
+					attachments.push_back(multisampleColorImageView);
+				}
+
+				attachments.push_back(swapChainImageViews[i]);
+
+				VkFramebufferCreateInfo framebuffer_info{};
+				framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+				framebuffer_info.renderPass = engine->renderPass;
+				framebuffer_info.attachmentCount = attachments.size();
+				framebuffer_info.pAttachments = attachments.data();
+				framebuffer_info.width = swapChainExtent.width;
+				framebuffer_info.height = swapChainExtent.height;
+				framebuffer_info.layers = 1;
+
+				VIVIUM_VK_CHECK(vkCreateFramebuffer(
+					engine->device, &framebuffer_info, nullptr, &swapChainFramebuffers[i]), "Failed to create framebuffer");
+			}
+		}
+
+		void Resource::deleteSwapChain(Engine::Handle engine)
+		{
+			vkDestroyImage(engine->device, multisampleColorImage, nullptr);
+			vkDestroyImageView(engine->device, multisampleColorImageView, nullptr);
+			vkFreeMemory(engine->device, multisampleColorMemory, nullptr);
+
+			for (VkFramebuffer framebuffer : swapChainFramebuffers) {
+				vkDestroyFramebuffer(engine->device, framebuffer, nullptr);
+			}
+
+			for (VkImageView imageView : swapChainImageViews) {
+				vkDestroyImageView(engine->device, imageView, nullptr);
+			}
+
+			vkDestroySwapchainKHR(engine->device, swapChain, nullptr);
+		}
+
+		void Resource::recreateSwapChain(Engine::Handle engine)
+		{
+			int width = 0;
+			int height = 0;
+			glfwGetFramebufferSize(glfwWindow, &width, &height);
+
+			while (width == 0 || height == 0) {
+				glfwGetFramebufferSize(glfwWindow, &width, &height);
+				glfwWaitEvents();
+			}
+
+			vkDeviceWaitIdle(engine->device);
+
+			deleteSwapChain(engine);
+
+			createSwapChain(engine);
+			createImageViews(engine);
+			createMultisampleColorImages(engine);
+			createFramebuffers(engine);
+		}
+
 		VkSurfaceFormatKHR Resource::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
 		{
 			for (const auto& availableFormat : availableFormats) {
@@ -231,6 +372,20 @@ namespace Vivium {
 			return actualExtent;
 		}
 
+		void Resource::setOptions(const Options& options)
+		{
+			// TODO: might need to handle some re-creation of swap chain,
+			//	but should happen automatically regardless since we change window size
+			//	unless GLFW is smart and doesn't invoke a callback if window size was
+			//	changed to same thing
+
+			glfwSetWindowSize(glfwWindow, options.dimensions.x, options.dimensions.y);
+			glfwSetWindowTitle(glfwWindow, options.title);
+
+			dimensions = options.dimensions;
+			multisampleCount = static_cast<VkSampleCountFlagBits>(options.multisampleCount);
+		}
+
 		void Resource::createSurface(Engine::Handle engine)
 		{
 			VIVIUM_CHECK_RESOURCE(engine);
@@ -243,14 +398,109 @@ namespace Vivium {
 		{
 			VIVIUM_CHECK_RESOURCE(engine);
 
+			// TODO: move this code
+			// Verify valid multisample count
+			VkPhysicalDeviceProperties deviceProperties;
+			vkGetPhysicalDeviceProperties(engine->physicalDevice, &deviceProperties);
+
+			VkSampleCountFlags availableMultisampleCounts = deviceProperties.limits.framebufferColorSampleCounts;
+
+			VIVIUM_ASSERT(
+				(multisampleCount != 0) &&
+				((multisampleCount & (multisampleCount - 1)) == 0) &&
+				(multisampleCount <= 64),
+				"Multisample count must be 1, 2, 4, ..., 64"
+			);
+
+			const VkSampleCountFlagBits possible_sample_counts[] = {
+				VK_SAMPLE_COUNT_64_BIT,
+				VK_SAMPLE_COUNT_32_BIT,
+				VK_SAMPLE_COUNT_16_BIT,
+				VK_SAMPLE_COUNT_8_BIT,
+				VK_SAMPLE_COUNT_4_BIT,
+				VK_SAMPLE_COUNT_2_BIT
+			};
+
+			multisampleCount = VK_SAMPLE_COUNT_1_BIT;
+
+			for (
+				uint32_t i = 0;
+				i < sizeof(possible_sample_counts) / sizeof(possible_sample_counts[0]);
+				i++
+				) {
+				// If the possible sample count is <= whats requested,
+				// and available, use it (get next best option <, if best isn't available =)
+				if (
+					(possible_sample_counts[i] <= multisampleCount) &&
+					(availableMultisampleCounts & possible_sample_counts[i])
+					) {
+					multisampleCount = possible_sample_counts[i];
+					break;
+				}
+			}
+
 			createSwapChain(engine);
 			createImageViews(engine);
 			createMultisampleColorImages(engine);
+			createRenderPass(engine);
+			createFramebuffers(engine);
 		}
 
 		I32x2 Resource::getDimensions() const
 		{
 			return dimensions;
 		}
-	}
+
+		bool Resource::isOpen(Engine::Handle engine) const
+		{
+			bool should_close = glfwWindowShouldClose(glfwWindow);
+
+			// After is_running is false, we assume user will start doing cleanup
+			// on objects, so wait for device
+			if (should_close)
+				vkDeviceWaitIdle(engine->device);
+
+			return !should_close;
+		}
+
+		void Resource::create(const Options& options)
+		{
+			if (!glfwInit()) {
+				VIVIUM_LOG(Log::FATAL, "GLFW failed to initialise");
+			}
+
+			glfwSetErrorCallback([](int code, const char* desc) {
+				VIVIUM_LOG(Log::ERROR, "[GLFW {}] {}", code, desc);
+				});
+
+			glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+			glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+
+			glfwWindow = glfwCreateWindow(options.dimensions.x, options.dimensions.y, options.title, NULL, NULL);
+
+			setOptions(options);
+
+			glfwSetWindowUserPointer(glfwWindow, this);
+			glfwSetFramebufferSizeCallback(glfwWindow, Resource::framebufferResizeCallback);
+		}
+
+		Resource::Resource()
+			:
+			glfwWindow(nullptr),
+			surface(VK_NULL_HANDLE),
+			swapChain(VK_NULL_HANDLE),
+			swapChainImageFormat(VkFormat::VK_FORMAT_UNDEFINED),
+			multisampleColorImage(VK_NULL_HANDLE),
+			multisampleColorImageView(VK_NULL_HANDLE),
+			multisampleColorMemory(VK_NULL_HANDLE),
+			multisampleCount(VkSampleCountFlagBits::VK_SAMPLE_COUNT_FLAG_BITS_MAX_ENUM),
+			wasFramebufferResized(false),
+			dimensions(I32x2(0, 0))
+		{}
+		
+		bool isOpen(Window::Handle window, Engine::Handle engine)
+		{
+			return window->isOpen(engine);
+		}
+}
 }

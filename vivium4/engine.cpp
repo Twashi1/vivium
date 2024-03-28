@@ -161,6 +161,14 @@ namespace Vivium {
 			return details;
 		}
 
+		void Resource::setOptions(const Options& options)
+		{
+			VIVIUM_ASSERT(options.fps > 0, "Can't have 0fps");
+
+			targetTimePerFrame = 1.0f / options.fps;
+			pollPeriod = options.pollPeriod;
+		}
+
 		void Resource::pickPhysicalDevice(const std::vector<const char*>& extensions, Window::Handle window)
 		{
 			uint32_t deviceCount = 0;
@@ -233,6 +241,56 @@ namespace Vivium {
 			vkGetDeviceQueue(device, indices.graphicsFamily, 0, &graphicsQueue);
 			vkGetDeviceQueue(device, indices.presentFamily, 0, &presentQueue);
 			vkGetDeviceQueue(device, indices.transferFamily, 0, &transferQueue);
+		}
+
+		void Resource::createCommandPool(Window::Handle window)
+		{
+			QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice, window);
+
+			VkCommandPoolCreateInfo poolInfo{};
+			poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+			poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+			poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily;
+
+			VIVIUM_VK_CHECK(vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool),
+				"Failed to create command pool");
+		}
+
+		void Resource::createCommandBuffers()
+		{
+			commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+
+			VkCommandBufferAllocateInfo allocateInfo{};
+			allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+			allocateInfo.commandPool = commandPool;
+			allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+			allocateInfo.commandBufferCount = commandBuffers.size();
+
+			VIVIUM_VK_CHECK(vkAllocateCommandBuffers(device, &allocateInfo, commandBuffers.data()),
+				"Failed to allocate command buffers");
+		}
+
+		void Resource::createSyncObjects()
+		{
+			imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+			renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+			inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+
+			VkSemaphoreCreateInfo semaphoreInfo{};
+			semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+			VkFenceCreateInfo fenceInfo{};
+			fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+			fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+			for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+				// TODO: VkCheck this
+				if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
+					vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
+					vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
+					VIVIUM_LOG(Log::FATAL, "Failed to create sync objects for a frame");
+				}
+			}
 		}
 
 		std::vector<const char*> Resource::createInstance(const std::span<const char* const> validationLayers, const std::span<const char* const> defaultExtensions)
@@ -326,7 +384,51 @@ namespace Vivium {
 
 			return NULL;
 		}
-		
+
+		void Resource::checkPerformance()
+		{
+			float maxTimeSpent = targetTimePerFrame * pollFramesCounted;
+
+			if (maxTimeSpent > pollPeriod) {
+				float calculatedTimePerFrame = pollFramesElapsedTime / pollFramesCounted;
+				float calculatedTimePerUpdate = pollUpdatesElapsedTime / pollFramesCounted;
+
+				VIVIUM_LOG(Log::DEBUG,
+					"Max FPS: {}, True FPS: {}, TPF: {}ms",
+					1.0f / calculatedTimePerFrame,
+					1.0f / calculatedTimePerUpdate,
+					calculatedTimePerFrame * 1000.0f
+				);
+
+				float delta_tpf = calculatedTimePerFrame - targetTimePerFrame;
+
+				if (delta_tpf > 0.0f)
+					VIVIUM_LOG(Log::WARN, "Running behind by {}ms on average",
+						delta_tpf * 1000.0f);
+
+				pollFramesCounted = 0;
+				pollFramesElapsedTime = 0.0f;
+				pollUpdatesElapsedTime = 0.0f;
+			}
+		}
+
+		void Resource::limitFramerate()
+		{
+			float elapsed = frameTimer.getTime();
+
+			pollFramesElapsedTime += elapsed;
+			++pollFramesCounted;
+
+			float sleep_time = targetTimePerFrame - elapsed;
+
+			if (sleep_time > 0.0f) {
+				Time::nanosleep(sleep_time * 1.0E9f);
+			}
+
+			frameTimer.reset();
+			pollUpdatesElapsedTime += updateTimer.reset();
+		}
+
 		void Resource::create(Options options, Window::Handle window)
 		{
 			const std::array<const char* const, 2> defaultExtensions = {
@@ -345,28 +447,225 @@ namespace Vivium {
 
 			pickPhysicalDevice(extensions, window);
 
-			// TODO: set options
+			setOptions(options);
 
 			createLogicalDevice(window, extensions, validationLayers);
 
-			/*
-
-			-m_create_swap_chain();
-			-m_create_image_views();
-			-m_create_multisample_color_images();
-
-			*/
-
 			window->initVulkan(this);
 
-			createRenderPass();
-
-			createFramebuffers();
-
-			createCommandPool();
+			createCommandPool(window);
 			createCommandBuffers();
 
 			createSyncObjects();
+		}
+
+		void Resource::close(Window::Handle window) {
+			vkDeviceWaitIdle(device);
+
+			vkDestroyRenderPass(device, renderPass, nullptr);
+
+			for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+				vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
+				vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
+				vkDestroyFence(device, inFlightFences[i], nullptr);
+			}
+
+			vkDestroyCommandPool(device, commandPool, nullptr);
+
+			vkDestroyDevice(device, nullptr);
+
+			if (enableValidationLayers) {
+				auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+				
+				if (func != nullptr) {
+					func(instance, debugMessenger, nullptr);
+				}
+			}
+
+			vkDestroySurfaceKHR(instance, window->surface, nullptr);
+			vkDestroyInstance(instance, nullptr);
+
+			glfwTerminate();
+		}
+		
+		void Resource::beginFrame(Window::Handle window)
+		{
+			glfwPollEvents();
+
+			// TODO: Update input and camera
+
+			vkWaitForFences(device, 1, &inFlightFences[currentFrameIndex], VK_TRUE, UINT64_MAX);
+
+			VkResult acquireImageResult = vkAcquireNextImageKHR(
+				device,
+				window->swapChain,
+				UINT64_MAX,
+				imageAvailableSemaphores[currentFrameIndex],
+				VK_NULL_HANDLE,
+				&currentImageIndex
+			);
+
+			if (acquireImageResult == VK_ERROR_OUT_OF_DATE_KHR) {
+				window->recreateSwapChain(this);
+
+				return;
+			}
+			else if (acquireImageResult != VK_SUCCESS && acquireImageResult != VK_SUBOPTIMAL_KHR) {
+				VIVIUM_LOG(Log::FATAL, "Failed to acquire swapchain image");
+			}
+
+			vkResetFences(device, 1, &inFlightFences[currentFrameIndex]);
+
+			vkResetCommandBuffer(commandBuffers[currentFrameIndex], 0);
+
+			VkCommandBufferBeginInfo beginInfo{};
+			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+			VIVIUM_VK_CHECK(vkBeginCommandBuffer(commandBuffers[currentFrameIndex], &beginInfo),
+				"Failed to begin recording command buffer");
+		}
+		
+		void Resource::endFrame(Window::Handle window)
+		{
+			VIVIUM_VK_CHECK(vkEndCommandBuffer(commandBuffers[currentFrameIndex]),
+				"Failed to record command buffer");
+
+			VkSubmitInfo submitInfo{};
+			submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+			VkSemaphore wait_semaphores[] = { imageAvailableSemaphores[currentFrameIndex] };
+			VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+			submitInfo.waitSemaphoreCount = 1;
+			submitInfo.pWaitSemaphores = wait_semaphores;
+			submitInfo.pWaitDstStageMask = wait_stages;
+
+			submitInfo.commandBufferCount = 1;
+			submitInfo.pCommandBuffers = &commandBuffers[currentFrameIndex];
+
+			VkSemaphore signal_sempahores[] = { renderFinishedSemaphores[currentFrameIndex] };
+			submitInfo.signalSemaphoreCount = 1;
+			submitInfo.pSignalSemaphores = signal_sempahores;
+
+			VIVIUM_VK_CHECK(vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrameIndex]),
+				"Failed to submit draw command to buffer");
+
+			VkPresentInfoKHR presentInfo{};
+			presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+			presentInfo.waitSemaphoreCount = 1;
+			presentInfo.pWaitSemaphores = signal_sempahores;
+
+			VkSwapchainKHR swapChains[] = { window->swapChain };
+			presentInfo.swapchainCount = 1;
+			presentInfo.pSwapchains = swapChains;
+
+			presentInfo.pImageIndices = &currentImageIndex;
+
+			VkResult queue_present_result = vkQueuePresentKHR(presentQueue, &presentInfo);
+
+			if (queue_present_result == VK_ERROR_OUT_OF_DATE_KHR
+				|| queue_present_result == VK_SUBOPTIMAL_KHR
+				|| window->wasFramebufferResized) {
+
+				window->wasFramebufferResized = false;
+				window->recreateSwapChain(this);
+			}
+			else if (queue_present_result != VK_SUCCESS) {
+				VIVIUM_LOG(Log::FATAL, "Failed to present swap chain image");
+			}
+
+			currentFrameIndex = (currentFrameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
+
+			checkPerformance();
+			limitFramerate();
+		}
+		
+		void Resource::beginRender(Window::Handle window)
+		{
+			VkRenderPassBeginInfo renderPassInfo{};
+			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+			renderPassInfo.renderPass = renderPass;
+			renderPassInfo.framebuffer = window->swapChainFramebuffers[currentImageIndex];
+			renderPassInfo.renderArea.offset = { 0, 0 };
+			renderPassInfo.renderArea.extent = window->swapChainExtent;
+
+			VkClearValue clear_color = { {{0.0f, 0.0f, 0.0f, 1.0f}} };
+			renderPassInfo.clearValueCount = 1;
+			renderPassInfo.pClearValues = &clear_color;
+
+			VkCommandBuffer& commandBuffer = commandBuffers[currentFrameIndex];
+
+			vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+			VkViewport viewport{};
+			viewport.x = 0.0f;
+			viewport.y = 0.0f;
+			viewport.width = window->swapChainExtent.width;
+			viewport.height = window->swapChainExtent.height;
+			viewport.minDepth = 0.0f;
+			viewport.maxDepth = 1.0f;
+			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+			VkRect2D scissor{};
+			scissor.offset = { 0, 0 };
+			scissor.extent = window->swapChainExtent;
+			vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+		}
+		
+		void Resource::endRender()
+		{
+			vkCmdEndRenderPass(commandBuffers[currentFrameIndex]);
+		}
+
+		Resource::Resource()
+			:
+			instance(VK_NULL_HANDLE),
+			debugMessenger(VK_NULL_HANDLE),
+			physicalDevice(VK_NULL_HANDLE),
+			device(VK_NULL_HANDLE),
+			renderPass(VK_NULL_HANDLE),
+			commandPool(VK_NULL_HANDLE),
+			graphicsQueue(VK_NULL_HANDLE),
+			presentQueue(VK_NULL_HANDLE),
+			transferQueue(VK_NULL_HANDLE),
+			currentFrameIndex(0),
+			currentImageIndex(UINT32_MAX),
+			targetTimePerFrame(0.0f),
+			pollPeriod(0.0f),
+			pollFramesElapsedTime(0.0f),
+			pollUpdatesElapsedTime(0.0f),
+			pollFramesCounted(0)
+		{}
+		
+		void beginFrame(Engine::Handle engine, Window::Handle window)
+		{
+			VIVIUM_CHECK_RESOURCE(engine);
+			VIVIUM_CHECK_RESOURCE(window);
+
+			engine->beginFrame(window);
+		}
+		
+		void endFrame(Engine::Handle engine, Window::Handle window)
+		{
+			VIVIUM_CHECK_RESOURCE(engine);
+			VIVIUM_CHECK_RESOURCE(window);
+
+			engine->endFrame(window);
+		}
+		
+		void beginRender(Engine::Handle engine, Window::Handle window)
+		{
+			VIVIUM_CHECK_RESOURCE(engine);
+			VIVIUM_CHECK_RESOURCE(window);
+
+			engine->beginRender(window);
+		}
+		
+		void endRender(Engine::Handle engine)
+		{
+			VIVIUM_CHECK_RESOURCE(engine);
+
+			engine->endRender();
 		}
 	}
 }

@@ -12,7 +12,8 @@
 namespace Vivium {
 	namespace Engine {
 		struct Options {
-			
+			uint32_t fps = 60;
+			float pollPeriod = 3.0f;
 		};
 
 		struct Resource {
@@ -37,7 +38,7 @@ namespace Vivium {
 			VkPhysicalDevice physicalDevice;
 			VkDevice device;
 
-			VkRenderPass renderPass;
+			VkRenderPass renderPass; // TODO: created by window, not engine
 			VkCommandPool commandPool;
 
 			VkQueue graphicsQueue;
@@ -52,6 +53,15 @@ namespace Vivium {
 
 			uint32_t currentFrameIndex;
 			uint32_t currentImageIndex;
+
+			float targetTimePerFrame;
+			float pollPeriod;
+			float pollFramesElapsedTime;
+			float pollUpdatesElapsedTime;
+			uint32_t pollFramesCounted;
+
+			Time::Timer frameTimer;
+			Time::Timer updateTimer;
 
 			void populateDebugMessengerInfo(VkDebugUtilsMessengerCreateInfoEXT createInfo);
 
@@ -72,14 +82,12 @@ namespace Vivium {
 			// TODO: consider moving to window
 			SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, Window::Handle window);
 
+			void setOptions(const Options& options);
+
 			void pickPhysicalDevice(const std::vector<const char*>& extensions, Window::Handle window);
 			void createLogicalDevice(Window::Handle window, const std::span<const char* const> extensions, const std::span<const char* const> validationLayers);
 
-			void createRenderPass();
-
-			void createFramebuffers();
-
-			void createCommandPool();
+			void createCommandPool(Window::Handle window);
 			void createCommandBuffers();
 
 			void createSyncObjects();
@@ -88,26 +96,50 @@ namespace Vivium {
 			void setupDebugMessenger();
 
 			uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-
-			// Public
-			void create(Options options, Window::Handle window);
-
+			
 			bool isNull() const;
-			void close();
+
+			void checkPerformance();
+			void limitFramerate();
+
+			// Public methods
+			void create(Options options, Window::Handle window);
+			void close(Window::Handle window);
+
+			void beginFrame(Window::Handle window);
+			void endFrame(Window::Handle window);
+			
+			void beginRender(Window::Handle window);
+			void endRender();
+
+			Resource();
 		};
 
 		typedef Resource* Handle;
 
 		template <Allocator::AllocatorType Storage>
-		Handle create(Storage storage, Options options)
+		Handle create(Storage storage, Options options, Window::Handle window)
 		{
-			return storage.getHandle<Resource>(options);
+			Handle engine = storage.allocate(sizeof(Resource));
+
+			new (engine) Resource{};
+			
+			engine->create(options, window);
+
+			return engine;
 		}
 
 		template <Allocator::AllocatorType Storage>
-		void close(Storage storage, Handle handle)
+		void close(Storage storage, Handle handle, Window::Handle window)
 		{
-			return storage.freeHandle<Resource>(handle);
+			handle->close(window);
+			storage.free(reinterpret_cast<void*>(handle));
 		}
+
+		void beginFrame(Engine::Handle engine, Window::Handle window);
+		void endFrame(Engine::Handle engine, Window::Handle window);
+
+		void beginRender(Engine::Handle engine, Window::Handle window);
+		void endRender(Engine::Handle engine);
 	}
 }

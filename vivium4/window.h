@@ -43,28 +43,38 @@ namespace Vivium {
 
 			bool wasFramebufferResized;
 
-			// TODO: more
-
 			I32x2 dimensions;
+
+			static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 
 			void createSwapChain(Engine::Handle engine);
 			void createImageViews(Engine::Handle engine);
 			void createMultisampleColorImages(Engine::Handle engine);
+			void createRenderPass(Engine::Handle engine);
+			void createFramebuffers(Engine::Handle engine);
+
+			void deleteSwapChain(Engine::Handle engine);
+			void recreateSwapChain(Engine::Handle engine);
 
 			static VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 			static VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 			VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
-			void setTitle(const std::string& name);
-			void setDimensions(I32x2 dimensions);
+			void setOptions(const Options& options);
 
 			void createSurface(Engine::Handle engine);
 			void initVulkan(Engine::Handle engine);
 
 			I32x2 getDimensions() const;
 
+			bool isOpen(Engine::Handle engine) const;
+
+			void create(const Options& options);
+
 			bool isNull() const;
-			void close();
+			void close(Engine::Handle engine);
+
+			Resource();
 		};
 
 		typedef Resource* Handle;
@@ -72,13 +82,24 @@ namespace Vivium {
 		template <typename Storage>
 		Handle create(Storage storage, Options options)
 		{
-			return storage.getHandle<Resource>(options);
+			Handle window = storage.allocate(sizeof(Resource));
+
+			new (window) Resource{};
+
+			window->create(options);
+
+			return window;
 		}
 
 		template <typename Storage>
 		void close(Storage storage, Handle handle)
 		{
-			return storage.freeHandle<Resource>(handle)
+			VIVIUM_CHECK_RESOURCE(handle);
+
+			handle->close();
+			storage.free(reinterpret_cast<void*>(handle));
 		}
+
+		bool isOpen(Window::Handle window, Engine::Handle engine);
 	}
 }

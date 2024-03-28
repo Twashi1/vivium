@@ -13,6 +13,7 @@ namespace Vivium {
 		concept AllocatorType = requires(T allocator) {
 			{ allocator.allocate(std::declval<uint64_t>()) } -> std::same_as<void*>;
 			{ allocator.free() } -> std::same_as<void>;
+			{ allocator.free(std::declval<void*>()) } -> std::same_as<void>;
 		};
 
 		struct Linear {
@@ -26,6 +27,9 @@ namespace Vivium {
 			void reserve(uint64_t moreBytes);
 			void* allocate(uint64_t bytes);
 			void free();
+
+			// Disabled for linear allocator
+			void free(void* data);
 		};
 	}
 
