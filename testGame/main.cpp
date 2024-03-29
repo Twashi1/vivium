@@ -14,7 +14,7 @@ int main(void) {
 		Engine::endFrame(engine, window);
 	}
 
-	Window::close(storage, window);
-	Engine::close(storage, engine, window);
+	Window::drop(storage, window);
+	Engine::drop(storage, engine, window);
 	storage.free();
 }

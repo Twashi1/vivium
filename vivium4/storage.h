@@ -28,9 +28,24 @@ namespace Vivium {
 			void* allocate(uint64_t bytes);
 			void free();
 
+			// TODO: prefer drop
 			// Disabled for linear allocator
 			void free(void* data);
 		};
+
+		template <AllocatorType Allocator, typename Resource>
+		Resource* allocateResource(Allocator allocator) {
+			Resource* handle = reinterpret_cast<Resource*>(allocator.allocate(sizeof(Resource)));
+
+			new (handle) Resource();
+
+			return handle;
+		}
+
+		template <AllocatorType Allocator, typename Resource>
+		void dropResource(Allocator allocator, Resource* handle) {
+			allocator->free(reinterpret_cast<void*>(handle));
+		}
 	}
 
 	namespace Storage {

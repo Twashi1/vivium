@@ -12,7 +12,7 @@ namespace Vivium {
 			return surface == VK_NULL_HANDLE;
 		}
 
-		void Resource::close(Engine::Handle engine)
+		void Resource::drop(Engine::Handle engine)
 		{
 			deleteSwapChain(engine);
 		}
@@ -23,7 +23,7 @@ namespace Vivium {
 
 			VIVIUM_ASSERT(window != VIVIUM_NULL_HANDLE, "GLFW window had no associated Vivium window");
 
-			VIVIUM_CHECK_RESOURCE(window);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(window);
 
 			window->wasFramebufferResized = true;
 			// NOTE: not necessary really
@@ -388,7 +388,7 @@ namespace Vivium {
 
 		void Resource::createSurface(Engine::Handle engine)
 		{
-			VIVIUM_CHECK_RESOURCE(engine);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine);
 
 			VIVIUM_VK_CHECK(glfwCreateWindowSurface(engine->instance, glfwWindow, nullptr, &surface),
 				"Failed to create window surface");
@@ -396,7 +396,7 @@ namespace Vivium {
 
 		void Resource::initVulkan(Engine::Handle engine)
 		{
-			VIVIUM_CHECK_RESOURCE(engine);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine);
 
 			// TODO: move this code
 			// Verify valid multisample count
@@ -444,11 +444,6 @@ namespace Vivium {
 			createMultisampleColorImages(engine);
 			createRenderPass(engine);
 			createFramebuffers(engine);
-		}
-
-		I32x2 Resource::getDimensions() const
-		{
-			return dimensions;
 		}
 
 		bool Resource::isOpen(Engine::Handle engine) const
@@ -500,7 +495,17 @@ namespace Vivium {
 		
 		bool isOpen(Window::Handle window, Engine::Handle engine)
 		{
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(window);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine);
+
 			return window->isOpen(engine);
 		}
-}
+
+		I32x2 dimensions(Window::Handle window)
+		{
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(window);
+
+			return window->dimensions;
+		}
+	}
 }

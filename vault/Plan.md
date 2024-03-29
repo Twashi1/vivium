@@ -38,6 +38,13 @@ interval.run();
 if (input.isDown(Input::KEY_E)) {}
 ```
 
+```c++
+ResourceManager::Static<Allocator::Linear>::Handle manager = ResourceManager::Static<Allocator::Linear>::create(allocator);
+
+ResourceManager::Static::submit(manager, data);
+manager.submit(...data);
+```
+
 ## Time
 
 ### Timer

@@ -17,8 +17,8 @@ int main()
 		Engine::endCommand(engine);
 	}
 
-	Window::close(scoped, window);
-	Engine::close(scoped, engine);
+	Window::drop(scoped, window);
+	Engine::drop(scoped, engine);
 
 	return NULL;
 }

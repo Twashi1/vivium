@@ -65,8 +65,7 @@
               "state": {}
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "horizontal",
@@ -149,8 +148,8 @@
   },
   "active": "054d7e6a14758387",
   "lastOpenFiles": [
-    "TODO.md",
     "2023-12-01.md",
+    "TODO.md",
     "Plan.md"
   ]
 }

@@ -104,7 +104,7 @@ namespace Vivium {
 
 			// Public methods
 			void create(Options options, Window::Handle window);
-			void close(Window::Handle window);
+			void drop(Window::Handle window);
 
 			void beginFrame(Window::Handle window);
 			void endFrame(Window::Handle window);
@@ -130,9 +130,9 @@ namespace Vivium {
 		}
 
 		template <Allocator::AllocatorType Storage>
-		void close(Storage storage, Handle handle, Window::Handle window)
+		void drop(Storage storage, Handle handle, Window::Handle window)
 		{
-			handle->close(window);
+			handle->drop(window);
 			storage.free(reinterpret_cast<void*>(handle));
 		}
 

@@ -65,14 +65,12 @@ namespace Vivium {
 			void createSurface(Engine::Handle engine);
 			void initVulkan(Engine::Handle engine);
 
-			I32x2 getDimensions() const;
-
 			bool isOpen(Engine::Handle engine) const;
 
 			void create(const Options& options);
 
 			bool isNull() const;
-			void close(Engine::Handle engine);
+			void drop(Engine::Handle engine);
 
 			Resource();
 		};
@@ -92,14 +90,15 @@ namespace Vivium {
 		}
 
 		template <typename Storage>
-		void close(Storage storage, Handle handle)
+		void drop(Storage storage, Handle handle)
 		{
-			VIVIUM_CHECK_RESOURCE(handle);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle);
 
-			handle->close();
+			handle->drop();
 			storage.free(reinterpret_cast<void*>(handle));
 		}
 
+		I32x2 dimensions(Window::Handle window);
 		bool isOpen(Window::Handle window, Engine::Handle engine);
 	}
 }

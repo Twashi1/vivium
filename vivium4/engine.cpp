@@ -53,7 +53,7 @@ namespace Vivium {
 				
 				// Checking present
 				VkBool32 hasPresentSupport = false;
-				VIVIUM_CHECK_RESOURCE(window);
+				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(window);
 				vkGetPhysicalDeviceSurfaceSupportKHR(device, i, window->surface, &hasPresentSupport);
 
 				if (hasPresentSupport)
@@ -459,7 +459,7 @@ namespace Vivium {
 			createSyncObjects();
 		}
 
-		void Resource::close(Window::Handle window) {
+		void Resource::drop(Window::Handle window) {
 			vkDeviceWaitIdle(device);
 
 			vkDestroyRenderPass(device, renderPass, nullptr);
@@ -639,31 +639,31 @@ namespace Vivium {
 		
 		void beginFrame(Engine::Handle engine, Window::Handle window)
 		{
-			VIVIUM_CHECK_RESOURCE(engine);
-			VIVIUM_CHECK_RESOURCE(window);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(window);
 
 			engine->beginFrame(window);
 		}
 		
 		void endFrame(Engine::Handle engine, Window::Handle window)
 		{
-			VIVIUM_CHECK_RESOURCE(engine);
-			VIVIUM_CHECK_RESOURCE(window);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(window);
 
 			engine->endFrame(window);
 		}
 		
 		void beginRender(Engine::Handle engine, Window::Handle window)
 		{
-			VIVIUM_CHECK_RESOURCE(engine);
-			VIVIUM_CHECK_RESOURCE(window);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(window);
 
 			engine->beginRender(window);
 		}
 		
 		void endRender(Engine::Handle engine)
 		{
-			VIVIUM_CHECK_RESOURCE(engine);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine);
 
 			engine->endRender();
 		}
