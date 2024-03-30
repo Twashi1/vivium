@@ -32,7 +32,7 @@ namespace Vivium {
 					std::vector<ResourceType*> submit(Allocator::Static::Pool* allocator, const std::span<const SpecificationType> newSpecifications)
 					{
 						specifications.reserve(std::max(
-							specifications.size() >> 1 + specifications.size(),
+							(specifications.size() >> 1) + specifications.size(),
 							specifications.size() + newSpecifications.size()
 						));
 
@@ -112,7 +112,6 @@ namespace Vivium {
 			template <Allocator::AllocatorType AllocatorType>
 			void drop(AllocatorType allocator, Engine::Handle engine, Handle handle) {
 				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine);
-				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle);
 
 				handle->drop(engine);
 				

@@ -2,7 +2,7 @@
 
 namespace Vivium {
 	namespace Engine {
-		void Resource::populateDebugMessengerInfo(VkDebugUtilsMessengerCreateInfoEXT createInfo)
+		void Resource::populateDebugMessengerInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
 		{
 			createInfo = {};
 			createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -72,6 +72,7 @@ namespace Vivium {
 			vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
 			std::vector<VkLayerProperties> availableLayers(layerCount);
+			vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
 			// Iterate validation layers requested
 			for (const char* layer : validationLayers) {
@@ -92,25 +93,29 @@ namespace Vivium {
 			return true;
 		}
 
-		bool Resource::isSuitableDevice(VkPhysicalDevice device, const std::vector<const char*>& requiredExtensions, Window::Handle window)
+		bool Resource::isSuitableDevice(VkPhysicalDevice device, const std::vector<const char*>& deviceExtensions, Window::Handle window)
 		{
 			QueueFamilyIndices queueFamilyIndices = findQueueFamilies(device, window);
 
-			bool extensionSupport = checkDeviceExtensionSupport(requiredExtensions, device);
+			// TODO: shouldn'y be all extensions, just device ones
+			bool extensionSupport = checkDeviceExtensionSupport(deviceExtensions, device);
 			bool swapChainAdequate = false;
 
 			VkPhysicalDeviceFeatures supportedFeatures;
 			vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
 
 			if (extensionSupport) {
-				
+				SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device, window);
+				swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
 			}
 
-			return false;
+			return queueFamilyIndices.isComplete() && extensionSupport && swapChainAdequate && supportedFeatures.samplerAnisotropy;
 		}
 		
 		bool Resource::checkDeviceExtensionSupport(const std::vector<const char*>& requiredExtensions, VkPhysicalDevice device)
 		{
+			// NOTE: different
+
 			uint32_t extensionCount;
 			vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
 
@@ -120,7 +125,7 @@ namespace Vivium {
 			for (const char* requiredExtension : requiredExtensions) {
 				bool foundExtension = false;
 
-				for (VkExtensionProperties availableExtension : availableExtensions) {
+				for (VkExtensionProperties& availableExtension : availableExtensions) {
 					// NOTE: extensionName is null-terminated
 					if (strcmp(availableExtension.extensionName, requiredExtension) == 0)
 					{
@@ -169,7 +174,7 @@ namespace Vivium {
 			pollPeriod = options.pollPeriod;
 		}
 
-		void Resource::pickPhysicalDevice(const std::vector<const char*>& extensions, Window::Handle window)
+		void Resource::pickPhysicalDevice(const std::vector<const char*>& deviceExtensions, Window::Handle window)
 		{
 			uint32_t deviceCount = 0;
 			vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
@@ -182,7 +187,7 @@ namespace Vivium {
 			vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
 			for (const VkPhysicalDevice& device : devices) {
-				if (isSuitableDevice(device, extensions, window)) {
+				if (isSuitableDevice(device, deviceExtensions, window)) {
 					physicalDevice = device;
 
 					break;
@@ -353,16 +358,16 @@ namespace Vivium {
 			populateDebugMessengerInfo(createInfo);
 
 			auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-			VkResult result;
+			VkResult returnValue;
 
 			if (func != nullptr) {
-				result = func(instance, &createInfo, nullptr, &debugMessenger);
+				returnValue = func(instance, &createInfo, nullptr, &debugMessenger);
 			}
 			else {
-				result = VK_ERROR_EXTENSION_NOT_PRESENT;
+				returnValue = VK_ERROR_EXTENSION_NOT_PRESENT;
 			}
 
-			VIVIUM_VK_CHECK(result, "Failed to create debug messenger");
+			VIVIUM_VK_CHECK(returnValue, "Failed to create debug messenger");
 		}
 
 		uint32_t Resource::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
@@ -441,20 +446,27 @@ namespace Vivium {
 				VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME
 			};
 
+			std::vector<const char*> deviceExtensions;
+
+			for (const char* extension : defaultExtensions) {
+				deviceExtensions.push_back(extension);
+			}
+
 			const std::array<const char* const, 1> validationLayers = {
 				"VK_LAYER_KHRONOS_validation"
 			};
 
+			// TODO: dont need return value
 			std::vector<const char*> extensions = createInstance(validationLayers, defaultExtensions);
 			setupDebugMessenger();
 
 			window->createSurface(this);
 
-			pickPhysicalDevice(extensions, window);
+			pickPhysicalDevice(deviceExtensions, window);
 
 			setOptions(options);
 
-			createLogicalDevice(window, extensions, validationLayers);
+			createLogicalDevice(window, deviceExtensions, validationLayers);
 
 			window->initVulkan(this);
 

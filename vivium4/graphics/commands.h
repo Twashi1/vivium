@@ -74,6 +74,14 @@ namespace Vivium {
 			}
 
 			void flush(Handle context, Engine::Handle engine);
+
+			template <Allocator::AllocatorType AllocatorType>
+			void drop(AllocatorType allocator, Handle handle, Engine::Handle engine)
+			{
+				handle->drop(engine);
+
+				Allocator::dropResource(allocator, handle);
+			}
 		}
 
 		void transferBuffer(Context::Handle context, Buffer::Handle source, Buffer::Handle destination);

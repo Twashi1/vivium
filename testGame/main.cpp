@@ -31,6 +31,7 @@ int main(void) {
 	ResourceManager::Static::drop(storage, engine, manager);
 
 	// TODO: delete order not obvious
+	Commands::Context::drop(storage, context, engine);
 	Window::drop(storage, window, engine);
 	Engine::drop(storage, engine, window);
 	storage.free();

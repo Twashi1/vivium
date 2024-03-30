@@ -29,7 +29,7 @@ namespace Vivium {
 			struct QueueFamilyIndices {
 				uint32_t graphicsFamily, presentFamily, transferFamily;
 
-				bool isComplete() const { return graphicsFamily != UINT_MAX && presentFamily != UINT_MAX && transferFamily != UINT_MAX; }
+				bool isComplete() const { return graphicsFamily != UINT32_MAX && presentFamily != UINT32_MAX && transferFamily != UINT32_MAX; }
 			};
 
 			VkInstance instance;
@@ -63,7 +63,7 @@ namespace Vivium {
 			Time::Timer frameTimer;
 			Time::Timer updateTimer;
 
-			void populateDebugMessengerInfo(VkDebugUtilsMessengerCreateInfoEXT createInfo);
+			void populateDebugMessengerInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 
 			static VKAPI_ATTR VkBool32 VKAPI_CALL vulkanDebugCallback(
 				VkDebugUtilsMessageSeverityFlagBitsEXT vkSeverity,

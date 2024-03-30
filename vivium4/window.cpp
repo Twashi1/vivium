@@ -420,7 +420,7 @@ namespace Vivium {
 				VK_SAMPLE_COUNT_2_BIT
 			};
 
-			multisampleCount = VK_SAMPLE_COUNT_1_BIT;
+			multisampleCount = VK_SAMPLE_COUNT_2_BIT;
 
 			for (
 				uint32_t i = 0;
