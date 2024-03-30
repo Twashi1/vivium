@@ -61,3 +61,5 @@
 	VIVIUM_CHECK_HANDLE_EXISTS(handle);												\
 	VIVIUM_ASSERT(!handle->isNull(), "Attempted to use null resource")
 #endif
+
+#define VIVIUM_GLSLC_PATH "external/vulkan/Bin/glslc.exe"

@@ -23,7 +23,7 @@ namespace Vivium {
 			);
 		}
 			
-		Layout createLayout(const std::span<Shader::DataType> types)
+		Layout createLayout(const std::span<const Shader::DataType> types)
 		{
 			Layout layout;
 

@@ -16,10 +16,18 @@ namespace Vivium {
 		};	
 
 		struct Specification {
-			const std::span<Shader::Handle> shaders;
+			const std::span<const Shader::Handle> shaders;
 			const Buffer::Layout bufferLayout;
-			const std::span<DescriptorLayout::Handle> descriptorLayouts;
-			const std::span<Uniform::PushConstant> pushConstants;
+			const std::span<const DescriptorLayout::Handle> descriptorLayouts;
+			const std::span<const Uniform::PushConstant> pushConstants;
+
+			Specification() = default;
+			Specification(
+				const std::span<const Shader::Handle> shaders,
+				const Buffer::Layout bufferLayout,
+				const std::span<const DescriptorLayout::Handle> descriptorLayouts,
+				const std::span<const Uniform::PushConstant> pushConstants
+			);
 		};
 
 		typedef Resource* Handle;
@@ -119,7 +127,7 @@ namespace Vivium {
 			pipelineLayoutInfo.pSetLayouts = descriptorLayouts.data();
 			pipelineLayoutInfo.setLayoutCount = descriptorLayouts.size();
 			// TODO: dirty, better to just make the copy
-			pipelineLayoutInfo.pPushConstantRanges = reinterpret_cast<VkPushConstantRange*>(specification.pushConstants.data());
+			pipelineLayoutInfo.pPushConstantRanges = reinterpret_cast<const VkPushConstantRange*>(specification.pushConstants.data());
 			pipelineLayoutInfo.pushConstantRangeCount = specification.pushConstants.size();
 
 			VIVIUM_VK_CHECK(vkCreatePipelineLayout(

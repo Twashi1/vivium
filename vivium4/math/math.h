@@ -7,8 +7,8 @@
 namespace Vivium {
 	namespace Math {
 		struct Perspective {
-			glm::mat4 projection;
 			glm::mat4 view;
+			glm::mat4 projection;
 		};
 
 		Perspective calculatePerspective(Window::Handle window, F32x2 position, float rotation, float scale);

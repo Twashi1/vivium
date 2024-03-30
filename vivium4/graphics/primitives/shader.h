@@ -1,5 +1,8 @@
 #pragma once
 
+#include <filesystem>
+#include <fstream>
+
 #include "../../core.h"
 #include "../../engine.h"
 #include "../../storage.h"
@@ -52,8 +55,11 @@ namespace Vivium {
 
 		struct Specification {
 			Stage stage;
-			const char* code;
+			std::string code;
 			uint32_t length;
+
+			Specification() = default;
+			Specification(Stage stage, std::string code, uint32_t length);
 		};
 
 		typedef Resource* Handle;
@@ -69,7 +75,7 @@ namespace Vivium {
 			VkShaderModuleCreateInfo shaderCreateInfo{};
 			shaderCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 			shaderCreateInfo.codeSize = specification.length;
-			shaderCreateInfo.pCode = reinterpret_cast<const uint32_t*>(specification.code);
+			shaderCreateInfo.pCode = reinterpret_cast<const uint32_t*>(specification.code.c_str());
 
 			VIVIUM_VK_CHECK(vkCreateShaderModule(
 				engine->device,
@@ -91,5 +97,8 @@ namespace Vivium {
 
 			Allocator::dropResource(allocator, shader);
 		}
+
+		// TODO: really shouldn't do this
+		Specification compile(Shader::Stage stage, const char* sourceFilename, const char* destFilename);
 	}
 }

@@ -69,3 +69,6 @@ glfw
 "${CMAKE_SOURCE_DIR}/external/vulkan/Lib/vulkan-1.lib"
 winmm.lib
 )
+
+file(COPY "${CMAKE_SOURCE_DIR}/testGame" DESTINATION "${CMAKE_BINARY_DIR}/")
+configure_file("${CMAKE_SOURCE_DIR}/external/vulkan/Bin/glslc.exe" "${CMAKE_BINARY_DIR}/external/vulkan/Bin/glslc.exe" COPYONLY)

@@ -4,7 +4,7 @@
 namespace Vivium {
 	namespace Window {
 		Options::Options()
-			: dimensions({ 400, 600 }), title("Vivium4"), multisampleCount(VK_SAMPLE_COUNT_2_BIT)
+			: dimensions({ 600, 400 }), title("Vivium4"), multisampleCount(VK_SAMPLE_COUNT_2_BIT)
 		{}
 
 		bool Resource::isNull() const
@@ -20,8 +20,6 @@ namespace Vivium {
 		void Resource::framebufferResizeCallback(GLFWwindow* glfwWindow, int width, int height)
 		{
 			Handle window = reinterpret_cast<Resource*>(glfwGetWindowUserPointer(glfwWindow));
-
-			VIVIUM_ASSERT(window != VIVIUM_NULL_HANDLE, "GLFW window had no associated Vivium window");
 
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(window);
 

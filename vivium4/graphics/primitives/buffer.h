@@ -49,7 +49,7 @@ namespace Vivium {
 			VkVertexInputBindingDescription bindingDescription;
 		};
 			
-		Layout createLayout(const std::span<Shader::DataType> types);
+		Layout createLayout(const std::span<const Shader::DataType> types);
 
 		typedef Resource* Handle;
 		// TODO: past thomas how does this work?
