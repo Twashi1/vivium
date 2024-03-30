@@ -19,7 +19,7 @@ namespace Vivium {
 		};
 
 		// TODO: testing this creates the waitable timer and destroys it appropriately
-		thread_local SleepTimer m_sleepTimer;
+		inline thread_local SleepTimer m_sleepTimer;
 
 		// Returns if sleep went well or not, resolution of ~100ns
 		// https://stackoverflow.com/questions/13397571/precise-thread-sleep-needed-max-1ms-error

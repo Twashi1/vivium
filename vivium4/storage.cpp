@@ -2,58 +2,52 @@
 
 namespace Vivium {
 	namespace Allocator {
-		Linear::Linear()
-			: data(nullptr),
-			offset(0),
-			capacity(0)
-		{}
-		
-		void Linear::reserveExact(uint64_t moreBytes) {
-			uint64_t newCapacity = capacity + moreBytes;
+		namespace Static {
+			Pool::Pool()
+				// Default block capacity
+				: Pool(4096)
+			{}
 
-			uint8_t* newData = reinterpret_cast<uint8_t*>(std::malloc(newCapacity));
+			Pool::Pool(uint64_t blockCapacity)
+				: blockCapacity(blockCapacity)
+			{}
 
-			if (data != nullptr)
-				std::memcpy(data, newData, offset);
+			void* Pool::allocate(uint64_t bytes)
+			{
+				if (!blocks.empty()) {
+					Block* last_block = &blocks.back();
 
-			std::free(data);
+					if (last_block->offset + bytes <= blockCapacity) {
+						uint8_t* ptr = last_block->data + last_block->offset;
 
-			data = newData;
-			capacity = newCapacity;
+						last_block->offset += bytes;
+
+						return ptr;
+					}
+				}
+
+				blocks.emplace_back(
+					reinterpret_cast<uint8_t*>(std::malloc(blockCapacity)), 
+					bytes
+				);
+
+				return blocks.back().data;
+			}
+
+			void Pool::free()
+			{
+				for (Block block : blocks) {
+					std::free(block.data);
+				}
+			}
+
+			Pool::Block::Block(uint8_t* data, uint64_t offset)
+				: data(data), offset(offset)
+			{}
 		}
-		
-		void Linear::reserve(uint64_t moreBytes) {
-			uint64_t minimumCapacity = offset + moreBytes;
 
-			if (minimumCapacity < capacity) return;
+		namespace Dynamic {
 
-			uint64_t newCapacity = capacity + (capacity >> 1) + moreBytes;
-
-			reserveExact(newCapacity - capacity);
 		}
-		
-		void* Linear::allocate(uint64_t bytes) {
-			reserve(bytes);
-
-			uint8_t* location = data + offset;
-
-			offset += bytes;
-
-			return location;
-		}
-		
-		void Linear::free() {
-			std::free(data);
-
-			data = nullptr;
-			capacity = 0;
-			offset = 0;
-		}
-		
-		void Linear::free(void* data) {}
-	}
-
-	namespace Storage {
-
 	}
 }

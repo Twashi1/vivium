@@ -1,5 +1,7 @@
 #pragma once
 
+// TODO: rename this file
+
 #include <algorithm>
 #include <cstdint>
 #include <type_traits>
@@ -9,32 +11,49 @@
 
 namespace Vivium {
 	namespace Allocator {
+		namespace Static {
+			template <typename T>
+			concept AllocatorType = requires(T allocator) {
+				{ allocator.allocate(std::declval<uint64_t>()) } -> std::same_as<void*>;
+				{ allocator.free() } -> std::same_as<void>;
+			};
+
+			struct Pool {
+				struct Block {
+					uint8_t* data;
+					uint64_t offset;
+
+					Block() = default;
+					Block(uint8_t* data, uint64_t offset);
+				};
+
+				std::vector<Block> blocks;
+				uint64_t blockCapacity;
+
+				Pool();
+				Pool(uint64_t blockCapacity);
+
+				// Public
+				void* allocate(uint64_t bytes);
+				void free();
+			};
+		}
+
+		namespace Dynamic {
+			template <typename T>
+			concept AllocatorType = requires(T allocator) {
+				{ allocator.allocate(std::declval<uint64_t>()) } -> std::same_as<void*>;
+				{ allocator.free() } -> std::same_as<void>;
+				{ allocator.free(std::declval<void*>()) } -> std::same_as<void>;
+			};
+
+			// TODO: tree/list allocator
+		}
+
 		template <typename T>
-		concept AllocatorType = requires(T allocator) {
-			{ allocator.allocate(std::declval<uint64_t>()) } -> std::same_as<void*>;
-			{ allocator.free() } -> std::same_as<void>;
-			{ allocator.free(std::declval<void*>()) } -> std::same_as<void>;
-		};
+		concept AllocatorType = Dynamic::AllocatorType<T> || Static::AllocatorType<T>;
 
-		// TODO: linear allocator won't work at all, as on reallocation, all ptrs break
-		struct Linear {
-			uint8_t* data;
-			uint64_t offset;
-			uint64_t capacity;
-
-			Linear();
-
-			void reserveExact(uint64_t moreBytes);
-			void reserve(uint64_t moreBytes);
-			void* allocate(uint64_t bytes);
-			void free();
-
-			// TODO: prefer drop
-			// Disabled for linear allocator
-			void free(void* data);
-		};
-
-		template <AllocatorType Allocator, typename Resource>
+		template <typename Resource, AllocatorType Allocator>
 		Resource* allocateResource(Allocator allocator) {
 			Resource* handle = reinterpret_cast<Resource*>(allocator.allocate(sizeof(Resource)));
 
@@ -43,22 +62,12 @@ namespace Vivium {
 			return handle;
 		}
 
-		template <AllocatorType Allocator, typename Resource>
+		template <typename Resource, AllocatorType Allocator>
 		void dropResource(Allocator allocator, Resource* handle) {
 			handle->~Resource();
-			allocator->free(reinterpret_cast<void*>(handle));
+
+			if constexpr (Dynamic::AllocatorType<Allocator>)
+				allocator->free(handle);
 		}
-	}
-
-	namespace Storage {
-		enum Type {
-			STAGING,
-			DEVICE
-		};
-
-		struct Static {
-			Type type;
-			// TODO
-		};
 	}
 }

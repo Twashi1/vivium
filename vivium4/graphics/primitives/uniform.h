@@ -27,16 +27,24 @@ namespace Vivium {
 				uint64_t offset;
 			};
 
+			struct DynamicBufferData {
+				Buffer::Dynamic::Handle buffer;
+				uint64_t size;
+				uint64_t offset;
+			};
+
 			struct TextureData {
 				Texture::Handle texture;
 			};
 
 			BufferData bufferData;
 			TextureData textureData;
+			DynamicBufferData dynamicBufferData;
 
 			Data() = default;
 				
 			static Data fromBuffer(Buffer::Handle buffer, uint64_t size, uint64_t offset);
+			static Data fromDynamicBuffer(Buffer::Dynamic::Handle buffer, uint64_t size, uint64_t offset);
 			static Data fromTexture(Texture::Handle texture);
 		};
 

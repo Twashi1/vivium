@@ -46,6 +46,8 @@ namespace Vivium {
 		struct Resource {
 			VkShaderStageFlagBits flags;
 			VkShaderModule shader;
+
+			bool isNull() const;
 		};
 
 		struct Specification {

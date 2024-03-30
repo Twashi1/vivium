@@ -11,6 +11,15 @@ namespace Vivium {
 			return data;
 		}
 
+		Data Data::fromDynamicBuffer(Buffer::Dynamic::Handle buffer, uint64_t size, uint64_t offset)
+		{
+			Data data;
+
+			data.dynamicBufferData = Data::DynamicBufferData(buffer, size, offset);
+
+			return data;
+		}
+
 		Data Data::fromTexture(Texture::Handle texture)
 		{
 			Data data;

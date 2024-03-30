@@ -53,7 +53,7 @@ namespace Vivium {
 		T cross(Vec2 v) const { return x * v.y - y * v.x; }
 		T length() const { return std::sqrt(x * x + y * y); }
 
-		Vec2 normalise() const { return *this / std::sqrt(x * x + y * y) }
+		Vec2 normalise() const { return *this / std::sqrt(x * x + y * y); }
 
 		Vec2 left() const { return Vec2(y, -x); }
 		Vec2 right() const { return Vec2(-y, x); }

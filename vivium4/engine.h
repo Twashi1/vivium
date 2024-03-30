@@ -117,23 +117,21 @@ namespace Vivium {
 
 		typedef Resource* Handle;
 
-		template <Allocator::AllocatorType Storage>
-		Handle create(Storage storage, Options options, Window::Handle window)
+		template <Allocator::AllocatorType AllocatorType>
+		Handle create(AllocatorType allocator, Options options, Window::Handle window)
 		{
-			Handle engine = storage.allocate(sizeof(Resource));
-
-			new (engine) Resource{};
+			Handle engine = Allocator::allocateResource<Resource>(allocator);
 			
 			engine->create(options, window);
 
 			return engine;
 		}
 
-		template <Allocator::AllocatorType Storage>
-		void drop(Storage storage, Handle handle, Window::Handle window)
+		template <Allocator::AllocatorType AllocatorType>
+		void drop(AllocatorType allocator, Handle handle, Window::Handle window)
 		{
 			handle->drop(window);
-			storage.free(reinterpret_cast<void*>(handle));
+			Allocator::dropResource(allocator, handle);
 		}
 
 		void beginFrame(Engine::Handle engine, Window::Handle window);

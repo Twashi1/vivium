@@ -9,10 +9,10 @@ namespace Vivium {
 		#include <windows.h>
 		#include <synchapi.h>
 
-		inline constexpr DWORD _STD_OUTPUT_HANDLE		= STD_OUTPUT_HANDLE;
-		inline constexpr DWORD _STATUS_WAIT_0			= STATUS_WAIT_0;
-		inline constexpr DWORD _WAIT_OBJECT_0			= WAIT_OBJECT_0;
-		inline constexpr HANDLE _INVALID_HANDLE_VALUE	= INVALID_HANDLE_VALUE;
+		inline const DWORD _STD_OUTPUT_HANDLE		= STD_OUTPUT_HANDLE;
+		inline const DWORD _STATUS_WAIT_0			= STATUS_WAIT_0;
+		inline const DWORD _WAIT_OBJECT_0			= WAIT_OBJECT_0;
+		inline const HANDLE _INVALID_HANDLE_VALUE	= INVALID_HANDLE_VALUE;
 	}
 }
 

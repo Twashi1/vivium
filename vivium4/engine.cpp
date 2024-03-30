@@ -385,6 +385,11 @@ namespace Vivium {
 			return NULL;
 		}
 
+		bool Resource::isNull() const
+		{
+			return instance == VK_NULL_HANDLE;
+		}
+
 		void Resource::checkPerformance()
 		{
 			float maxTimeSpent = targetTimePerFrame * pollFramesCounted;

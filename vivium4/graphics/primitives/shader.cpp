@@ -16,5 +16,10 @@ namespace Vivium {
 		{
 			return static_cast<VkFormat>(static_cast<uint32_t>(type));
 		}
+
+		bool Resource::isNull() const
+		{
+			return shader == VK_NULL_HANDLE;
+		}
 	}
 }

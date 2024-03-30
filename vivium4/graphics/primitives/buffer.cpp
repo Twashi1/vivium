@@ -111,6 +111,13 @@ namespace Vivium {
 					totalSourceAdvance += suballocationSizes[i];
 				}
 			}
+
+			// Inclusive
+			void set(Handle buffer, const void* data, uint64_t suballocationStartIndex, uint64_t suballocationEndIndex) {
+				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(buffer);
+
+				buffer->set(data, suballocationStartIndex, suballocationEndIndex);
+			}
 		}
 	}
 }

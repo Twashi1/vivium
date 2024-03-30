@@ -18,19 +18,6 @@ namespace Vivium {
 			return (number + multiple - 1) & (-multiple);
 		}
 
-		uint64_t calculateAlignmentOffset(uint64_t& currentOffset, uint64_t size, uint64_t alignment)
-		{
-			// Offset resource should be placed at
-			uint64_t resourceOffset = nearestMultiple(currentOffset, alignment);
-
-			// Calculate padding required
-			uint64_t requiredPadding = resourceOffset - currentOffset;
-
-			// Add size + padding to the running total
-			currentOffset += requiredPadding + size;
-
-			// Return the offset the resource should be placed at
-			return resourceOffset;
-		}
+		uint64_t calculateAlignmentOffset(uint64_t& currentOffset, uint64_t size, uint64_t alignment);
 	}
 }

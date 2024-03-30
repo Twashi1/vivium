@@ -77,25 +77,23 @@ namespace Vivium {
 
 		typedef Resource* Handle;
 
-		template <typename Storage>
-		Handle create(Storage storage, Options options)
+		template <Allocator::AllocatorType AllocatorType>
+		Handle create(AllocatorType allocator, Options options)
 		{
-			Handle window = storage.allocate(sizeof(Resource));
-
-			new (window) Resource{};
+			Handle window = Allocator::allocateResource<Resource>(allocator);
 
 			window->create(options);
 
 			return window;
 		}
 
-		template <typename Storage>
-		void drop(Storage storage, Handle handle)
+		template <Allocator::AllocatorType AllocatorType>
+		void drop(AllocatorType allocator, Handle handle, Engine::Handle engine)
 		{
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle);
 
-			handle->drop();
-			storage.free(reinterpret_cast<void*>(handle));
+			handle->drop(engine);
+			Allocator::dropResource(allocator, handle);
 		}
 
 		I32x2 dimensions(Window::Handle window);

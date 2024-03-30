@@ -24,6 +24,7 @@ namespace Vivium {
 
 		typedef Resource* Handle;
 
+		// TODO: create method inside pipeline or constructor
 		template <Allocator::AllocatorType AllocatorType>
 		Handle create(AllocatorType allocator, Engine::Handle engine, Window::Handle window, Specification specification) {
 			Handle handle = Allocator::allocateResource<Resource>(allocator);
@@ -125,7 +126,7 @@ namespace Vivium {
 				engine->device,
 				&pipelineLayoutInfo,
 				nullptr,
-				&pipeline_layout),
+				&handle->layout),
 				"Failed to create pipeline layout"
 			);
 

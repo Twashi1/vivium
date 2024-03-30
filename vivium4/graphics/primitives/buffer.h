@@ -38,6 +38,7 @@ namespace Vivium {
 			struct Element {
 				uint32_t size, offset;
 
+				Element() = default;
 				Element(uint32_t size, uint32_t offset);
 			};
 
@@ -94,11 +95,7 @@ namespace Vivium {
 			typedef Resource* Handle;
 
 			// Inclusive
-			void set(Handle buffer, const void* data, uint64_t suballocationStartIndex, uint64_t suballocationEndIndex) {
-				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(buffer);
-
-				buffer->set(data, suballocationStartIndex, suballocationEndIndex);
-			}
+			void set(Handle buffer, const void* data, uint64_t suballocationStartIndex, uint64_t suballocationEndIndex);
 
 			template <Allocator::AllocatorType AllocatorType>
 			void drop(AllocatorType allocator, Engine::Handle engine, Handle buffer) {

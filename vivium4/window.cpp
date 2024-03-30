@@ -73,8 +73,7 @@ namespace Vivium {
 
 			createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-			VIVIUM_VK_CHECK(vkCreateSwapchainKHR(engine->device, &createInfo, nullptr, &swapChain),
-				"Failed to create swap chain");
+			VIVIUM_VK_CHECK(vkCreateSwapchainKHR(engine->device, &createInfo, nullptr, &swapChain), "Failed to create swap chain");
 
 			vkGetSwapchainImagesKHR(engine->device, swapChain, &imageCount, nullptr);
 			swapChainImages.resize(imageCount);
