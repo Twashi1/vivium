@@ -16,6 +16,7 @@ namespace Vivium {
 			{ allocator.free(std::declval<void*>()) } -> std::same_as<void>;
 		};
 
+		// TODO: linear allocator won't work at all, as on reallocation, all ptrs break
 		struct Linear {
 			uint8_t* data;
 			uint64_t offset;
@@ -44,6 +45,7 @@ namespace Vivium {
 
 		template <AllocatorType Allocator, typename Resource>
 		void dropResource(Allocator allocator, Resource* handle) {
+			handle->~Resource();
 			allocator->free(reinterpret_cast<void*>(handle));
 		}
 	}

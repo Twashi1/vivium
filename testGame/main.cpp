@@ -6,10 +6,19 @@ int main(void) {
 	Allocator::Linear storage;
 	Window::Handle window = Window::create(window, Window::Options{});
 	Engine::Handle engine = Engine::create(storage, Engine::Options{}, window);
+	Commands::Context::Handle context = Commands::Context::create(storage, engine);
+	
+	// TODO: create function for this
+	ResourceManager::Static::Handle<decltype(storage)> manager;
 
 	while (Window::isOpen(window, engine)) {
 		Engine::beginFrame(engine, window);
+		Commands::Context::flush(context, engine);
+
 		Engine::beginRender(engine, window);
+
+		// DO stuff
+
 		Engine::endRender(engine);
 		Engine::endFrame(engine, window);
 	}
