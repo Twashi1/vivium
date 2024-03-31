@@ -17,6 +17,9 @@ namespace Vivium {
 
 		struct Specification {
 			const std::span<const Uniform::Binding> bindings;
+
+			Specification();
+			Specification(const std::span<const Uniform::Binding> bindings);
 		};
 
 		template <Allocator::AllocatorType AllocatorType>
@@ -46,6 +49,8 @@ namespace Vivium {
 			createInfo.pBindings = vulkanBindings.data();
 
 			vkCreateDescriptorSetLayout(engine->device, &createInfo, nullptr, &handle->layout);
+
+			return handle;
 		}
 	}
 }

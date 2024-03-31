@@ -11,5 +11,9 @@ namespace Vivium {
 		{
 			vkDestroyDescriptorSetLayout(engine->device, layout, nullptr);
 		}
+		
+		Specification::Specification(const std::span<const Uniform::Binding> bindings)
+			: bindings(bindings)
+		{}
 	}
 }

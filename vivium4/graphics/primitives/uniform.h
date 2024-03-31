@@ -18,6 +18,9 @@ namespace Vivium {
 			Shader::Stage stage;
 			uint32_t slot;
 			Type type;
+
+			Binding() = default;
+			Binding(Shader::Stage stage, uint32_t slot, Type type);
 		};
 
 		union Data {

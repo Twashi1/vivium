@@ -36,5 +36,9 @@ namespace Vivium {
 			range.offset = offset;
 			range.size = size;
 		}
+		
+		Binding::Binding(Shader::Stage stage, uint32_t slot, Type type)
+			: stage(stage), slot(slot), type(type)
+		{}
 	}
 }

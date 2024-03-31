@@ -591,8 +591,6 @@ namespace Vivium {
 				return false;
 			}
 
-			// Public
-
 			void Resource::allocate(Engine::Handle engine) {
 				if (!hostBuffers.specifications.empty())
 					allocateBuffers(engine, MemoryType::STAGING);
