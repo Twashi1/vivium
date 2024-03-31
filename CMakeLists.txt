@@ -22,7 +22,7 @@ set(VIVIUM_SOURCES
   "vivium4/graphics/primitives/descriptor_layout.cpp"
   "vivium4/graphics/primitives/descriptor_set.cpp"
   "vivium4/graphics/resource_manager.cpp"
- "vivium4/graphics/primitives/pipeline.cpp" "vivium4/graphics/commands.cpp")
+ "vivium4/graphics/primitives/pipeline.cpp" "vivium4/graphics/commands.cpp" "vivium4/graphics/texture_atlas.cpp" "testGame/game_logic.cpp" "vivium4/input.cpp")
 set(VIVIUM_HEADERS
   "vivium4/error/result.h"
  "vivium4/graphics/primitives/buffer.h"
@@ -46,12 +46,15 @@ set(VIVIUM_HEADERS
  "vivium4/graphics/primitives/texture.h"
  "vivium4/graphics/primitives/descriptor_layout.h"
  "vivium4/graphics/resource_manager.h"
- "vivium4/graphics/commands.h" "vivium4/graphics/primitives/pipeline.h")
+ "vivium4/graphics/commands.h"
+ "vivium4/graphics/primitives/pipeline.h"
+ "vivium4/graphics/texture_atlas.h"
+ "testGame/game_logic.h" "vivium4/input.h")
 
 add_subdirectory("${CMAKE_SOURCE_DIR}/external/glfw")
 
 # TODO: so messy
-add_executable(vivium4 ${VIVIUM_HEADERS} ${VIVIUM_SOURCES} "vivium4/engine.cpp" "vivium4/graphics/gui/panel.h" "vivium4/graphics/gui/core.h" "vivium4/graphics/gui/base.h" "testGame/main.cpp" "vivium4/storage.cpp"  "vivium4/math/math.cpp"  "vivium4/graphics/primitives/descriptor_set.h" "vivium4/graphics/primitives/uniform.h" "vivium4/graphics/primitives/texture.h" "vivium4/graphics/primitives/descriptor_layout.h" "vivium4/graphics/primitives/descriptor_layout.cpp" "vivium4/graphics/primitives/descriptor_set.cpp" "vivium4/graphics/commands.h" "vivium4/graphics/primitives/pipeline.h" "vivium4/graphics/primitives/pipeline.cpp" "vivium4/graphics/commands.cpp")
+add_executable(vivium4 ${VIVIUM_HEADERS} ${VIVIUM_SOURCES} "vivium4/engine.cpp" "vivium4/graphics/gui/panel.h" "vivium4/graphics/gui/core.h" "vivium4/graphics/gui/base.h" "testGame/main.cpp" "vivium4/storage.cpp"  "vivium4/math/math.cpp"  "vivium4/graphics/primitives/descriptor_set.h" "vivium4/graphics/primitives/uniform.h" "vivium4/graphics/primitives/texture.h" "vivium4/graphics/primitives/descriptor_layout.h" "vivium4/graphics/primitives/descriptor_layout.cpp" "vivium4/graphics/primitives/descriptor_set.cpp" "vivium4/graphics/commands.h" "vivium4/graphics/primitives/pipeline.h" "vivium4/graphics/primitives/pipeline.cpp" "vivium4/graphics/commands.cpp" "testGame/game_logic.h" "testGame/game_logic.cpp" "vivium4/input.h" "vivium4/input.cpp")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET vivium4 PROPERTY CXX_STANDARD 20)

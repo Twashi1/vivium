@@ -47,6 +47,8 @@ namespace Vivium {
 			Data() = default;
 				
 			static Data fromBuffer(Buffer::Handle buffer, uint64_t size, uint64_t offset);
+			// TODO: should be taking suballocation sizes in future
+			//	and dealing with that appropriately when we create descriptor writes in resource manager
 			static Data fromDynamicBuffer(Buffer::Dynamic::Handle buffer, uint64_t size, uint64_t offset);
 			static Data fromTexture(Texture::Handle texture);
 		};

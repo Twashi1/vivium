@@ -2,10 +2,10 @@
 
 layout(location = 0) out vec4 color;
 
-layout(set = 0, binding = 0) uniform ImageColor {
-	vec3 color;
-} imageColor;
+layout(location = 0) in vec2 vTexCoords;
+
+layout(binding = 0) uniform sampler2D spriteSheet;
 
 void main() {
-	color = vec4(imageColor.color.xyz, 1.0);
+	color = texture(spriteSheet, vTexCoords);
 }

@@ -52,5 +52,16 @@ namespace Vivium {
 
 			return handle;
 		}
+
+		template <Allocator::AllocatorType AllocatorType>
+		void drop(AllocatorType allocator, Handle handle, Engine::Handle engine)
+		{
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine);
+			VIVIUM_CHECK_HANDLE_EXISTS(handle);
+
+			handle->drop(engine);
+
+			Allocator::dropResource(allocator, handle);
+		}
 	}
 }
