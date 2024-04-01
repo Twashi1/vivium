@@ -53,6 +53,7 @@ namespace Vivium {
 
 				// Public
 				void drop(Engine::Handle engine);
+				void create(Engine::Handle engine);
 
 				void beginTransfer();
 				void endTransfer(Engine::Handle engine);
@@ -67,13 +68,14 @@ namespace Vivium {
 			{
 				Handle handle = Allocator::allocateResource<Resource>(allocator);
 
-				Commands::createCommandPool(engine, &handle->transferPool, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
-				Commands::createCommandBuffers(engine, handle->transferPool, &handle->transferCommandBuffer, 1);
+				handle->create(engine);
 
 				return handle;
 			}
 
 			void flush(Handle context, Engine::Handle engine);
+			void beginTransfer(Handle context);
+			void endTransfer(Handle context, Engine::Handle engine);
 
 			template <Allocator::AllocatorType AllocatorType>
 			void drop(AllocatorType allocator, Handle handle, Engine::Handle engine)

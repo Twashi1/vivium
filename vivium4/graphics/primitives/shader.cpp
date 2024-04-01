@@ -55,6 +55,29 @@ namespace Vivium {
 		{
 			return shader == VK_NULL_HANDLE;
 		}
+
+		void Resource::drop(Engine::Handle engine)
+		{
+			vkDestroyShaderModule(engine->device, shader, nullptr);
+		}
+
+		void Resource::create(Engine::Handle engine, Specification specification)
+		{
+			flags = static_cast<VkShaderStageFlagBits>(specification.stage);
+
+			VkShaderModuleCreateInfo shaderCreateInfo{};
+			shaderCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+			shaderCreateInfo.codeSize = specification.length;
+			shaderCreateInfo.pCode = reinterpret_cast<const uint32_t*>(specification.code.c_str());
+
+			VIVIUM_VK_CHECK(vkCreateShaderModule(
+				engine->device,
+				&shaderCreateInfo,
+				nullptr,
+				&shader
+			), "Failed to create shader module"
+			);
+		}
 		
 		Specification::Specification(Stage stage, std::string code, uint32_t length)
 			: stage(stage), code(code), length(length)

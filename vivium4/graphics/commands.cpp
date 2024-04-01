@@ -31,6 +31,12 @@ namespace Vivium {
 				vkFreeCommandBuffers(engine->device, transferPool, 1, &transferCommandBuffer);
 				vkDestroyCommandPool(engine->device, transferPool, nullptr);
 			}
+
+			void Resource::create(Engine::Handle engine)
+			{
+				Commands::createCommandPool(engine, &transferPool, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+				Commands::createCommandBuffers(engine, transferPool, &transferCommandBuffer, 1);
+			}
 			
 			void Resource::beginTransfer()
 			{
@@ -66,6 +72,20 @@ namespace Vivium {
 				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(context);
 
 				context->flush(engine);
+			}
+			
+			void beginTransfer(Handle context)
+			{
+				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(context);
+
+				context->beginTransfer();
+			}
+			
+			void endTransfer(Handle context, Engine::Handle engine)
+			{
+				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(context);
+
+				context->endTransfer(engine);
 			}
 		}
 

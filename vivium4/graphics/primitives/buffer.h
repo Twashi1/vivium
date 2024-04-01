@@ -23,7 +23,7 @@ namespace Vivium {
 
 			bool isNull() const;
 			void drop(Engine::Handle engine);
-			void set(const void* data, uint64_t size, uint64_t offset);
+			void set(uint64_t bufferOffset, const void* data, uint64_t size, uint64_t dataOffset);
 		};
 
 		struct Specification {
@@ -55,7 +55,8 @@ namespace Vivium {
 		// TODO: past thomas how does this work?
 		typedef Resource* DynamicHandle;
 
-		void set(Handle buffer, const void* data, uint64_t size, uint64_t offset);
+		void set(Handle buffer, uint64_t bufferOffset, const void* data, uint64_t size, uint64_t dataOffset);
+		void* getMapping(Handle buffer);
 
 		template <Allocator::AllocatorType AllocatorType>
 		void drop(AllocatorType allocator, Handle buffer, Engine::Handle engine) {
@@ -97,13 +98,15 @@ namespace Vivium {
 
 			// Inclusive
 			void set(Handle buffer, const void* data, uint64_t suballocationStartIndex, uint64_t suballocationEndIndex);
+			void* getMapping(Handle buffer);
 
 			template <Allocator::AllocatorType AllocatorType>
-			void drop(AllocatorType allocator, Engine::Handle engine, Handle buffer) {
+			void drop(AllocatorType allocator, Handle buffer, Engine::Handle engine) {
 				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine);
 				VIVIUM_CHECK_HANDLE_EXISTS(buffer);
 
 				buffer->drop(engine);
+
 				Allocator::dropResource(allocator, buffer);
 			}
 		}

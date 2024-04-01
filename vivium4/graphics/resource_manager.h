@@ -12,6 +12,8 @@
 
 #include <atomic>
 
+// TODO: submit calls should take memory to fill, instead of returning vector
+
 namespace Vivium {
 	namespace ResourceManager {
 		struct SharedTrackerData {
@@ -110,8 +112,9 @@ namespace Vivium {
 			}
 
 			template <Allocator::AllocatorType AllocatorType>
-			void drop(AllocatorType allocator, Engine::Handle engine, Handle handle) {
+			void drop(AllocatorType allocator, Handle handle, Engine::Handle engine) {
 				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine);
+				VIVIUM_CHECK_HANDLE_EXISTS(handle);
 
 				handle->drop(engine);
 				

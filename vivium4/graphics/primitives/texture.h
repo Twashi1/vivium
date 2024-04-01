@@ -32,6 +32,7 @@ namespace Vivium {
 			Specification specification;
 			void* data;
 
+			Image();
 			Image(Specification specification, void* data);
 
 			static Image fromFile(const char* filename, Format imageFormat);
@@ -42,13 +43,11 @@ namespace Vivium {
 		typedef Resource* Handle;
 
 		template <Allocator::AllocatorType AllocatorType>
-		void drop(AllocatorType allocator, Engine::Handle engine, Handle handle) {
+		void drop(AllocatorType allocator, Handle handle, Engine::Handle engine) {
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine);
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle);
+			VIVIUM_CHECK_HANDLE_EXISTS(handle);
 
-			vkDestroySampler(engine->device, handle->sampler, nullptr);
-			vkDestroyImageView(engine->device, handle->view, nullptr);
-			vkDestroyImage(engine->device, handle->image, nullptr);
+			handle->drop(engine);
 
 			Allocator::dropResource(allocator, handle);
 		}

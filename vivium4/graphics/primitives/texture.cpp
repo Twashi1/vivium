@@ -2,6 +2,10 @@
 
 namespace Vivium {
 	namespace Texture {
+		Image::Image()
+			: data(nullptr)
+		{}
+
 		Image::Image(Specification specification, void* data)
 			: specification(specification), data(data)
 		{}
@@ -45,6 +49,13 @@ namespace Vivium {
 		bool Resource::isNull() const
 		{
 			return image == VK_NULL_HANDLE;
+		}
+
+		void Resource::drop(Engine::Handle engine)
+		{
+			vkDestroySampler(engine->device, sampler, nullptr);
+			vkDestroyImageView(engine->device, view, nullptr);
+			vkDestroyImage(engine->device, image, nullptr);
 		}
 	}
 }

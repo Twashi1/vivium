@@ -63,3 +63,5 @@
 #endif
 
 #define VIVIUM_GLSLC_PATH "external/vulkan/Bin/glslc.exe"
+
+// TODO: better pointer handling with buffers, some way to pass a range pointer (maybe just using std::span)

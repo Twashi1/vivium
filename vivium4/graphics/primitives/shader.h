@@ -46,13 +46,6 @@ namespace Vivium {
 
 		Stage operator|(Stage lhs, Stage rhs);
 
-		struct Resource {
-			VkShaderStageFlagBits flags;
-			VkShaderModule shader;
-
-			bool isNull() const;
-		};
-
 		struct Specification {
 			Stage stage;
 			std::string code;
@@ -60,6 +53,15 @@ namespace Vivium {
 
 			Specification() = default;
 			Specification(Stage stage, std::string code, uint32_t length);
+		};
+
+		struct Resource {
+			VkShaderStageFlagBits flags;
+			VkShaderModule shader;
+
+			bool isNull() const;
+			void drop(Engine::Handle engine);
+			void create(Engine::Handle engine, Specification specification);
 		};
 
 		typedef Resource* Handle;
@@ -70,30 +72,17 @@ namespace Vivium {
 
 			Handle handle = Allocator::allocateResource<Resource>(allocator);
 
-			handle->flags = static_cast<VkShaderStageFlagBits>(specification.stage);
-				
-			VkShaderModuleCreateInfo shaderCreateInfo{};
-			shaderCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-			shaderCreateInfo.codeSize = specification.length;
-			shaderCreateInfo.pCode = reinterpret_cast<const uint32_t*>(specification.code.c_str());
-
-			VIVIUM_VK_CHECK(vkCreateShaderModule(
-				engine->device,
-				&shaderCreateInfo,
-				nullptr,
-				&handle->shader
-			), "Failed to create shader module"
-			);
+			handle->create(engine, specification);
 
 			return handle;
 		}
 
 		template <Allocator::AllocatorType AllocatorType>
-		void drop(AllocatorType allocator, Engine::Handle engine, Shader::Handle shader) {
+		void drop(AllocatorType allocator, Shader::Handle shader, Engine::Handle engine) {
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine);
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(shader);
+			VIVIUM_CHECK_HANDLE_EXISTS(shader);
 
-			vkDestroyShaderModule(engine->device, shader->shader, nullptr);
+			shader->drop(engine);
 
 			Allocator::dropResource(allocator, shader);
 		}

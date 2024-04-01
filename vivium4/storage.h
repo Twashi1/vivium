@@ -9,6 +9,9 @@
 
 #include "core.h"
 
+// TODO: better name and documentation
+#define VIVIUM_RESOURCE_ALLOCATED nullptr
+
 namespace Vivium {
 	namespace Allocator {
 		namespace Static {
@@ -51,10 +54,13 @@ namespace Vivium {
 		}
 
 		template <typename T>
-		concept AllocatorType = Dynamic::AllocatorType<T> || Static::AllocatorType<T>;
+		concept AllocatorType = Dynamic::AllocatorType<T> || Static::AllocatorType<T> || std::is_same_v<std::nullptr_t, T>;
 
 		template <typename Resource, AllocatorType Allocator>
 		Resource* allocateResource(Allocator allocator) {
+			if constexpr (std::is_same_v<std::nullptr_t, Allocator>)
+				VIVIUM_LOG(Log::FATAL, "Attempted to allocate resource with no allocator");
+
 			Resource* handle = reinterpret_cast<Resource*>(allocator.allocate(sizeof(Resource)));
 
 			new (handle) Resource();

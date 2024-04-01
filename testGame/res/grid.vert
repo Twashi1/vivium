@@ -13,6 +13,7 @@ layout(location = 0) out vec2 vTextureCoords;
 
 layout(set = 0, binding = 1) uniform UniformData {
 	vec2 textureScale;
+	float tileScale;
 };
 
 // No alignment requirements https://registry.khronos.org/vulkan/specs/1.3-extensions/html/chap15.html#interfaces-resources-layout
@@ -29,7 +30,7 @@ void main() {
 	TileInstanceData data = tileInstanceData[gl_InstanceIndex];
 
 	gl_Position = matrices.proj * matrices.view * vec4(
-		inPosition + data.tileTranslation, 0.0, 1.0
+		inPosition * tileScale + data.tileTranslation, 0.0, 1.0
 	);
 
 	vTextureCoords = inTextureCoords * textureScale + data.textureTranslation;

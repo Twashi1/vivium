@@ -14,11 +14,11 @@ namespace Vivium {
 			VIVIUM_DEBUG_ONLY(buffer = VK_NULL_HANDLE);
 		}
 			
-		void Resource::set(const void* data, uint64_t size, uint64_t offset)
+		void Resource::set(uint64_t bufferOffset, const void* data, uint64_t size, uint64_t dataOffset)
 		{
 			std::memcpy(
-				reinterpret_cast<uint8_t*>(mapping) + offset,
-				data,
+				reinterpret_cast<uint8_t*>(mapping) + bufferOffset,
+				reinterpret_cast<const uint8_t*>(data) + dataOffset,
 				size
 			);
 		}
@@ -61,14 +61,21 @@ namespace Vivium {
 			return layout;
 		}
 
-		void set(Handle buffer, const void* data, uint64_t size, uint64_t offset)
+		void set(Handle buffer, uint64_t bufferOffset, const void* data, uint64_t size, uint64_t dataOffset)
 		{
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(buffer);
 
-			VIVIUM_ASSERT(size + offset <= buffer->size,
+			VIVIUM_ASSERT(size + dataOffset + bufferOffset <= buffer->size,
 				"Setting memory OOBs");
 
-			buffer->set(data, size, offset);
+			buffer->set(bufferOffset, data, size, dataOffset);
+		}
+
+		void* getMapping(Handle buffer)
+		{
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(buffer);
+
+			return buffer->mapping;
 		}
 			
 		Specification::Specification(uint64_t size, Usage usage)
@@ -117,6 +124,13 @@ namespace Vivium {
 				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(buffer);
 
 				buffer->set(data, suballocationStartIndex, suballocationEndIndex);
+			}
+			
+			void* getMapping(Handle buffer)
+			{
+				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(buffer);
+
+				return buffer->mapping;
 			}
 		}
 	}
