@@ -5,7 +5,7 @@ namespace Vivium {
 		namespace Static {
 			Pool::Pool()
 				// Default block capacity
-				: Pool(4096)
+				: Pool(0x4000)
 			{}
 
 			Pool::Pool(uint64_t blockCapacity)
@@ -27,7 +27,7 @@ namespace Vivium {
 				}
 
 				blocks.emplace_back(
-					reinterpret_cast<uint8_t*>(std::malloc(blockCapacity)), 
+					new uint8_t[std::max(blockCapacity, bytes)], 
 					bytes
 				);
 
@@ -37,7 +37,7 @@ namespace Vivium {
 			void Pool::free()
 			{
 				for (Block block : blocks) {
-					std::free(block.data);
+					delete[] block.data;
 				}
 			}
 

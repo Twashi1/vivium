@@ -52,13 +52,13 @@ namespace Vivium {
 		}
 
 		template <Allocator::AllocatorType AllocatorType>
-		Handle create(AllocatorType allocator, Specification specification, Engine::Handle engine)
+		Handle create(AllocatorType allocator, Specification specification, Engine::Handle engine, ResourceManager::Static::Handle manager)
 		{
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine);
 
 			Handle handle = Allocator::allocateResource<Resource>(allocator);
 
-			handle->create(engine, specification);
+			handle->create(engine, manager, specification);
 
 			return handle;
 		}

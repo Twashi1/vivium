@@ -7,3 +7,4 @@
 #include "graphics/commands.h"
 #include "graphics/texture_atlas.h"
 #include "input.h"
+#include "graphics/gui/text.h"

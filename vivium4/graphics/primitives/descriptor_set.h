@@ -4,6 +4,8 @@
 
 namespace Vivium {
 	namespace DescriptorSet {
+		// TODO: need to implement drop for when we have dynamic allocation
+
 		struct Resource {
 			VkDescriptorSet descriptorSet;
 

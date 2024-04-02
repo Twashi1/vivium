@@ -16,21 +16,41 @@ int main(void) {
 	state.tileSize = TILE_SIZE;
 	state.grid = Minesweeper::Grid(GRID_WIDTH, GRID_HEIGHT, BOMB_COUNT, 1);
 
-	Allocator::Static::Pool storage = Allocator::Static::Pool(4096);
+	Font::init();
+
+	Allocator::Static::Pool storage = Allocator::Static::Pool();
 	Window::Handle window = Window::create(storage, Window::Options{});
 	Engine::Handle engine = Engine::create(storage, Engine::Options{}, window);
 	Commands::Context::Handle context = Commands::Context::create(storage, engine);
 	
+	Text::Resource textResource;
+
 	Input::init(window);
 
 	ResourceManager::Static::Handle manager = ResourceManager::Static::create(storage);
+
+	textResource.submit(100, storage, manager, engine);
 
 	Minesweeper::RenderState renderState;
 	Minesweeper::createRenderState(renderState, storage, engine, manager);
 
 	ResourceManager::Static::allocate(engine, manager);
 
+	textResource.create(storage, window, engine, manager);
+
 	Minesweeper::finishRenderState(renderState, storage, engine, window, context);
+
+	Text::TextFragmentUniformData textFragmentUniformData;
+	textFragmentUniformData.r = 1.0f;
+	textFragmentUniformData.g = 0.0f;
+	textFragmentUniformData.b = 0.0f;
+
+	Text::TextVertexUniformData textVertexUniformData;
+	textVertexUniformData.translation = F32x2(100.0f, 100.0f);
+
+	std::string t = "Hi guys";
+
+	textResource.setText(engine, Text::calculateMetrics(t.data(), t.size(), textResource.font), context, t.data(), t.size(), 1.0f, Text::Alignment::LEFT);
 
 	while (Window::isOpen(window, engine)) {
 		Engine::beginFrame(engine, window);
@@ -42,7 +62,9 @@ int main(void) {
 
 		Engine::beginRender(engine, window);
 
-		Minesweeper::render(renderState.gridRenderData, state.grid, context, window);
+		// TODO: better way of common perspective
+		// Minesweeper::render(renderState.gridRenderData, state.grid, context, window);
+		textResource.render(textFragmentUniformData, textVertexUniformData, context, Math::calculatePerspective(window, F32x2(0.0f), 0.0f, 1.0f));
 
 		Engine::endRender(engine);
 		
@@ -50,6 +72,8 @@ int main(void) {
 
 		Engine::endFrame(engine, window);
 	}
+
+	textResource.drop(storage, engine);
 
 	Minesweeper::drop(renderState, engine, storage);
 
@@ -61,4 +85,6 @@ int main(void) {
 	Engine::drop(storage, engine, window);
 
 	storage.free();
+
+	Font::terminate();
 }

@@ -583,8 +583,8 @@ namespace Vivium {
 			}
 			
 			Resource::Resource()
-				// TODO: editeable block size
-				: descriptorPool(VK_NULL_HANDLE), resourceAllocator(4096) {}
+				// TODO: editable block size
+				: descriptorPool(VK_NULL_HANDLE) {}
 			
 			// TODO: proper identifier of it being null?
 			bool Resource::isNull() const {

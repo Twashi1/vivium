@@ -18,7 +18,7 @@ namespace Vivium {
 		T x, y;
 
 		Vec2() = default;
-		Vec2(T s) : x(s), y(s) {}
+		explicit Vec2(T s) : x(s), y(s) {}
 		Vec2(T x, T y) : x(x), y(y) {}
 
 		Vec2 operator+(Vec2 v) const { return Vec2(x + v.x, y + v.y); }

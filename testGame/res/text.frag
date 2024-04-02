@@ -1,17 +1,16 @@
 #version 450
 
-layout(location = 0) in vec2 vout_texture_coordinates;
-
 layout(location = 0) out vec4 color;
-layout(binding = 1) uniform sampler2D tex_sampler;
+layout(location = 0) in vec2 vTextureCoordinates;
 
-layout(binding = 2) uniform text_color_t {
-	vec3 text_color;
-} t;
+layout(binding = 0) uniform sampler2D textAtlasSampler;
+
+layout(binding = 1) uniform Color {
+	vec3 color;
+} text;
 
 void main() {
-	vec4 sampled = texture(tex_sampler,
-		vout_texture_coordinates);
+	vec4 sampled = texture(textAtlasSampler, vTextureCoordinates);
 
-	color = vec4(t.text_color.xyz, 1.0) * sampled.r;
+	color = vec4(text.color.xyz, 1.0) * sampled.r;
 }

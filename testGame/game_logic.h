@@ -27,6 +27,8 @@ namespace Minesweeper {
 		MARKER
 	};
 
+	bool isNumberTile(Tile tile);
+
 	const int MAX_GRID_SIZE = 32 * 32;
 
 	struct Grid {
@@ -42,8 +44,6 @@ namespace Minesweeper {
 		std::mt19937 randomEngine;
 
 		bool isFirstOpen;
-
-		int findUnsolveable(int clickX, int clickY);
 
 		Grid() = default;
 		Grid(int width, int height, int bombCount, uint32_t seed);
@@ -115,7 +115,13 @@ namespace Minesweeper {
 	int index1D(Grid& grid, I32x2 clickPosition);
 	I32x2 index2D(Grid& grid, int index);
 
+	enum SolutionState {
+		PLAYER_FAILED,
+		COLLAPSED_PERMUTATION
+	};
+
 	void open(Grid& grid, I32x2 clickPosition);
+	SolutionState checkSolutions(Grid& grid, I32x2 clickPosition);
 	void toggleFlag(Grid& grid, I32x2 clickPosition);
 	void toggleMarker(Grid& grid, I32x2 clickPosition);
 

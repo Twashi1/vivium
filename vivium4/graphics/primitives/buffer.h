@@ -34,6 +34,8 @@ namespace Vivium {
 			Specification(uint64_t size, Usage usage);
 		};
 
+		// TODO: by convention, this should have a constructor?
+		//		but maybe convention is wrong..
 		struct Layout {
 			struct Element {
 				uint32_t size, offset;

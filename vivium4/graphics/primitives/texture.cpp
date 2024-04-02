@@ -57,5 +57,9 @@ namespace Vivium {
 			vkDestroyImageView(engine->device, view, nullptr);
 			vkDestroyImage(engine->device, image, nullptr);
 		}
+		
+		Specification::Specification(const uint8_t* data, uint64_t sizeBytes, int width, int height, int channels, Format imageFormat)
+			: data(data), sizeBytes(sizeBytes), width(width), height(height), channels(channels), imageFormat(imageFormat)
+		{}
 	}
 }

@@ -26,6 +26,9 @@ namespace Vivium {
 			uint64_t sizeBytes;
 
 			Format imageFormat;
+
+			Specification() = default;
+			Specification(const uint8_t* data, uint64_t sizeBytes, int width, int height, int channels, Format imageFormat);
 		};
 
 		struct Image {

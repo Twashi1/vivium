@@ -1,6 +1,11 @@
 #include "game_logic.h"
 
 namespace Minesweeper {
+	bool isNumberTile(Tile tile)
+	{
+		return (tile - Tile::ZERO) >= 0 && (tile <= Tile::EIGHT);
+	}
+
 	int index1D(Grid& grid, I32x2 clickPosition)
 	{
 		return clickPosition.x + clickPosition.y * grid.width;
@@ -172,35 +177,6 @@ namespace Minesweeper {
 			}
 		}
 	}
-	
-	int Grid::findUnsolveable(int clickX, int clickY)
-	{
-		/*
-		TODO: algorithm
-
-		- player clicked mine
-		- find number tile in area mine clicked
-			- check number tile has at least one open space about it
-			- for that number tile, assign all bomb permutations
-				- if that permutation satisfies all numbers which had a bomb placed next to them
-				- for that permutation, propagate, by assigning every bomb permutation for all adjacent,
-					edge tiles with indetermined surroundings
-				- otherwise, ignore the permutation
-				- if we're left with no permutations, must be misflag, fail game
-				- if we're left with multiple permutations
-					- inspect all knowledge of tiles gained, and see if there is a common piece of information
-		*/
-
-		// Assuming player has already revealed a mine
-		std::set<int> allSpaces;
-		std::set<int> edgeSpaces;
-
-		// fill(allSpaces, edgeSpaces, clickX + clickY * width);
-
-		// TODO: this hard
-
-		return NULL;
-	}
 
 	void drop(GridRenderData& gridRender, Engine::Handle engine, Allocator::Static::Pool storage)
 	{
@@ -357,7 +333,7 @@ namespace Minesweeper {
 	void render(GridRenderData& gridRender, Grid& grid, Commands::Context::Handle context, Window::Handle window)
 	{
 		// Recalculate perspective
-		Math::Perspective perspective = Math::calculatePerspective(window, 0.0f, 0.0f, 1.0f);
+		Math::Perspective perspective = Math::calculatePerspective(window, F32x2(0.0f), 0.0f, 1.0f);
 
 		renderGrid(gridRender, grid, context, &perspective);
 	}
