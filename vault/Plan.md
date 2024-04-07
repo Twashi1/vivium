@@ -70,7 +70,21 @@ command.stop();
 
 ## GUI
 
+Everything bottom-left aligned (0, 0 is bottom left corner)
+
 ### Usage
+```c++
+GUI::Panel::Handle windowPanel = GUI::Panel::create(storage, GUI::Panel::Specification{});
+GUI::setParent(windowPanel, Window::getPanel(window), GUI::Anchor::LEFT |   GUI::Anchor::RIGHT);
+
+GUI::Properties props = GUI::getProperties(windowPanel);
+props.dimensions += F32x2(0.1f, 0.0f);
+GUI::setProperties(windowPanel);
+
+GUI::Visual::Panel panelVisual;
+GUI::Visual::Button buttonVisual;
+```
+
 
 ```c++
 Allocator allocator;

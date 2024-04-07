@@ -4,6 +4,16 @@
 #include "font.h"
 #include "../batch.h"
 
+// TODO: text doesn't exactly work like a GUI object
+//		it is close to a GUI visual maybe
+
+// TODO: look into more advanced text rendering techniques
+// https://stackoverflow.com/questions/11358775/fast-text-rendering-in-opengl
+// https://bitsquid.blogspot.com/2010/04/distance-field-based-rendering-of.html
+// https://www.youtube.com/watch?v=S0PyZKX4lyI&ab_channel=Whatever%27sRightStudios
+// https://www.youtube.com/playlist?list=PLEMXAbCVnmY6zCgpCFlgggRkrp0tpWfrn
+// https://cdn.akamai.steamstatic.com/apps/valve/2007/SIGGRAPH2007_AlphaTestedMagnification.pdf
+
 namespace Vivium {
 	namespace Text {
 		enum class Alignment {

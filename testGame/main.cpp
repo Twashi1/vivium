@@ -4,17 +4,17 @@
 
 using namespace Vivium;
 
-constexpr uint32_t GRID_WIDTH = 16;
-constexpr uint32_t GRID_HEIGHT = 16;
-constexpr uint32_t BOMB_COUNT = 45;
+constexpr uint32_t GRID_WIDTH = 20;
+constexpr uint32_t GRID_HEIGHT = 20;
+constexpr uint32_t BOMB_COUNT = 90;
 
 // TODO: lazy for now
-constexpr float TILE_SIZE = 32.0f;
+constexpr float TILE_SIZE = 20.0f;
 
 int main(void) {
 	Minesweeper::GameState state;
 	state.tileSize = TILE_SIZE;
-	state.grid = Minesweeper::Grid(GRID_WIDTH, GRID_HEIGHT, BOMB_COUNT, 1);
+	state.grid = Minesweeper::Grid(GRID_WIDTH, GRID_HEIGHT, BOMB_COUNT, 2);
 
 	Font::init();
 
@@ -48,7 +48,7 @@ int main(void) {
 	Text::TextVertexUniformData textVertexUniformData;
 	textVertexUniformData.translation = F32x2(100.0f, 100.0f);
 
-	std::string t = "Hi guys";
+	std::string t = "test";
 
 	textResource.setText(engine, Text::calculateMetrics(t.data(), t.size(), textResource.font), context, t.data(), t.size(), 1.0f, Text::Alignment::LEFT);
 
@@ -63,7 +63,7 @@ int main(void) {
 		Engine::beginRender(engine, window);
 
 		// TODO: better way of common perspective
-		// Minesweeper::render(renderState.gridRenderData, state.grid, context, window);
+		Minesweeper::render(renderState.gridRenderData, state.grid, context, window);
 		textResource.render(textFragmentUniformData, textVertexUniformData, context, Math::calculatePerspective(window, F32x2(0.0f), 0.0f, 1.0f));
 
 		Engine::endRender(engine);

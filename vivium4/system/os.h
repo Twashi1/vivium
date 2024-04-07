@@ -20,6 +20,7 @@ namespace Vivium {
 #undef MOD_SHIFT
 #undef MOD_ALT
 #undef MOD_CONTROL
+#undef RELATIVE
 
 #undef STD_OUTPUT_HANDLE
 #undef STATUS_WAIT_0

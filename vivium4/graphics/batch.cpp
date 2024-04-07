@@ -68,8 +68,6 @@ namespace Vivium {
 
 		void Resource::submitRectangle(uint64_t elementIndex, float left, float bottom, float right, float top)
 		{
-			// TODO: make sure this works
-			/*
 			float data[8] = {
 				left, bottom,
 				right, bottom,
@@ -78,29 +76,6 @@ namespace Vivium {
 			};
 
 			submitElement(elementIndex, data, sizeof(data), 0);
-			*/
-
-			uint64_t vertexIndex = vertexBufferIndex + bufferLayout.elements[elementIndex].offset;
-
-			float* dataPointer = reinterpret_cast<float*>(&reinterpret_cast<uint8_t*>(Buffer::getMapping(vertexStaging))[vertexIndex]);
-
-			dataPointer[0] = left;
-			dataPointer[1] = bottom;
-
-			dataPointer += bufferLayout.stride / 4;
-
-			dataPointer[0] = right;
-			dataPointer[1] = bottom;
-
-			dataPointer += bufferLayout.stride / 4;
-
-			dataPointer[0] = right;
-			dataPointer[1] = top;
-
-			dataPointer += bufferLayout.stride / 4;
-
-			dataPointer[0] = left;
-			dataPointer[1] = top;
 		}
 
 		void Resource::endShape(uint64_t vertexCount, const uint16_t* indicies, uint64_t indicesCount, uint64_t indicesOffset)
