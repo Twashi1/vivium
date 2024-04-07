@@ -30,7 +30,7 @@ set(VIVIUM_SOURCES
   "vivium4/graphics/gui/font.cpp"
   "vivium4/graphics/gui/text.cpp"
   "vivium4/graphics/gui/base.cpp"
-   "vivium4/physics/material.cpp" "vivium4/physics/shape.cpp" "vivium4/math/aabb.cpp" "vivium4/physics/physics.cpp")
+   "vivium4/physics/material.cpp" "vivium4/physics/shape.cpp" "vivium4/math/aabb.cpp" "vivium4/physics/physics.cpp" "vivium4/physics/body.cpp" "vivium4/math/transform.cpp")
 set(VIVIUM_HEADERS
   "vivium4/error/result.h"
   "vivium4/graphics/primitives/buffer.h"
@@ -65,7 +65,7 @@ set(VIVIUM_HEADERS
 
 add_subdirectory("${CMAKE_SOURCE_DIR}/external/glfw")
 
-add_executable(vivium4 ${VIVIUM_HEADERS} ${VIVIUM_SOURCES} "vivium4/physics/shape.cpp" "vivium4/physics/physics.h" "vivium4/math/aabb.cpp" "vivium4/math/transform.h" "vivium4/math/mat2x2.h" "vivium4/physics/physics.cpp")
+add_executable(vivium4 ${VIVIUM_HEADERS} ${VIVIUM_SOURCES} "vivium4/physics/shape.cpp" "vivium4/physics/physics.h" "vivium4/math/aabb.cpp" "vivium4/math/transform.h" "vivium4/math/mat2x2.h" "vivium4/physics/physics.cpp" "vivium4/physics/body.cpp" "vivium4/math/transform.cpp")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET vivium4 PROPERTY CXX_STANDARD 20)

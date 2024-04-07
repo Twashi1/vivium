@@ -1,4 +1,5 @@
 #include "polygon.h"
+#include "polygon.h"
 
 namespace Vivium {
 	namespace Math {
@@ -77,6 +78,35 @@ namespace Vivium {
 			return area;
 		}
 
+		bool Polygon::contains(F32x2 point, Math::Transform transform)
+		{
+			F32x2 testPoint = Math::unapplyTransform(point, transform);
+
+			// If not within AABB, early exit
+			if (!Math::pointInAABB(point, min, max)) return false;
+
+			int previousSideOrientation = 2;
+
+			for (uint64_t i = 0; i < vertices.size(); i++) {
+				F32x2 current = vertices[i];
+				F32x2 next = vertices[i == vertices.size() - 1 ? 0 : i + 1];
+
+				float orientation = F32x2::orient(current, next, point);
+				// > 0 -> 1
+				// < 0 -> -1
+				// = 0 -> 0
+				int sideOrientation = (orient > 0) - (orient < 0);
+
+				// TODO: can simplify this logic probably (need a better way to iterate current and next vertex)
+				// Take first non-zero side orientation when we don't have a side orientation
+				if (previousSideOrientation == 2 && sideOrientation != 0) previousSideOrientation = sideOrientation;
+				else if (previousSideOrientation == 0) continue;
+				else if (previousSideOrientation != sideOrientation) return false;
+			}
+
+			return true;
+		}
+
 		static Polygon Polygon::fromVertices(const std::span<const F32x2> vertices)
 		{
 			// TODO: ensure vertices contain origin
@@ -89,6 +119,8 @@ namespace Vivium {
 			polygon.normals.resize(vertices.size());
 			polygon.min = polygon.vertices.front();
 			polygon.max = polygon.vertices.back();
+
+			VIVIUM_ASSERT(polygon.contains(F32x2(0.0f), Transform::zero()), "Vertices must contain origin");
 
 			F32x2 center = polygon.centroid();
 

@@ -170,5 +170,163 @@ namespace Vivium {
 
 			return manifold;
 		}
+		
+		bool broadCollisionCheck(Body a, Body b)
+		{
+			// If either is disabled, they are not colliding
+			if ((!a.enabled) || (!b.enabled)) return false;
+
+			return Math::AABBIntersectAABB(
+				a.shape.getMin() + a.position,
+				a.shape.getMax() + a.position,
+				b.shape.getMin() + b.position,
+				b.shape.getMax() + b.position
+			);
+		}
+
+		void checkCollisionAndResolve(Body& a, Body& b)
+		{
+			// If broad phase check doesn't pass, exit
+			if (!broadCollisionCheck(a, b)) return;
+
+			// Generate transforms from body
+			Math::Transform transformA;
+			transformA.position = a.position;
+			transformA.rotation = Math::Mat2x2::fromAngle(a.angle);
+			transformA.rotationInverse = transformA.rotation.transpose();
+
+			Math::Transform transformB;
+			transformB.position = b.position;
+			transformB.rotation = Math::Mat2x2::fromAngle(b.angle);
+			transformB.rotationInverse = transformB.rotation.transpose();
+
+			// Perform SAT collision check
+			// TODO: in future use jump table
+			const Math::Polygon* polyA = reinterpret_cast<const Math::Polygon*>(a.shape.shape);
+			const Math::Polygon* polyB = reinterpret_cast<const Math::Polygon*>(b.shape.shape);
+
+			PenetrationManifold manifold = polygonToPolygon(*polyA, *polyB, transformA, transformB);
+
+			if (manifold.contactCount == 0) return;
+
+			// If they both have infinite mass, set velocity to 0 and exit
+			if (a.inverseMass == 0.0f && b.inverseMass == 0.0f) {
+				a.velocity = b.velocity = F32x2(0.0f);
+
+				return;
+			}
+
+			// Otherwise, resolve collision
+			for (uint64_t i = 0; i < manifold.contactCount; i++) {
+				F32x2 contact = manifold.contacts[i];
+
+				// TODO: these are constant between contacts
+				float restitution = std::min(a.material.restitution, a.material.restitution);
+				float staticFriction = std::sqrt(a.material.staticFriction * a.material.staticFriction);
+				float dynamicFriction = std::sqrt(a.material.dynamicFriction * a.material.dynamicFriction);
+				float contactCount = manifold.contactCount;
+				float inverseContactCount = 1.0f / contactCount;
+
+				// Vectors from bodies to points of contact
+				F32x2 contactA = contact - a.position;
+				F32x2 contactB = contact - b.position;
+
+				// Relative velocity between bodies
+				F32x2 relativeVelocity = b.velocity + b.angularVelocity * contactB.right()
+					- a.velocity - a.angularVelocity * contactA.right();
+
+				// Relative velocity in direction of collision normal
+				float velocityLength = F32x2::dot(relativeVelocity, manifold.vector);
+
+				// If moving away, don't bother resolving collision
+				if (velocityLength > 0.0f) return;
+
+				float velocityLengthA = F32x2::cross(contactA, manifold.vector);
+				float velocityLengthB = F32x2::cross(contactB, manifold.vector);
+
+				float inverseMassSum = a.inverseMass + b.inverseMass
+					+ velocityLengthA * velocityLengthA * a.inverseInertia
+					+ velocityLengthB * velocityLengthB * b.inverseInertia;
+
+				float massSum = 1.0f / inverseMassSum;
+
+				// Magnitude of reaction impulse
+				// TODO: correct might be (-1.0f + restitution)
+				float reactionLength = -(1.0f + restitution)
+					* velocityLength
+					* massSum
+					* inverseContactCount;
+
+				// Apply reaction impulse
+				F32x2 reactionImpulse = manifold.vector * reactionLength;
+				a.addImpulse(-reactionImpulse, contactA);
+				b.addImpulse(reactionImpulse, contactB);
+
+				// Re-calculate relative velocity for friction
+				relativeVelocity = b.velocity + contactB.right() * b.angularVelocity
+					- a.velocity - contactA.right() * a.angularVelocity;
+
+				F32x2 contactTangent = F32x2::normalise(relativeVelocity - (manifold.vector
+					* F32x2::dot(relativeVelocity, manifold.vector)));
+
+				// Magnitude of friction impulse in direction of tangent
+				float frictionLength = -F32x2::dot(relativeVelocity, contactTangent) * massSum
+					* inverseContactCount;
+
+				// If friction small, ignore
+				// TODO: turn into constant EPSILON
+				if (std::abs(frictionLength) < 0.0001f) return;
+
+				F32x2 frictionImpulse;
+				// If F < mu * R
+				if (std::abs(frictionLength) < reactionLength * staticFriction) {
+					frictionImpulse = contactTangent * frictionLength;
+				}
+				else {
+					frictionImpulse = contactTangent * -reactionLength * dynamicFriction;
+				}
+
+				a.addImpulse(-frictionImpulse, contactA);
+				b.addImpulse(frictionImpulse, contactB);
+			}
+
+			// Sinking correction
+			const float strength = 0.4f; // Strength of sinking correction
+			const float slop = 0.05f;	 // So bodies don't jitter with low penetrations
+
+			F32x2 correction = (std::max(manifold.depth - slop, 0.0f) /
+				(a.inverseMass + b.inverseMass))
+				* strength
+				* manifold.vector;
+
+			a.position -= a.inverseMass * correction;
+			b.position += b.inverseMass * correction;
+		}
+		
+		void solve(std::span<Body> a, std::span<Body> b)
+		{
+			for (uint64_t i = 0; i < a.size(); i++) {
+				// Start at i + 1 if intragroup, otherwise start at 0 for intergroup
+				uint64_t startIndex = a.data() == b.data() ? i + 1 : 0;
+
+				for (uint64_t j = startIndex; j < b.size(); j++) {
+					checkCollisionAndResolve(a[i], b[j]);
+				}
+			}
+		}
+		
+		void update(Body& body, float deltaTime)
+		{
+			if (body.inverseMass == 0.0f) return;
+
+			body.velocity += body.force * body.inverseMass * deltaTime;
+			body.position += body.velocity * deltaTime;
+
+			body.angularVelocity += body.torque * body.inverseInertia * deltaTime;
+			body.angle += body.angularVelocity * deltaTime;
+
+			body.force = F32x2(0.0f);
+			body.torque = 0.0f;
+		}
 	}
 }

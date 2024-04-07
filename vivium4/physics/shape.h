@@ -6,12 +6,14 @@ namespace Vivium {
 	namespace Physics {
 		struct Shape {
 			enum Type {
-				UNKNOWN,
 				POLYGON
 			};
 
 			Type type;
 			const void* shape;
+
+			F32x2 getMin() const;
+			F32x2 getMax() const;
 
 			Shape() = default;
 			Shape(const Math::Polygon* polygon);

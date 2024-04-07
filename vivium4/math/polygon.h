@@ -6,6 +6,8 @@
 
 #include "vec2.h"
 #include "../core.h"
+#include "transform.h"
+#include "aabb.h"
 
 namespace Vivium {
 	namespace Math {
@@ -20,6 +22,8 @@ namespace Vivium {
 
 			float inertia() const;
 			float area() const;
+
+			bool contains(F32x2 point, Math::Transform transform);
 
 			Polygon() = default;
 			
