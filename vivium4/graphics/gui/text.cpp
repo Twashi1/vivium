@@ -121,8 +121,11 @@ namespace Vivium {
 			fragmentUniform = hostBuffers[0];
 			vertexUniform = hostBuffers[1];
 
-			// TODO: not full path
-			Font::Specification fontSpecification = Font::Specification::fromFile("D:\\coding\\repos\\Twashi1\\vivium4\\out\\build\\x64-debug\\testGame\\res\\fonts\\consola.ttf", 64);
+			Font::Specification fontSpecification = Font::Specification::fromFile("testGame/res/fonts/consola.ttf", 64);
+			Font::compileSignedDistanceField("testGame/res/fonts/consola.ttf", 1024, fontSpecification.pixels, 64, 32.0f);
+
+			stbi_write_png("testGame/res/font.png", 64 * VIVIUM_CHARACTERS_TO_EXTRACT, 64, STBI_grey, fontSpecification.pixels, 64 * VIVIUM_CHARACTERS_TO_EXTRACT);
+
 			font = Font::create(storage, fontSpecification);
 			fontSpecification.drop();
 
@@ -133,7 +136,8 @@ namespace Vivium {
 					Font::getImageDimensions(font).x,
 					Font::getImageDimensions(font).y,
 					1,
-					Texture::Format::MONOCHROME
+					Texture::Format::MONOCHROME,
+					Texture::Filter::LINEAR
 				)
 				}));
 

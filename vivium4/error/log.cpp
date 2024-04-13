@@ -22,7 +22,7 @@ namespace Vivium {
 			case WARN: return Color::YELLOW;
 			case FATAL:
 			case ERROR: return Color::RED;
-			case DEBUG: 
+			case DEBUG: return Color::GREEN;
 			case INVALID: 
 			default: 
 				return Color::NONE;
@@ -59,6 +59,11 @@ namespace Vivium {
 		
 		void m_defaultLogCallback(const Context& context)
 		{
+#ifndef NDEBUG
+			if (context.severity == Severity::DEBUG)
+				std::cout << m_formatLog(context);
+#endif
+
 			if (context.severity >= Severity::WARN)
 				std::cout << m_formatLog(context);
 

@@ -10,6 +10,11 @@ namespace Vivium {
 			MONOCHROME = VK_FORMAT_R8_SRGB
 		};
 
+		enum class Filter {
+			NEAREST = VK_FILTER_NEAREST,
+			LINEAR = VK_FILTER_LINEAR
+		};
+
 		struct Resource {
 			VkImage image;
 			VkImageView view;
@@ -26,9 +31,10 @@ namespace Vivium {
 			uint64_t sizeBytes;
 
 			Format imageFormat;
+			Filter imageFilter;
 
 			Specification() = default;
-			Specification(const uint8_t* data, uint64_t sizeBytes, int width, int height, int channels, Format imageFormat);
+			Specification(const uint8_t* data, uint64_t sizeBytes, int width, int height, int channels, Format imageFormat, Filter imageFilter);
 		};
 
 		struct Image {

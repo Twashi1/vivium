@@ -7,7 +7,7 @@ namespace Vivium {
 		{
 			constexpr float third = 1.0f / 3.0f;
 
-			F32x2 center = 0.0f;
+			F32x2 center = F32x2(0.0f);
 			float area = 0.0f;
 
 			for (uint64_t i = 0; i < vertices.size(); i++) {
@@ -95,7 +95,7 @@ namespace Vivium {
 				// > 0 -> 1
 				// < 0 -> -1
 				// = 0 -> 0
-				int sideOrientation = (orient > 0) - (orient < 0);
+				int sideOrientation = (orientation > 0) - (orientation < 0);
 
 				// TODO: can simplify this logic probably (need a better way to iterate current and next vertex)
 				// Take first non-zero side orientation when we don't have a side orientation
@@ -107,7 +107,7 @@ namespace Vivium {
 			return true;
 		}
 
-		static Polygon Polygon::fromVertices(const std::span<const F32x2> vertices)
+		Polygon Polygon::fromVertices(const std::span<const F32x2> vertices)
 		{
 			// TODO: ensure vertices contain origin
 
@@ -115,7 +115,11 @@ namespace Vivium {
 
 			Polygon polygon;
 
-			polygon.vertices = vertices;
+			polygon.vertices.resize(vertices.size());
+			
+			for (uint64_t i = 0; i < vertices.size(); i++)
+				polygon.vertices[i] = vertices[i];
+
 			polygon.normals.resize(vertices.size());
 			polygon.min = polygon.vertices.front();
 			polygon.max = polygon.vertices.back();
@@ -149,7 +153,7 @@ namespace Vivium {
 			return polygon;
 		}
 
-		static Polygon Polygon::fromRegular(float radius, uint64_t vertexCount)
+		Polygon Polygon::fromRegular(float radius, uint64_t vertexCount)
 		{
 			std::vector<F32x2> vertices(vertexCount);
 
@@ -171,7 +175,7 @@ namespace Vivium {
 			return Polygon::fromVertices(vertices);
 		}
 
-		static Polygon Polygon::fromBox(F32x2 dimensions)
+		Polygon Polygon::fromBox(F32x2 dimensions)
 		{
 			F32x2 halfdim = dimensions * 0.5f;
 			float left   = -halfdim.x;

@@ -277,13 +277,13 @@ namespace Vivium {
 			);
 		}
 
-		void createSampler(Engine::Handle engine, VkSampler* sampler)
+		void createSampler(Engine::Handle engine, VkSampler* sampler, Texture::Filter filter)
 		{
 			VkSamplerCreateInfo samplerCreateInfo{};
 			samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 			// TODO: allow customisation of filters
-			samplerCreateInfo.magFilter = VK_FILTER_NEAREST;
-			samplerCreateInfo.minFilter = VK_FILTER_NEAREST;
+			samplerCreateInfo.magFilter = static_cast<VkFilter>(filter);
+			samplerCreateInfo.minFilter = static_cast<VkFilter>(filter);
 			samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 			samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 			samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;

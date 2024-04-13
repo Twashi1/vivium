@@ -26,7 +26,7 @@ namespace Vivium {
 
 		void createImage(Engine::Handle engine, VkImage* image, uint32_t width, uint32_t height, Texture::Format format, VkSampleCountFlagBits sampleCount, VkImageLayout initialLayout, VkImageUsageFlags usage);
 		void createView(Engine::Handle engine, VkImageView* view, Texture::Format format, VkImage image);
-		void createSampler(Engine::Handle engine, VkSampler* sampler);
+		void createSampler(Engine::Handle engine, VkSampler* sampler, Texture::Filter filter);
 
 		void moveBufferToImage(VkBuffer imageBuffer, VkImage image, VkCommandBuffer commandBuffer, uint32_t width, uint32_t height, VkBufferImageCopy* region);
 

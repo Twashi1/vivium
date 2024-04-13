@@ -81,6 +81,11 @@ namespace Vivium {
 
 			Allocator::dropResource(allocator, handle);
 		}
+		
+		// https://cdn.akamai.steamstatic.com/apps/valve/2007/SIGGRAPH2007_AlphaTestedMagnification.pdf
+		// https://libgdx.com/wiki/graphics/2d/fonts/distance-field-fonts
+		void computeSignedDistanceField(const uint8_t* input, uint64_t inputWidth, uint64_t inputHeight, uint8_t* output, uint64_t outputWidth, uint64_t outputHeight, float spreadFactor);
+		void compileSignedDistanceField(const char* inputFontFile, int inputFontSize, uint8_t* outputDistanceField, int outputFieldsize, float spreadFactor);
 
 		Character getCharacter(Handle handle, uint8_t character);
 		int getFontSize(Handle handle);

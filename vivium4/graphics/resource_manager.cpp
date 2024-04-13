@@ -368,7 +368,7 @@ namespace Vivium {
 						Texture::Specification& specification = preallocationData.specifications[specificationIndex];
 
 						Commands::createView(engine, &texture.view, specification.imageFormat, texture.image);
-						Commands::createSampler(engine, &texture.sampler);
+						Commands::createSampler(engine, &texture.sampler, specification.imageFilter);
 
 						++specificationIndex;
 					}

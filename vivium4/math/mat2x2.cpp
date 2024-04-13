@@ -15,7 +15,7 @@ namespace Vivium {
 			return Mat2x2(m00, m10, m01, m11);
 		}
 
-		F32x2 Mat2x2::operator*(Mat2x2 matrix, F32x2 vec) {
+		F32x2 operator*(Mat2x2 matrix, F32x2 vec) {
 			return F32x2(
 				matrix.m00 * vec.x + matrix.m10 * vec.y,
 				matrix.m01 * vec.x + matrix.m11 * vec.y
