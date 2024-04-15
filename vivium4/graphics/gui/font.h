@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <fstream>
 #include <span>
 
 #include <ft2build.h>
@@ -25,6 +26,8 @@ namespace Vivium {
 			float left, right, bottom, top;
 		};
 
+		// TODO: specification and resource are one in the same, just make font
+		//	one of those resource only types like buffer layout
 		struct Specification {
 			uint8_t* pixels;
 			uint64_t pixelsSize;
@@ -37,6 +40,7 @@ namespace Vivium {
 			std::array<Character, VIVIUM_CHARACTERS_TO_EXTRACT> characters;
 
 			static Specification fromFile(const char* filename, int fontSize);
+			static Specification fromDistanceFieldFile(const char* filename);
 
 			// Drop the allocate pixels when creating from file
 			void drop();
@@ -85,7 +89,10 @@ namespace Vivium {
 		// https://cdn.akamai.steamstatic.com/apps/valve/2007/SIGGRAPH2007_AlphaTestedMagnification.pdf
 		// https://libgdx.com/wiki/graphics/2d/fonts/distance-field-fonts
 		void computeSignedDistanceField(const uint8_t* input, uint64_t inputWidth, uint64_t inputHeight, uint8_t* output, uint64_t outputWidth, uint64_t outputHeight, float spreadFactor);
-		void compileSignedDistanceField(const char* inputFontFile, int inputFontSize, uint8_t* outputDistanceField, int outputFieldsize, float spreadFactor);
+		// TODO: actually compile to file
+		Specification compileSignedDistanceField(const char* inputFontFile, int inputFontSize, int outputFieldsize, float spreadFactor);
+
+		void writeDistanceFieldFont(const char* outputFontFile, Specification font);
 
 		Character getCharacter(Handle handle, uint8_t character);
 		int getFontSize(Handle handle);

@@ -7,12 +7,7 @@
 // TODO: text doesn't exactly work like a GUI object
 //		it is close to a GUI visual maybe
 
-// TODO: look into more advanced text rendering techniques
-// https://stackoverflow.com/questions/11358775/fast-text-rendering-in-opengl
-// https://bitsquid.blogspot.com/2010/04/distance-field-based-rendering-of.html
-// https://www.youtube.com/watch?v=S0PyZKX4lyI&ab_channel=Whatever%27sRightStudios
-// https://www.youtube.com/playlist?list=PLEMXAbCVnmY6zCgpCFlgggRkrp0tpWfrn
-// https://cdn.akamai.steamstatic.com/apps/valve/2007/SIGGRAPH2007_AlphaTestedMagnification.pdf
+// TODO: bezier curve mesh-based rendering
 
 namespace Vivium {
 	namespace Text {
@@ -69,7 +64,7 @@ namespace Vivium {
 			Pipeline::Handle pipeline;
 			Uniform::PushConstant matrixPushConstants;
 
-			void submit(uint64_t maxCharacterCount, Allocator::Static::Pool storage, ResourceManager::Static::Handle manager, Engine::Handle engine);
+			void submit(uint64_t maxCharacterCount, Allocator::Static::Pool storage, ResourceManager::Static::Handle manager, Engine::Handle engine, Font::Handle font);
 			void create(Allocator::Static::Pool storage, Window::Handle window, Engine::Handle engine, ResourceManager::Static::Handle manager);
 
 			void setText(Engine::Handle engine, Metrics metrics, Commands::Context::Handle context, const char* text, uint64_t length, float scale, Alignment alignment);

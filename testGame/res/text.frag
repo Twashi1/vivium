@@ -9,13 +9,16 @@ layout(binding = 1) uniform Color {
 	vec3 color;
 } text;
 
+// TODO: uniforms
 const float smoothingFactor = 1.0f / 16.0f;
+const float thickness = 0.2f;
+const float alphaThreshold = 0.5f - thickness;
 
 void main() {
 	vec4 sampled = texture(textAtlasSampler, vTextureCoordinates);
 
 	// Alpha blended
-	color = vec4(text.color.xyz, 1.0) * smoothstep(0.5 - smoothingFactor, 0.5 + smoothingFactor, sampled.r);
+	color = vec4(text.color.xyz, 1.0) * smoothstep(alphaThreshold - smoothingFactor, alphaThreshold + smoothingFactor, sampled.r);
 	// Alpha tested
 	// color = vec4(text.color.xyz, sampled.r > 0.5 ? 1.0 : 0.0);
 }

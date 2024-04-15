@@ -82,7 +82,7 @@ namespace Vivium {
 
 				if (!isspace(character)) {
 					F32x2 bottomLeft = F32x2(position.x + fontCharacter.bearing.x * scale, position.y - (fontCharacter.size.y - fontCharacter.bearing.y) * scale);
-					F32x2 topRight = bottomLeft + fontCharacter.size * scale;
+					F32x2 topRight = bottomLeft + F32x2(fontCharacter.size.x, fontCharacter.size.y) * scale;
 
 					// TODO: constructor
 					renderData.push_back(GlyphInstanceData{
@@ -99,7 +99,7 @@ namespace Vivium {
 			return renderData;
 		}
 		
-		void Resource::submit(uint64_t maxCharacterCount, Allocator::Static::Pool storage, ResourceManager::Static::Handle manager, Engine::Handle engine)
+		void Resource::submit(uint64_t maxCharacterCount, Allocator::Static::Pool storage, ResourceManager::Static::Handle manager, Engine::Handle engine, Font::Handle font)
 		{
 			bufferLayout = Buffer::createLayout(std::vector<Shader::DataType>({
 				Shader::DataType::VEC2,
@@ -121,13 +121,7 @@ namespace Vivium {
 			fragmentUniform = hostBuffers[0];
 			vertexUniform = hostBuffers[1];
 
-			Font::Specification fontSpecification = Font::Specification::fromFile("testGame/res/fonts/consola.ttf", 64);
-			Font::compileSignedDistanceField("testGame/res/fonts/consola.ttf", 1024, fontSpecification.pixels, 64, 32.0f);
-
-			stbi_write_png("testGame/res/font.png", 64 * VIVIUM_CHARACTERS_TO_EXTRACT, 64, STBI_grey, fontSpecification.pixels, 64 * VIVIUM_CHARACTERS_TO_EXTRACT);
-
-			font = Font::create(storage, fontSpecification);
-			fontSpecification.drop();
+			this->font = font;
 
 			std::vector<Texture::Handle> textures = ResourceManager::Static::submit(manager, std::vector<Texture::Specification>({
 				Texture::Specification(
@@ -214,7 +208,6 @@ namespace Vivium {
 		
 		void Resource::drop(Allocator::Static::Pool storage, Engine::Handle engine)
 		{
-			Font::drop(storage, font);
 			Batch::drop(VIVIUM_RESOURCE_ALLOCATED, batch, engine);
 
 			Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, fragmentUniform, engine);

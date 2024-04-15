@@ -1,12 +1,12 @@
 #include "../vivium4/vivium4.h"
 #include "game_logic.h"
 
-// TODO: compare conventional bitmap to signed distance field
-// TODO: min/mag filters on textures
 // TODO: better API for generating signed distance field fonts
 // TODO: better convention on something like Buffer::createLayout
 // TODO: better name for Batch::create (submits resources, not creating)
 // TODO: better values on spreadFactor for signed distance field (too dependent on distance?)
+
+// TODO: adapt API to be near-completely c-friendly (no member functions, keep vector, for now, but change span)
 
 using namespace Vivium;
 
@@ -17,6 +17,7 @@ constexpr uint32_t BOMB_COUNT = 90;
 // TODO: lazy for now
 constexpr float TILE_SIZE = 20.0f;
 
+/*
 void minesweeper() {
 	Minesweeper::GameState state;
 	state.tileSize = TILE_SIZE;
@@ -96,9 +97,22 @@ void minesweeper() {
 
 	Font::terminate();
 }
+*/
 
 void textTest() {
 	Font::init();
+
+	bool regenFont = false;
+
+	// Compile font if it doesn't exist
+	if (!std::filesystem::exists("testGame/res/fonts/consola.sdf") || regenFont)
+	{
+		Font::Specification oldFont = Font::compileSignedDistanceField("testGame/res/fonts/consola.ttf", 1024, 64, 1.0f);
+		Font::writeDistanceFieldFont("testGame/res/fonts/consola.sdf", oldFont);
+		oldFont.drop();
+	}
+
+
 
 	Allocator::Static::Pool storage = Allocator::Static::Pool();
 	Window::Handle window = Window::create(storage, Window::Options{});
@@ -109,17 +123,9 @@ void textTest() {
 
 	ResourceManager::Static::Handle manager = ResourceManager::Static::create(storage);
 
-	Text::Resource textResource;
 
-	textResource.submit(100, storage, manager, engine);
 
-	ResourceManager::Static::allocate(engine, manager);
-
-	textResource.create(storage, window, engine, manager);
-
-	std::string t = "hello";
-
-	textResource.setText(engine, Text::calculateMetrics(t.data(), t.size(), textResource.font), context, t.data(), t.size(), 4.0f, Text::Alignment::LEFT);
+	ResourceManager::Static::allocate(engine, window, manager);
 
 	while (Window::isOpen(window, engine)) {
 		Engine::beginFrame(engine, window);
@@ -127,16 +133,7 @@ void textTest() {
 
 		Engine::beginRender(engine, window);
 
-		Text::TextFragmentUniformData fragData{ 1.0f, 0.0f, 0.0f };
-		Text::TextVertexUniformData uniformData{ F32x2(100.0f, 100.0f) };
 		Math::Perspective perspective = Math::calculatePerspective(window, F32x2(0.0f), 0.0f, 1.0f);
-
-		textResource.render(
-			fragData,
-			uniformData,
-			context,
-			perspective
-		);
 
 		Engine::endRender(engine);
 
@@ -144,8 +141,6 @@ void textTest() {
 
 		Engine::endFrame(engine, window);
 	}
-
-	textResource.drop(storage, engine);
 
 	ResourceManager::Static::drop(storage, manager, engine);
 
