@@ -59,9 +59,7 @@
 	VIVIUM_ASSERT(handle != VIVIUM_NULL_HANDLE, "Attempted to use null handle")
 #define VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle)								\
 	VIVIUM_CHECK_HANDLE_EXISTS(handle);												\
-	VIVIUM_ASSERT(!handle->isNull(), "Attempted to use null resource")
+	VIVIUM_ASSERT(!isNull(handle), "Attempted to use null resource")
 #endif
 
 #define VIVIUM_GLSLC_PATH "external/vulkan/Bin/glslc.exe"
-
-// TODO: better pointer handling with buffers, some way to pass a range pointer (maybe just using std::span)

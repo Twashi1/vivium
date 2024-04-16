@@ -4,13 +4,8 @@
 
 namespace Vivium {
 	namespace DescriptorSet {
-		// TODO: need to implement drop for when we have dynamic allocation
-
 		struct Resource {
 			VkDescriptorSet descriptorSet;
-
-			bool isNull() const;
-			// No need for drop
 		};
 
 		struct Specification {
@@ -22,5 +17,8 @@ namespace Vivium {
 		};
 
 		typedef Resource* Handle;
+		typedef Resource* PromisedHandle;
+
+		bool isNull(const Handle set);
 	}
 }

@@ -2,15 +2,23 @@
 
 namespace Vivium {
 	namespace Texture {
-		Image::Image()
-			: data(nullptr)
-		{}
+		bool Resource::isNull() const
+		{
+			return image == VK_NULL_HANDLE;
+		}
 
-		Image::Image(Specification specification, void* data)
-			: specification(specification), data(data)
+		void Resource::drop(Engine::Handle engine)
+		{
+			vkDestroySampler(engine->device, sampler, nullptr);
+			vkDestroyImageView(engine->device, view, nullptr);
+			vkDestroyImage(engine->device, image, nullptr);
+		}
+		
+		Specification::Specification(const std::vector<uint8_t>& data, int width, int height, int channels, Format imageFormat, Filter imageFilter)
+			: data(data), width(width), height(height), channels(channels), imageFormat(imageFormat), imageFilter(imageFilter)
 		{}
-
-		Image Image::fromFile(const char* filename, Format imageFormat)
+		
+		Specification Specification::fromImageFile(const char* imageFile, Format imageFormat, Filter imageFilter)
 		{
 			Specification specification;
 
@@ -29,37 +37,29 @@ namespace Vivium {
 				break;
 			}
 
-			uint8_t* data = stbi_load(filename, &specification.width, &specification.height, &specification.channels, stbi_format);
-
-			specification.data = data;
-			specification.imageFormat = imageFormat;
-			specification.sizeBytes =
-				static_cast<uint64_t>(specification.width)
+			uint8_t* data = stbi_load(imageFile, &specification.width, &specification.height, &specification.channels, stbi_format);
+			uint64_t imageSize = static_cast<uint64_t>(specification.width)
 				* static_cast<uint64_t>(specification.height)
 				* static_cast<uint64_t>(specification.channels);
 
-			return Image(specification, data);
-		}
-			
-		void Image::drop()
-		{
-			stbi_image_free(data); 
-		}
+			// Copy image data into specification
+			specification.data = std::vector<uint8_t>(imageSize);
+			std::memcpy(specification.data.data(), data, imageSize);
 
-		bool Resource::isNull() const
-		{
-			return image == VK_NULL_HANDLE;
-		}
+			specification.imageFormat = imageFormat;
 
-		void Resource::drop(Engine::Handle engine)
-		{
-			vkDestroySampler(engine->device, sampler, nullptr);
-			vkDestroyImageView(engine->device, view, nullptr);
-			vkDestroyImage(engine->device, image, nullptr);
+			stbi_image_free(data);
+
+			return specification;
 		}
 		
-		Specification::Specification(const uint8_t* data, uint64_t sizeBytes, int width, int height, int channels, Format imageFormat, Filter imageFilter)
-			: data(data), sizeBytes(sizeBytes), width(width), height(height), channels(channels), imageFormat(imageFormat), imageFilter(imageFilter)
-		{}
+		Specification Specification::fromFont(Font::Font font, Format imageFormat, Filter imageFilter)
+		{
+			Specification specification;
+
+			specification.data = font.data;
+
+			return specification;
+		}
 	}
 }

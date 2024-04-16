@@ -13,7 +13,7 @@ namespace Vivium {
 			FT_Done_FreeType(ftLibrary);
 		}
 
-		void computeSignedDistanceField(const uint8_t* input, uint64_t inputWidth, uint64_t inputHeight, uint8_t* output, uint64_t outputWidth, uint64_t outputHeight, float spreadFactor)
+		void _computeSignedDistanceField(const uint8_t* input, uint64_t inputWidth, uint64_t inputHeight, uint8_t* output, uint64_t outputWidth, uint64_t outputHeight, float spreadFactor)
 		{
 			// Compute whether each pixel is in/out
 			// Compute distance (within spread factor range) to both in/out pixel
@@ -140,9 +140,11 @@ namespace Vivium {
 			}
 		}
 
-		Specification compileSignedDistanceField(const char* inputFontFile, int inputFontSize, int outputFieldSize, float spreadFactor)
+		// TODO: lots of similarity in functionality
+
+		Font compileSignedDistanceField(const char* inputFontFile, int inputFontSize, const char* outputFile, int outputFieldSize, float spreadFactor)
 		{
-			Specification specification;
+			Font font;
 
 			FT_Face face;
 
@@ -151,13 +153,12 @@ namespace Vivium {
 
 			FT_Set_Pixel_Sizes(face, 0, inputFontSize);
 
-			specification.imageDimensions = I32x2(VIVIUM_CHARACTERS_TO_EXTRACT * outputFieldSize, outputFieldSize);
-			specification.pixelsSize = specification.imageDimensions.x * specification.imageDimensions.y;
-			specification.atlas = TextureAtlas(specification.imageDimensions, I32x2(outputFieldSize));
-			specification.fontSize = outputFieldSize;
-			specification.pixels = new uint8_t[specification.pixelsSize];
+			font.imageDimensions = I32x2(VIVIUM_CHARACTERS_TO_EXTRACT * outputFieldSize, outputFieldSize);
+			font.atlas = TextureAtlas(font.imageDimensions, I32x2(outputFieldSize));
+			font.fontSize = outputFieldSize;
+			font.data = std::vector<uint8_t>(font.imageDimensions.x * font.imageDimensions.y, 0);
 
-			// TODO: padding on characters
+			// TODO: padding on characters dependent on image size
 			uint8_t* glyphPixels = new uint8_t[inputFontSize * inputFontSize];
 			uint8_t* glyphDistanceField = new uint8_t[outputFieldSize * outputFieldSize];
 
@@ -193,7 +194,7 @@ namespace Vivium {
 				}
 
 				// Compute distance field
-				computeSignedDistanceField(glyphPixels, inputFontSize, inputFontSize, glyphDistanceField, outputFieldSize, outputFieldSize, spreadFactor);
+				_computeSignedDistanceField(glyphPixels, inputFontSize, inputFontSize, glyphDistanceField, outputFieldSize, outputFieldSize, spreadFactor);
 
 				// Write back into texture atlas
 				// Horizontal offset for each character
@@ -203,25 +204,25 @@ namespace Vivium {
 					for (uint64_t fieldX = 0; fieldX < outputFieldSize; fieldX++) {
 						uint8_t source = glyphDistanceField[fieldX + fieldY * outputFieldSize];
 
-						specification.pixels[characterBufferOffset + fieldX + fieldY * specification.imageDimensions.x] = source;
+						font.data[characterBufferOffset + fieldX + fieldY * font.imageDimensions.x] = source;
 					}
 				}
 
 				// TODO: deal with padding
 
-				TextureAtlas::Index index = TextureAtlas::Index(character, specification.atlas);
+				TextureAtlas::Index index = TextureAtlas::Index(character, font.atlas);
 
 				float scaleRatio = static_cast<float>(inputFontSize) / static_cast<float>(outputFieldSize);
 
 				// TODO: constructor
-				specification.characters[character] = Character{
+				font.characters[character] = Character{
 					I32x2(face->glyph->bitmap.width, face->glyph->bitmap.rows) / scaleRatio,
 					I32x2(face->glyph->bitmap_left, face->glyph->bitmap_top) / scaleRatio,
 					(face->glyph->advance.x / static_cast<int>(scaleRatio)) >> 6,
-					index.left + padding / static_cast<float>(specification.imageDimensions.x) / scaleRatio,
-					index.left + face->glyph->bitmap.width / static_cast<float>(specification.imageDimensions.x) / scaleRatio + padding / static_cast<float>(specification.imageDimensions.x) / scaleRatio,
-					index.top + face->glyph->bitmap.rows / static_cast<float>(specification.imageDimensions.y) / scaleRatio + padding / static_cast<float>(specification.imageDimensions.y) / scaleRatio,
-					index.top + padding / static_cast<float>(specification.imageDimensions.y) / scaleRatio
+					index.left + padding / static_cast<float>(font.imageDimensions.x) / scaleRatio,
+					index.left + face->glyph->bitmap.width / static_cast<float>(font.imageDimensions.x) / scaleRatio + padding / static_cast<float>(font.imageDimensions.x) / scaleRatio,
+					index.top + face->glyph->bitmap.rows / static_cast<float>(font.imageDimensions.y) / scaleRatio + padding / static_cast<float>(font.imageDimensions.y) / scaleRatio,
+					index.top + padding / static_cast<float>(font.imageDimensions.y) / scaleRatio
 				};
 			}
 
@@ -230,10 +231,10 @@ namespace Vivium {
 
 			FT_Done_Face(face);
 
-			return specification;
+			return font;
 		}
 
-		void writeDistanceFieldFont(const char* outputFontFile, Specification font)
+		void writeDistanceFieldFont(const char* outputFontFile, Font font)
 		{
 			std::fstream outputFile;
 
@@ -250,60 +251,32 @@ namespace Vivium {
 			// Write character table
 			outputFile.write(reinterpret_cast<const char*>(font.characters.data()), font.characters.size() * sizeof(Character));
 			// Write distance field size
-			outputFile.write(reinterpret_cast<const char*>(&font.pixelsSize), sizeof(uint64_t));
+			uint64_t fontDataSize = font.data.size();
+			outputFile.write(reinterpret_cast<const char*>(&fontDataSize), sizeof(uint64_t));
 			// Write distance field
-			outputFile.write(reinterpret_cast<const char*>(font.pixels), font.pixelsSize);
+			outputFile.write(reinterpret_cast<const char*>(font.data.data()), font.data.size());
 
 			// End write
 			outputFile.close();
 		}
-
-		Character getCharacter(Handle handle, uint8_t character)
-		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle);
-
-			return handle->characters[character];
-		}
-
-		int getFontSize(Handle handle)
-		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle);
-
-			return handle->fontSize;
-		}
-
-		const std::span<const uint8_t> getPixels(Handle handle)
-		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle);
-
-			return std::span<const uint8_t>(handle->pixels, handle->pixelsSize);
-		}
-
-		I32x2 getImageDimensions(Handle handle)
-		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle);
-
-			return handle->imageDimensions;
-		}
 		
-		Specification Specification::fromFile(const char* filename, int fontSize)
+		Font Font::fromFile(const char* filename, int fontSize)
 		{
-			Specification specification;
+			Font font;
 
 			FT_Face face;
 
-			specification.fontSize = fontSize;
+			font.fontSize = fontSize;
 
 			if (FT_Error error = FT_New_Face(ftLibrary, filename, 0, &face))
 				VIVIUM_LOG(Log::FATAL, "Failed to load font at {}, error: {}", filename, error);
 
 			FT_Set_Pixel_Sizes(face, 0, fontSize);
 
-			specification.pixelsSize = VIVIUM_CHARACTERS_TO_EXTRACT * fontSize * fontSize * 4;
-			specification.pixels = new uint8_t[specification.pixelsSize];
-
-			specification.imageDimensions = I32x2(VIVIUM_CHARACTERS_TO_EXTRACT * fontSize, fontSize);
-			specification.atlas = TextureAtlas(specification.imageDimensions, I32x2(fontSize));
+			// TODO: reason for the * 4?
+			font.data = std::vector<uint8_t>(VIVIUM_CHARACTERS_TO_EXTRACT * fontSize * fontSize * 4, 0);
+			font.imageDimensions = I32x2(VIVIUM_CHARACTERS_TO_EXTRACT * fontSize, fontSize);
+			font.atlas = TextureAtlas(font.imageDimensions, I32x2(fontSize));
 
 			uint64_t bufferOffset = 0;
 
@@ -325,34 +298,34 @@ namespace Vivium {
 						uint8_t value = face->glyph->bitmap.buffer[x + y * glyphWidth];
 						uint64_t index = y * (VIVIUM_CHARACTERS_TO_EXTRACT * fontSize) + bufferOffset + x;
 
-						specification.pixels[index] = value;
+						font.data[index] = value;
 					}
 				}
 
 				bufferOffset += fontSize;
 
-				TextureAtlas::Index index = TextureAtlas::Index(character, specification.atlas);
+				TextureAtlas::Index index = TextureAtlas::Index(character, font.atlas);
 
 				// TODO: constructor
-				specification.characters[character] = Character{
+				font.characters[character] = Character{
 					I32x2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
 					I32x2(face->glyph->bitmap_left, face->glyph->bitmap_top),
 					face->glyph->advance.x >> 6,
 					index.left,
-					index.left + face->glyph->bitmap.width / static_cast<float>(specification.imageDimensions.x),
-					index.top + face->glyph->bitmap.rows / static_cast<float>(specification.imageDimensions.y),
+					index.left + face->glyph->bitmap.width / static_cast<float>(font.imageDimensions.x),
+					index.top + face->glyph->bitmap.rows / static_cast<float>(font.imageDimensions.y),
 					index.top
 				};
 			}
 
 			FT_Done_Face(face);
 
-			return specification;
+			return font;
 		}
 
-		Specification Specification::fromDistanceFieldFile(const char* filename)
+		Font Font::fromDistanceFieldFile(const char* filename)
 		{
-			Specification specification;
+			Font font;
 			std::fstream inputFile;
 
 			inputFile.open(filename, std::ios::binary | std::ios::in);
@@ -364,57 +337,26 @@ namespace Vivium {
 			VIVIUM_ASSERT(magic[0] == 's' && magic[1] == 'd' && magic[2] == 'f', "Expected magic at start of distance field file");
 
 			// Read font size
-			inputFile.read(reinterpret_cast<char*>(&specification.fontSize), sizeof(int));
+			inputFile.read(reinterpret_cast<char*>(&font.fontSize), sizeof(int));
 			// Read atlas
-			inputFile.read(reinterpret_cast<char*>(&specification.atlas), sizeof(TextureAtlas));
+			inputFile.read(reinterpret_cast<char*>(&font.atlas), sizeof(TextureAtlas));
 			// Read image dimensions
-			inputFile.read(reinterpret_cast<char*>(&specification.imageDimensions), sizeof(I32x2));
+			inputFile.read(reinterpret_cast<char*>(&font.imageDimensions), sizeof(I32x2));
 			// Read character table
-			inputFile.read(reinterpret_cast<char*>(specification.characters.data()), specification.characters.size() * sizeof(Character));
+			inputFile.read(reinterpret_cast<char*>(font.characters.data()), font.characters.size() * sizeof(Character));
 			// Read distance field size
-			inputFile.read(reinterpret_cast<char*>(&specification.pixelsSize), sizeof(uint64_t));
+			uint64_t fontDataSize;
+			inputFile.read(reinterpret_cast<char*>(&fontDataSize), sizeof(uint64_t));
 			// Allocate space for distance field
-			specification.pixels = new uint8_t[specification.pixelsSize];
+			font.data = std::vector<uint8_t>(fontDataSize);
 
 			// Read distance field
-			inputFile.read(reinterpret_cast<char*>(specification.pixels), specification.pixelsSize);
+			inputFile.read(reinterpret_cast<char*>(font.data.data()), font.data.size());
 
 			// End write
 			inputFile.close();
 
-			return specification;
-		}
-		
-		void Specification::drop()
-		{
-			delete[] pixels;
-		}
-
-		Resource::Resource()
-			: pixels(nullptr) {}
-
-		bool Resource::isNull() const
-		{
-			return pixels == nullptr;
-		}
-
-		void Resource::create(Specification specification)
-		{
-			pixels = new uint8_t[specification.pixelsSize];
-			std::memcpy(pixels, specification.pixels, specification.pixelsSize);
-
-			pixelsSize = specification.pixelsSize;
-
-			imageDimensions = specification.imageDimensions;
-			fontSize = specification.fontSize;
-
-			atlas = specification.atlas;
-			characters = specification.characters;
-		}
-
-		void Resource::drop()
-		{
-			delete[] pixels;
+			return font;
 		}
 	}
 }

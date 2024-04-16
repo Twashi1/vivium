@@ -2,28 +2,77 @@
 
 namespace Vivium {
 	namespace Buffer {
-		bool Resource::isNull() const
+		bool isNull(const Handle buffer)
 		{
-			return buffer == nullptr;
+			return buffer->buffer == VK_NULL_HANDLE;
 		}
-			
-		void Resource::drop(Engine::Handle engine)
-		{
-			vkDestroyBuffer(engine->device, buffer, nullptr);
 
-			VIVIUM_DEBUG_ONLY(buffer = VK_NULL_HANDLE);
-		}
-			
-		void Resource::set(uint64_t bufferOffset, const void* data, uint64_t size, uint64_t dataOffset)
+		void set(Handle buffer, uint64_t bufferOffset, const void* data, uint64_t size, uint64_t dataOffset)
 		{
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(buffer);
+
+			VIVIUM_ASSERT(size + dataOffset + bufferOffset <= buffer->size,
+				"Setting memory OOBs");
+
 			std::memcpy(
-				reinterpret_cast<uint8_t*>(mapping) + bufferOffset,
+				reinterpret_cast<uint8_t*>(buffer->mapping) + bufferOffset,
 				reinterpret_cast<const uint8_t*>(data) + dataOffset,
 				size
 			);
 		}
+
+		void* getMapping(Handle buffer)
+		{
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(buffer);
+
+			return buffer->mapping;
+		}
 			
-		Layout createLayout(const std::span<const Shader::DataType> types)
+		Specification::Specification(uint64_t size, Usage usage)
+			: size(size), usage(usage)
+		{}
+			
+		Layout::Element::Element(uint32_t size, uint32_t offset)
+			: size(size), offset(offset)
+		{}
+
+		namespace Dynamic {
+			bool isNull(const Handle buffer)
+			{
+				return buffer->buffer == VK_NULL_HANDLE;
+			}
+
+			// Inclusive
+			void set(Handle buffer, const void* data, uint64_t suballocationStartIndex, uint64_t suballocationEndIndex) {
+				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(buffer);
+
+				// Advance into data passed, just advance by size of each sub-allocation
+				uint64_t totalSourceAdvance = 0;
+
+				for (uint64_t i = suballocationStartIndex; i <= suballocationEndIndex; i++) {
+					VIVIUM_ASSERT(i < buffer->suballocationOffsets.size(), "Invalid suballocation end index, went OOBs");
+
+					std::memcpy(
+						reinterpret_cast<uint8_t*>(buffer->mapping)
+						+ buffer->suballocationOffsets[i],
+						reinterpret_cast<const uint8_t*>(data)
+						+ totalSourceAdvance,
+						buffer->suballocationSizes[i]
+					);
+
+					totalSourceAdvance += buffer->suballocationSizes[i];
+				}
+			}
+			
+			void* getMapping(Handle buffer)
+			{
+				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(buffer);
+
+				return buffer->mapping;
+			}
+		}
+		
+		Layout Layout::fromTypes(const std::span<const Shader::DataType> types)
 		{
 			Layout layout;
 
@@ -59,79 +108,6 @@ namespace Vivium {
 			layout.stride = currentOffset;
 
 			return layout;
-		}
-
-		void set(Handle buffer, uint64_t bufferOffset, const void* data, uint64_t size, uint64_t dataOffset)
-		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(buffer);
-
-			VIVIUM_ASSERT(size + dataOffset + bufferOffset <= buffer->size,
-				"Setting memory OOBs");
-
-			buffer->set(bufferOffset, data, size, dataOffset);
-		}
-
-		void* getMapping(Handle buffer)
-		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(buffer);
-
-			return buffer->mapping;
-		}
-			
-		Specification::Specification(uint64_t size, Usage usage)
-			: size(size), usage(usage)
-		{}
-			
-		Layout::Element::Element(uint32_t size, uint32_t offset)
-			: size(size), offset(offset)
-		{}
-
-		namespace Dynamic {
-			bool Resource::isNull() const
-			{
-				return buffer == VK_NULL_HANDLE;
-			}
-
-			void Resource::drop(Engine::Handle engine)
-			{
-				vkDestroyBuffer(engine->device, buffer, nullptr);
-
-				VIVIUM_DEBUG_ONLY(buffer = VK_NULL_HANDLE);
-			}
-
-			void Resource::set(const void* data, uint64_t suballocationStartIndex, uint64_t suballocationEndIndex)
-			{
-				// Advance into data passed, just advance by size of each sub-allocation
-				uint64_t totalSourceAdvance = 0;
-
-				for (uint64_t i = suballocationStartIndex; i <= suballocationEndIndex; i++) {
-					VIVIUM_ASSERT(i < suballocationOffsets.size(), "Invalid suballocation end index, went OOBs");
-
-					std::memcpy(
-						reinterpret_cast<uint8_t*>(mapping)
-							+ suballocationOffsets[i],
-						reinterpret_cast<const uint8_t*>(data)
-							+ totalSourceAdvance,
-						suballocationSizes[i]
-					);
-
-					totalSourceAdvance += suballocationSizes[i];
-				}
-			}
-
-			// Inclusive
-			void set(Handle buffer, const void* data, uint64_t suballocationStartIndex, uint64_t suballocationEndIndex) {
-				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(buffer);
-
-				buffer->set(data, suballocationStartIndex, suballocationEndIndex);
-			}
-			
-			void* getMapping(Handle buffer)
-			{
-				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(buffer);
-
-				return buffer->mapping;
-			}
 		}
 	}
 }

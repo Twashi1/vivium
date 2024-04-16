@@ -20,10 +20,6 @@ namespace Vivium {
 			// Size of data stored in the buffer (allocation size will be larger for alignment requirements)
 			uint64_t size;
 			Usage usage;
-
-			bool isNull() const;
-			void drop(Engine::Handle engine);
-			void set(uint64_t bufferOffset, const void* data, uint64_t size, uint64_t dataOffset);
 		};
 
 		struct Specification {
@@ -49,14 +45,14 @@ namespace Vivium {
 
 			std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
 			VkVertexInputBindingDescription bindingDescription;
+
+			static Layout fromTypes(const std::span<const Shader::DataType> types);
 		};
 			
-		Layout createLayout(const std::span<const Shader::DataType> types);
-
 		typedef Resource* Handle;
-		// TODO: past thomas how does this work?
-		typedef Resource* DynamicHandle;
+		typedef Resource* PromisedHandle;
 
+		bool isNull(const Handle buffer);
 		void set(Handle buffer, uint64_t bufferOffset, const void* data, uint64_t size, uint64_t dataOffset);
 		void* getMapping(Handle buffer);
 
@@ -65,7 +61,11 @@ namespace Vivium {
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine);
 			VIVIUM_CHECK_HANDLE_EXISTS(buffer);
 
-			buffer->drop(engine);
+			{
+				vkDestroyBuffer(engine->device, buffer->buffer, nullptr);
+
+				VIVIUM_DEBUG_ONLY(buffer = VK_NULL_HANDLE);
+			}
 
 			Allocator::dropResource(allocator, buffer);
 		}
@@ -83,12 +83,6 @@ namespace Vivium {
 
 				std::vector<uint32_t> suballocationSizes;
 				std::vector<uint32_t> suballocationOffsets;
-
-				bool isNull() const;
-				void drop(Engine::Handle engine);
-
-				// Inclusive
-				void set(const void* data, uint64_t suballocationStartIndex, uint64_t suballocationEndIndex);
 			};
 
 			struct Specification {
@@ -98,6 +92,7 @@ namespace Vivium {
 
 			typedef Resource* Handle;
 
+			bool isNull(const Handle buffer);
 			// Inclusive
 			void set(Handle buffer, const void* data, uint64_t suballocationStartIndex, uint64_t suballocationEndIndex);
 			void* getMapping(Handle buffer);
@@ -107,7 +102,11 @@ namespace Vivium {
 				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine);
 				VIVIUM_CHECK_HANDLE_EXISTS(buffer);
 
-				buffer->drop(engine);
+				{
+					vkDestroyBuffer(engine->device, buffer->buffer, nullptr);
+
+					VIVIUM_DEBUG_ONLY(buffer = VK_NULL_HANDLE);
+				}
 
 				Allocator::dropResource(allocator, buffer);
 			}

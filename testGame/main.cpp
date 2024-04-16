@@ -7,6 +7,7 @@
 // TODO: better values on spreadFactor for signed distance field (too dependent on distance?)
 
 // TODO: adapt API to be near-completely c-friendly (no member functions, keep vector, for now, but change span)
+// TODO: better pointer handling with buffers, some way to pass a range pointer (maybe just using std::span)// 
 
 using namespace Vivium;
 

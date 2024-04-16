@@ -4,28 +4,28 @@
     "type": "split",
     "children": [
       {
-        "id": "da99f70374d8cb41",
+        "id": "cf28eaa482df6444",
         "type": "tabs",
         "children": [
           {
-            "id": "054d7e6a14758387",
+            "id": "0362e9f5d2fa08ff",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Plan.md",
+                "file": "TODO.md",
                 "mode": "source",
                 "source": false
               }
             }
           },
           {
-            "id": "f9381a130be96619",
+            "id": "2b776b422b8f1837",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Plan.md",
+                "file": "plan2.md",
                 "mode": "source",
                 "source": false
               }
@@ -98,7 +98,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Plan.md",
+                "file": "plan2.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -115,7 +115,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Plan.md",
+                "file": "plan2.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -138,7 +138,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Plan.md"
+                "file": "plan2.md"
               }
             }
           }
@@ -159,10 +159,11 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "f9381a130be96619",
+  "active": "2b776b422b8f1837",
   "lastOpenFiles": [
-    "2023-12-01.md",
     "TODO.md",
-    "Plan.md"
+    "plan2.md",
+    "Plan.md",
+    "2023-12-01.md"
   ]
 }

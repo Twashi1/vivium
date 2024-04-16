@@ -2,7 +2,7 @@
 
 namespace Vivium {
 	namespace Text {
-		Metrics calculateMetrics(const char* characters, uint64_t length, Font::Handle font) {
+		Metrics calculateMetrics(const char* characters, uint64_t length, const Font::Font& font) {
 			Metrics metrics;
 
 			metrics.newLineCount = 0;
@@ -24,7 +24,7 @@ namespace Vivium {
 					continue;
 				}
 
-				Font::Character fontCharacter = Font::getCharacter(font, character);
+				Font::Character fontCharacter = font.characters[character];
 
 				currentLineWidth += fontCharacter.advance;
 
@@ -36,12 +36,12 @@ namespace Vivium {
 			}
 
 			metrics.lineWidths.push_back(currentLineWidth);
-			metrics.totalHeight = Font::getFontSize(font) * metrics.newLineCount + metrics.firstLineHeight;
+			metrics.totalHeight = font.fontSize * metrics.newLineCount + metrics.firstLineHeight;
 
 			return metrics;
 		}
 		
-		std::vector<GlyphInstanceData> generateRenderData(Metrics metrics, const char* characters, uint64_t length, Font::Handle font, float scale, Alignment alignment)
+		std::vector<GlyphInstanceData> generateRenderData(Metrics metrics, const char* characters, uint64_t length, const Font::Font& font, float scale, Alignment alignment)
 		{
 			std::vector<GlyphInstanceData> renderData;
 			renderData.reserve(metrics.drawableCharacterCount);
@@ -68,7 +68,7 @@ namespace Vivium {
 				if (character == '\n') {
 					++newLineIndex;
 
-					position.y -= Font::getFontSize(font) * scale;
+					position.y -= font.fontSize * scale;
 					position.x = origin.x;
 
 					if (alignment == Alignment::CENTER) {
@@ -78,7 +78,7 @@ namespace Vivium {
 					continue;
 				}
 
-				Font::Character fontCharacter = Font::getCharacter(font, character);
+				Font::Character fontCharacter = font.characters[character];
 
 				if (!isspace(character)) {
 					F32x2 bottomLeft = F32x2(position.x + fontCharacter.bearing.x * scale, position.y - (fontCharacter.size.y - fontCharacter.bearing.y) * scale);
@@ -99,7 +99,7 @@ namespace Vivium {
 			return renderData;
 		}
 		
-		void Resource::submit(uint64_t maxCharacterCount, Allocator::Static::Pool storage, ResourceManager::Static::Handle manager, Engine::Handle engine, Font::Handle font)
+		void Resource::submit(uint64_t maxCharacterCount, Allocator::Static::Pool storage, ResourceManager::Static::Handle manager, Engine::Handle engine, const Font::Font& font)
 		{
 			bufferLayout = Buffer::createLayout(std::vector<Shader::DataType>({
 				Shader::DataType::VEC2,
@@ -124,15 +124,7 @@ namespace Vivium {
 			this->font = font;
 
 			std::vector<Texture::Handle> textures = ResourceManager::Static::submit(manager, std::vector<Texture::Specification>({
-				Texture::Specification(
-					Font::getPixels(font).data(),
-					Font::getPixels(font).size_bytes(),
-					Font::getImageDimensions(font).x,
-					Font::getImageDimensions(font).y,
-					1,
-					Texture::Format::MONOCHROME,
-					Texture::Filter::LINEAR
-				)
+				Texture::Specification::fromFont(font, Texture::Format::MONOCHROME, Texture::Filter::LINEAR)
 				}));
 
 			textAtlasTexture = textures[0];

@@ -2,6 +2,7 @@
 
 #include "../../core.h"
 #include "../../engine.h"
+#include "../gui/font.h"
 
 namespace Vivium {
 	namespace Texture {
@@ -27,29 +28,20 @@ namespace Vivium {
 		struct Specification {
 			int width, height, channels;
 
-			const uint8_t* data;
-			uint64_t sizeBytes;
+			std::vector<uint8_t> data;
 
 			Format imageFormat;
 			Filter imageFilter;
 
 			Specification() = default;
-			Specification(const uint8_t* data, uint64_t sizeBytes, int width, int height, int channels, Format imageFormat, Filter imageFilter);
-		};
-
-		struct Image {
-			Specification specification;
-			void* data;
-
-			Image();
-			Image(Specification specification, void* data);
-
-			static Image fromFile(const char* filename, Format imageFormat);
-
-			void drop();
+			Specification(const std::vector<uint8_t>& data, int width, int height, int channels, Format imageFormat, Filter imageFilter);
+		
+			static Specification fromImageFile(const char* imageFile, Format imageFormat, Filter imageFilter);
+			static Specification fromFont(Font::Font font, Format imageFormat, Filter imageFilter);
 		};
 
 		typedef Resource* Handle;
+		typedef Resource* PromisedHandle;
 
 		template <Allocator::AllocatorType AllocatorType>
 		void drop(AllocatorType allocator, Handle handle, Engine::Handle engine) {

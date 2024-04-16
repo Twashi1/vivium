@@ -2,9 +2,9 @@
 
 namespace Vivium {
 	namespace DescriptorSet {
-		bool Resource::isNull() const
+		bool isNull(const Handle set)
 		{
-			return descriptorSet == VK_NULL_HANDLE;
+			return set->descriptorSet == VK_NULL_HANDLE;
 		}
 
 		Specification::Specification(DescriptorLayout::Handle layout, const std::span<const Uniform::Data> uniforms)

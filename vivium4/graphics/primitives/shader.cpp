@@ -7,7 +7,6 @@ namespace Vivium {
 			return static_cast<Stage>(static_cast<int>(lhs) | static_cast<int>(rhs));
 		}
 
-		// TODO: really shouldn't do this
 		Specification compile(Shader::Stage stage, const char* sourceFilename, const char* destFilename) {
 			if (!std::filesystem::exists(VIVIUM_GLSLC_PATH)) {
 				VIVIUM_LOG(Log::FATAL, "Couldn't find glslc.exe for compiling shaders");
@@ -49,34 +48,6 @@ namespace Vivium {
 		VkFormat formatOf(DataType type)
 		{
 			return static_cast<VkFormat>(static_cast<uint32_t>(type));
-		}
-
-		bool Resource::isNull() const
-		{
-			return shader == VK_NULL_HANDLE;
-		}
-
-		void Resource::drop(Engine::Handle engine)
-		{
-			vkDestroyShaderModule(engine->device, shader, nullptr);
-		}
-
-		void Resource::create(Engine::Handle engine, Specification specification)
-		{
-			flags = static_cast<VkShaderStageFlagBits>(specification.stage);
-
-			VkShaderModuleCreateInfo shaderCreateInfo{};
-			shaderCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-			shaderCreateInfo.codeSize = specification.length;
-			shaderCreateInfo.pCode = reinterpret_cast<const uint32_t*>(specification.code.c_str());
-
-			VIVIUM_VK_CHECK(vkCreateShaderModule(
-				engine->device,
-				&shaderCreateInfo,
-				nullptr,
-				&shader
-			), "Failed to create shader module"
-			);
 		}
 		
 		Specification::Specification(Stage stage, std::string code, uint32_t length)

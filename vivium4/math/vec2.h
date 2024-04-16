@@ -92,7 +92,9 @@ namespace Vivium {
 }
 
 #define I32x2 Vivium::Vec2<int32_t>
+#define I64x2 Vivium::Vec2<int64_t>
 #define U32x2 Vivium::Vec2<uint32_t>
+#define U64x2 Vivium::Vec2<uint64_t>
 #define F32x2 Vivium::Vec2<float>
 #define F64x2 Vivium::Vec2<double>
 

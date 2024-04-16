@@ -35,8 +35,8 @@ namespace Vivium {
 			float totalHeight;
 		};
 
-		Metrics calculateMetrics(const char* characters, uint64_t length, Font::Handle font);
-		std::vector<GlyphInstanceData> generateRenderData(Metrics metrics, const char* characters, uint64_t length, Font::Handle font, float scale, Alignment alignment);
+		Metrics calculateMetrics(const char* characters, uint64_t length, const Font::Font& font);
+		std::vector<GlyphInstanceData> generateRenderData(Metrics metrics, const char* characters, uint64_t length, const Font::Font& font, float scale, Alignment alignment);
 
 		struct TextFragmentUniformData {
 			float r, g, b;
@@ -51,7 +51,7 @@ namespace Vivium {
 			Batch::Result result;
 			Buffer::Layout bufferLayout;
 
-			Font::Handle font;
+			Font::Font font;
 
 			Buffer::Handle fragmentUniform;
 			Buffer::Handle vertexUniform;
@@ -64,7 +64,7 @@ namespace Vivium {
 			Pipeline::Handle pipeline;
 			Uniform::PushConstant matrixPushConstants;
 
-			void submit(uint64_t maxCharacterCount, Allocator::Static::Pool storage, ResourceManager::Static::Handle manager, Engine::Handle engine, Font::Handle font);
+			void submit(uint64_t maxCharacterCount, Allocator::Static::Pool storage, ResourceManager::Static::Handle manager, Engine::Handle engine, const Font::Font& font);
 			void create(Allocator::Static::Pool storage, Window::Handle window, Engine::Handle engine, ResourceManager::Static::Handle manager);
 
 			void setText(Engine::Handle engine, Metrics metrics, Commands::Context::Handle context, const char* text, uint64_t length, float scale, Alignment alignment);

@@ -312,14 +312,14 @@ namespace Vivium {
 							engine,
 							&stagingBuffer,
 							&stagingMemory,
-							specification.sizeBytes,
+							specification.data.size(),
 							&stagingMapping
 						);
 
 						oneTimeStagingBuffers.push_back(stagingBuffer);
 						oneTimeStagingMemories.push_back(stagingMemory);
 
-						std::memcpy(stagingMapping, specification.data, specification.sizeBytes);
+						std::memcpy(stagingMapping, specification.data.data(), specification.data.size());
 
 						textureRegions.push_back({});
 
@@ -582,6 +582,20 @@ namespace Vivium {
 					descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 			}
 			
+			void Resource::allocatePipelines(Engine::Handle engine, Window::Handle window)
+			{
+				uint64_t specificationIndex = 0;
+
+				for (const std::span<Pipeline::Resource>& resourceSpan : pipelines.resources) {
+					for (uint64_t resourceIndex = 0; resourceIndex < resourceSpan.size(); resourceIndex++) {
+						const Pipeline::Specification& specification = pipelines.specifications[specificationIndex++];
+
+						Pipeline::Resource& resource = resourceSpan[resourceIndex];
+						resource.create(engine, window, specification);
+					}
+				}
+			}
+
 			Resource::Resource()
 				// TODO: editable block size
 				: descriptorPool(VK_NULL_HANDLE) {}
@@ -591,7 +605,7 @@ namespace Vivium {
 				return false;
 			}
 
-			void Resource::allocate(Engine::Handle engine) {
+			void Resource::allocate(Engine::Handle engine, Window::Handle window) {
 				if (!hostBuffers.specifications.empty())
 					allocateBuffers(engine, MemoryType::STAGING);
 				if (!deviceBuffers.specifications.empty())
@@ -604,11 +618,15 @@ namespace Vivium {
 				if (!descriptorSets.specifications.empty())
 					allocateDescriptors(engine);
 
+				if (!pipelines.specifications.empty())
+					allocatePipelines(engine, window);
+
 				hostBuffers.clear();
 				deviceBuffers.clear();
 				dynamicHostBuffers.clear();
 				textures.clear();
 				descriptorSets.clear();
+				pipelines.clear();
 			}
 			
 			void Resource::drop(Engine::Handle engine)
@@ -658,12 +676,17 @@ namespace Vivium {
 			{
 				return descriptorSets.submit(&resourceAllocator, specifications);
 			}
+
+			std::vector<Pipeline::Handle> Resource::submit(const std::span<const Pipeline::Specification> specifications)
+			{
+				return pipelines.submit(&resourceAllocator, specifications);
+			}
 			
-			void allocate(Engine::Handle engine, Handle handle) {
+			void allocate(Engine::Handle engine, Window::Handle window, Handle handle) {
 				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine);
 				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle);
 
-				handle->allocate(engine);
+				handle->allocate(engine, window);
 			}
 
 			std::vector<Buffer::Handle> submit(Handle handle, MemoryType memoryType, const std::span<const Buffer::Specification> specifications)
@@ -688,6 +711,13 @@ namespace Vivium {
 			}
 
 			std::vector<DescriptorSet::Handle> submit(Handle handle, const std::span<const DescriptorSet::Specification> specifications)
+			{
+				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle);
+
+				return handle->submit(specifications);
+			}
+
+			std::vector<Pipeline::Handle> submit(Handle handle, const std::span<const Pipeline::Specification> specifications)
 			{
 				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle);
 

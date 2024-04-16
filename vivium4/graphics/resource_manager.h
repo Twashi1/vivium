@@ -7,6 +7,7 @@
 #include "primitives/descriptor_layout.h"
 #include "primitives/texture.h"
 #include "primitives/memory_type.h"
+#include "primitives/pipeline.h"
 #include "commands.h"
 #include "../math/math.h"
 
@@ -72,6 +73,7 @@ namespace Vivium {
 				PreallocationData<Buffer::Dynamic::Resource, Buffer::Dynamic::Specification> dynamicHostBuffers;
 				PreallocationData<Texture::Resource, Texture::Specification> textures;
 				PreallocationData<DescriptorSet::Resource, DescriptorSet::Specification> descriptorSets;
+				PreallocationData<Pipeline::Resource, Pipeline::Specification> pipelines;
 
 				std::vector<DeviceMemoryHandle> deviceMemoryHandles;
 				VkDescriptorPool descriptorPool;
@@ -89,12 +91,15 @@ namespace Vivium {
 				// 2.
 				void allocateDescriptors(Engine::Handle engine);
 
+				// 3.
+				void allocatePipelines(Engine::Handle engine, Window::Handle window);
+
 				Resource();
 
 				bool isNull() const;
 
 				// Public
-				void allocate(Engine::Handle engine);
+				void allocate(Engine::Handle engine, Window::Handle window);
 
 				void drop(Engine::Handle engine);
 
@@ -102,6 +107,7 @@ namespace Vivium {
 				std::vector<Buffer::Dynamic::Handle> submit(const std::span<const Buffer::Dynamic::Specification> specifications);
 				std::vector<Texture::Handle> submit(const std::span<const Texture::Specification> specifications);
 				std::vector<DescriptorSet::Handle> submit(const std::span<const DescriptorSet::Specification> specifications);
+				std::vector<Pipeline::Handle> submit(const std::span<const Pipeline::Specification> specifications);
 			};
 
 			typedef Resource* Handle;
@@ -117,16 +123,17 @@ namespace Vivium {
 				VIVIUM_CHECK_HANDLE_EXISTS(handle);
 
 				handle->drop(engine);
-				
+
 				Allocator::dropResource(allocator, handle);
 			}
 
-			void allocate(Engine::Handle engine, Handle handle);
+			void allocate(Engine::Handle engine, Window::Handle window, Handle handle);
 
 			std::vector<Buffer::Handle> submit(Handle handle, MemoryType memoryType, const std::span<const Buffer::Specification> specifications);
 			std::vector<Buffer::Dynamic::Handle> submit(Handle handle, const std::span<const Buffer::Dynamic::Specification> specifications);
 			std::vector<Texture::Handle> submit(Handle handle, const std::span<const Texture::Specification> specifications);
 			std::vector<DescriptorSet::Handle> submit(Handle handle, const std::span<const DescriptorSet::Specification> specifications);
+			std::vector<Pipeline::Handle> submit(Handle handle, const std::span<const Pipeline::Specification> specifications);
 		}
 	}
 }
