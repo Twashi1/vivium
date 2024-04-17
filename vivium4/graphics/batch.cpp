@@ -6,67 +6,34 @@ namespace Vivium {
 			: vertexCount(vertexCount), indexCount(indexCount), bufferLayout(bufferLayout)
 		{}
 
-		bool Resource::isNull() const
+		bool isNull(const Handle handle)
 		{
-			return vertexStaging == VK_NULL_HANDLE;
+			return handle->vertexStaging == VK_NULL_HANDLE;
 		}
 
-		void Resource::drop(Engine::Handle engine)
+		void submitElement(Handle handle, uint64_t elementIndex, const std::span<const uint8_t> data)
 		{
-			Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, vertexStaging, engine);
-			Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, vertexDevice, engine);
-			Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, indexStaging, engine);
-			Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, indexDevice, engine);
-		}
-
-		void Resource::create(Engine::Handle engine, ResourceManager::Static::Handle resourceManager, Specification specification)
-		{
-			std::vector<Buffer::Handle> staging = ResourceManager::Static::submit(resourceManager, MemoryType::STAGING, std::vector<Buffer::Specification>({
-				Buffer::Specification(specification.vertexCount * specification.bufferLayout.stride, Buffer::Usage::STAGING),
-				Buffer::Specification(specification.indexCount * sizeof(uint16_t), Buffer::Usage::STAGING)
-			}));
-
-			std::vector<Buffer::Handle> device = ResourceManager::Static::submit(resourceManager, MemoryType::DEVICE, std::vector<Buffer::Specification>({
-				Buffer::Specification(specification.vertexCount * specification.bufferLayout.stride, Buffer::Usage::VERTEX),
-				Buffer::Specification(specification.indexCount * sizeof(uint16_t), Buffer::Usage::INDEX)
-			}));
-
-			vertexStaging = staging[0];
-			indexStaging = staging[1];
-
-			vertexDevice = device[0];
-			indexDevice = device[1];
-
-			vertexBufferIndex = 0;
-			indexBufferIndex = 0;
-			verticesSubmitted = 0;
-
-			bufferLayout = specification.bufferLayout;
-		}
-
-		void Resource::submitElement(uint64_t elementIndex, const void* data, uint64_t size, uint64_t offset)
-		{
-			const Buffer::Layout::Element& element = bufferLayout.elements[elementIndex];
+			const Buffer::Layout::Element& element = handle->bufferLayout.elements[elementIndex];
 
 			// Number of instances of element to be submitted
-			uint64_t elementCount = size / element.size;
+			uint64_t elementCount = data.size_bytes() / element.size;
 			// Index in vertex mapping of first element
-			uint64_t firstElementIndex = vertexBufferIndex + element.offset;
+			uint64_t firstElementIndex = handle->vertexBufferIndex + element.offset;
 			// Index in element data to copy in
 			uint64_t elementDataIndex = 0;
 
 			for (uint64_t i = 0; i < elementCount; i++) {
 				// Calculate index in vertex mapping for this element
-				uint64_t vertexIndex = firstElementIndex + bufferLayout.stride * i;
+				uint64_t vertexIndex = firstElementIndex + handle->bufferLayout.stride * i;
 
 				// Copy data from element data to vertex mapping
-				Buffer::set(vertexStaging, vertexIndex, reinterpret_cast<const uint8_t*>(data) + elementDataIndex * element.size, element.size, offset);
+				Buffer::set(handle->vertexStaging, vertexIndex, data.data() + elementDataIndex * element.size, element.size, 0);
 
 				++elementDataIndex;
 			}
 		}
 
-		void Resource::submitRectangle(uint64_t elementIndex, float left, float bottom, float right, float top)
+		void submitRectangle(Handle handle, uint64_t elementIndex, float left, float bottom, float right, float top)
 		{
 			float data[8] = {
 				left, bottom,
@@ -75,39 +42,39 @@ namespace Vivium {
 				left, top
 			};
 
-			submitElement(elementIndex, data, sizeof(data), 0);
+			submitElement(handle, elementIndex, std::span<uint8_t>(reinterpret_cast<uint8_t*>(data), sizeof(data)));
 		}
 
-		void Resource::endShape(uint64_t vertexCount, const uint16_t* indicies, uint64_t indicesCount, uint64_t indicesOffset)
+		void endShape(Handle handle, uint64_t vertexCount, const std::span<const uint16_t> indicies)
 		{
-			uint16_t* indexMapping = reinterpret_cast<uint16_t*>(Buffer::getMapping(indexStaging));
+			uint16_t* indexMapping = reinterpret_cast<uint16_t*>(Buffer::getMapping(handle->indexStaging));
 
-			for (uint64_t i = 0; i < indicesCount; i++) {
-				indexMapping[indexBufferIndex + i] = indicies[i] + verticesSubmitted;
+			for (uint64_t i = 0; i < indicies.size(); i++) {
+				indexMapping[handle->indexBufferIndex + i] = indicies[i] + handle->verticesSubmitted;
 			}
 
-			indexBufferIndex += indicesCount;
-			vertexBufferIndex += vertexCount * bufferLayout.stride;
-			verticesSubmitted += vertexCount;
+			handle->indexBufferIndex += indicies.size();
+			handle->vertexBufferIndex += vertexCount * handle->bufferLayout.stride;
+			handle->verticesSubmitted += vertexCount;
 		}
 
-		Result Resource::finish(Commands::Context::Handle context, Engine::Handle engine)
+		Result endSubmission(Handle handle, Commands::Context::Handle context, Engine::Handle engine)
 		{
 			Result result;
 
-			result.vertexBuffer = vertexDevice;
-			result.indexBuffer = indexDevice;
+			result.vertexBuffer = handle->vertexDevice;
+			result.indexBuffer = handle->indexDevice;
 
 			Commands::Context::beginTransfer(context);
-			Commands::transferBuffer(context, vertexStaging, vertexDevice);
-			Commands::transferBuffer(context, indexStaging, indexDevice);
+			Commands::transferBuffer(context, handle->vertexStaging, handle->vertexDevice);
+			Commands::transferBuffer(context, handle->indexStaging, handle->indexDevice);
 			Commands::Context::endTransfer(context, engine);
 
-			result.indexCount = indexBufferIndex;
+			result.indexCount = handle->indexBufferIndex;
 
-			indexBufferIndex = 0;
-			vertexBufferIndex = 0;
-			verticesSubmitted = 0;
+			handle->indexBufferIndex = 0;
+			handle->vertexBufferIndex = 0;
+			handle->verticesSubmitted = 0;
 
 			return result;
 		}

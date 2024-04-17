@@ -97,8 +97,6 @@ namespace Vivium {
 
 			uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 			
-			bool isNull() const;
-
 			void checkPerformance();
 			void limitFramerate();
 
@@ -116,6 +114,8 @@ namespace Vivium {
 		};
 
 		typedef Resource* Handle;
+
+		bool isNull(const Engine::Handle handle);
 
 		template <Allocator::AllocatorType AllocatorType>
 		Handle create(AllocatorType allocator, Options options, Window::Handle window)

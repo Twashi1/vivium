@@ -48,7 +48,6 @@ namespace Vivium {
 				Resource();
 				~Resource();
 
-				bool isNull() const;
 				void addFunction(std::function<void(void)> function);
 
 				// Public
@@ -76,6 +75,7 @@ namespace Vivium {
 			void flush(Handle context, Engine::Handle engine);
 			void beginTransfer(Handle context);
 			void endTransfer(Handle context, Engine::Handle engine);
+			bool isNull(const Handle context);
 
 			template <Allocator::AllocatorType AllocatorType>
 			void drop(AllocatorType allocator, Handle handle, Engine::Handle engine)

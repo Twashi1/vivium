@@ -141,7 +141,6 @@ namespace Vivium {
 		}
 
 		// TODO: lots of similarity in functionality
-
 		Font compileSignedDistanceField(const char* inputFontFile, int inputFontSize, const char* outputFile, int outputFieldSize, float spreadFactor)
 		{
 			Font font;
@@ -230,6 +229,8 @@ namespace Vivium {
 			delete[] glyphDistanceField;
 
 			FT_Done_Face(face);
+
+			writeDistanceFieldFont(outputFile, font);
 
 			return font;
 		}

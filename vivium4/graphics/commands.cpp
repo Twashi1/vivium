@@ -16,11 +16,6 @@ namespace Vivium {
 				}
 			}
 
-			bool Resource::isNull() const
-			{
-				return transferPool == VK_NULL_HANDLE;
-			}
-
 			void Resource::addFunction(std::function<void(void)> function)
 			{
 				perFrameCleanupArrays[frameIndex].push_back(function);
@@ -69,23 +64,28 @@ namespace Vivium {
 
 			void flush(Handle context, Engine::Handle engine)
 			{
-				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(context);
+				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(context, Context::isNull);
 
 				context->flush(engine);
 			}
 			
 			void beginTransfer(Handle context)
 			{
-				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(context);
+				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(context, Context::isNull);
 
 				context->beginTransfer();
 			}
 			
 			void endTransfer(Handle context, Engine::Handle engine)
 			{
-				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(context);
+				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(context, Context::isNull);
 
 				context->endTransfer(engine);
+			}
+			
+			bool isNull(const Handle context)
+			{
+				return context->transferPool == VK_NULL_HANDLE;
 			}
 		}
 
@@ -335,9 +335,9 @@ namespace Vivium {
 		}
 
 		void transferBuffer(Context::Handle context, Buffer::Handle source, Buffer::Handle destination) {
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(source);
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(destination);
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(context);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(source, Buffer::isNull);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(destination, Buffer::isNull);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(context, Context::isNull);
 
 			VkBufferCopy* copyRegion = new VkBufferCopy;
 			copyRegion->srcOffset = 0;
@@ -356,15 +356,15 @@ namespace Vivium {
 		}
 
 		void bindPipeline(Context::Handle context, Pipeline::Handle handle) {
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle);
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(context);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle, Pipeline::isNull);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(context, Context::isNull);
 
 			vkCmdBindPipeline(context->currentCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, handle->pipeline);
 		}
 
 		void bindVertexBuffer(Context::Handle context, Buffer::Handle handle)
 		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle, Buffer::isNull);
 			VIVIUM_ASSERT(handle->usage == Buffer::Usage::VERTEX,
 				"Buffer bound was not a vertex buffer");
 
@@ -379,7 +379,7 @@ namespace Vivium {
 
 		void bindIndexBuffer(Context::Handle context, Buffer::Handle handle)
 		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle, Buffer::isNull);
 			VIVIUM_ASSERT(handle->usage == Buffer::Usage::INDEX,
 				"Buffer bound was not an index buffer");
 
@@ -393,8 +393,8 @@ namespace Vivium {
 
 		void bindDescriptorSet(Context::Handle context, DescriptorSet::Handle descriptorSet, Pipeline::Handle pipeline)
 		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(descriptorSet);
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(pipeline);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(descriptorSet, DescriptorSet::isNull);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(pipeline, Pipeline::isNull);
 
 			vkCmdBindDescriptorSets(
 				context->currentCommandBuffer,
@@ -410,8 +410,8 @@ namespace Vivium {
 
 		void bindDescriptorSetDynamic(Context::Handle context, DescriptorSet::Handle descriptorSet, Pipeline::Handle pipeline, const std::span<const uint32_t>& offsets)
 		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(descriptorSet);
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(pipeline);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(descriptorSet, DescriptorSet::isNull);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(pipeline, Pipeline::isNull);
 
 			vkCmdBindDescriptorSets(
 				context->currentCommandBuffer,

@@ -12,7 +12,7 @@ namespace Vivium {
 		struct Index {
 			float left, right, top, bottom;
 			// TODO: move to different form of index?
-			//	data overhead is negligible
+			//		data overhead is negligible
 			// Alternate representation
 			F32x2 translation;
 			F32x2 scale;

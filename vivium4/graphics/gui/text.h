@@ -3,6 +3,7 @@
 #include "../primitives/buffer.h"
 #include "font.h"
 #include "../batch.h"
+#include "../color.h"
 
 // TODO: text doesn't exactly work like a GUI object
 //		it is close to a GUI visual maybe
@@ -38,14 +39,13 @@ namespace Vivium {
 		Metrics calculateMetrics(const char* characters, uint64_t length, const Font::Font& font);
 		std::vector<GlyphInstanceData> generateRenderData(Metrics metrics, const char* characters, uint64_t length, const Font::Font& font, float scale, Alignment alignment);
 
-		struct TextFragmentUniformData {
-			float r, g, b;
+		struct Specification {
+			uint64_t maxCharacterCount;
+			Font::Font font;
 		};
 
-		struct TextVertexUniformData {
-			F32x2 translation;
-		};
-
+		// TODO: derive GUI trait (Base)
+		// TODO: use base for positioning
 		struct Resource {
 			Batch::Handle batch;
 			Batch::Result result;
@@ -60,20 +60,107 @@ namespace Vivium {
 			DescriptorSet::Handle descriptorSet;
 
 			// TODO: should all be statics
+			Shader::Handle fragmentShader;
+			Shader::Handle vertexShader;
+
 			DescriptorLayout::Handle descriptorLayout;
 			Pipeline::Handle pipeline;
 			Uniform::PushConstant matrixPushConstants;
-
-			void submit(uint64_t maxCharacterCount, Allocator::Static::Pool storage, ResourceManager::Static::Handle manager, Engine::Handle engine, const Font::Font& font);
-			void create(Allocator::Static::Pool storage, Window::Handle window, Engine::Handle engine, ResourceManager::Static::Handle manager);
-
-			void setText(Engine::Handle engine, Metrics metrics, Commands::Context::Handle context, const char* text, uint64_t length, float scale, Alignment alignment);
-			
-			void render(TextFragmentUniformData fragmentUniformData, TextVertexUniformData vertexUniformData, Commands::Context::Handle context, Math::Perspective perspective);
-
-			void drop(Allocator::Static::Pool storage, Engine::Handle engine);
 		};
 
 		typedef Resource* Handle;
+		typedef Resource* PromisedHandle;
+
+		void render(Handle handle, Commands::Context::Handle context, Color color, F32x2 position, Math::Perspective perspective);
+		void setText(Handle handle, Engine::Handle engine, Metrics metrics, Commands::Context::Handle context, const char* text, uint64_t length, float scale, Alignment alignment);
+
+		template <Allocator::AllocatorType AllocatorType>
+		PromisedHandle submit(AllocatorType allocator, ResourceManager::Static::Handle manager, Engine::Handle engine, Specification specification) {
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
+
+			PromisedHandle handle = Allocator::allocateResource<Resource>(allocator);
+
+			handle->bufferLayout = Buffer::Layout::fromTypes(std::vector<Shader::DataType>({
+				Shader::DataType::VEC2,
+				Shader::DataType::VEC2
+				}));
+
+			handle->batch = Batch::submit(allocator, engine, manager, Batch::Specification(
+				specification.maxCharacterCount * 4,
+				specification.maxCharacterCount * 6,
+				handle->bufferLayout
+			));
+
+			std::vector<Buffer::Handle> hostBuffers = ResourceManager::Static::submit(manager, MemoryType::UNIFORM, std::vector<Buffer::Specification>({
+				Buffer::Specification(sizeof(Color), Buffer::Usage::UNIFORM),
+				Buffer::Specification(sizeof(F32x2), Buffer::Usage::UNIFORM),
+				}));
+
+			handle->fragmentUniform = hostBuffers[0];
+			handle->vertexUniform = hostBuffers[1];
+
+			handle->font = specification.font;
+
+			// TODO: issue occuring here!
+
+			std::vector<Texture::Handle> textures = ResourceManager::Static::submit(manager, std::vector<Texture::Specification>({
+				Texture::Specification::fromFont(specification.font, Texture::Format::MONOCHROME, Texture::Filter::LINEAR)
+			}));
+
+			handle->textAtlasTexture = textures[0];
+
+			handle->descriptorLayout = DescriptorLayout::create(allocator, engine, DescriptorLayout::Specification(std::vector<Uniform::Binding>({
+				Uniform::Binding(Shader::Stage::FRAGMENT, 0, Uniform::Type::TEXTURE),
+				Uniform::Binding(Shader::Stage::FRAGMENT, 1, Uniform::Type::UNIFORM_BUFFER),
+				Uniform::Binding(Shader::Stage::VERTEX, 2, Uniform::Type::UNIFORM_BUFFER)
+				})));
+
+			handle->matrixPushConstants = Uniform::PushConstant(Shader::Stage::VERTEX, sizeof(Math::Perspective), 0);
+
+			std::vector<DescriptorSet::Handle> descriptorSets = ResourceManager::Static::submit(manager, std::vector<DescriptorSet::Specification>({
+				DescriptorSet::Specification(handle->descriptorLayout, std::vector<Uniform::Data>({
+					Uniform::Data::fromTexture(handle->textAtlasTexture),
+					Uniform::Data::fromBuffer(handle->fragmentUniform, sizeof(Color), 0),
+					Uniform::Data::fromBuffer(handle->vertexUniform, sizeof(F32x2), 0)
+					}))
+				}));
+
+			handle->descriptorSet = descriptorSets[0];
+
+			Shader::Specification fragmentSpecification = Shader::compile(Shader::Stage::FRAGMENT, "testGame/res/text.frag", "testGame/res/text_frag.spv");
+			Shader::Specification vertexSpecification = Shader::compile(Shader::Stage::VERTEX, "testGame/res/text.vert", "testGame/res/text_vert.spv");
+
+			handle->fragmentShader = Shader::create(allocator, engine, fragmentSpecification);
+			handle->vertexShader = Shader::create(allocator, engine, vertexSpecification);
+
+			// TODO: memory lifetime scary here
+			std::vector<Pipeline::Handle> pipelines = ResourceManager::Static::submit(manager,
+				std::vector<Pipeline::Specification>({ Pipeline::Specification(
+					std::vector<Shader::Handle>({ handle->fragmentShader, handle->vertexShader }),
+					handle->bufferLayout,
+					std::vector<DescriptorLayout::Handle>({ handle->descriptorLayout }),
+					std::vector<Uniform::PushConstant>({ handle->matrixPushConstants })
+				) }));
+
+			handle->pipeline = pipelines[0];
+
+			return handle;
+		}
+
+		template <Allocator::AllocatorType AllocatorType>
+		void drop(AllocatorType allocator, Handle handle, Engine::Handle engine) {
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
+			
+			Batch::drop(VIVIUM_RESOURCE_ALLOCATED, handle->batch, engine);
+
+			Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->fragmentUniform, engine);
+			Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->vertexUniform, engine);
+			Texture::drop(VIVIUM_RESOURCE_ALLOCATED, handle->textAtlasTexture, engine);
+
+			DescriptorLayout::drop(allocator, handle->descriptorLayout, engine);
+			Pipeline::drop(allocator, handle->pipeline, engine);
+
+			Allocator::dropResource(allocator, handle);
+		}
 	}
 }

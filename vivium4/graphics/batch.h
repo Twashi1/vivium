@@ -26,39 +26,61 @@ namespace Vivium {
 			Buffer::Layout bufferLayout;
 
 			Buffer::Handle vertexStaging, indexStaging, vertexDevice, indexDevice;
-
-			bool isNull() const;
-			void drop(Engine::Handle engine);
-			void create(Engine::Handle engine, ResourceManager::Static::Handle resourceManager, Specification specification);
-
-			void submitElement(uint64_t elementIndex, const void* data, uint64_t size, uint64_t offset);
-			void submitRectangle(uint64_t elementIndex, float left, float bottom, float right, float top);
-			void endShape(uint64_t vertexCount, const uint16_t* indicies, uint64_t indicesCount, uint64_t indicesOffset);
-
-			Result finish(Commands::Context::Handle context, Engine::Handle engine);
 		};
 
 		typedef Resource* Handle;
+		typedef Resource* PromisedHandle;
+
+		bool isNull(const Handle handle);
+
+		void submitElement(Handle handle, uint64_t elementIndex, const std::span<const uint8_t> data);
+		void submitRectangle(Handle handle, uint64_t elementIndex, float left, float bottom, float right, float top);
+		void endShape(Handle handle, uint64_t vertexCount, const std::span<const uint16_t> indices);
+
+		Result endSubmission(Handle handle, Commands::Context::Handle context, Engine::Handle engine);
 
 		template <Allocator::AllocatorType AllocatorType>
 		void drop(AllocatorType allocator, Handle handle, Engine::Handle engine)
 		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 			VIVIUM_CHECK_HANDLE_EXISTS(handle);
 
-			handle->drop(engine);
+			Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->vertexStaging, engine);
+			Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->vertexDevice, engine);
+			Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->indexStaging, engine);
+			Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->indexDevice, engine);
 
 			Allocator::dropResource(allocator, handle);
 		}
 
 		template <Allocator::AllocatorType AllocatorType>
-		Handle create(AllocatorType allocator, Specification specification, Engine::Handle engine, ResourceManager::Static::Handle manager)
+		PromisedHandle submit(AllocatorType allocator, Engine::Handle engine, ResourceManager::Static::Handle manager, Specification specification)
 		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 
-			Handle handle = Allocator::allocateResource<Resource>(allocator);
+			PromisedHandle handle = Allocator::allocateResource<Resource>(allocator);
 
-			handle->create(engine, manager, specification);
+			std::vector<Buffer::Handle> staging = ResourceManager::Static::submit(manager, MemoryType::STAGING, std::vector<Buffer::Specification>({
+				Buffer::Specification(specification.vertexCount * specification.bufferLayout.stride, Buffer::Usage::STAGING),
+				Buffer::Specification(specification.indexCount * sizeof(uint16_t), Buffer::Usage::STAGING)
+				}));
+
+			std::vector<Buffer::Handle> device = ResourceManager::Static::submit(manager, MemoryType::DEVICE, std::vector<Buffer::Specification>({
+				Buffer::Specification(specification.vertexCount * specification.bufferLayout.stride, Buffer::Usage::VERTEX),
+				Buffer::Specification(specification.indexCount * sizeof(uint16_t), Buffer::Usage::INDEX)
+				}));
+
+			handle->vertexStaging = staging[0];
+			handle->indexStaging = staging[1];
+
+			handle->vertexDevice = device[0];
+			handle->indexDevice = device[1];
+
+			handle->vertexBufferIndex = 0;
+			handle->indexBufferIndex = 0;
+			handle->verticesSubmitted = 0;
+
+			handle->bufferLayout = specification.bufferLayout;
 
 			return handle;
 		}

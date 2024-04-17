@@ -72,6 +72,7 @@ namespace Vivium {
 		operator Vec2<U>() const { return Vec2<U>((U)x, (U)y); }
 	};
 
+	// From boost combine_hash afaik
 	template <typename T>
 	struct vector2_hash {
 		std::size_t operator()(const Vec2<T>& v) {
@@ -99,6 +100,7 @@ namespace Vivium {
 #define F64x2 Vivium::Vec2<double>
 
 namespace std {
+	// TODO: better system than concept
 	template <Vivium::c_vec2 T>
 	struct formatter<T> : formatter<string> {
 		auto format(T v, format_context& ctx) {

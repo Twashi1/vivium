@@ -30,12 +30,12 @@
 )
 
 #ifdef NDEBUG
-#define VIVIUM_IS_DEBUG									0
-#define VIVIUM_DEBUG_ONLY(statement)					((void)0)
-#define VIVIUM_ASSERT(condition, msg, ...)				((void)0)
-#define VIVIUM_VK_CHECK(command, message)				command
-#define VIVIUM_CHECK_HANDLE_EXISTS(handle)				((void)0)
-#define VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle)	((void)0)
+#define VIVIUM_IS_DEBUG											0
+#define VIVIUM_DEBUG_ONLY(statement)							((void)0)
+#define VIVIUM_ASSERT(condition, msg, ...)						((void)0)
+#define VIVIUM_VK_CHECK(command, message)						command
+#define VIVIUM_CHECK_HANDLE_EXISTS(handle)						((void)0)
+#define VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle, func)	((void)0)
 #else
 #define VIVIUM_IS_DEBUG 1
 #define VIVIUM_DEBUG_ONLY(statement) statement
@@ -57,9 +57,9 @@
 		)
 #define VIVIUM_CHECK_HANDLE_EXISTS(handle) \
 	VIVIUM_ASSERT(handle != VIVIUM_NULL_HANDLE, "Attempted to use null handle")
-#define VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle)								\
+#define VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle, func)								\
 	VIVIUM_CHECK_HANDLE_EXISTS(handle);												\
-	VIVIUM_ASSERT(!isNull(handle), "Attempted to use null resource")
+	VIVIUM_ASSERT(!func(handle), "Attempted to use null resource")
 #endif
 
 #define VIVIUM_GLSLC_PATH "external/vulkan/Bin/glslc.exe"

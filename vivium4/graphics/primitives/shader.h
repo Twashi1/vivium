@@ -64,12 +64,12 @@ namespace Vivium {
 
 		template <Allocator::AllocatorType AllocatorType>
 		Handle create(AllocatorType allocator, Engine::Handle engine, Specification specification) {
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 
 			Handle handle = Allocator::allocateResource<Resource>(allocator);
 
 			{
-				flags = static_cast<VkShaderStageFlagBits>(specification.stage);
+				handle->flags = static_cast<VkShaderStageFlagBits>(specification.stage);
 
 				VkShaderModuleCreateInfo shaderCreateInfo{};
 				shaderCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -80,7 +80,7 @@ namespace Vivium {
 					engine->device,
 					&shaderCreateInfo,
 					nullptr,
-					&shader->shader
+					&handle->shader
 				), "Failed to create shader module"
 				);
 			}
@@ -90,7 +90,7 @@ namespace Vivium {
 
 		template <Allocator::AllocatorType AllocatorType>
 		void drop(AllocatorType allocator, Shader::Handle shader, Engine::Handle engine) {
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 			VIVIUM_CHECK_HANDLE_EXISTS(shader);
 
 			vkDestroyShaderModule(engine->device, shader->shader, nullptr);

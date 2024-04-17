@@ -23,7 +23,7 @@
 - Texture
 - Descriptor set
 
-All these resources will have be created through submission to a resource manager, returning a `PromisedHandle`, which can be assumed to be a `Handle` after calling the allocation of a resource manager. (Maybe introduce an `assumeHandle` function, that validates in debug mode, but does nothing in release? How could we prevent implicit casts)
+All these resources will have be created through submission to a resource manager, returning a `PromisedHandle`, which can be assumed to be a `Handle` after calling the allocation of a resource manager.
 
 #### Trivially constructed (no drop)
 
@@ -45,7 +45,10 @@ All just use a pure constructor
 
 Buffer layout type defines a static constructor function.
 Shader specification defines static constructor function(s).
+Texture specification defines static constructor function(s).
 Font defines static constructor function(s).
+
+TODO: Shader itself doesn't need to be allocated, and can instead just be a pure data class we copy as we wish, with the restriction of one drop. Maybe as convention, anything that strictly requires a `drop`, especially in relation to a Vulkan resource, should be a `Handle/Resource` combo
 #### Other
 
 - Shader (created at any point)
@@ -64,12 +67,7 @@ Goal: One submission call to a resource manager, after which they are either `Pr
 
 Thus, any object that relies on valid handles for creation, must be something submitted to a resource manager to control resource creation order.
 
-If an object returns a `PromisedHandle`, it must be through a `submit` function, otherwise it must be through a `create` function
-
-### Interplay
-
-Some resources will require data of other resources to functions. In most cases, this is done by the engine, just requiring the handle to the resource. To construct a `Texture::Specification` from a `Font` however, we need various properties of a font. This is just a 1-1 mapping of certain data from a `Font`, but accessing this data is discouraged (even just for reading) by convention. Thus `Texture::Specification` must contain both a constructor from raw data, an image (file), and a font.
-
+If an object returns a `PromisedHandle`, it must be through a `submit` function, otherwise it must be through a `create` function (Any `handle`-returning resource would have to be instantly valid on call, thus only contains instant-available types)
 ## GUI
 
 The GUI base type, allowing for hierarchical structure and relationship-based positioning. Split into the pure-functionality of the `Base` type, and the various provided types in the `Visual` namespace (with very limited customisability)
@@ -88,6 +86,7 @@ if (GUI::Visual::Button::isPressed(button))
 GUI::Visual::Button::render(button, ...);
 ```
 
+The rendering side makes heavy sacrifices on performance, with a draw call for each and every GUI element. Since the visual system is inflexible by design, wouldn't be impossible to convert it entirely into some instanced/batched single draw call.
 ## Errors
 
 Likely want to adapt a Rust-like approach, only `Fatal` errors, or `Option` return values

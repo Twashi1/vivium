@@ -108,12 +108,8 @@ void textTest() {
 	// Compile font if it doesn't exist
 	if (!std::filesystem::exists("testGame/res/fonts/consola.sdf") || regenFont)
 	{
-		Font::Specification oldFont = Font::compileSignedDistanceField("testGame/res/fonts/consola.ttf", 1024, 64, 1.0f);
-		Font::writeDistanceFieldFont("testGame/res/fonts/consola.sdf", oldFont);
-		oldFont.drop();
+		Font::compileSignedDistanceField("testGame/res/fonts/consola.ttf", 1024, "testGame/res/fonts/consola.sdf", 64, 1.0f);
 	}
-
-
 
 	Allocator::Static::Pool storage = Allocator::Static::Pool();
 	Window::Handle window = Window::create(storage, Window::Options{});
@@ -124,9 +120,17 @@ void textTest() {
 
 	ResourceManager::Static::Handle manager = ResourceManager::Static::create(storage);
 
-
+	Text::Handle text = Text::submit(storage, manager, engine, Text::Specification{
+		100,
+		Font::Font::fromDistanceFieldFile("testGame/res/fonts/consola.sdf")
+	});
 
 	ResourceManager::Static::allocate(engine, window, manager);
+
+	std::string textValue = "hello!";
+
+	// TODO: get font function? or pass entire text handle (better maybe...)
+	Text::setText(text, engine, Text::calculateMetrics(textValue.c_str(), textValue.length(), text->font), context, textValue.c_str(), textValue.length(), 1.0f, Text::Alignment::LEFT);
 
 	while (Window::isOpen(window, engine)) {
 		Engine::beginFrame(engine, window);
@@ -135,6 +139,7 @@ void textTest() {
 		Engine::beginRender(engine, window);
 
 		Math::Perspective perspective = Math::calculatePerspective(window, F32x2(0.0f), 0.0f, 1.0f);
+		Text::render(text, context, Color::Gray, F32x2(100.0f, 100.0f), perspective);
 
 		Engine::endRender(engine);
 
@@ -142,6 +147,8 @@ void textTest() {
 
 		Engine::endFrame(engine, window);
 	}
+
+	Text::drop(storage, text, engine);
 
 	ResourceManager::Static::drop(storage, manager, engine);
 

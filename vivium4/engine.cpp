@@ -53,7 +53,7 @@ namespace Vivium {
 				
 				// Checking present
 				VkBool32 hasPresentSupport = false;
-				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(window);
+				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(window, Window::isNull);
 				vkGetPhysicalDeviceSurfaceSupportKHR(device, i, window->surface, &hasPresentSupport);
 
 				if (hasPresentSupport)
@@ -390,11 +390,6 @@ namespace Vivium {
 			return NULL;
 		}
 
-		bool Resource::isNull() const
-		{
-			return instance == VK_NULL_HANDLE;
-		}
-
 		void Resource::checkPerformance()
 		{
 			float maxTimeSpent = targetTimePerFrame * pollFramesCounted;
@@ -654,33 +649,38 @@ namespace Vivium {
 			pollFramesCounted(0)
 		{}
 		
+		bool isNull(const Engine::Handle handle)
+		{
+			return handle->instance == VK_NULL_HANDLE;
+		}
+
 		void beginFrame(Engine::Handle engine, Window::Handle window)
 		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine);
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(window);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(window, Window::isNull);
 
 			engine->beginFrame(window);
 		}
 		
 		void endFrame(Engine::Handle engine, Window::Handle window)
 		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine);
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(window);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(window, Window::isNull);
 
 			engine->endFrame(window);
 		}
 		
 		void beginRender(Engine::Handle engine, Window::Handle window)
 		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine);
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(window);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(window, Window::isNull);
 
 			engine->beginRender(window);
 		}
 		
 		void endRender(Engine::Handle engine)
 		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 
 			engine->endRender();
 		}

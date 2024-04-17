@@ -69,13 +69,14 @@ namespace Vivium {
 
 			void create(const Options& options);
 
-			bool isNull() const;
 			void drop(Engine::Handle engine);
 
 			Resource();
 		};
 
 		typedef Resource* Handle;
+
+		bool isNull(const Handle handle);
 
 		template <Allocator::AllocatorType AllocatorType>
 		Handle create(AllocatorType allocator, Options options)
@@ -90,7 +91,7 @@ namespace Vivium {
 		template <Allocator::AllocatorType AllocatorType>
 		void drop(AllocatorType allocator, Handle handle, Engine::Handle engine)
 		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle, Window::isNull);
 
 			handle->drop(engine);
 			Allocator::dropResource(allocator, handle);

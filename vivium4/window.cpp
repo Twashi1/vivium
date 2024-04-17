@@ -7,11 +7,6 @@ namespace Vivium {
 			: dimensions({ 600, 400 }), title("Vivium4"), multisampleCount(VK_SAMPLE_COUNT_2_BIT)
 		{}
 
-		bool Resource::isNull() const
-		{
-			return surface == VK_NULL_HANDLE;
-		}
-
 		void Resource::drop(Engine::Handle engine)
 		{
 			deleteSwapChain(engine);
@@ -21,7 +16,7 @@ namespace Vivium {
 		{
 			Handle window = reinterpret_cast<Resource*>(glfwGetWindowUserPointer(glfwWindow));
 
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(window);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(window, Window::isNull);
 
 			window->wasFramebufferResized = true;
 			// NOTE: not necessary really
@@ -385,7 +380,7 @@ namespace Vivium {
 
 		void Resource::createSurface(Engine::Handle engine)
 		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 
 			VIVIUM_VK_CHECK(glfwCreateWindowSurface(engine->instance, glfwWindow, nullptr, &surface),
 				"Failed to create window surface");
@@ -393,7 +388,7 @@ namespace Vivium {
 
 		void Resource::initVulkan(Engine::Handle engine)
 		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 
 			// TODO: move this code
 			// Verify valid multisample count
@@ -492,15 +487,20 @@ namespace Vivium {
 		
 		bool isOpen(Window::Handle window, Engine::Handle engine)
 		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(window);
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(window, Window::isNull);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 
 			return window->isOpen(engine);
 		}
 
+		bool isNull(const Handle handle)
+		{
+			return handle->surface == VK_NULL_HANDLE;
+		}
+
 		I32x2 dimensions(Window::Handle window)
 		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(window);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(window, Window::isNull);
 
 			return window->dimensions;
 		}

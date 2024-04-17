@@ -58,7 +58,7 @@ namespace Vivium {
 
 		template <Allocator::AllocatorType AllocatorType>
 		void drop(AllocatorType allocator, Handle buffer, Engine::Handle engine) {
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 			VIVIUM_CHECK_HANDLE_EXISTS(buffer);
 
 			{
@@ -91,6 +91,7 @@ namespace Vivium {
 			};
 
 			typedef Resource* Handle;
+			typedef Resource* PromisedHandle;
 
 			bool isNull(const Handle buffer);
 			// Inclusive
@@ -99,7 +100,7 @@ namespace Vivium {
 
 			template <Allocator::AllocatorType AllocatorType>
 			void drop(AllocatorType allocator, Handle buffer, Engine::Handle engine) {
-				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine);
+				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 				VIVIUM_CHECK_HANDLE_EXISTS(buffer);
 
 				{

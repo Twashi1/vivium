@@ -9,7 +9,7 @@ namespace Vivium {
 
 		void set(Handle buffer, uint64_t bufferOffset, const void* data, uint64_t size, uint64_t dataOffset)
 		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(buffer);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(buffer, Buffer::isNull);
 
 			VIVIUM_ASSERT(size + dataOffset + bufferOffset <= buffer->size,
 				"Setting memory OOBs");
@@ -23,7 +23,7 @@ namespace Vivium {
 
 		void* getMapping(Handle buffer)
 		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(buffer);
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(buffer, Buffer::isNull);
 
 			return buffer->mapping;
 		}
@@ -44,7 +44,7 @@ namespace Vivium {
 
 			// Inclusive
 			void set(Handle buffer, const void* data, uint64_t suballocationStartIndex, uint64_t suballocationEndIndex) {
-				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(buffer);
+				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(buffer, Buffer::Dynamic::isNull);
 
 				// Advance into data passed, just advance by size of each sub-allocation
 				uint64_t totalSourceAdvance = 0;
@@ -66,7 +66,7 @@ namespace Vivium {
 			
 			void* getMapping(Handle buffer)
 			{
-				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(buffer);
+				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(buffer, Buffer::Dynamic::isNull);
 
 				return buffer->mapping;
 			}
