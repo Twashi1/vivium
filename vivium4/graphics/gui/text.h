@@ -101,8 +101,6 @@ namespace Vivium {
 
 			handle->font = specification.font;
 
-			// TODO: issue occuring here!
-
 			std::vector<Texture::Handle> textures = ResourceManager::Static::submit(manager, std::vector<Texture::Specification>({
 				Texture::Specification::fromFont(specification.font, Texture::Format::MONOCHROME, Texture::Filter::LINEAR)
 			}));
@@ -156,6 +154,9 @@ namespace Vivium {
 			Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->fragmentUniform, engine);
 			Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->vertexUniform, engine);
 			Texture::drop(VIVIUM_RESOURCE_ALLOCATED, handle->textAtlasTexture, engine);
+
+			Shader::drop(allocator, handle->fragmentShader, engine);
+			Shader::drop(allocator, handle->vertexShader, engine);
 
 			DescriptorLayout::drop(allocator, handle->descriptorLayout, engine);
 			Pipeline::drop(allocator, handle->pipeline, engine);
