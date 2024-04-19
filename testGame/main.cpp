@@ -7,7 +7,8 @@
 // TODO: better values on spreadFactor for signed distance field (too dependent on distance?)
 
 // TODO: adapt API to be near-completely c-friendly (no member functions, keep vector, for now, but change span)
-// TODO: better pointer handling with buffers, some way to pass a range pointer (maybe just using std::span)// 
+// TODO: better pointer handling with buffers, some way to pass a range pointer (maybe just using std::span)
+// TODO: drawing empty text gets error
 
 using namespace Vivium;
 
@@ -120,17 +121,15 @@ void textTest() {
 
 	ResourceManager::Static::Handle manager = ResourceManager::Static::create(storage);
 
-	Text::Handle text = Text::submit(storage, manager, engine, Text::Specification{
-		100,
-		Font::Font::fromDistanceFieldFile("testGame/res/fonts/consola.sdf")
-	});
+	GUI::Visual::Button::Handle button = GUI::Visual::Button::submit(storage, manager, engine, GUI::Properties{});
 
 	ResourceManager::Static::allocate(engine, window, manager);
 
 	std::string textValue = "hello!";
 
 	// TODO: get font function? or pass entire text handle (better maybe...)
-	Text::setText(text, engine, Text::calculateMetrics(textValue.c_str(), textValue.length(), text->font), context, textValue.c_str(), textValue.length(), 1.0f, Text::Alignment::LEFT);
+	Text::setText(button->text, engine, Text::calculateMetrics(textValue.c_str(), textValue.length(), button->text->font), context, textValue.c_str(), textValue.length(), 1.0f, Text::Alignment::LEFT);
+	// TODO: setup button vertices and indices otherwise nothing gets drawn
 
 	while (Window::isOpen(window, engine)) {
 		Engine::beginFrame(engine, window);
@@ -139,7 +138,7 @@ void textTest() {
 		Engine::beginRender(engine, window);
 
 		Math::Perspective perspective = Math::calculatePerspective(window, F32x2(0.0f), 0.0f, 1.0f);
-		Text::render(text, context, Color::Gray, F32x2(100.0f, 100.0f), perspective);
+		GUI::Visual::Button::render(button, context, perspective);
 
 		Engine::endRender(engine);
 
@@ -148,7 +147,7 @@ void textTest() {
 		Engine::endFrame(engine, window);
 	}
 
-	Text::drop(storage, text, engine);
+	GUI::Visual::Button::drop(storage, button, engine);
 
 	ResourceManager::Static::drop(storage, manager, engine);
 

@@ -8,3 +8,4 @@
 #include "graphics/texture_atlas.h"
 #include "input.h"
 #include "graphics/gui/text.h"
+#include "graphics/gui/visual/button.h"

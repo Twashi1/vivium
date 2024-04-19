@@ -38,19 +38,19 @@ namespace Vivium {
 				void drop(AllocatorType allocator, Handle handle, Engine::Handle engine) {
 					VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 
-					Text::drop(allocator, handle->text);
+					Text::drop(allocator, handle->text, engine);
 
-					Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->stagingVertex);
-					Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->stagingIndex);
-					Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->deviceVertex);
-					Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->deviceIndex);
-					Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->uniformBuffer);
+					Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->stagingVertex, engine);
+					Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->stagingIndex, engine);
+					Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->deviceVertex, engine);
+					Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->deviceIndex, engine);
+					Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->uniformBuffer, engine);
 
-					Shader::drop(allocator, handle->fragmentShader);
-					Shader::drop(allocator, handle->vertexShader);
+					Shader::drop(allocator, handle->fragmentShader, engine);
+					Shader::drop(allocator, handle->vertexShader, engine);
 
-					DescriptorLayout::drop(allocator, handle->descriptorLayout);
-					Pipeline::drop(VIVIUM_RESOURCE_ALLOCATED, handle->pipeline);
+					DescriptorLayout::drop(allocator, handle->descriptorLayout, engine);
+					Pipeline::drop(VIVIUM_RESOURCE_ALLOCATED, handle->pipeline, engine);
 
 					Allocator::dropResource(allocator, handle);
 				}
@@ -58,17 +58,16 @@ namespace Vivium {
 				template <Allocator::AllocatorType AllocatorType>
 				PromisedHandle submit(AllocatorType allocator, ResourceManager::Static::Handle manager, Engine::Handle engine, GUI::Properties properties)
 				{
-					PromisedHandle button = Allocator::allocateResource<Resource>(allocator);
+					PromisedHandle button = Allocator::allocateResource<Resource, AllocatorType>(allocator);
 
 					button->base.properties = properties;
 					button->color = Color::Gray;
 
-					std::vector<Buffer::Handle> hostBuffers = ResourceManager::Static::submit(manager, MemoryType::STAGING,
-						std::vector<Buffer::Specification>({
-							Buffer::Specification(4 * sizeof(F32x2), Buffer::Usage::STAGING),
-							Buffer::Specification(6 * sizeof(uint16_t), Buffer::Usage::STAGING),
-							Buffer::Specification(sizeof(F32x2) + sizeof(Color::Color), Buffer::Usage::UNIFORM)
-							}));
+					std::vector<Buffer::Handle> hostBuffers = ResourceManager::Static::submit(manager, MemoryType::STAGING, std::vector<Buffer::Specification>({
+						Buffer::Specification(4 * sizeof(F32x2), Buffer::Usage::STAGING),
+						Buffer::Specification(6 * sizeof(uint16_t), Buffer::Usage::STAGING),
+						Buffer::Specification(sizeof(F32x2) + sizeof(Color), Buffer::Usage::UNIFORM)
+					}));
 
 					button->stagingVertex = hostBuffers[0];
 					button->stagingIndex = hostBuffers[1];
@@ -84,28 +83,29 @@ namespace Vivium {
 					button->deviceIndex = deviceBuffers[1];
 
 					button->descriptorLayout = DescriptorLayout::create(allocator, engine, DescriptorLayout::Specification(
-						std::vector<Uniform::Binding>({ Uniform::Binding(Shader::Stage::FRAGMENT | Shader::Stage::VERTEX, 0, Uniform::Type::STORAGE_BUFFER) })
+						std::vector<Uniform::Binding>({ Uniform::Binding(Shader::Stage::FRAGMENT | Shader::Stage::VERTEX, 0, Uniform::Type::UNIFORM_BUFFER) })
 					));
 
 					std::vector<DescriptorSet::Handle> descriptorSets = ResourceManager::Static::submit(
 						manager, std::vector<DescriptorSet::Specification>({
 							DescriptorSet::Specification(
 								button->descriptorLayout, std::vector<Uniform::Data>({
-									Uniform::Data::fromBuffer(button->uniformBuffer, sizeof(F32x2) + sizeof(Color::Color), 0)
+									Uniform::Data::fromBuffer(button->uniformBuffer, sizeof(F32x2) + sizeof(Color), 0)
 								})
 							)
-						})
+							})
 					);
+
+					button->descriptorSet = descriptorSets[0];
 
 					Shader::Specification fragShaderSpec = Shader::compile(Shader::Stage::FRAGMENT, "testGame/res/button.frag", "testGame/res/button_frag.spv");
 					Shader::Specification vertShaderSpec = Shader::compile(Shader::Stage::VERTEX, "testGame/res/button.vert", "testGame/res/button_vert.spv");
-					
+
 					button->fragmentShader = Shader::create(allocator, engine, fragShaderSpec);
 					button->vertexShader = Shader::create(allocator, engine, vertShaderSpec);
 
-					// TODO: submit text
+					button->text = Text::submit(allocator, manager, engine, Text::Specification(64, Font::Font::fromDistanceFieldFile("testGame/res/fonts/consola.sdf")));
 
-					// TODO: shouldn't work AFAIK?
 					std::vector<Pipeline::Handle> pipelines = ResourceManager::Static::submit(manager,
 						std::vector<Pipeline::Specification>({
 							Pipeline::Specification(
@@ -120,6 +120,8 @@ namespace Vivium {
 
 					return button;
 				}
+				
+				void render(Button::Handle button, Commands::Context::Handle context, Math::Perspective perspective);
 			}
 		}
 	}
