@@ -125,6 +125,8 @@ void textTest() {
 
 	ResourceManager::Static::allocate(engine, window, manager);
 
+	GUI::Visual::Button::setup(button, context, engine);
+
 	std::string textValue = "hello!";
 
 	// TODO: get font function? or pass entire text handle (better maybe...)

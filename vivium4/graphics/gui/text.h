@@ -101,8 +101,9 @@ namespace Vivium {
 
 			handle->font = specification.font;
 
+			// TODO: for whatever reason, we can't linearly interpolate Format::MONOCHROME (on this system at least)?
 			std::vector<Texture::Handle> textures = ResourceManager::Static::submit(manager, std::vector<Texture::Specification>({
-				Texture::Specification::fromFont(specification.font, Texture::Format::MONOCHROME, Texture::Filter::LINEAR)
+				Texture::Specification::fromFont(specification.font, Texture::Format::MONOCHROME, Texture::Filter::NEAREST)
 			}));
 
 			handle->textAtlasTexture = textures[0];
@@ -159,6 +160,7 @@ namespace Vivium {
 			Shader::drop(allocator, handle->vertexShader, engine);
 
 			DescriptorLayout::drop(allocator, handle->descriptorLayout, engine);
+			DescriptorSet::drop(allocator, handle->descriptorSet);
 			Pipeline::drop(allocator, handle->pipeline, engine);
 
 			Allocator::dropResource(allocator, handle);

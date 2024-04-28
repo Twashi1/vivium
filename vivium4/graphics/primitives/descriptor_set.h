@@ -20,5 +20,12 @@ namespace Vivium {
 		typedef Resource* PromisedHandle;
 
 		bool isNull(const Handle set);
+
+		template <Allocator::AllocatorType AllocatorType>
+		void drop(AllocatorType allocator, Handle handle) {
+			// No need to do anything else, descriptor set has no destructor
+
+			Allocator::dropResource(allocator, handle);
+		}
 	}
 }

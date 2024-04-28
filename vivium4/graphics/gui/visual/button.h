@@ -50,6 +50,7 @@ namespace Vivium {
 					Shader::drop(allocator, handle->vertexShader, engine);
 
 					DescriptorLayout::drop(allocator, handle->descriptorLayout, engine);
+					DescriptorSet::drop(allocator, handle->descriptorSet);
 					Pipeline::drop(VIVIUM_RESOURCE_ALLOCATED, handle->pipeline, engine);
 
 					Allocator::dropResource(allocator, handle);
@@ -66,7 +67,7 @@ namespace Vivium {
 					std::vector<Buffer::Handle> hostBuffers = ResourceManager::Static::submit(manager, MemoryType::STAGING, std::vector<Buffer::Specification>({
 						Buffer::Specification(4 * sizeof(F32x2), Buffer::Usage::STAGING),
 						Buffer::Specification(6 * sizeof(uint16_t), Buffer::Usage::STAGING),
-						Buffer::Specification(sizeof(F32x2) + sizeof(Color), Buffer::Usage::UNIFORM)
+						Buffer::Specification(sizeof(F32x2) * 2 + sizeof(Color), Buffer::Usage::UNIFORM)
 					}));
 
 					button->stagingVertex = hostBuffers[0];
@@ -90,7 +91,7 @@ namespace Vivium {
 						manager, std::vector<DescriptorSet::Specification>({
 							DescriptorSet::Specification(
 								button->descriptorLayout, std::vector<Uniform::Data>({
-									Uniform::Data::fromBuffer(button->uniformBuffer, sizeof(F32x2) + sizeof(Color), 0)
+									Uniform::Data::fromBuffer(button->uniformBuffer, sizeof(F32x2) * 2 + sizeof(Color), 0)
 								})
 							)
 							})
@@ -120,6 +121,8 @@ namespace Vivium {
 
 					return button;
 				}
+
+				void setup(Button::Handle button, Commands::Context::Handle context, Engine::Handle engine);
 				
 				void render(Button::Handle button, Commands::Context::Handle context, Math::Perspective perspective);
 			}

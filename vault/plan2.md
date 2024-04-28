@@ -1,4 +1,6 @@
 
+Look towards custom allocator (memory aligned, etc.) to remove double pointer indirection
+
 ## Requirements
 
 - Heavily data-oriented style

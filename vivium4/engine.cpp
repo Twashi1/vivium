@@ -114,6 +114,7 @@ namespace Vivium {
 		
 		bool Resource::checkDeviceExtensionSupport(const std::vector<const char*>& requiredExtensions, VkPhysicalDevice device)
 		{
+			// TODO: ?
 			// NOTE: different
 
 			uint32_t extensionCount;
@@ -182,13 +183,20 @@ namespace Vivium {
 			if (deviceCount == 0) {
 				VIVIUM_LOG(Log::FATAL, "Couldn't find GPU with vulkan support");
 			}
+			
+			VIVIUM_LOG(Log::DEBUG, "Found {} devices", deviceCount);
 
 			std::vector<VkPhysicalDevice> devices(deviceCount);
 			vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
-			for (const VkPhysicalDevice& device : devices) {
+			// TODO: change back
+			for (uint64_t deviceIndex = 0; deviceIndex < deviceCount; deviceIndex++) {
+				VkPhysicalDevice device = devices[deviceIndex];
+
 				if (isSuitableDevice(device, deviceExtensions, window)) {
 					physicalDevice = device;
+
+					VIVIUM_LOG(Log::DEBUG, "Selected device {}", deviceIndex);
 
 					break;
 				}

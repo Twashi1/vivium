@@ -86,6 +86,7 @@ namespace Vivium {
 			}
 		}
 
+		// TODO: allow passing region
 		void transferBuffer(Context::Handle context, Buffer::Handle source, Buffer::Handle destination);
 
 		void bindPipeline(Context::Handle context, Pipeline::Handle handle);
