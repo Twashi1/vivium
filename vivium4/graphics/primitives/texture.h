@@ -8,7 +8,7 @@ namespace Vivium {
 	namespace Texture {
 		enum class Format {
 			RGBA = VK_FORMAT_R8G8B8A8_SRGB,
-			MONOCHROME = VK_FORMAT_R8_SRGB
+			MONOCHROME = VK_FORMAT_R8_UNORM
 		};
 
 		enum class Filter {
