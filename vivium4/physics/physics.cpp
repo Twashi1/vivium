@@ -18,7 +18,7 @@ namespace Vivium {
 				F32x2 support = b.support(-bSpaceNormalA);
 				F32x2 vertex = Math::unapplyTransform(Math::applyTransform(a.vertices[i], aTransform), bTransform);
 
-				float penetrationDistance = bSpaceNormalA.dot(support - vertex);
+				float penetrationDistance = F32x2::dot(bSpaceNormalA, support - vertex);
 
 				if (penetrationDistance > maximumDistance) {
 					maximumDistance = penetrationDistance;
@@ -37,7 +37,7 @@ namespace Vivium {
 			uint64_t minimumIndex = 0;
 
 			for (uint64_t i = 0; i < incident.vertices.size(); i++) {
-				float dot = incidentSpaceReferenceNormal.dot(incident.normals[i]);
+				float dot = F32x2::dot(incidentSpaceReferenceNormal, incident.normals[i]);
 
 				if (dot < minimumProjection) {
 					minimumProjection = dot;
@@ -137,8 +137,8 @@ namespace Vivium {
 			F32x2 referenceFaceVertex0 = Math::applyTransform(reference->vertices[referenceManifold->edgeIndex], *referenceTransform);
 			F32x2 referenceFaceVertex1 = Math::applyTransform(reference->vertices[referenceManifold->edgeIndex == reference->vertices.size() - 1 ? 0 : referenceManifold->edgeIndex + 1], *referenceTransform);
 
-			F32x2 referenceFaceVector = (referenceFaceVertex1 - referenceFaceVertex0).normalise();
-			F32x2 referenceFaceNormal = referenceFaceVector.left();
+			F32x2 referenceFaceVector = F32x2::normalise(referenceFaceVertex1 - referenceFaceVertex0);
+			F32x2 referenceFaceNormal = F32x2::left(referenceFaceVector);
 
 			float referenceClipped = F32x2::dot(referenceFaceNormal, referenceFaceVertex0);
 			float negativeVector = -F32x2::dot(referenceFaceVector, referenceFaceVertex0);
@@ -232,8 +232,8 @@ namespace Vivium {
 				F32x2 contactB = contact - b.position;
 
 				// Relative velocity between bodies
-				F32x2 relativeVelocity = b.velocity + b.angularVelocity * contactB.right()
-					- a.velocity - a.angularVelocity * contactA.right();
+				F32x2 relativeVelocity = b.velocity + b.angularVelocity * F32x2::right(contactB)
+					- a.velocity - a.angularVelocity * F32x2::right(contactA);
 
 				// Relative velocity in direction of collision normal
 				float velocityLength = F32x2::dot(relativeVelocity, manifold.vector);
@@ -263,8 +263,8 @@ namespace Vivium {
 				b.addImpulse(reactionImpulse, contactB);
 
 				// Re-calculate relative velocity for friction
-				relativeVelocity = b.velocity + contactB.right() * b.angularVelocity
-					- a.velocity - contactA.right() * a.angularVelocity;
+				relativeVelocity = b.velocity + F32x2::right(contactB) * b.angularVelocity
+					- a.velocity - F32x2::right(contactA) * a.angularVelocity;
 
 				F32x2 contactTangent = F32x2::normalise(relativeVelocity - (manifold.vector
 					* F32x2::dot(relativeVelocity, manifold.vector)));

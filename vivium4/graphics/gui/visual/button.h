@@ -9,7 +9,7 @@ namespace Vivium {
 		namespace Visual {
 			namespace Button {
 				struct Resource {
-					Base base;
+					Object::Handle base;
 
 					Text::Handle text;
 					Color color;
@@ -38,6 +38,8 @@ namespace Vivium {
 				void drop(AllocatorType allocator, Handle handle, Engine::Handle engine) {
 					VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 
+					GUI::Object::drop(allocator, handle->base);
+
 					Text::drop(allocator, handle->text, engine);
 
 					Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->stagingVertex, engine);
@@ -57,11 +59,11 @@ namespace Vivium {
 				}
 
 				template <Allocator::AllocatorType AllocatorType>
-				PromisedHandle submit(AllocatorType allocator, ResourceManager::Static::Handle manager, Engine::Handle engine, GUI::Properties properties)
+				PromisedHandle submit(AllocatorType allocator, ResourceManager::Static::Handle manager, Engine::Handle engine)
 				{
 					PromisedHandle button = Allocator::allocateResource<Resource, AllocatorType>(allocator);
 
-					button->base.properties = properties;
+					button->base = GUI::Object::create(allocator, GUI::Object::Specification{});
 					button->color = Color::Gray;
 
 					std::vector<Buffer::Handle> hostBuffers = ResourceManager::Static::submit(manager, MemoryType::STAGING, std::vector<Buffer::Specification>({
@@ -123,8 +125,10 @@ namespace Vivium {
 				}
 
 				void setup(Button::Handle button, Commands::Context::Handle context, Engine::Handle engine);
-				
 				void render(Button::Handle button, Commands::Context::Handle context, Math::Perspective perspective);
+
+				Properties& properties(Button::Handle button);
+				void setText(Button::Handle button, Engine::Handle engine, Commands::Context::Handle context, const char* text);
 			}
 		}
 	}

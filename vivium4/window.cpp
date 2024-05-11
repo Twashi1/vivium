@@ -7,11 +7,6 @@ namespace Vivium {
 			: dimensions({ 600, 400 }), title("Vivium4"), multisampleCount(VK_SAMPLE_COUNT_2_BIT)
 		{}
 
-		void Resource::drop(Engine::Handle engine)
-		{
-			deleteSwapChain(engine);
-		}
-
 		void Resource::framebufferResizeCallback(GLFWwindow* glfwWindow, int width, int height)
 		{
 			Handle window = reinterpret_cast<Resource*>(glfwGetWindowUserPointer(glfwWindow));

@@ -46,27 +46,18 @@ namespace Vivium {
 		bool operator==(Vec2 v) const { return x == v.x && y == v.y; }
 		bool operator!=(Vec2 v) const { return x != v.x || y != v.y; }
 
-		Vec2 floor() const { return Vec2(std::floor(x), std::floor(y)); }
-		Vec2 ceil() const { return Vec2(std::ceil(x), std::ceil(y)); }
+		static Vec2 triple_product(Vec2 a, Vec2 b, Vec2 c) { return right(c) * cross(a,b); }
+		static T orient(Vec2 a, Vec2 b, Vec2 c) { return cross(b - a, c - a); }
 
-		T dot(Vec2 v) const { return x * v.x + y * v.y; }
-		T cross(Vec2 v) const { return x * v.y - y * v.x; }
-		T length() const { return std::sqrt(x * x + y * y); }
+		static Vec2 floor(Vec2 v) { return Vec2(std::floor(v.x), std::floor(v.y)); }
+		static Vec2 ceil(Vec2 v) { return Vec2(std::ceil(v.x), std::ceil(v.y)); }
 
-		Vec2 normalise() const { return *this / std::sqrt(x * x + y * y); }
-
-		Vec2 left() const { return Vec2(y, -x); }
-		Vec2 right() const { return Vec2(-y, x); }
-
-		static Vec2 triple_product(Vec2 a, Vec2 b, Vec2 c) { return c.right() * a.cross(b); }
-		static T orient(Vec2 a, Vec2 b, Vec2 c) { return (b - a).cross(c - a); }
-
-		static Vec2 normalise(Vec2 v) { return v.normalise(); }
-		static Vec2 right(Vec2 v) { return v.right(); }
-		static Vec2 left(Vec2 v) { return v.left(); }
-		static T dot(Vec2 a, Vec2 b) { return a.dot(b); }
-		static T cross(Vec2 a, Vec2 b) { return a.cross(b); }
-		static T length(Vec2 v) { return v.length(); }
+		static Vec2 normalise(Vec2 v) { return v / length(v); }
+		static Vec2 right(Vec2 v) { return Vec2(-v.y, v.x); }
+		static Vec2 left(Vec2 v) { return Vec2(v.y, -v.x); }
+		static T dot(Vec2 a, Vec2 b) { return a.x * b.x + a.y + b.y; }
+		static T cross(Vec2 a, Vec2 b) { return a.x * b.y - a.y * b.x; }
+		static T length(Vec2 v) { return std::sqrt(dot(v, v)); }
 
 		template <typename U>
 		operator Vec2<U>() const { return Vec2<U>((U)x, (U)y); }

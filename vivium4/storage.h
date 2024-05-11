@@ -1,6 +1,7 @@
 #pragma once
 
 // TODO: rename this file
+// TODO: every resource allocated should be tracked in debug mode
 
 #include <algorithm>
 #include <cstdint>

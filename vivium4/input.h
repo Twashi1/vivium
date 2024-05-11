@@ -6,13 +6,6 @@
 #include "window.h"
 #include "storage.h"
 
-/*
-Core API;
-
-Input::Context::Handle handle = Input::Context::create(storage, windowHandle);
-Input::isDown(handle, Input::Mouse::LMB) -> bool
-*/
-
 namespace Vivium {
 	constexpr uint64_t MAX_CHARACTER_INPUTS_PER_FRAME = 64;
 

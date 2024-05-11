@@ -15,7 +15,7 @@ namespace Vivium {
 				F32x2 next = vertices[i == vertices.size() - 1 ? 0 : i + 1];
 
 				// Triangle with current, next, and origin, assuming origin within triangle
-				float triangleArea = std::abs(current.cross(next) * 0.5f);
+				float triangleArea = std::abs(F32x2::cross(current, next) * 0.5f);
 				area += triangleArea;
 				center += (current + next) * triangleArea * third;
 			}
@@ -31,7 +31,7 @@ namespace Vivium {
 			for (uint64_t i = 1; i < vertices.size(); i++) {
 				F32x2 point = vertices[i];
 
-				float dot = point.dot(direction);
+				float dot = F32x2::dot(point, direction);
 
 				if (dot > maxDotProduct) {
 					bestPoint = point;
@@ -54,8 +54,8 @@ namespace Vivium {
 
 				// TODO: check this is actually correct
 				// https://physics.stackexchange.com/questions/708936/how-to-calculate-the-moment-of-inertia-of-convex-polygon-two-dimensions
-				inertia += twelth * current.cross(next) * (
-					current.dot(current) + next.dot(next) + current.dot(next)
+				inertia += twelth * F32x2::cross(current, next) * (
+					F32x2::dot(current, current) + F32x2::dot(next, next) + F32x2::dot(current, next)
 				);
 			}
 
@@ -70,7 +70,7 @@ namespace Vivium {
 				F32x2 current = vertices[i];
 				F32x2 next = vertices[i == vertices.size() - 1 ? 0 : i + 1];
 
-				float triangleArea = std::abs(current.cross(next) * 0.5f);
+				float triangleArea = std::abs(F32x2::cross(current, next) * 0.5f);
 
 				area += triangleArea;
 			}
@@ -147,7 +147,7 @@ namespace Vivium {
 				F32x2 next = polygon.vertices[i == polygon.vertices.size() - 1 ? 0 : i + 1];
 
 				// Assume counter-clockwise ordering
-				polygon.normals[i] = (next - current).left().normalise();
+				polygon.normals[i] = F32x2::normalise(F32x2::left(next - current));
 			}
 
 			return polygon;

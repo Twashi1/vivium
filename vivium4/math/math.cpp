@@ -2,7 +2,7 @@
 
 namespace Vivium {
 	namespace Math {
-		Perspective calculatePerspective(Window::Handle window, F32x2 position, float rotation, float scale)
+		Perspective orthogonalPerspective2D(Window::Handle window, F32x2 position, float rotation, float scale)
 		{
 			I32x2 screen_dim = Window::dimensions(window);
 

@@ -38,10 +38,9 @@ namespace Vivium {
 					UniformData uniformData;
 
 					// TODO: position from button base
-					uniformData.position = F32x2(100.0f);
-					uniformData.scale = F32x2(200.0f);
-					// TODO: color from button color field
-					uniformData.color = Color::White;
+					uniformData.position = button->base->properties.truePosition;
+					uniformData.scale = button->base->properties.trueDimensions;
+					uniformData.color = button->color;
 
 					Buffer::set(button->uniformBuffer, 0, &uniformData, sizeof(uniformData), 0);
 
@@ -52,8 +51,17 @@ namespace Vivium {
 					Commands::pushConstants(context, &perspective, sizeof(Math::Perspective), 0, Shader::Stage::VERTEX, button->pipeline);
 					Commands::drawIndexed(context, 6, 1);
 
-					// TODO: text color from something else (multiply button color?)
-					Text::render(button->text, context, Color::Gray, F32x2(100.0f), perspective);
+					Text::render(button->text, context, Color::multiply(button->color, 0.4f), F32x2(100.0f), perspective);
+				}
+				
+				Properties& properties(Button::Handle button)
+				{
+					return properties(button->base);
+				}
+				
+				void setText(Button::Handle button, Engine::Handle engine, Commands::Context::Handle context, const char* text)
+				{
+					Text::setText(button->text, engine, Text::calculateMetrics(text, strlen(text), button->text->font), context, text, strlen(text), 1.0f, Text::Alignment::LEFT);
 				}
 			}
 		}

@@ -19,7 +19,7 @@ namespace Vivium {
 			// Compute distance (within spread factor range) to both in/out pixel
 			// Create signed distance field
 
-			// TODO: offset glyphs
+			// TODO: offset glyphs on bottom as well
 
 			const uint64_t subpixelWidth = inputWidth / outputWidth;
 			const uint64_t subpixelHeight = inputHeight / outputHeight;

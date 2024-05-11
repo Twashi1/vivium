@@ -101,6 +101,8 @@ namespace Vivium {
 
 		void render(Handle handle, Commands::Context::Handle context, Color color, F32x2 position, Math::Perspective perspective)
 		{
+			if (handle->result.indexBuffer == VIVIUM_NULL_HANDLE) return;
+
 			Buffer::set(handle->fragmentUniform, 0, &color, sizeof(Color), 0);
 			Buffer::set(handle->vertexUniform, 0, &position, sizeof(F32x2), 0);
 

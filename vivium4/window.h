@@ -69,8 +69,6 @@ namespace Vivium {
 
 			void create(const Options& options);
 
-			void drop(Engine::Handle engine);
-
 			Resource();
 		};
 
@@ -93,7 +91,8 @@ namespace Vivium {
 		{
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle, Window::isNull);
 
-			handle->drop(engine);
+			handle->deleteSwapChain(engine);
+
 			Allocator::dropResource(allocator, handle);
 		}
 

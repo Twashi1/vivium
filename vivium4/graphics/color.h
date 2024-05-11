@@ -13,5 +13,7 @@ namespace Vivium {
 		static Color White;
 		static Color Black;
 		static Color Gray;
+
+		static Color multiply(Color color, float scalar);
 	};
 }
