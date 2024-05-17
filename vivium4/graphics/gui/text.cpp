@@ -99,12 +99,21 @@ namespace Vivium {
 			return renderData;
 		}
 
-		void render(Handle handle, Commands::Context::Handle context, Color color, F32x2 position, Math::Perspective perspective)
+		void render(Handle handle, Commands::Context::Handle context, Color color, F32x2 position, float scale, Math::Perspective perspective)
 		{
 			if (handle->result.indexBuffer == VIVIUM_NULL_HANDLE) return;
 
+			struct VertexUniform {
+				F32x2 translation;
+				float scale;
+			};
+
+			VertexUniform v;
+			v.translation = position;
+			v.scale = scale;
+
 			Buffer::set(handle->fragmentUniform, 0, &color, sizeof(Color), 0);
-			Buffer::set(handle->vertexUniform, 0, &position, sizeof(F32x2), 0);
+			Buffer::set(handle->vertexUniform, 0, &v, sizeof(VertexUniform), 0);
 
 			Commands::pushConstants(context, &perspective, sizeof(Math::Perspective), 0, Shader::Stage::VERTEX, handle->pipeline);
 

@@ -12,6 +12,7 @@ namespace Vivium {
 					Object::Handle base;
 
 					Text::Handle text;
+					Text::Metrics textMetrics; // Stored for rendering
 					Color color;
 
 					Buffer::Handle stagingVertex;
@@ -107,6 +108,7 @@ namespace Vivium {
 					button->fragmentShader = Shader::create(allocator, engine, fragShaderSpec);
 					button->vertexShader = Shader::create(allocator, engine, vertShaderSpec);
 
+					// TODO: maximum text length should be parameter
 					button->text = Text::submit(allocator, manager, engine, Text::Specification(64, Font::Font::fromDistanceFieldFile("testGame/res/fonts/consola.sdf")));
 
 					std::vector<Pipeline::Handle> pipelines = ResourceManager::Static::submit(manager,
@@ -128,7 +130,7 @@ namespace Vivium {
 				void render(Button::Handle button, Commands::Context::Handle context, Math::Perspective perspective);
 
 				Properties& properties(Button::Handle button);
-				void setText(Button::Handle button, Engine::Handle engine, Commands::Context::Handle context, const char* text);
+				void setText(Button::Handle button, Engine::Handle engine, Commands::Context::Handle context, const std::span<const char> text);
 			}
 		}
 	}

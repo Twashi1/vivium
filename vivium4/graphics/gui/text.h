@@ -71,7 +71,7 @@ namespace Vivium {
 		typedef Resource* Handle;
 		typedef Resource* PromisedHandle;
 
-		void render(Handle handle, Commands::Context::Handle context, Color color, F32x2 position, Math::Perspective perspective);
+		void render(Handle handle, Commands::Context::Handle context, Color color, F32x2 position, float scale, Math::Perspective perspective);
 		void setText(Handle handle, Engine::Handle engine, Metrics metrics, Commands::Context::Handle context, const char* text, uint64_t length, float scale, Alignment alignment);
 
 		template <Allocator::AllocatorType AllocatorType>

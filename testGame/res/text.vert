@@ -12,9 +12,10 @@ layout(push_constant) uniform Matrices {
 
 layout(binding = 2) uniform TranslationData {
 	vec2 translation;
+	float scale;
 };
 
 void main() {
-	gl_Position = matrices.proj * matrices.view * vec4(inPosition + translation, 0.0, 1.0);
+	gl_Position = matrices.proj * matrices.view * vec4(inPosition * scale + translation, 0.0, 1.0);
 	vTextureCoordinates = inTextureCoordinates;
 }

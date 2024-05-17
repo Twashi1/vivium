@@ -14,6 +14,9 @@ Look towards custom allocator (memory aligned, etc.) to remove double pointer in
 - Span synonymous type
 - Vector synonymous type
 - Using filesystem or better file referencing (not just passing file data, but truly passing file path in a way that guarantees the existence of that path)
+- Convert text functions to use `span` 
+- Clear render/GUI/computation threads. Ability to submit from multiple threads
+- Shader debugger tool - use CPU to simulate GPU actions for some fragments
 ## Types
 
 ### Resources

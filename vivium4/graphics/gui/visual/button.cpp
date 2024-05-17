@@ -37,7 +37,6 @@ namespace Vivium {
 
 					UniformData uniformData;
 
-					// TODO: position from button base
 					uniformData.position = button->base->properties.truePosition;
 					uniformData.scale = button->base->properties.trueDimensions;
 					uniformData.color = button->color;
@@ -51,7 +50,25 @@ namespace Vivium {
 					Commands::pushConstants(context, &perspective, sizeof(Math::Perspective), 0, Shader::Stage::VERTEX, button->pipeline);
 					Commands::drawIndexed(context, 6, 1);
 
-					Text::render(button->text, context, Color::multiply(button->color, 0.4f), F32x2(100.0f), perspective);
+					// TODO: verify more than 0 lines of text
+					// Calculate text scale
+					float maxLineWidth = std::numeric_limits<float>::lowest();
+
+					for (float lineWidth : button->textMetrics.lineWidths) {
+						maxLineWidth = maxLineWidth < lineWidth ? lineWidth : maxLineWidth;
+					}
+
+					F32x2 axisScale = button->base->properties.trueDimensions / F32x2(maxLineWidth, button->textMetrics.totalHeight);
+
+					// TODO: pass in text color, or have solution for white text on black
+					Text::render(
+						button->text,
+						context,
+						Color::multiply(button->color, 0.4f),
+						button->base->properties.truePosition,
+						std::min(axisScale.x, axisScale.y),
+						perspective
+					);
 				}
 				
 				Properties& properties(Button::Handle button)
@@ -59,9 +76,10 @@ namespace Vivium {
 					return properties(button->base);
 				}
 				
-				void setText(Button::Handle button, Engine::Handle engine, Commands::Context::Handle context, const char* text)
+				void setText(Button::Handle button, Engine::Handle engine, Commands::Context::Handle context, const std::span<const char> text)
 				{
-					Text::setText(button->text, engine, Text::calculateMetrics(text, strlen(text), button->text->font), context, text, strlen(text), 1.0f, Text::Alignment::LEFT);
+					button->textMetrics = Text::calculateMetrics(text.data(), text.size(), button->text->font);
+					Text::setText(button->text, engine, button->textMetrics, context, text.data(), text.size(), 1.0f, Text::Alignment::LEFT);
 				}
 			}
 		}
