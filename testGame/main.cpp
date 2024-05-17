@@ -55,13 +55,16 @@ int main(void) {
 
 	GUI::Visual::Button::setup(button, context, engine);
 
-	GUI::Visual::Button::setText(button, engine, context, "helloa!");
+	GUI::Visual::Button::setText(button, engine, window, context, "hello\nmy\nname");
 
 	while (Window::isOpen(window, engine)) {
 		Engine::beginFrame(engine, window);
 		Commands::Context::flush(context, engine);
 
+		// GUI::Visual::Button::properties(button).position = Input::getCursor();
 		GUI::Object::update(button, Window::dimensions(window));
+
+		// GUI::Visual::Button::setText(button, engine, window, context, "helloa\nmy\nname");
 
 		Engine::beginRender(engine, window);
 

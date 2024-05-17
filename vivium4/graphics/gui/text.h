@@ -78,6 +78,12 @@ namespace Vivium {
 		PromisedHandle submit(AllocatorType allocator, ResourceManager::Static::Handle manager, Engine::Handle engine, Specification specification) {
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 
+			// TODO: duplicated across multiple locations
+			struct VertexUniform {
+				F32x2 translation;
+				float scale;
+			};
+
 			PromisedHandle handle = Allocator::allocateResource<Resource>(allocator);
 
 			handle->bufferLayout = Buffer::Layout::fromTypes(std::vector<Shader::DataType>({
@@ -93,7 +99,7 @@ namespace Vivium {
 
 			std::vector<Buffer::Handle> hostBuffers = ResourceManager::Static::submit(manager, MemoryType::UNIFORM, std::vector<Buffer::Specification>({
 				Buffer::Specification(sizeof(Color), Buffer::Usage::UNIFORM),
-				Buffer::Specification(sizeof(F32x2), Buffer::Usage::UNIFORM),
+				Buffer::Specification(sizeof(VertexUniform), Buffer::Usage::UNIFORM),
 				}));
 
 			handle->fragmentUniform = hostBuffers[0];

@@ -15,6 +15,7 @@ Look towards custom allocator (memory aligned, etc.) to remove double pointer in
 - Vector synonymous type
 - Using filesystem or better file referencing (not just passing file data, but truly passing file path in a way that guarantees the existence of that path)
 - Convert text functions to use `span` 
+	- Or instead, use `std::string_view`, `span` includes the null termination character
 - Clear render/GUI/computation threads. Ability to submit from multiple threads
 - Shader debugger tool - use CPU to simulate GPU actions for some fragments
 ## Types

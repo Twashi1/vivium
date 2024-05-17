@@ -43,6 +43,8 @@ namespace Vivium {
 		
 		std::vector<GlyphInstanceData> generateRenderData(Metrics metrics, const char* characters, uint64_t length, const Font::Font& font, float scale, Alignment alignment)
 		{
+			// TODO: investigate how this works with vertical scaling on multiple lines
+
 			std::vector<GlyphInstanceData> renderData;
 			renderData.reserve(metrics.drawableCharacterCount);
 
@@ -78,6 +80,7 @@ namespace Vivium {
 					continue;
 				}
 
+				// TODO: warn on characters we don't know how to draw, or that should never be drawn
 				Font::Character fontCharacter = font.characters[character];
 
 				if (!isspace(character)) {
