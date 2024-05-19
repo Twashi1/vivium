@@ -72,6 +72,7 @@ namespace Vivium {
 				PreallocationData<Buffer::Resource, Buffer::Specification> deviceBuffers;
 				PreallocationData<Buffer::Dynamic::Resource, Buffer::Dynamic::Specification> dynamicHostBuffers;
 				PreallocationData<Texture::Resource, Texture::Specification> textures;
+				PreallocationData<Framebuffer::Resource, Framebuffer::Specification> framebuffers;
 				PreallocationData<DescriptorSet::Resource, DescriptorSet::Specification> descriptorSets;
 				PreallocationData<Pipeline::Resource, Pipeline::Specification> pipelines;
 
@@ -87,6 +88,7 @@ namespace Vivium {
 				void allocateBuffers(Engine::Handle engine, MemoryType memoryType);
 				void allocateDynamicBuffers(Engine::Handle engine);
 				void allocateTextures(Engine::Handle engine);
+				void allocateFramebuffers(Engine::Handle engine);
 
 				// 2.
 				void allocateDescriptors(Engine::Handle engine);
@@ -106,6 +108,7 @@ namespace Vivium {
 				std::vector<Texture::PromisedHandle> submit(const std::span<const Texture::Specification> specifications);
 				std::vector<DescriptorSet::PromisedHandle> submit(const std::span<const DescriptorSet::Specification> specifications);
 				std::vector<Pipeline::PromisedHandle> submit(const std::span<const Pipeline::Specification> specifications);
+				std::vector<Framebuffer::PromisedHandle> submit(const std::span<const Framebuffer::Specification> specifications);
 			};
 
 			typedef Resource* Handle;
@@ -132,6 +135,7 @@ namespace Vivium {
 			std::vector<Texture::PromisedHandle> submit(Handle handle, const std::span<const Texture::Specification> specifications);
 			std::vector<DescriptorSet::PromisedHandle> submit(Handle handle, const std::span<const DescriptorSet::Specification> specifications);
 			std::vector<Pipeline::PromisedHandle> submit(Handle handle, const std::span<const Pipeline::Specification> specifications);
+			std::vector<Framebuffer::PromisedHandle> submit(Handle handle, const std::span<const Framebuffer::Specification> specifications);
 		}
 	}
 }

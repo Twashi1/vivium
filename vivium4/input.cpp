@@ -121,6 +121,11 @@ namespace Vivium {
 		return m_cursorPosition;
 	}
 	
+	Input::Listener::operator bool() const
+	{
+		return state & State::IS_PRESSED_MASK;
+	}
+
 	Input::Listener::Listener()
 		: state(State::UP), timeHeld(0.0f)
 	{}

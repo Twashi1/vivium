@@ -183,7 +183,7 @@ namespace Vivium {
 			State state;
 			float timeHeld;
 
-			operator bool() const { return state & State::IS_PRESSED_MASK; }
+			operator bool() const;
 
 			Listener();
 		};

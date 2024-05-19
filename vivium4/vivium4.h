@@ -9,3 +9,4 @@
 #include "input.h"
 #include "graphics/gui/text.h"
 #include "graphics/gui/visual/button.h"
+#include "graphics/primitives/framebuffer.h"

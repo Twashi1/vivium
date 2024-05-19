@@ -12,19 +12,25 @@ namespace Vivium {
 			Buffer::Layout bufferLayout;
 			std::vector<DescriptorLayout::Handle> descriptorLayouts;
 			std::vector<Uniform::PushConstant> pushConstants;
+			VkRenderPass renderPass;
+			VkSampleCountFlagBits sampleCount;
 
 			Specification() = default;
+			// TODO: can't take in raw renderpass like this, user can't access it
 			Specification(
 				const std::span<const Shader::Handle> shaders,
 				const Buffer::Layout bufferLayout,
 				const std::span<const DescriptorLayout::Handle> descriptorLayouts,
-				const std::span<const Uniform::PushConstant> pushConstants
+				const std::span<const Uniform::PushConstant> pushConstants,
+				VkRenderPass renderPass,
+				VkSampleCountFlagBits sampleCount
 			);
 		};
 
 		struct Resource {
 			VkPipelineLayout layout;
 			VkPipeline pipeline;
+			VkRenderPass renderPass;
 		};	
 
 		typedef Resource* Handle;

@@ -7,8 +7,8 @@ namespace Vivium {
 			return pipeline->pipeline == VK_NULL_HANDLE;
 		}
 		
-		Specification::Specification(const std::span<const Shader::Handle> shaders, const Buffer::Layout bufferLayout, const std::span<const DescriptorLayout::Handle> descriptorLayouts, const std::span<const Uniform::PushConstant> pushConstants)
-			: shaders(shaders.begin(), shaders.end()), bufferLayout(bufferLayout), descriptorLayouts(descriptorLayouts.begin(), descriptorLayouts.end()), pushConstants(pushConstants.begin(), pushConstants.end())
+		Specification::Specification(const std::span<const Shader::Handle> shaders, const Buffer::Layout bufferLayout, const std::span<const DescriptorLayout::Handle> descriptorLayouts, const std::span<const Uniform::PushConstant> pushConstants, VkRenderPass renderPass, VkSampleCountFlagBits sampleCount)
+			: shaders(shaders.begin(), shaders.end()), bufferLayout(bufferLayout), descriptorLayouts(descriptorLayouts.begin(), descriptorLayouts.end()), pushConstants(pushConstants.begin(), pushConstants.end()), renderPass(renderPass), sampleCount(sampleCount)
 		{}
 	}
 }

@@ -6,13 +6,17 @@ namespace Vivium {
 			: positionType(PositionType::RELATIVE), scaleType(ScaleType::VIEWPORT), anchorX(Anchor::CENTER), anchorY(Anchor::CENTER), truePosition(0.0f), trueDimensions(0.0f)
 		{}
 
+		bool pointInObject(F32x2 point, Properties properties) {
+			return Math::pointInAABB(point, properties.truePosition, properties.truePosition + properties.trueDimensions);
+		}
+
 		namespace Object {
 			void updateHandle(Handle handle, F32x2 windowDimensions) {
 				VIVIUM_CHECK_HANDLE_EXISTS(handle);
 
 				// If we have no parent, resort to using window as a pseudo-parent
-				F32x2 parentDimensions = handle->parent == VK_NULL_HANDLE ? windowDimensions : handle->parent->properties.trueDimensions;
-				F32x2 parentPosition = handle->parent == VK_NULL_HANDLE ? F32x2(0.0f) : handle->parent->properties.truePosition;
+				F32x2 parentDimensions = handle->parent == VIVIUM_NULL_HANDLE ? windowDimensions : handle->parent->properties.trueDimensions;
+				F32x2 parentPosition = handle->parent == VIVIUM_NULL_HANDLE ? F32x2(0.0f) : handle->parent->properties.truePosition;
 
 				F32x2 multiplier = F32x2(0.0f);
 

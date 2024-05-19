@@ -28,6 +28,10 @@ namespace Vivium {
 			default:												severity = Log::INVALID; break;
 			}
 
+			if (severity == Log::ERROR) {
+				int x = 3;
+			}
+
 			VIVIUM_LOG(severity, "[VULKAN] {}", callbackData->pMessage);
 
 			return VK_FALSE;
@@ -511,9 +515,6 @@ namespace Vivium {
 		void Resource::beginFrame(Window::Handle window)
 		{
 			glfwPollEvents();
-
-			// TODO: Update input and camera
-
 			vkWaitForFences(device, 1, &inFlightFences[currentFrameIndex], VK_TRUE, UINT64_MAX);
 
 			VkResult acquireImageResult = vkAcquireNextImageKHR(
@@ -547,6 +548,8 @@ namespace Vivium {
 		
 		void Resource::endFrame(Window::Handle window)
 		{
+			// TODO: fix variable naming style conventions
+
 			VIVIUM_VK_CHECK(vkEndCommandBuffer(commandBuffers[currentFrameIndex]),
 				"Failed to record command buffer");
 

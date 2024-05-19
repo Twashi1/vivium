@@ -1,5 +1,6 @@
 #include "window.h"
 #include "engine.h"
+#include "graphics/primitives/framebuffer.h"
 
 namespace Vivium {
 	namespace Window {
@@ -385,46 +386,7 @@ namespace Vivium {
 		{
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 
-			// TODO: move this code
-			// Verify valid multisample count
-			VkPhysicalDeviceProperties deviceProperties;
-			vkGetPhysicalDeviceProperties(engine->physicalDevice, &deviceProperties);
-
-			VkSampleCountFlags availableMultisampleCounts = deviceProperties.limits.framebufferColorSampleCounts;
-
-			VIVIUM_ASSERT(
-				(multisampleCount != 0) &&
-				((multisampleCount & (multisampleCount - 1)) == 0) &&
-				(multisampleCount <= 64),
-				"Multisample count must be 1, 2, 4, ..., 64"
-			);
-
-			const VkSampleCountFlagBits possible_sample_counts[] = {
-				VK_SAMPLE_COUNT_64_BIT,
-				VK_SAMPLE_COUNT_32_BIT,
-				VK_SAMPLE_COUNT_16_BIT,
-				VK_SAMPLE_COUNT_8_BIT,
-				VK_SAMPLE_COUNT_4_BIT,
-				VK_SAMPLE_COUNT_2_BIT
-			};
-
-			multisampleCount = VK_SAMPLE_COUNT_2_BIT;
-
-			for (
-				uint32_t i = 0;
-				i < sizeof(possible_sample_counts) / sizeof(possible_sample_counts[0]);
-				i++
-				) {
-				// If the possible sample count is <= whats requested,
-				// and available, use it (get next best option <, if best isn't available =)
-				if (
-					(possible_sample_counts[i] <= multisampleCount) &&
-					(availableMultisampleCounts & possible_sample_counts[i])
-					) {
-					multisampleCount = possible_sample_counts[i];
-					break;
-				}
-			}
+			multisampleCount = Framebuffer::getRequestedMultisample(engine, multisampleCount);
 
 			createSwapChain(engine);
 			createImageViews(engine);

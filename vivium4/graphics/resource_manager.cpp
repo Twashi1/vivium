@@ -207,10 +207,8 @@ namespace Vivium {
 				std::vector<VkImageMemoryBarrier> textureBarriers;
 				std::vector<VkBufferImageCopy> textureRegions;
 
-				PreallocationData<Texture::Resource, Texture::Specification>& preallocationData = textures;
-
 				// Reserve space for texture temporaries
-				uint64_t specificationCount = preallocationData.specifications.size();
+				uint64_t specificationCount = textures.specifications.size();
 				textureBarriers.reserve(specificationCount * 2);
 				textureBuffers.reserve(specificationCount);
 				textureRegions.reserve(specificationCount);
@@ -223,10 +221,10 @@ namespace Vivium {
 
 				uint64_t specificationIndex = 0;
 
-				for (std::span<Texture::Resource>& resourceSpan : preallocationData.resources) {
+				for (std::span<Texture::Resource>& resourceSpan : textures.resources) {
 					for (uint64_t i = 0; i < resourceSpan.size(); i++) {
 						Texture::Resource& texture = resourceSpan[i];
-						Texture::Specification& specification = preallocationData.specifications[specificationIndex];
+						Texture::Specification& specification = textures.specifications[specificationIndex];
 
 						Commands::createImage(
 							engine,
@@ -277,10 +275,10 @@ namespace Vivium {
 				std::vector<VkDeviceMemory> oneTimeStagingMemories;
 				std::vector<VkBuffer> oneTimeStagingBuffers;
 
-				for (std::span<Texture::Resource>& resourceSpan : preallocationData.resources) {
+				for (std::span<Texture::Resource>& resourceSpan : textures.resources) {
 					for (uint64_t i = 0; i < resourceSpan.size(); i++) {
 						Texture::Resource& texture = resourceSpan[i];
-						Texture::Specification& specification = preallocationData.specifications[specificationIndex];
+						Texture::Specification& specification = textures.specifications[specificationIndex];
 
 						// Bind image to memory
 						VIVIUM_VK_CHECK(vkBindImageMemory(
@@ -362,10 +360,10 @@ namespace Vivium {
 				specificationIndex = 0;
 
 				// TODO: maybe these don't need the image to be completely filled out beforehand?
-				for (std::span<Texture::Resource>& resourceSpan : preallocationData.resources) {
+				for (std::span<Texture::Resource>& resourceSpan : textures.resources) {
 					for (uint64_t i = 0; i < resourceSpan.size(); i++) {
 						Texture::Resource& texture = resourceSpan[i];
-						Texture::Specification& specification = preallocationData.specifications[specificationIndex];
+						Texture::Specification& specification = textures.specifications[specificationIndex];
 
 						Commands::createView(engine, &texture.view, specification.imageFormat, texture.image);
 						Commands::createSampler(engine, &texture.sampler, specification.imageFilter);
@@ -401,10 +399,136 @@ namespace Vivium {
 				vkDestroyCommandPool(engine->device, commandPool, nullptr);
 			}
 
+			void Resource::allocateFramebuffers(Engine::Handle engine)
+			{
+				uint64_t specificationIndex = 0;
+
+				uint64_t totalMemoryRequired = 0;
+				uint64_t memoryTypeBits = NULL;
+
+				std::vector<uint64_t> imageMemoryLocations(framebuffers.specifications.size());
+
+				// Create images and count memory requirements
+				for (std::span<Framebuffer::Resource> resourceSpan : framebuffers.resources) {
+					for (uint64_t resourceIndex = 0; resourceIndex < resourceSpan.size(); resourceIndex++) {
+						const Framebuffer::Specification& specification = framebuffers.specifications[specificationIndex];
+						Framebuffer::Resource& resource = resourceSpan[resourceIndex];
+
+						resource.dimensions = specification.dimensions;
+						resource.format = specification.format;
+
+						Commands::createImage(
+							engine,
+							&resource.image,
+							resource.dimensions.x, resource.dimensions.y,
+							resource.format,
+							VK_SAMPLE_COUNT_1_BIT,
+							VK_IMAGE_LAYOUT_UNDEFINED,
+							VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+						);
+
+						VkMemoryRequirements requirements;
+						vkGetImageMemoryRequirements(engine->device, resource.image, &requirements);
+
+						VIVIUM_ASSERT(memoryTypeBits == requirements.memoryTypeBits && specificationIndex != 0, "Multiple memory types required?");
+
+						memoryTypeBits = requirements.memoryTypeBits;
+
+						imageMemoryLocations[specificationIndex] = Math::calculateAlignmentOffset(totalMemoryRequired, requirements.size, requirements.alignment);
+
+						++specificationIndex;
+					}
+				}
+
+				DeviceMemoryHandle memory = allocateDeviceMemory(engine, memoryTypeBits, MemoryType::DEVICE, totalMemoryRequired);
+
+				specificationIndex = 0;
+
+				for (std::span<Framebuffer::Resource> resourceSpan : framebuffers.resources) {
+					for (uint64_t resourceIndex = 0; resourceIndex < resourceSpan.size(); resourceIndex++) {
+						const Framebuffer::Specification& specification = framebuffers.specifications[specificationIndex];
+						Framebuffer::Resource& resource = resourceSpan[resourceIndex];
+
+						VIVIUM_VK_CHECK(vkBindImageMemory(
+							engine->device,
+							resource.image,
+							memory.memory,
+							imageMemoryLocations[specificationIndex]
+						), "Failed to bind image memory");
+
+						Commands::createView(engine, &resource.view, resource.format, resource.image);
+						// TODO: customiseable filter
+						Commands::createSampler(engine, &resource.sampler, Texture::Filter::LINEAR);
+				
+						// Creating render pass
+						VkAttachmentDescription colorAttachment{};
+						colorAttachment.format = static_cast<VkFormat>(resource.format);
+						colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+						colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+						colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+						colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+						colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+						colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+						colorAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+						VkAttachmentReference colorReference = { 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+
+						VkSubpassDescription subpassDescription{};
+						subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+						subpassDescription.colorAttachmentCount = 1;
+						subpassDescription.pColorAttachments = &colorReference;
+
+						// TODO: is setting up a subpass the optimal way to do it?
+						//	maybe its better to perform some transitions one-time (if even possible)?
+						std::array<VkSubpassDependency, 2> dependencies;
+						dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+						dependencies[0].dstSubpass = 0;
+						dependencies[0].srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+						dependencies[0].dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT |
+							VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+							VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+						dependencies[0].srcAccessMask = VK_ACCESS_NONE_KHR;
+						dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
+							VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+						dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+						dependencies[1].srcSubpass = 0;
+						dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+						dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+						dependencies[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+						dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+						dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+						dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+						VkRenderPassCreateInfo renderPassInfo{};
+						renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+						renderPassInfo.attachmentCount = 1;
+						renderPassInfo.pAttachments = &colorAttachment;
+						renderPassInfo.subpassCount = 1;
+						renderPassInfo.pSubpasses = &subpassDescription;
+						renderPassInfo.dependencyCount = dependencies.size();
+						renderPassInfo.pDependencies = dependencies.data();
+
+						VIVIUM_VK_CHECK(vkCreateRenderPass(engine->device, &renderPassInfo, nullptr, &resource.renderPass), "Failed render pass");
+
+						VkFramebufferCreateInfo framebufferInfo{};
+						framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+						framebufferInfo.renderPass = resource.renderPass;
+						framebufferInfo.attachmentCount = 1;
+						framebufferInfo.pAttachments = &resource.view;
+						framebufferInfo.width = resource.dimensions.x;
+						framebufferInfo.height = resource.dimensions.y;
+						framebufferInfo.layers = 1;
+
+						VIVIUM_VK_CHECK(vkCreateFramebuffer(engine->device, &framebufferInfo, nullptr, &resource.framebuffer), "Failed create fb");
+
+						++specificationIndex;
+					}
+				}
+			}
+
 			void Resource::allocateDescriptors(Engine::Handle engine)
 			{
-				PreallocationData<DescriptorSet::Resource, DescriptorSet::Specification>& preallocationData = descriptorSets;
-
 				// Create descriptor pool
 				// Count descriptor pools
 				std::array<VkDescriptorPoolSize, 4> poolSizeCounts = {
@@ -418,16 +542,18 @@ namespace Vivium {
 					// NOTE: this is slow O(n^2), could use std::unordered_set, but doubt it would be faster
 					std::vector<DescriptorLayout::Handle> seenLayouts;
 
-					for (const DescriptorSet::Specification& specification : preallocationData.specifications) {
+					for (const DescriptorSet::Specification& specification : descriptorSets.specifications) {
 						if (std::find(seenLayouts.begin(), seenLayouts.end(), specification.layout) == seenLayouts.end())
 							seenLayouts.push_back(specification.layout);
 						else continue;
 
+						// Required for this to work
 						for (const Uniform::Binding& binding : specification.layout->bindings) {
 							switch (binding.type) {
 							case Uniform::Type::UNIFORM_BUFFER:
 								poolSizeCounts[0].descriptorCount++; break;
 							case Uniform::Type::TEXTURE:
+							case Uniform::Type::FRAMEBUFFER:
 								poolSizeCounts[1].descriptorCount++; break;
 							case Uniform::Type::STORAGE_BUFFER:
 								poolSizeCounts[2].descriptorCount++; break;
@@ -453,27 +579,27 @@ namespace Vivium {
 				poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 				poolInfo.poolSizeCount = nonZeroPoolSizes.size();
 				poolInfo.pPoolSizes = nonZeroPoolSizes.data();
-				poolInfo.maxSets = preallocationData.specifications.size(); // TODO: should be fine?
+				poolInfo.maxSets = descriptorSets.specifications.size(); // TODO: should be fine?
 
 				VIVIUM_VK_CHECK(vkCreateDescriptorPool(engine->device,
 					&poolInfo, nullptr, &descriptorPool), "Failed to create descriptor pool");
 
 				// Begin populating descriptor set layouts and descriptor sets
-				std::vector<VkDescriptorSetLayout> layouts = std::vector<VkDescriptorSetLayout>(preallocationData.specifications.size());
-				std::vector<VkDescriptorSet> sets = std::vector<VkDescriptorSet>(preallocationData.specifications.size());
+				std::vector<VkDescriptorSetLayout> layouts = std::vector<VkDescriptorSetLayout>(descriptorSets.specifications.size());
+				std::vector<VkDescriptorSet> sets = std::vector<VkDescriptorSet>(descriptorSets.specifications.size());
 
 				uint64_t specificationIndex = 0;
 
 				// Copy from specification layouts to layouts vector
-				for (uint64_t i = 0; i < preallocationData.specifications.size(); i++) {
-					layouts[i] = preallocationData.specifications[i].layout->layout;
+				for (uint64_t i = 0; i < descriptorSets.specifications.size(); i++) {
+					layouts[i] = descriptorSets.specifications[i].layout->layout;
 				}
 
 				// Create descriptor sets
 				VkDescriptorSetAllocateInfo setAllocateInfo{};
 				setAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 				setAllocateInfo.descriptorPool = descriptorPool;
-				setAllocateInfo.descriptorSetCount = preallocationData.specifications.size();
+				setAllocateInfo.descriptorSetCount = descriptorSets.specifications.size();
 				setAllocateInfo.pSetLayouts = layouts.data();
 
 				VIVIUM_VK_CHECK(vkAllocateDescriptorSets(engine->device,
@@ -482,7 +608,7 @@ namespace Vivium {
 				specificationIndex = 0;
 
 				// Copy from allocated sets to the descriptor resource
-				for (std::span<DescriptorSet::Resource>& resourceSpan : preallocationData.resources) {
+				for (std::span<DescriptorSet::Resource>& resourceSpan : descriptorSets.resources) {
 					for (uint64_t i = 0; i < resourceSpan.size(); i++) {
 						resourceSpan[i].descriptorSet = sets[specificationIndex];
 
@@ -494,8 +620,8 @@ namespace Vivium {
 				uint32_t totalUniforms = 0;
 
 				// Quick iteration to count total uniforms
-				for (uint32_t i = 0; i < preallocationData.specifications.size(); i++) {
-					totalUniforms += preallocationData.specifications[i].uniforms.size();
+				for (uint32_t i = 0; i < descriptorSets.specifications.size(); i++) {
+					totalUniforms += descriptorSets.specifications[i].uniforms.size();
 				}
 
 				std::vector<VkWriteDescriptorSet> descriptorWrites(totalUniforms);
@@ -506,8 +632,8 @@ namespace Vivium {
 				std::vector<VkDescriptorImageInfo> imageInfos;
 				imageInfos.reserve(totalUniforms);
 
-				for (uint32_t i = 0; i < preallocationData.specifications.size(); i++) {
-					const DescriptorSet::Specification& specification = preallocationData.specifications[i];
+				for (uint32_t i = 0; i < descriptorSets.specifications.size(); i++) {
+					const DescriptorSet::Specification& specification = descriptorSets.specifications[i];
 
 					// Iterate each uniform in specification, and generate a descriptor set write
 					for (uint64_t j = 0; j < specification.uniforms.size(); j++) {
@@ -531,7 +657,6 @@ namespace Vivium {
 							bufferInfo.range = data.bufferData.size;
 
 							write.pBufferInfo = &bufferInfo;
-							write.descriptorType = static_cast<VkDescriptorType>(binding.type);
 
 							break;
 						}
@@ -545,7 +670,6 @@ namespace Vivium {
 							bufferInfo.range = data.dynamicBufferData.size;
 
 							write.pBufferInfo = &bufferInfo;
-							write.descriptorType = static_cast<VkDescriptorType>(binding.type);
 
 							break;
 						}
@@ -559,7 +683,19 @@ namespace Vivium {
 							imageInfo.sampler = data.textureData.texture->sampler;
 
 							write.pImageInfo = &imageInfo;
-							write.descriptorType = static_cast<VkDescriptorType>(binding.type);
+
+							break;
+						}
+						case Uniform::Type::FRAMEBUFFER:
+						{
+							imageInfos.push_back({});
+							VkDescriptorImageInfo& imageInfo = imageInfos.back();
+
+							imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+							imageInfo.imageView = data.framebufferData.framebuffer->view;
+							imageInfo.sampler = data.framebufferData.framebuffer->sampler;
+
+							write.pImageInfo = &imageInfo;
 
 							break;
 						}
@@ -570,6 +706,7 @@ namespace Vivium {
 							break;
 						}
 
+						write.descriptorType = Uniform::descriptorType(binding.type);
 						write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 						write.dstSet = sets[i];
 						write.dstBinding = binding.slot;
@@ -591,6 +728,7 @@ namespace Vivium {
 						const Pipeline::Specification& specification = pipelines.specifications[specificationIndex++];
 
 						Pipeline::Resource& resource = resourceSpan[resourceIndex];
+						resource.renderPass = specification.renderPass;
 						
 						std::vector<VkPipelineShaderStageCreateInfo> shaderStages(specification.shaders.size());
 
@@ -636,7 +774,7 @@ namespace Vivium {
 						VkPipelineMultisampleStateCreateInfo multisampling{};
 						multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 						multisampling.sampleShadingEnable = VK_FALSE;
-						multisampling.rasterizationSamples = window->multisampleCount;
+						multisampling.rasterizationSamples = specification.sampleCount;
 
 						VkPipelineColorBlendAttachmentState colorBlendAttachment{};
 						colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -705,7 +843,7 @@ namespace Vivium {
 						pipelineInfo.pColorBlendState = &colorBlending;
 						pipelineInfo.pDynamicState = &dynamicState;
 						pipelineInfo.layout = resource.layout;
-						pipelineInfo.renderPass = engine->renderPass;
+						pipelineInfo.renderPass = resource.renderPass;
 						pipelineInfo.subpass = 0;
 						pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 						pipelineInfo.basePipelineIndex = -1;
@@ -735,6 +873,8 @@ namespace Vivium {
 					allocateDynamicBuffers(engine);
 				if (!textures.specifications.empty())
 					allocateTextures(engine);
+				if (!framebuffers.specifications.empty())
+					allocateFramebuffers(engine);
 
 				if (!descriptorSets.specifications.empty())
 					allocateDescriptors(engine);
@@ -746,6 +886,7 @@ namespace Vivium {
 				deviceBuffers.clear();
 				dynamicHostBuffers.clear();
 				textures.clear();
+				framebuffers.clear();
 				descriptorSets.clear();
 				pipelines.clear();
 			}
@@ -803,6 +944,11 @@ namespace Vivium {
 				return pipelines.submit(&resourceAllocator, specifications);
 			}
 
+			std::vector<Framebuffer::PromisedHandle> Resource::submit(const std::span<const Framebuffer::Specification> specifications)
+			{
+				return framebuffers.submit(&resourceAllocator, specifications);
+			}
+
 			void allocate(Engine::Handle engine, Window::Handle window, Handle handle) {
 				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 
@@ -830,6 +976,11 @@ namespace Vivium {
 			}
 
 			std::vector<Pipeline::PromisedHandle> submit(Handle handle, const std::span<const Pipeline::Specification> specifications)
+			{
+				return handle->submit(specifications);
+			}
+
+			std::vector<Framebuffer::PromisedHandle> submit(Handle handle, const std::span<const Framebuffer::Specification> specifications)
 			{
 				return handle->submit(specifications);
 			}

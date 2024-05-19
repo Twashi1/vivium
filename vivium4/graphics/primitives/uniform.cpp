@@ -28,6 +28,15 @@ namespace Vivium {
 				
 			return data;
 		}
+
+		Data Data::fromFramebuffer(Framebuffer::Handle framebuffer)
+		{
+			Data data;
+
+			data.framebufferData = Data::FramebufferData(framebuffer);
+
+			return data;
+		}
 		
 		PushConstant::PushConstant(Shader::Stage stage, uint32_t size, uint32_t offset)
 		{
@@ -40,5 +49,10 @@ namespace Vivium {
 		Binding::Binding(Shader::Stage stage, uint32_t slot, Type type)
 			: stage(stage), slot(slot), type(type)
 		{}
+
+		VkDescriptorType descriptorType(Type type)
+		{
+			return static_cast<VkDescriptorType>(static_cast<uint32_t>(type) & 0xffffffff);
+		}
 	}
 }

@@ -18,6 +18,9 @@ Look towards custom allocator (memory aligned, etc.) to remove double pointer in
 	- Or instead, use `std::string_view`, `span` includes the null termination character
 - Clear render/GUI/computation threads. Ability to submit from multiple threads
 - Shader debugger tool - use CPU to simulate GPU actions for some fragments
+- Text should have scaling on both axis
+- Allow non-multisampled swap chain (DO THIS FIRST)
+- Whatever we do, we can never have seamless target changing, since every pipeline references the render pass
 ## Types
 
 ### Resources

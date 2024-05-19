@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "../../math/vec2.h"
+#include "../../math/aabb.h"
 #include "../../error/log.h"
 #include "../../storage.h"
 
@@ -43,6 +44,8 @@ namespace Vivium {
 
 			Properties();
 		};
+
+		bool pointInObject(F32x2 point, Properties properties);
 
 		namespace Object {
 			struct Resource;
