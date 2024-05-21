@@ -1,13 +1,12 @@
 #pragma once
 
-#include "../base.h"
-#include "../text.h"
-#include "../../color.h"
+#include "text.h"
 
 namespace Vivium {
 	namespace GUI {
 		namespace Visual {
 			namespace Button {
+				// TODO: use text->base
 				struct Resource {
 					Object::Handle base;
 
@@ -36,7 +35,7 @@ namespace Vivium {
 				typedef Resource* PromisedHandle;
 
 				template <Allocator::AllocatorType AllocatorType>
-				void drop(AllocatorType allocator, Handle handle, Engine::Handle engine) {
+				void drop(AllocatorType* allocator, Handle handle, Engine::Handle engine) {
 					VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 
 					GUI::Object::drop(allocator, handle->base);
@@ -60,7 +59,7 @@ namespace Vivium {
 				}
 
 				template <Allocator::AllocatorType AllocatorType>
-				PromisedHandle submit(AllocatorType allocator, ResourceManager::Static::Handle manager, Engine::Handle engine)
+				PromisedHandle submit(AllocatorType* allocator, ResourceManager::Static::Handle manager, Context::Handle textContext, Engine::Handle engine, Window::Handle window)
 				{
 					PromisedHandle button = Allocator::allocateResource<Resource, AllocatorType>(allocator);
 
@@ -109,15 +108,17 @@ namespace Vivium {
 					button->vertexShader = Shader::create(allocator, engine, vertShaderSpec);
 
 					// TODO: maximum text length should be parameter
-					button->text = Text::submit(allocator, manager, engine, Text::Specification(64, Font::Font::fromDistanceFieldFile("testGame/res/fonts/consola.sdf")));
+					button->text = Text::submit(allocator, manager, engine, textContext, Text::Specification(64, Font::Font::fromDistanceFieldFile("testGame/res/fonts/consola.sdf")));
 
 					std::vector<Pipeline::Handle> pipelines = ResourceManager::Static::submit(manager,
 						std::vector<Pipeline::Specification>({
-							Pipeline::Specification(
+							Pipeline::Specification::fromWindow(
 								std::vector<Shader::Handle>({ button->fragmentShader, button->vertexShader }),
 								Buffer::Layout::fromTypes(std::vector<Shader::DataType>({ Shader::DataType::VEC2 })),
 								std::vector<DescriptorLayout::Handle>({ button->descriptorLayout }),
-								std::vector<Uniform::PushConstant>({ Uniform::PushConstant(Shader::Stage::VERTEX, sizeof(Math::Perspective), 0)})
+								std::vector<Uniform::PushConstant>({ Uniform::PushConstant(Shader::Stage::VERTEX, sizeof(Math::Perspective), 0)}),
+								engine,
+								window
 							)
 							}));
 
@@ -127,7 +128,7 @@ namespace Vivium {
 				}
 
 				void setup(Button::Handle button, Commands::Context::Handle context, Engine::Handle engine);
-				void render(Button::Handle button, Commands::Context::Handle context, Math::Perspective perspective);
+				void render(Button::Handle button, Commands::Context::Handle context, Context::Handle textContext, Math::Perspective perspective);
 
 				Properties& properties(Button::Handle button);
 				void setText(Button::Handle button, Engine::Handle engine, Window::Handle window, Commands::Context::Handle context, const std::string_view view);

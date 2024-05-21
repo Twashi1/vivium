@@ -63,7 +63,7 @@ namespace Vivium {
 		typedef Resource* Handle;
 
 		template <Allocator::AllocatorType AllocatorType>
-		Handle create(AllocatorType allocator, Engine::Handle engine, Specification specification) {
+		Handle create(AllocatorType* allocator, Engine::Handle engine, Specification specification) {
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 
 			Handle handle = Allocator::allocateResource<Resource>(allocator);
@@ -89,7 +89,7 @@ namespace Vivium {
 		}
 
 		template <Allocator::AllocatorType AllocatorType>
-		void drop(AllocatorType allocator, Shader::Handle shader, Engine::Handle engine) {
+		void drop(AllocatorType* allocator, Shader::Handle shader, Engine::Handle engine) {
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 			VIVIUM_CHECK_HANDLE_EXISTS(shader);
 

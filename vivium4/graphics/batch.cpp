@@ -50,7 +50,7 @@ namespace Vivium {
 			uint16_t* indexMapping = reinterpret_cast<uint16_t*>(Buffer::getMapping(handle->indexStaging));
 
 			for (uint64_t i = 0; i < indicies.size(); i++) {
-				indexMapping[handle->indexBufferIndex + i] = indicies[i] + handle->verticesSubmitted;
+				indexMapping[handle->indexBufferIndex + i] = static_cast<uint16_t>(indicies[i] + handle->verticesSubmitted);
 			}
 
 			handle->indexBufferIndex += indicies.size();
@@ -70,7 +70,7 @@ namespace Vivium {
 			Commands::transferBuffer(context, handle->indexStaging, handle->indexDevice);
 			Commands::Context::endTransfer(context, engine);
 
-			result.indexCount = handle->indexBufferIndex;
+			result.indexCount = static_cast<uint32_t>(handle->indexBufferIndex);
 
 			handle->indexBufferIndex = 0;
 			handle->vertexBufferIndex = 0;

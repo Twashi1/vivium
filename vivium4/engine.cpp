@@ -236,16 +236,16 @@ namespace Vivium {
 			VkDeviceCreateInfo createInfo{};
 			createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 
-			createInfo.queueCreateInfoCount = queueCreateInfos.size();
+			createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 			createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
 			createInfo.pEnabledFeatures = &deviceFeatures;
 
-			createInfo.enabledExtensionCount = extensions.size();
+			createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
 			createInfo.ppEnabledExtensionNames = extensions.data();
 
 			if (enableValidationLayers) {
-				createInfo.enabledLayerCount = validationLayers.size();
+				createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 				createInfo.ppEnabledLayerNames = validationLayers.data();
 			}
 			else {
@@ -281,7 +281,7 @@ namespace Vivium {
 			allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 			allocateInfo.commandPool = commandPool;
 			allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-			allocateInfo.commandBufferCount = commandBuffers.size();
+			allocateInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
 
 			VIVIUM_VK_CHECK(vkAllocateCommandBuffers(device, &allocateInfo, commandBuffers.data()),
 				"Failed to allocate command buffers");
@@ -339,13 +339,13 @@ namespace Vivium {
 				extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 			}
 
-			createInfo.enabledExtensionCount = extensions.size();
+			createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
 			createInfo.ppEnabledExtensionNames = extensions.data();
 
 			VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
 
 			if (enableValidationLayers) {
-				createInfo.enabledLayerCount = validationLayers.size();
+				createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 				createInfo.ppEnabledLayerNames = validationLayers.data();
 
 				populateDebugMessengerInfo(debugCreateInfo);
@@ -439,7 +439,7 @@ namespace Vivium {
 			float sleep_time = targetTimePerFrame - elapsed;
 
 			if (sleep_time > 0.0f) {
-				Time::nanosleep(sleep_time * 1.0E9f);
+				Time::nanosleep(static_cast<long long>(static_cast<double>(sleep_time) * 1.0E9));
 			}
 
 			frameTimer.reset();
@@ -623,8 +623,8 @@ namespace Vivium {
 			VkViewport viewport{};
 			viewport.x = 0.0f;
 			viewport.y = 0.0f;
-			viewport.width = window->swapChainExtent.width;
-			viewport.height = window->swapChainExtent.height;
+			viewport.width = static_cast<float>(window->swapChainExtent.width);
+			viewport.height = static_cast<float>(window->swapChainExtent.height);
 			viewport.minDepth = 0.0f;
 			viewport.maxDepth = 1.0f;
 			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);

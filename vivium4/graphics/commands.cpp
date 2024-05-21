@@ -117,7 +117,7 @@ namespace Vivium {
 			allocateCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 			allocateCreateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 			allocateCreateInfo.commandPool = pool;
-			allocateCreateInfo.commandBufferCount = count;
+			allocateCreateInfo.commandBufferCount = static_cast<uint32_t>(count);
 
 			VIVIUM_VK_CHECK(vkAllocateCommandBuffers(
 				engine->device,
@@ -150,7 +150,7 @@ namespace Vivium {
 
 			VkSubmitInfo submitInfo{};
 			submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-			submitInfo.commandBufferCount = count;
+			submitInfo.commandBufferCount = static_cast<uint32_t>(count);
 			submitInfo.pCommandBuffers = commandBuffers;
 
 			vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
@@ -420,7 +420,7 @@ namespace Vivium {
 				0,
 				1,
 				&(descriptorSet->descriptorSet),
-				offsets.size(),
+				static_cast<uint32_t>(offsets.size()),
 				offsets.data()
 			);
 		}
@@ -431,8 +431,8 @@ namespace Vivium {
 				context->inTransfer ? context->transferCommandBuffer : context->currentCommandBuffer,
 				pipeline->layout,
 				static_cast<VkShaderStageFlags>(stage),
-				offset,
-				size,
+				static_cast<uint32_t>(offset),
+				static_cast<uint32_t>(size),
 				data
 			);
 		}

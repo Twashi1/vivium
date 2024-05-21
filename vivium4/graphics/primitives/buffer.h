@@ -57,15 +57,13 @@ namespace Vivium {
 		void* getMapping(Handle buffer);
 
 		template <Allocator::AllocatorType AllocatorType>
-		void drop(AllocatorType allocator, Handle buffer, Engine::Handle engine) {
+		void drop(AllocatorType* allocator, Handle buffer, Engine::Handle engine) {
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 			VIVIUM_CHECK_HANDLE_EXISTS(buffer);
 
-			{
-				vkDestroyBuffer(engine->device, buffer->buffer, nullptr);
+			vkDestroyBuffer(engine->device, buffer->buffer, nullptr);
 
-				VIVIUM_DEBUG_ONLY(buffer = VK_NULL_HANDLE);
-			}
+			VIVIUM_DEBUG_ONLY(buffer = VK_NULL_HANDLE);
 
 			Allocator::dropResource(allocator, buffer);
 		}
@@ -99,15 +97,13 @@ namespace Vivium {
 			void* getMapping(Handle buffer);
 
 			template <Allocator::AllocatorType AllocatorType>
-			void drop(AllocatorType allocator, Handle buffer, Engine::Handle engine) {
+			void drop(AllocatorType* allocator, Handle buffer, Engine::Handle engine) {
 				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 				VIVIUM_CHECK_HANDLE_EXISTS(buffer);
 
-				{
-					vkDestroyBuffer(engine->device, buffer->buffer, nullptr);
+				vkDestroyBuffer(engine->device, buffer->buffer, nullptr);
 
-					VIVIUM_DEBUG_ONLY(buffer = VK_NULL_HANDLE);
-				}
+				VIVIUM_DEBUG_ONLY(buffer = VK_NULL_HANDLE);
 
 				Allocator::dropResource(allocator, buffer);
 			}

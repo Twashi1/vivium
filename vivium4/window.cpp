@@ -5,7 +5,7 @@
 namespace Vivium {
 	namespace Window {
 		Options::Options()
-			: dimensions({ 600, 400 }), title("Vivium4"), multisampleCount(VK_SAMPLE_COUNT_2_BIT)
+			: dimensions({ 600, 400 }), title("Vivium4"), multisampleCount(VK_SAMPLE_COUNT_4_BIT)
 		{}
 
 		void Resource::framebufferResizeCallback(GLFWwindow* glfwWindow, int width, int height)
@@ -201,7 +201,8 @@ namespace Vivium {
 			colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 			colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 			colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			colorAttachment.finalLayout = multisampleCount & VK_SAMPLE_COUNT_1_BIT ?
+				VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 			VkAttachmentReference colorAttachmentRef{};
 			colorAttachmentRef.attachment = 0;
@@ -225,7 +226,10 @@ namespace Vivium {
 			subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 			subpass.colorAttachmentCount = 1;
 			subpass.pColorAttachments = &colorAttachmentRef;
-			subpass.pResolveAttachments = &colorAttachmentResolveRef;
+
+			if (!(multisampleCount & VK_SAMPLE_COUNT_1_BIT)) {
+				subpass.pResolveAttachments = &colorAttachmentResolveRef;
+			}
 
 			VkSubpassDependency dependency{};
 			dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -237,12 +241,12 @@ namespace Vivium {
 
 			VkAttachmentDescription attachments[2] = {
 				colorAttachment,
-				colorAttachmentResolve
+				colorAttachmentResolve // Only include in non-multisampled image
 			};
 
 			VkRenderPassCreateInfo renderPassInfo{};
 			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-			renderPassInfo.attachmentCount = 2;
+			renderPassInfo.attachmentCount = multisampleCount & VK_SAMPLE_COUNT_1_BIT ? 1 : 2;
 			renderPassInfo.pAttachments = attachments;
 			renderPassInfo.subpassCount = 1;
 			renderPassInfo.pSubpasses = &subpass;
@@ -282,9 +286,11 @@ namespace Vivium {
 
 		void Resource::deleteSwapChain(Engine::Handle engine)
 		{
-			vkDestroyImage(engine->device, multisampleColorImage, nullptr);
-			vkDestroyImageView(engine->device, multisampleColorImageView, nullptr);
-			vkFreeMemory(engine->device, multisampleColorMemory, nullptr);
+			if (!(multisampleCount & VK_SAMPLE_COUNT_1_BIT)) {
+				vkDestroyImage(engine->device, multisampleColorImage, nullptr);
+				vkDestroyImageView(engine->device, multisampleColorImageView, nullptr);
+				vkFreeMemory(engine->device, multisampleColorMemory, nullptr);
+			}
 
 			for (VkFramebuffer framebuffer : swapChainFramebuffers) {
 				vkDestroyFramebuffer(engine->device, framebuffer, nullptr);
@@ -386,11 +392,12 @@ namespace Vivium {
 		{
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 
-			multisampleCount = Framebuffer::getRequestedMultisample(engine, multisampleCount);
+			multisampleCount = static_cast<VkSampleCountFlagBits>(Framebuffer::getRequestedMultisamples(engine, multisampleCount));
 
 			createSwapChain(engine);
 			createImageViews(engine);
-			createMultisampleColorImages(engine);
+			if (!(multisampleCount & VK_SAMPLE_COUNT_1_BIT))
+				createMultisampleColorImages(engine);
 			createRenderPass(engine);
 			createFramebuffers(engine);
 		}

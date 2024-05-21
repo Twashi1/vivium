@@ -7,23 +7,45 @@
 
 namespace Vivium {
 	namespace Pipeline {
+		enum Target {
+			FRAMEBUFFER,
+			WINDOW
+		};
+
 		struct Specification {
 			std::vector<Shader::Handle> shaders;
 			Buffer::Layout bufferLayout;
 			std::vector<DescriptorLayout::Handle> descriptorLayouts;
 			std::vector<Uniform::PushConstant> pushConstants;
-			VkRenderPass renderPass;
+			
+			// Render pass source
+			Target target;
+
+			union {
+				Engine::Handle engine;
+				Framebuffer::Handle framebuffer;
+			};
+
 			VkSampleCountFlagBits sampleCount;
 
 			Specification() = default;
-			// TODO: can't take in raw renderpass like this, user can't access it
-			Specification(
+
+			static Specification fromWindow(
 				const std::span<const Shader::Handle> shaders,
 				const Buffer::Layout bufferLayout,
 				const std::span<const DescriptorLayout::Handle> descriptorLayouts,
 				const std::span<const Uniform::PushConstant> pushConstants,
-				VkRenderPass renderPass,
-				VkSampleCountFlagBits sampleCount
+				Engine::Handle engine,
+				Window::Handle window
+			);
+
+			static Specification fromFramebuffer(
+				const std::span<const Shader::Handle> shaders,
+				const Buffer::Layout bufferLayout,
+				const std::span<const DescriptorLayout::Handle> descriptorLayouts,
+				const std::span<const Uniform::PushConstant> pushConstants,
+				Framebuffer::Handle framebuffer,
+				int multisampleCount
 			);
 		};
 
@@ -39,7 +61,7 @@ namespace Vivium {
 		bool isNull(const Handle pipeline);
 
 		template <Allocator::AllocatorType AllocatorType>
-		void drop(AllocatorType allocator, Handle handle, Engine::Handle engine)
+		void drop(AllocatorType* allocator, Handle handle, Engine::Handle engine)
 		{
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 			VIVIUM_CHECK_HANDLE_EXISTS(handle);

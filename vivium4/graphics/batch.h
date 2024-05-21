@@ -17,7 +17,7 @@ namespace Vivium {
 
 		struct Result {
 			Buffer::Handle vertexBuffer, indexBuffer;
-			uint64_t indexCount;
+			uint32_t indexCount;
 		};
 
 		struct Resource {
@@ -40,7 +40,7 @@ namespace Vivium {
 		Result endSubmission(Handle handle, Commands::Context::Handle context, Engine::Handle engine);
 
 		template <Allocator::AllocatorType AllocatorType>
-		void drop(AllocatorType allocator, Handle handle, Engine::Handle engine)
+		void drop(AllocatorType* allocator, Handle handle, Engine::Handle engine)
 		{
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 			VIVIUM_CHECK_HANDLE_EXISTS(handle);
@@ -54,7 +54,7 @@ namespace Vivium {
 		}
 
 		template <Allocator::AllocatorType AllocatorType>
-		PromisedHandle submit(AllocatorType allocator, Engine::Handle engine, ResourceManager::Static::Handle manager, Specification specification)
+		PromisedHandle submit(AllocatorType* allocator, Engine::Handle engine, ResourceManager::Static::Handle manager, Specification specification)
 		{
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 

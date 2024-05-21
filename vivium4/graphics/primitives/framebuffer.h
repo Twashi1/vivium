@@ -30,7 +30,7 @@ namespace Vivium {
 	}
 
 	namespace Framebuffer {
-		// TODO: dimensions and format required?
+		// TODO: dimensions and format not required?
 		struct Resource {
 			F32x2 dimensions;
 			Texture::Format format;
@@ -55,7 +55,7 @@ namespace Vivium {
 		int getRequestedMultisamples(Engine::Handle engine, int multisampleCount);
 		
 		template <Allocator::AllocatorType AllocatorType>
-		void drop(AllocatorType storage, Handle handle, Engine::Handle engine) {
+		void drop(AllocatorType* allocator , Handle handle, Engine::Handle engine) {
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 			VIVIUM_CHECK_HANDLE_EXISTS(handle);
 

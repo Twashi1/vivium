@@ -11,6 +11,10 @@ namespace Vivium {
 		}
 
 		namespace Object {
+			Specification::Specification()
+				: parent(VIVIUM_NULL_HANDLE)
+			{}
+
 			void updateHandle(Handle handle, F32x2 windowDimensions) {
 				VIVIUM_CHECK_HANDLE_EXISTS(handle);
 

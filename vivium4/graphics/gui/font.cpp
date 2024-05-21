@@ -157,6 +157,7 @@ namespace Vivium {
 			font.fontSize = outputFieldSize;
 			font.data = std::vector<uint8_t>(font.imageDimensions.x * font.imageDimensions.y, 0);
 
+			// TODO: why is this working? it should be overwriting the buffer like crazy???
 			// TODO: padding on characters dependent on image size
 			uint8_t* glyphPixels = new uint8_t[inputFontSize * inputFontSize];
 			uint8_t* glyphDistanceField = new uint8_t[outputFieldSize * outputFieldSize];

@@ -147,7 +147,7 @@ namespace Vivium {
 
 						for (uint64_t j = 0; j < specification.suballocations.size(); j++) {
 							resource.suballocationSizes[j] = specification.suballocations[j];
-							resource.suballocationOffsets[j] = Math::calculateAlignmentOffset(totalBufferSize, resource.suballocationSizes[j], suballocationAlignment);
+							resource.suballocationOffsets[j] = static_cast<uint32_t>(Math::calculateAlignmentOffset(totalBufferSize, resource.suballocationSizes[j], suballocationAlignment));
 						}
 
 						// Create the VkBuffer and get the memory requirements
@@ -392,7 +392,7 @@ namespace Vivium {
 				vkFreeCommandBuffers(
 					engine->device,
 					commandPool,
-					commandBuffers.size(),
+					static_cast<uint32_t>(commandBuffers.size()),
 					commandBuffers.data()
 				);
 
@@ -404,7 +404,7 @@ namespace Vivium {
 				uint64_t specificationIndex = 0;
 
 				uint64_t totalMemoryRequired = 0;
-				uint64_t memoryTypeBits = NULL;
+				uint32_t memoryTypeBits = NULL;
 
 				std::vector<uint64_t> imageMemoryLocations(framebuffers.specifications.size());
 
@@ -420,7 +420,7 @@ namespace Vivium {
 						Commands::createImage(
 							engine,
 							&resource.image,
-							resource.dimensions.x, resource.dimensions.y,
+							static_cast<uint32_t>(resource.dimensions.x), static_cast<uint32_t>(resource.dimensions.y),
 							resource.format,
 							VK_SAMPLE_COUNT_1_BIT,
 							VK_IMAGE_LAYOUT_UNDEFINED,
@@ -430,7 +430,7 @@ namespace Vivium {
 						VkMemoryRequirements requirements;
 						vkGetImageMemoryRequirements(engine->device, resource.image, &requirements);
 
-						VIVIUM_ASSERT(memoryTypeBits == requirements.memoryTypeBits && specificationIndex != 0, "Multiple memory types required?");
+						VIVIUM_ASSERT(memoryTypeBits == requirements.memoryTypeBits || specificationIndex == 0, "Multiple memory types required?");
 
 						memoryTypeBits = requirements.memoryTypeBits;
 
@@ -506,7 +506,7 @@ namespace Vivium {
 						renderPassInfo.pAttachments = &colorAttachment;
 						renderPassInfo.subpassCount = 1;
 						renderPassInfo.pSubpasses = &subpassDescription;
-						renderPassInfo.dependencyCount = dependencies.size();
+						renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
 						renderPassInfo.pDependencies = dependencies.data();
 
 						VIVIUM_VK_CHECK(vkCreateRenderPass(engine->device, &renderPassInfo, nullptr, &resource.renderPass), "Failed render pass");
@@ -516,8 +516,8 @@ namespace Vivium {
 						framebufferInfo.renderPass = resource.renderPass;
 						framebufferInfo.attachmentCount = 1;
 						framebufferInfo.pAttachments = &resource.view;
-						framebufferInfo.width = resource.dimensions.x;
-						framebufferInfo.height = resource.dimensions.y;
+						framebufferInfo.width = static_cast<uint32_t>(resource.dimensions.x);
+						framebufferInfo.height = static_cast<uint32_t>(resource.dimensions.y);
 						framebufferInfo.layers = 1;
 
 						VIVIUM_VK_CHECK(vkCreateFramebuffer(engine->device, &framebufferInfo, nullptr, &resource.framebuffer), "Failed create fb");
@@ -577,9 +577,9 @@ namespace Vivium {
 
 				VkDescriptorPoolCreateInfo poolInfo{};
 				poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-				poolInfo.poolSizeCount = nonZeroPoolSizes.size();
+				poolInfo.poolSizeCount = static_cast<uint32_t>(nonZeroPoolSizes.size());
 				poolInfo.pPoolSizes = nonZeroPoolSizes.data();
-				poolInfo.maxSets = descriptorSets.specifications.size(); // TODO: should be fine?
+				poolInfo.maxSets = static_cast<uint32_t>(descriptorSets.specifications.size()); // TODO: should be fine?
 
 				VIVIUM_VK_CHECK(vkCreateDescriptorPool(engine->device,
 					&poolInfo, nullptr, &descriptorPool), "Failed to create descriptor pool");
@@ -599,7 +599,7 @@ namespace Vivium {
 				VkDescriptorSetAllocateInfo setAllocateInfo{};
 				setAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 				setAllocateInfo.descriptorPool = descriptorPool;
-				setAllocateInfo.descriptorSetCount = descriptorSets.specifications.size();
+				setAllocateInfo.descriptorSetCount = static_cast<uint32_t>(descriptorSets.specifications.size());
 				setAllocateInfo.pSetLayouts = layouts.data();
 
 				VIVIUM_VK_CHECK(vkAllocateDescriptorSets(engine->device,
@@ -617,10 +617,10 @@ namespace Vivium {
 				}
 
 				// Populate descriptors
-				uint32_t totalUniforms = 0;
+				uint64_t totalUniforms = 0;
 
 				// Quick iteration to count total uniforms
-				for (uint32_t i = 0; i < descriptorSets.specifications.size(); i++) {
+				for (uint64_t i = 0; i < descriptorSets.specifications.size(); i++) {
 					totalUniforms += descriptorSets.specifications[i].uniforms.size();
 				}
 
@@ -632,7 +632,7 @@ namespace Vivium {
 				std::vector<VkDescriptorImageInfo> imageInfos;
 				imageInfos.reserve(totalUniforms);
 
-				for (uint32_t i = 0; i < descriptorSets.specifications.size(); i++) {
+				for (uint64_t i = 0; i < descriptorSets.specifications.size(); i++) {
 					const DescriptorSet::Specification& specification = descriptorSets.specifications[i];
 
 					// Iterate each uniform in specification, and generate a descriptor set write
@@ -716,10 +716,10 @@ namespace Vivium {
 				}
 
 				vkUpdateDescriptorSets(engine->device,
-					descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
+					static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 			}
 			
-			void Resource::allocatePipelines(Engine::Handle engine, Window::Handle window)
+			void Resource::allocatePipelines(Engine::Handle engine)
 			{
 				uint64_t specificationIndex = 0;
 
@@ -728,7 +728,14 @@ namespace Vivium {
 						const Pipeline::Specification& specification = pipelines.specifications[specificationIndex++];
 
 						Pipeline::Resource& resource = resourceSpan[resourceIndex];
-						resource.renderPass = specification.renderPass;
+						switch (specification.target) {
+						case Pipeline::Target::WINDOW:
+							resource.renderPass = specification.engine->renderPass; break;
+						case Pipeline::Target::FRAMEBUFFER:
+							resource.renderPass = specification.framebuffer->renderPass; break;
+						default:
+							VIVIUM_LOG(Log::FATAL, "Invalid pipeline target, can't find render pass"); break;
+						}
 						
 						std::vector<VkPipelineShaderStageCreateInfo> shaderStages(specification.shaders.size());
 
@@ -747,7 +754,7 @@ namespace Vivium {
 						VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 						vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 						vertexInputInfo.vertexBindingDescriptionCount = 1;
-						vertexInputInfo.vertexAttributeDescriptionCount = specification.bufferLayout.attributeDescriptions.size();
+						vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(specification.bufferLayout.attributeDescriptions.size());
 						vertexInputInfo.pVertexBindingDescriptions = &(specification.bufferLayout.bindingDescription);
 						vertexInputInfo.pVertexAttributeDescriptions = specification.bufferLayout.attributeDescriptions.data();
 
@@ -805,7 +812,7 @@ namespace Vivium {
 
 						VkPipelineDynamicStateCreateInfo dynamicState{};
 						dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-						dynamicState.dynamicStateCount = dynamicStates.size();
+						dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
 						dynamicState.pDynamicStates = dynamicStates.data();
 
 						std::vector<VkDescriptorSetLayout> descriptorLayouts(specification.descriptorLayouts.size());
@@ -817,10 +824,10 @@ namespace Vivium {
 						VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 						pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 						pipelineLayoutInfo.pSetLayouts = descriptorLayouts.data();
-						pipelineLayoutInfo.setLayoutCount = descriptorLayouts.size();
+						pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorLayouts.size());
 						// TODO: dirty, better to just make the copy
 						pipelineLayoutInfo.pPushConstantRanges = reinterpret_cast<const VkPushConstantRange*>(specification.pushConstants.data());
-						pipelineLayoutInfo.pushConstantRangeCount = specification.pushConstants.size();
+						pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(specification.pushConstants.size());
 
 						VIVIUM_VK_CHECK(vkCreatePipelineLayout(
 							engine->device,
@@ -832,7 +839,7 @@ namespace Vivium {
 
 						VkGraphicsPipelineCreateInfo pipelineInfo{};
 						pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-						pipelineInfo.stageCount = shaderStages.size();
+						pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
 						pipelineInfo.pStages = shaderStages.data();
 						pipelineInfo.pVertexInputState = &vertexInputInfo;
 						pipelineInfo.pInputAssemblyState = &inputAssembly;
@@ -864,7 +871,7 @@ namespace Vivium {
 				// TODO: editable block size
 				: descriptorPool(VK_NULL_HANDLE) {}
 
-			void Resource::allocate(Engine::Handle engine, Window::Handle window) {
+			void Resource::allocate(Engine::Handle engine) {
 				if (!hostBuffers.specifications.empty())
 					allocateBuffers(engine, MemoryType::STAGING);
 				if (!deviceBuffers.specifications.empty())
@@ -880,7 +887,7 @@ namespace Vivium {
 					allocateDescriptors(engine);
 
 				if (!pipelines.specifications.empty())
-					allocatePipelines(engine, window);
+					allocatePipelines(engine);
 
 				hostBuffers.clear();
 				deviceBuffers.clear();
@@ -901,7 +908,7 @@ namespace Vivium {
 					vkFreeMemory(engine->device, deviceMemoryHandle.memory, nullptr);
 				}
 
-				sharedTrackerData.deviceMemoryAllocations -= deviceMemoryHandles.size();
+				sharedTrackerData.deviceMemoryAllocations -= static_cast<uint32_t>(deviceMemoryHandles.size());
 
 				// Free descriptor pool
 				vkDestroyDescriptorPool(engine->device, descriptorPool, nullptr);
@@ -949,10 +956,10 @@ namespace Vivium {
 				return framebuffers.submit(&resourceAllocator, specifications);
 			}
 
-			void allocate(Engine::Handle engine, Window::Handle window, Handle handle) {
+			void allocate(Engine::Handle engine, Handle handle) {
 				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 
-				handle->allocate(engine, window);
+				handle->allocate(engine);
 			}
 
 			std::vector<Buffer::PromisedHandle> submit(Handle handle, MemoryType memoryType, const std::span<const Buffer::Specification> specifications)

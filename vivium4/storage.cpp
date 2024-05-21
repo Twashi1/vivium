@@ -44,6 +44,26 @@ namespace Vivium {
 			Pool::Block::Block(uint8_t* data, uint64_t offset)
 				: data(data), offset(offset)
 			{}
+			
+			Transient::Transient(uint64_t totalCapacity)
+				: offset(0)
+			{
+				data = new uint8_t[totalCapacity];
+			}
+
+			void* Transient::allocate(uint64_t bytes)
+			{
+				void* allocation = data + offset;
+
+				offset += bytes;
+
+				return allocation;
+			}
+			
+			void Transient::free()
+			{
+				delete[] data;
+			}
 		}
 
 		namespace Dynamic {

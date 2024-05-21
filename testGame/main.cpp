@@ -37,29 +37,31 @@ int main(void) {
 	}
 
 	Allocator::Static::Pool storage = Allocator::Static::Pool();
-	Window::Handle window = Window::create(storage, Window::Options{});
-	Engine::Handle engine = Engine::create(storage, Engine::Options{}, window);
-	Commands::Context::Handle context = Commands::Context::create(storage, engine);
+	Window::Handle window = Window::create(&storage, Window::Options{});
+	Engine::Handle engine = Engine::create(&storage, Engine::Options{}, window);
+	Commands::Context::Handle context = Commands::Context::create(&storage, engine);
 
 	Input::init(window);
 
-	ResourceManager::Static::Handle manager = ResourceManager::Static::create(storage);
+	ResourceManager::Static::Handle manager = ResourceManager::Static::create(&storage);
 
-	Batch::Handle batch = Batch::submit(storage, engine, manager, Batch::Specification(4, 6, Buffer::Layout::fromTypes(
+	GUI::Visual::Context::Handle textContext = GUI::Visual::Context::submit(&storage, manager, engine, window);
+
+	Batch::Handle batch = Batch::submit(&storage, engine, manager, Batch::Specification(4, 6, Buffer::Layout::fromTypes(
 		std::vector<Shader::DataType>({Shader::DataType::VEC2, Shader::DataType::VEC2})
 	)));
 
-	Batch::Handle batch2 = Batch::submit(storage, engine, manager, Batch::Specification(4, 6, Buffer::Layout::fromTypes(
+	Batch::Handle batch2 = Batch::submit(&storage, engine, manager, Batch::Specification(4, 6, Buffer::Layout::fromTypes(
 		std::vector<Shader::DataType>({ Shader::DataType::VEC2, Shader::DataType::VEC2 })
 	)));
 
-	DescriptorLayout::Handle descriptorLayout = DescriptorLayout::create(storage, engine, DescriptorLayout::Specification(
+	DescriptorLayout::Handle descriptorLayout = DescriptorLayout::create(&storage, engine, DescriptorLayout::Specification(
 		std::vector<Uniform::Binding>({
 			Uniform::Binding(Shader::Stage::FRAGMENT, 0, Uniform::Type::UNIFORM_BUFFER)
 		})
 	));
 
-	DescriptorLayout::Handle descriptorLayout2 = DescriptorLayout::create(storage, engine, DescriptorLayout::Specification(
+	DescriptorLayout::Handle descriptorLayout2 = DescriptorLayout::create(&storage, engine, DescriptorLayout::Specification(
 		std::vector<Uniform::Binding>({
 			Uniform::Binding(Shader::Stage::FRAGMENT, 0, Uniform::Type::FRAMEBUFFER)
 		})
@@ -72,13 +74,13 @@ int main(void) {
 	);
 
 	Shader::Handle shaders[2] = {
-		Shader::create(storage, engine, Shader::compile(Shader::Stage::VERTEX, "testGame/res/tri.vert", "testGame/res/tri_vert.spv")),
-		Shader::create(storage, engine, Shader::compile(Shader::Stage::FRAGMENT, "testGame/res/tri.frag", "testGame/res/tri_frag.spv"))
+		Shader::create(&storage, engine, Shader::compile(Shader::Stage::VERTEX, "testGame/res/tri.vert", "testGame/res/tri_vert.spv")),
+		Shader::create(&storage, engine, Shader::compile(Shader::Stage::FRAGMENT, "testGame/res/tri.frag", "testGame/res/tri_frag.spv"))
 	};
 
 	Shader::Handle shaders2[2] = {
-		Shader::create(storage, engine, Shader::compile(Shader::Stage::VERTEX, "testGame/res/invert.vert", "testGame/res/invert_vert.spv")),
-		Shader::create(storage, engine, Shader::compile(Shader::Stage::FRAGMENT, "testGame/res/invert.frag", "testGame/res/invert_frag.spv"))
+		Shader::create(&storage, engine, Shader::compile(Shader::Stage::VERTEX, "testGame/res/invert.vert", "testGame/res/invert_vert.spv")),
+		Shader::create(&storage, engine, Shader::compile(Shader::Stage::FRAGMENT, "testGame/res/invert.frag", "testGame/res/invert_frag.spv"))
 	};
 
 	std::vector<Framebuffer::Handle> framebuffers = ResourceManager::Static::submit(manager, std::vector<Framebuffer::Specification>({
@@ -97,35 +99,40 @@ int main(void) {
 		})
 	);
 
-	// TODO: shouldn't pass in render pass ourselves, likely need static construction method for pipeline?
+	GUI::Visual::Button::Handle button = GUI::Visual::Button::submit(&storage, manager, textContext, engine, window);
 
 	std::vector<Pipeline::PromisedHandle> pipelines = ResourceManager::Static::submit(manager,
 		std::vector<Pipeline::Specification>({
-			Pipeline::Specification(
+			Pipeline::Specification::fromFramebuffer(
 				{ shaders, 2 },
 				Buffer::Layout::fromTypes(std::vector<Shader::DataType>({ Shader::DataType::VEC2, Shader::DataType::VEC2 })),
 				std::vector<DescriptorLayout::Handle>({ descriptorLayout }),
 				std::vector<Uniform::PushConstant>({ Uniform::PushConstant(Shader::Stage::VERTEX, sizeof(Math::Perspective), 0) }),
-				framebuffers[0]->renderPass,
-				VK_SAMPLE_COUNT_1_BIT // TODO: store sample count with framebuffer
+				framebuffers[0],
+				VK_SAMPLE_COUNT_1_BIT
 			),
-			Pipeline::Specification(
+			Pipeline::Specification::fromWindow(
 				{ shaders2, 2 },
 				Buffer::Layout::fromTypes(std::vector<Shader::DataType>({ Shader::DataType::VEC2, Shader::DataType::VEC2 })),
 				std::vector<DescriptorLayout::Handle>({ descriptorLayout2 }),
 				std::vector<Uniform::PushConstant>({ Uniform::PushConstant(Shader::Stage::VERTEX, sizeof(Math::Perspective), 0) }),
-				engine->renderPass,
-				window->multisampleCount
+				engine,
+				window
 			)
 		})
 	);
 
-	ResourceManager::Static::allocate(engine, window, manager);
+	// TODO: reverse argument order
+	ResourceManager::Static::allocate(engine, manager);
 
-	Shader::drop(storage, shaders[0], engine);
-	Shader::drop(storage, shaders[1], engine);
-	Shader::drop(storage, shaders2[0], engine);
-	Shader::drop(storage, shaders2[1], engine);
+	GUI::Visual::Context::clean(textContext, engine);
+
+	GUI::Visual::Button::setText(button, engine, window, context, "Hello world");
+
+	Shader::drop(&storage, shaders[0], engine);
+	Shader::drop(&storage, shaders[1], engine);
+	Shader::drop(&storage, shaders2[0], engine);
+	Shader::drop(&storage, shaders2[1], engine);
 
 	F32x2 windowDim = Window::dimensions(window);
 	Batch::submitRectangle(batch, 0, 0.0f, 0.0f, windowDim.x, windowDim.y);
@@ -182,25 +189,28 @@ int main(void) {
 		}
 	}
 
+	GUI::Visual::Context::drop(&storage, textContext, engine);
+	GUI::Visual::Button::drop(&storage, button, engine);
+
 	Framebuffer::drop(VIVIUM_RESOURCE_ALLOCATED, framebuffers[0], engine);
 
-	Batch::drop(storage, batch, engine);
-	Batch::drop(storage, batch2, engine);
+	Batch::drop(&storage, batch, engine);
+	Batch::drop(&storage, batch2, engine);
 
 	Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, buffers[0], engine);
 
-	DescriptorLayout::drop(storage, descriptorLayout, engine);
-	DescriptorLayout::drop(storage, descriptorLayout2, engine);
+	DescriptorLayout::drop(&storage, descriptorLayout, engine);
+	DescriptorLayout::drop(&storage, descriptorLayout2, engine);
 
 	Pipeline::drop(VIVIUM_RESOURCE_ALLOCATED, pipelines[0], engine);
 	Pipeline::drop(VIVIUM_RESOURCE_ALLOCATED, pipelines[1], engine);
 
-	ResourceManager::Static::drop(storage, manager, engine);
+	ResourceManager::Static::drop(&storage, manager, engine);
 
-	Commands::Context::drop(storage, context, engine);
+	Commands::Context::drop(&storage, context, engine);
 	// TODO: delete order not obvious, needs to be window before engine
-	Window::drop(storage, window, engine);
-	Engine::drop(storage, engine, window);
+	Window::drop(&storage, window, engine);
+	Engine::drop(&storage, engine, window);
 
 	storage.free();
 

@@ -77,7 +77,7 @@ namespace Vivium {
 		bool isNull(const Handle handle);
 
 		template <Allocator::AllocatorType AllocatorType>
-		Handle create(AllocatorType allocator, Options options)
+		Handle create(AllocatorType* allocator, Options options)
 		{
 			Handle window = Allocator::allocateResource<Resource>(allocator);
 
@@ -87,7 +87,7 @@ namespace Vivium {
 		}
 
 		template <Allocator::AllocatorType AllocatorType>
-		void drop(AllocatorType allocator, Handle handle, Engine::Handle engine)
+		void drop(AllocatorType* allocator, Handle handle, Engine::Handle engine)
 		{
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle, Window::isNull);
 

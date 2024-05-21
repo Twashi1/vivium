@@ -64,6 +64,8 @@ namespace Vivium {
 
 				Handle parent;
 				std::vector<Handle> children;
+
+				Specification();
 			};
 
 			void updateHandle(Handle objectHandle, F32x2 windowDimensions);
@@ -91,7 +93,7 @@ namespace Vivium {
 			}
 
 			template <Allocator::AllocatorType AllocatorType>
-			Handle create(AllocatorType allocator, Specification specification) {
+			Handle create(AllocatorType* allocator, Specification specification) {
 				Handle handle = Allocator::allocateResource<Resource>(allocator);
 
 				handle->properties = specification.properties;
@@ -101,7 +103,7 @@ namespace Vivium {
 			}
 
 			template <Allocator::AllocatorType AllocatorType>
-			void drop(AllocatorType allocator, Handle handle) {
+			void drop(AllocatorType* allocator, Handle handle) {
 				Allocator::dropResource(allocator, handle);
 			}
 		}

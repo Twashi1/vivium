@@ -12,7 +12,7 @@ layout(push_constant) uniform Matrices {
 
 layout(binding = 2) uniform TranslationData {
 	vec2 translation;
-	float scale;
+	vec2 scale;
 };
 
 void main() {

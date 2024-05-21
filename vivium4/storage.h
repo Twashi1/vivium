@@ -10,11 +10,12 @@
 
 #include "core.h"
 
-// TODO: better name and documentation
-#define VIVIUM_RESOURCE_ALLOCATED nullptr
+#define VIVIUM_RESOURCE_ALLOCATED (reinterpret_cast<Vivium::Allocator::Null*>(NULL))
 
 namespace Vivium {
 	namespace Allocator {
+		struct Null {};
+
 		namespace Static {
 			template <typename T>
 			concept AllocatorType = requires(T allocator) {
@@ -41,6 +42,17 @@ namespace Vivium {
 				void* allocate(uint64_t bytes);
 				void free();
 			};
+
+			struct Transient {
+				uint8_t* data;
+				uint64_t offset;
+				
+				Transient() = default;
+				Transient(uint64_t totalCapacity);
+
+				void* allocate(uint64_t bytes);
+				void free();
+			};
 		}
 
 		namespace Dynamic {
@@ -55,14 +67,13 @@ namespace Vivium {
 		}
 
 		template <typename T>
-		concept AllocatorType = Dynamic::AllocatorType<T> || Static::AllocatorType<T> || std::is_same_v<std::nullptr_t, T>;
+		concept AllocatorType = Dynamic::AllocatorType<T> || Static::AllocatorType<T> || std::is_same_v<Null, T>;
 
 		template <typename Resource, AllocatorType Allocator>
-		Resource* allocateResource(Allocator allocator) {
-			if constexpr (std::is_same_v<std::nullptr_t, Allocator>)
-				VIVIUM_LOG(Log::FATAL, "Attempted to allocate resource with no allocator");
+		Resource* allocateResource(Allocator* allocator) {
+			VIVIUM_ASSERT(allocator != nullptr, "Can't allocate using null allocator");
 
-			Resource* handle = reinterpret_cast<Resource*>(allocator.allocate(sizeof(Resource)));
+			Resource* handle = reinterpret_cast<Resource*>(allocator->allocate(sizeof(Resource)));
 
 			new (handle) Resource();
 
@@ -70,7 +81,7 @@ namespace Vivium {
 		}
 
 		template <typename Resource, AllocatorType Allocator>
-		void dropResource(Allocator allocator, Resource* handle) {
+		void dropResource(Allocator* allocator, Resource* handle) {
 			handle->~Resource();
 
 			if constexpr (Dynamic::AllocatorType<Allocator>)

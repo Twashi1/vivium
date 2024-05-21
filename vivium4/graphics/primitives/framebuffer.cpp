@@ -71,8 +71,8 @@ namespace Vivium {
 			renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 			renderPassBeginInfo.renderPass = handle->renderPass;
 			renderPassBeginInfo.framebuffer = handle->framebuffer;
-			renderPassBeginInfo.renderArea.extent.width = handle->dimensions.x;
-			renderPassBeginInfo.renderArea.extent.height = handle->dimensions.y;
+			renderPassBeginInfo.renderArea.extent.width = static_cast<uint32_t>(handle->dimensions.x);
+			renderPassBeginInfo.renderArea.extent.height = static_cast<uint32_t>(handle->dimensions.y);
 			renderPassBeginInfo.clearValueCount = 1;
 			renderPassBeginInfo.pClearValues = &clearValue;
 
@@ -88,8 +88,8 @@ namespace Vivium {
 			vkCmdSetViewport(context->currentCommandBuffer, 0, 1, &viewport);
 
 			VkRect2D scissor{};
-			scissor.extent.width = handle->dimensions.x;
-			scissor.extent.height = handle->dimensions.y;
+			scissor.extent.width = static_cast<uint32_t>(handle->dimensions.x);
+			scissor.extent.height = static_cast<uint32_t>(handle->dimensions.y);
 			scissor.offset = { 0, 0 };
 			vkCmdSetScissor(context->currentCommandBuffer, 0, 1, &scissor);
 		}

@@ -27,7 +27,7 @@ namespace Vivium {
 					Commands::Context::endTransfer(context, engine);
 				}
 
-				void render(Button::Handle button, Commands::Context::Handle context, Math::Perspective perspective)
+				void render(Button::Handle button, Commands::Context::Handle context, Context::Handle textContext, Math::Perspective perspective)
 				{
 					struct UniformData {
 						F32x2 position;
@@ -59,7 +59,6 @@ namespace Vivium {
 					}
 
 					F32x2 axisScale = button->base->properties.trueDimensions / F32x2(maxLineWidth, button->textMetrics.totalHeight);
-					float scale = std::min(axisScale.x, axisScale.y);
 
 					F32x2 centerOffset = F32x2(
 						button->base->properties.trueDimensions.x * 0.5f,
@@ -70,9 +69,10 @@ namespace Vivium {
 					Text::render(
 						button->text,
 						context,
+						textContext,
 						Color::multiply(button->color, 0.4f),
 						button->base->properties.truePosition + centerOffset,
-						scale,
+						axisScale,
 						perspective
 					);
 				}
@@ -84,9 +84,11 @@ namespace Vivium {
 				
 				void setText(Button::Handle button, Engine::Handle engine, Window::Handle window, Commands::Context::Handle context, const std::string_view view)
 				{
+					// Early exit if no text
+					if (view.size() == 0) return;
+
 					button->textMetrics = Text::calculateMetrics(view.data(), view.size(), button->text->font);
 
-					// TODO: verify more than 0 lines of text
 					// Calculate text scale
 					float maxLineWidth = std::numeric_limits<float>::lowest();
 
@@ -97,9 +99,8 @@ namespace Vivium {
 					GUI::Object::updateHandle(button->base, Window::dimensions(window));
 
 					F32x2 axisScale = button->base->properties.trueDimensions / F32x2(maxLineWidth, button->textMetrics.totalHeight);
-					float scale = std::min(axisScale.x, axisScale.y);
 
-					Text::setText(button->text, engine, button->textMetrics, context, view.data(), view.size(), scale, Text::Alignment::CENTER);
+					Text::setText(button->text, engine, button->textMetrics, context, view.data(), view.size(), axisScale, Text::Alignment::CENTER);
 				}
 			}
 		}

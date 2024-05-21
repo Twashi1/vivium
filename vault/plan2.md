@@ -18,9 +18,12 @@ Look towards custom allocator (memory aligned, etc.) to remove double pointer in
 	- Or instead, use `std::string_view`, `span` includes the null termination character
 - Clear render/GUI/computation threads. Ability to submit from multiple threads
 - Shader debugger tool - use CPU to simulate GPU actions for some fragments
-- Text should have scaling on both axis
-- Allow non-multisampled swap chain (DO THIS FIRST)
-- Whatever we do, we can never have seamless target changing, since every pipeline references the render pass
+- Compute shaders and storage images (alternative to framebuffers?)
+- Lots of methods missing validation of pointers
+- Lots of missing resetting handles to `nullptr`
+- Lots of methods call to implementation in `Resource`
+- Lots of things that should be `uint32_t` instead of `float` (in particular with respect to dimensions)
+- Work on cleaning up some warnings whenever bored
 ## Types
 
 ### Resources
@@ -61,7 +64,7 @@ TODO: Shader itself doesn't need to be allocated, and can instead just be a pure
 #### Other
 
 - Shader (created at any point)
-- Pipeline (relies on valid handles, and relies on memory for specification existing - inconvenient without cleanup)
+- Pipeline (relies on valid handles, and relies on memory for specification existing - inconvenient without clean-up)
 - Descriptor layout (created at any point)
 
 Shader, Buffer layout, Descriptor layout can all be constructed through `create` functions, returning a `Handle`

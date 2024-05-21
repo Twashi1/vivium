@@ -118,7 +118,7 @@ namespace Vivium {
 		bool isNull(const Engine::Handle handle);
 
 		template <Allocator::AllocatorType AllocatorType>
-		Handle create(AllocatorType allocator, Options options, Window::Handle window)
+		Handle create(AllocatorType* allocator, Options options, Window::Handle window)
 		{
 			Handle engine = Allocator::allocateResource<Resource>(allocator);
 			
@@ -128,7 +128,7 @@ namespace Vivium {
 		}
 
 		template <Allocator::AllocatorType AllocatorType>
-		void drop(AllocatorType allocator, Handle handle, Window::Handle window)
+		void drop(AllocatorType* allocator, Handle handle, Window::Handle window)
 		{
 			handle->drop(window);
 			Allocator::dropResource(allocator, handle);

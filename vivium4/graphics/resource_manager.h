@@ -94,12 +94,12 @@ namespace Vivium {
 				void allocateDescriptors(Engine::Handle engine);
 
 				// 3.
-				void allocatePipelines(Engine::Handle engine, Window::Handle window);
+				void allocatePipelines(Engine::Handle engine);
 
 				Resource();
 
 				// Public
-				void allocate(Engine::Handle engine, Window::Handle window);
+				void allocate(Engine::Handle engine);
 
 				void drop(Engine::Handle engine);
 
@@ -114,12 +114,12 @@ namespace Vivium {
 			typedef Resource* Handle;
 
 			template <Allocator::AllocatorType AllocatorType>
-			Handle create(AllocatorType allocator) {
+			Handle create(AllocatorType* allocator) {
 				return Allocator::allocateResource<Resource>(allocator);
 			}
 
 			template <Allocator::AllocatorType AllocatorType>
-			void drop(AllocatorType allocator, Handle handle, Engine::Handle engine) {
+			void drop(AllocatorType* allocator, Handle handle, Engine::Handle engine) {
 				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 				VIVIUM_CHECK_HANDLE_EXISTS(handle);
 
@@ -128,7 +128,7 @@ namespace Vivium {
 				Allocator::dropResource(allocator, handle);
 			}
 
-			void allocate(Engine::Handle engine, Window::Handle window, Handle handle);
+			void allocate(Engine::Handle engine, Handle handle);
 
 			std::vector<Buffer::PromisedHandle> submit(Handle handle, MemoryType memoryType, const std::span<const Buffer::Specification> specifications);
 			std::vector<Buffer::Dynamic::PromisedHandle> submit(Handle handle, const std::span<const Buffer::Dynamic::Specification> specifications);
