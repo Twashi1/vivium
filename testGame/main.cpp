@@ -45,7 +45,7 @@ int main(void) {
 
 	ResourceManager::Static::Handle manager = ResourceManager::Static::create(&storage);
 
-	GUI::Visual::Context::Handle textContext = GUI::Visual::Context::submit(&storage, manager, engine, window);
+	GUI::Visual::Context::Handle guiContext = GUI::Visual::Context::submit(&storage, manager, engine, window);
 
 	Batch::Handle batch = Batch::submit(&storage, engine, manager, Batch::Specification(4, 6, Buffer::Layout::fromTypes(
 		std::vector<Shader::DataType>({Shader::DataType::VEC2, Shader::DataType::VEC2})
@@ -99,7 +99,7 @@ int main(void) {
 		})
 	);
 
-	GUI::Visual::Button::Handle button = GUI::Visual::Button::submit(&storage, manager, textContext, engine, window);
+	GUI::Visual::Button::Handle button = GUI::Visual::Button::submit(&storage, manager, guiContext, engine, window);
 
 	std::vector<Pipeline::PromisedHandle> pipelines = ResourceManager::Static::submit(manager,
 		std::vector<Pipeline::Specification>({
@@ -125,9 +125,15 @@ int main(void) {
 	// TODO: reverse argument order
 	ResourceManager::Static::allocate(engine, manager);
 
-	GUI::Visual::Context::clean(textContext, engine);
+	// TODO: seems like "setup" is the convention
+	GUI::Visual::Context::clean(guiContext, engine);
 
-	GUI::Visual::Button::setText(button, engine, window, context, "Hello world");
+	GUI::Visual::Button::setup(button, context, engine);
+	GUI::Visual::Button::setText(button, engine, window, context, "Hello world\nHi");
+	GUI::Object::properties(button).position = F32x2(0.0f, 0.0f);
+	GUI::Object::properties(button).dimensions = F32x2(0.4f, 0.3f);
+	GUI::Object::properties(button).scaleType = GUI::ScaleType::RELATIVE;
+	GUI::Object::properties(button).positionType = GUI::PositionType::RELATIVE;
 
 	Shader::drop(&storage, shaders[0], engine);
 	Shader::drop(&storage, shaders[1], engine);
@@ -147,49 +153,22 @@ int main(void) {
 	Batch::Result result2 = Batch::endSubmission(batch2, context, engine);
 
 	while (Window::isOpen(window, engine)) {
-		{
-			Framebuffer::beginFrame(framebuffers[0], context, engine);
-			Commands::Context::flush(context, engine);
+		Engine::beginFrame(engine, window);
+		Commands::Context::flush(context, engine);
 
-			Framebuffer::beginRender(framebuffers[0], context);
+		Engine::beginRender(engine, window);
+		Math::Perspective perspective = Math::orthogonalPerspective2D(window, F32x2(0.0f), 0.0f, 1.0f);
 
-			Math::Perspective perspective = Math::orthogonalPerspective2D(window, F32x2(0.0f), 0.0f, 1.0f);
-			Commands::bindIndexBuffer(context, result.indexBuffer);
-			Commands::bindVertexBuffer(context, result.vertexBuffer);
-			Commands::bindDescriptorSet(context, descriptors[0], pipelines[0]);
-			Commands::bindPipeline(context, pipelines[0]);
-			Commands::pushConstants(context, &perspective, sizeof(Math::Perspective), 0, Shader::Stage::VERTEX, pipelines[0]);
+		GUI::Visual::Button::render(button, context, guiContext, window, perspective);
 
-			Commands::drawIndexed(context, 6, 1);
+		Engine::endRender(engine);
 
-			Framebuffer::endRender(framebuffers[0], context);
-			Framebuffer::endFrame(framebuffers[0], context, engine);
-		}
+		Input::update(window);
 
-		{
-			Engine::beginFrame(engine, window);
-			Commands::Context::flush(context, engine);
-
-			Engine::beginRender(engine, window);
-
-			Math::Perspective perspective = Math::orthogonalPerspective2D(window, F32x2(0.0f), 0.0f, 1.0f);
-			Commands::bindIndexBuffer(context, result2.indexBuffer);
-			Commands::bindVertexBuffer(context, result2.vertexBuffer);
-			Commands::bindDescriptorSet(context, descriptors[1], pipelines[1]);
-			Commands::bindPipeline(context, pipelines[1]);
-			Commands::pushConstants(context, &perspective, sizeof(Math::Perspective), 0, Shader::Stage::VERTEX, pipelines[1]);
-
-			Commands::drawIndexed(context, 6, 1);
-
-			Engine::endRender(engine);
-
-			Input::update(window);
-
-			Engine::endFrame(engine, window);
-		}
+		Engine::endFrame(engine, window);
 	}
 
-	GUI::Visual::Context::drop(&storage, textContext, engine);
+	GUI::Visual::Context::drop(&storage, guiContext, engine);
 	GUI::Visual::Button::drop(&storage, button, engine);
 
 	Framebuffer::drop(VIVIUM_RESOURCE_ALLOCATED, framebuffers[0], engine);

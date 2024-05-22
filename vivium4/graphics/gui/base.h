@@ -15,10 +15,11 @@ namespace Vivium {
 			FIXED	  // Fixed
 		};
 
+		// TODO: VIEWPORT_HEIGHT and VIEWPORT_WIDTH
 		enum class ScaleType {
 			FIXED,		// Scale in pixels
-			VIEWPORT,	// Percentage of viewport dimensions
-			RELATIVE	// Percentage of parent dimensions
+			VIEWPORT,	// FRACTION of viewport dimensions
+			RELATIVE	// FRACTION of parent dimensions
 		};
 
 		enum class Anchor {
@@ -41,6 +42,8 @@ namespace Vivium {
 			ScaleType scaleType;
 
 			Anchor anchorX, anchorY;
+			// TODO: different type? or generalise "Anchor"
+			Anchor centerX, centerY;
 
 			Properties();
 		};
@@ -68,28 +71,24 @@ namespace Vivium {
 				Specification();
 			};
 
+			// TODO: make clearly private
 			void updateHandle(Handle objectHandle, F32x2 windowDimensions);
 			Properties& properties(Handle object);
-
-			// TODO: this system is horrendous, change
-			template <typename T>
-			concept GUIElementPtr = requires(T element) {
-				{ element->base } -> std::same_as<Handle&>;
-			};
+			void addChild(Handle parent, std::span<Handle> child);
 
 			template <typename T>
 			concept GUIElement = requires(T element) {
-				{ element.base } -> std::same_as<Handle&>;
+				{ element->base } -> std::same_as<Handle&>;
 			};
 
-			template <GUIElementPtr T>
+			template <GUIElement T>
 			void update(T element, F32x2 windowDimensions) {
 				updateHandle(element->base, windowDimensions);
 			}
 
 			template <GUIElement T>
-			void update(T element, F32x2 windowDimensions) {
-				updateHandle(element.base, windowDimensions);
+			Properties& properties(T element) {
+				return properties(element->base);
 			}
 
 			template <Allocator::AllocatorType AllocatorType>

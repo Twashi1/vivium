@@ -53,6 +53,17 @@ namespace Vivium {
 				void* allocate(uint64_t bytes);
 				void free();
 			};
+
+			// Allocation of a resource in an already given memory location
+			struct Inplace {
+				void* location;
+
+				Inplace() = default;
+				Inplace(void* location);
+
+				void* allocate(uint64_t);
+				void free();
+			};
 		}
 
 		namespace Dynamic {
@@ -62,8 +73,6 @@ namespace Vivium {
 				{ allocator.free() } -> std::same_as<void>;
 				{ allocator.free(std::declval<void*>()) } -> std::same_as<void>;
 			};
-
-			// TODO: tree/list allocator
 		}
 
 		template <typename T>

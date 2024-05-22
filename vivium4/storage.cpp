@@ -64,6 +64,17 @@ namespace Vivium {
 			{
 				delete[] data;
 			}
+			
+			Inplace::Inplace(void* location)
+				: location(location)
+			{}
+
+			void* Inplace::allocate(uint64_t)
+			{
+				return location;
+			}
+			
+			void Inplace::free() {}
 		}
 
 		namespace Dynamic {

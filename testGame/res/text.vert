@@ -13,9 +13,17 @@ layout(push_constant) uniform Matrices {
 layout(binding = 2) uniform TranslationData {
 	vec2 translation;
 	vec2 scale;
+	vec2 scaleOrigin;
 };
 
 void main() {
-	gl_Position = matrices.proj * matrices.view * vec4(inPosition * scale + translation, 0.0, 1.0);
+	// Calculate vector from scaleOrigin to vertex
+	vec2 originalVector = inPosition - scaleOrigin;
+	// Scale it
+	vec2 scaledVector = originalVector * scale;
+	// Add back in origin and translation
+	vec2 transformed = scaledVector + scaleOrigin + translation;
+
+	gl_Position = matrices.proj * matrices.view * vec4(transformed, 0.0, 1.0);
 	vTextureCoordinates = inTextureCoordinates;
 }

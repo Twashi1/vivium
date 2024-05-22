@@ -6,7 +6,7 @@ namespace Vivium {
 	namespace GUI {
 		namespace Visual {
 			namespace Button {
-				// TODO: use text->base
+				// TODO: use text->base, set as child class, do everything for that etc.
 				struct Resource {
 					Object::Handle base;
 
@@ -109,6 +109,16 @@ namespace Vivium {
 
 					// TODO: maximum text length should be parameter
 					button->text = Text::submit(allocator, manager, engine, textContext, Text::Specification(64, Font::Font::fromDistanceFieldFile("testGame/res/fonts/consola.sdf")));
+					addChild(button->base, { &button->text->base, 1 });
+					Properties& textProperties = properties(button->text->base);
+					textProperties.dimensions = F32x2(0.9f);
+					textProperties.position = F32x2(0.0f);
+					textProperties.scaleType = GUI::ScaleType::RELATIVE;
+					textProperties.positionType = GUI::PositionType::RELATIVE;
+					textProperties.anchorX = Anchor::CENTER;
+					textProperties.anchorY = Anchor::CENTER;
+					textProperties.centerX = Anchor::LEFT;
+					textProperties.centerY = Anchor::BOTTOM;
 
 					std::vector<Pipeline::Handle> pipelines = ResourceManager::Static::submit(manager,
 						std::vector<Pipeline::Specification>({
@@ -128,9 +138,8 @@ namespace Vivium {
 				}
 
 				void setup(Button::Handle button, Commands::Context::Handle context, Engine::Handle engine);
-				void render(Button::Handle button, Commands::Context::Handle context, Context::Handle textContext, Math::Perspective perspective);
+				void render(Button::Handle button, Commands::Context::Handle context, Context::Handle textContext, Window::Handle window, Math::Perspective perspective);
 
-				Properties& properties(Button::Handle button);
 				void setText(Button::Handle button, Engine::Handle engine, Window::Handle window, Commands::Context::Handle context, const std::string_view view);
 			}
 		}

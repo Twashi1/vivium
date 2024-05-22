@@ -29,6 +29,7 @@ namespace Vivium {
 				struct TransformData {
 					F32x2 translation;
 					F32x2 scale;
+					F32x2 scaleOrigin;
 				};
 
 				struct Metrics {
@@ -38,6 +39,7 @@ namespace Vivium {
 
 					float firstLineHeight;
 					float totalHeight;
+					float maxLineWidth;
 				};
 
 				Metrics calculateMetrics(const char* characters, uint64_t length, const Font::Font& font);
@@ -63,13 +65,15 @@ namespace Vivium {
 					Texture::Handle textAtlasTexture;
 
 					DescriptorSet::Handle descriptorSet;
+
+					Alignment alignment;
 				};
 
 				typedef Resource* Handle;
 				typedef Resource* PromisedHandle;
 
-				void render(Handle handle, Commands::Context::Handle context, Context::Handle textContext, Color color, F32x2 position, F32x2 scale, Math::Perspective perspective);
-				void setText(Handle handle, Engine::Handle engine, Metrics metrics, Commands::Context::Handle context, const char* text, uint64_t length, F32x2 scale, Alignment alignment);
+				void render(Handle handle, Metrics metrics, Commands::Context::Handle context, Context::Handle guiContext, Color color, F32x2 scale, Math::Perspective perspective);
+				void setText(Handle handle, Engine::Handle engine, Metrics metrics, Commands::Context::Handle context, const char* text, uint64_t length, Alignment alignment);
 
 				template <Allocator::AllocatorType AllocatorType>
 				PromisedHandle submit(AllocatorType* allocator, ResourceManager::Static::Handle manager, Engine::Handle engine, Context::Handle textContext, Specification specification) {

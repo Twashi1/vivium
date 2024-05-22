@@ -11,6 +11,7 @@ namespace Vivium {
 					metrics.drawableCharacterCount = 0;
 					metrics.totalHeight = 0.0f;
 					metrics.firstLineHeight = 0.0f;
+					metrics.maxLineWidth = 0.0f;
 
 					float currentLineWidth = 0.0f;
 
@@ -19,6 +20,9 @@ namespace Vivium {
 
 						if (character == '\n') {
 							++metrics.newLineCount;
+
+							if (currentLineWidth > metrics.maxLineWidth)
+								metrics.maxLineWidth = currentLineWidth;
 
 							metrics.lineWidths.push_back(currentLineWidth);
 							currentLineWidth = 0.0f;
@@ -39,6 +43,9 @@ namespace Vivium {
 
 					metrics.lineWidths.push_back(currentLineWidth);
 					metrics.totalHeight = font.fontSize * metrics.newLineCount + metrics.firstLineHeight;
+
+					if (currentLineWidth > metrics.maxLineWidth)
+						metrics.maxLineWidth = currentLineWidth;
 
 					return metrics;
 				}
@@ -104,30 +111,44 @@ namespace Vivium {
 					return renderData;
 				}
 
-				void render(Handle handle, Commands::Context::Handle context, Context::Handle textContext, Color color, F32x2 position, F32x2 scale, Math::Perspective perspective)
+				void render(Handle handle, Text::Metrics metrics, Commands::Context::Handle context, Context::Handle guiContext, Color color, F32x2 scale, Math::Perspective perspective)
 				{
 					if (handle->result.indexBuffer == VIVIUM_NULL_HANDLE) return;
 
 					TransformData transform;
-					transform.translation = position;
+					transform.translation = handle->base->properties.truePosition;
 					transform.scale = scale;
+					
+					// TODO: test new alignment
+					switch (handle->alignment) {
+					case Alignment::LEFT:
+						transform.scaleOrigin = F32x2(0.0f, metrics.firstLineHeight);
+						break;
+					case Alignment::CENTER:
+						transform.scaleOrigin = F32x2(0.0f);
+						break;
+					// TODO: right not implemented
+					case Alignment::RIGHT: break;
+					VIVIUM_DEBUG_ONLY(default: VIVIUM_LOG(Log::FATAL, "Invalid alignment passed"); break);
+					}
 
 					Buffer::set(handle->fragmentUniform, 0, &color, sizeof(Color), 0);
 					Buffer::set(handle->vertexUniform, 0, &transform, sizeof(TransformData), 0);
 
-					Commands::pushConstants(context, &perspective, sizeof(Math::Perspective), 0, Shader::Stage::VERTEX, textContext->text.pipeline);
+					Commands::pushConstants(context, &perspective, sizeof(Math::Perspective), 0, Shader::Stage::VERTEX, guiContext->text.pipeline);
 
-					Commands::bindPipeline(context, textContext->text.pipeline);
-					Commands::bindDescriptorSet(context, handle->descriptorSet, textContext->text.pipeline);
+					Commands::bindPipeline(context, guiContext->text.pipeline);
+					Commands::bindDescriptorSet(context, handle->descriptorSet, guiContext->text.pipeline);
 					Commands::bindVertexBuffer(context, handle->result.vertexBuffer);
 					Commands::bindIndexBuffer(context, handle->result.indexBuffer);
 
 					Commands::drawIndexed(context, handle->result.indexCount, 1);
 				}
 
-				void setText(Handle handle, Engine::Handle engine, Metrics metrics, Commands::Context::Handle context, const char* text, uint64_t length, F32x2 scale, Alignment alignment)
+				void setText(Handle handle, Engine::Handle engine, Metrics metrics, Commands::Context::Handle context, const char* text, uint64_t length, Alignment alignment)
 				{
-					std::vector<PerGlyphData> renderData = Text::generateRenderData(metrics, text, length, handle->font, scale, alignment);
+					// TODO: scale parameter now redundant
+					std::vector<PerGlyphData> renderData = Text::generateRenderData(metrics, text, length, handle->font, F32x2(1.0f), alignment);
 
 					uint16_t indices[6] = { 0, 1, 2, 2, 3, 0 };
 

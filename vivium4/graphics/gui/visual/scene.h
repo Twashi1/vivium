@@ -7,6 +7,9 @@ namespace Vivium {
 		namespace Visual {
 			struct Scene {
 				std::vector<Button::Handle> buttons;
+				std::vector<Text::Handle> texts;
+
+
 			};
 		}
 	}

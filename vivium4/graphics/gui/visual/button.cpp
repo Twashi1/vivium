@@ -27,13 +27,15 @@ namespace Vivium {
 					Commands::Context::endTransfer(context, engine);
 				}
 
-				void render(Button::Handle button, Commands::Context::Handle context, Context::Handle textContext, Math::Perspective perspective)
+				void render(Button::Handle button, Commands::Context::Handle context, Context::Handle guiContext, Window::Handle window, Math::Perspective perspective)
 				{
 					struct UniformData {
 						F32x2 position;
 						F32x2 scale;
 						Color color;
 					};
+
+					GUI::Object::update(button, Window::dimensions(window));
 
 					UniformData uniformData;
 
@@ -50,36 +52,19 @@ namespace Vivium {
 					Commands::pushConstants(context, &perspective, sizeof(Math::Perspective), 0, Shader::Stage::VERTEX, button->pipeline);
 					Commands::drawIndexed(context, 6, 1);
 
-					// TODO: verify more than 0 lines of text
-					// Calculate text scale
-					float maxLineWidth = std::numeric_limits<float>::lowest();
-
-					for (float lineWidth : button->textMetrics.lineWidths) {
-						maxLineWidth = maxLineWidth < lineWidth ? lineWidth : maxLineWidth;
-					}
-
-					F32x2 axisScale = button->base->properties.trueDimensions / F32x2(maxLineWidth, button->textMetrics.totalHeight);
-
-					F32x2 centerOffset = F32x2(
-						button->base->properties.trueDimensions.x * 0.5f,
-						button->base->properties.trueDimensions.y * 0.5f
-					);
+					F32x2 axisScale = 0.9f * (button->base->properties.trueDimensions / F32x2(button->textMetrics.maxLineWidth, button->textMetrics.totalHeight));
 
 					// TODO: pass in text color, or have solution for white text on black
+					// TODO: text should have auto-updating object base as well
 					Text::render(
 						button->text,
+						button->textMetrics,
 						context,
-						textContext,
+						guiContext,
 						Color::multiply(button->color, 0.4f),
-						button->base->properties.truePosition + centerOffset,
-						axisScale,
+						F32x2(std::min(axisScale.x, axisScale.y)),
 						perspective
 					);
-				}
-				
-				Properties& properties(Button::Handle button)
-				{
-					return properties(button->base);
 				}
 				
 				void setText(Button::Handle button, Engine::Handle engine, Window::Handle window, Commands::Context::Handle context, const std::string_view view)
@@ -89,18 +74,9 @@ namespace Vivium {
 
 					button->textMetrics = Text::calculateMetrics(view.data(), view.size(), button->text->font);
 
-					// Calculate text scale
-					float maxLineWidth = std::numeric_limits<float>::lowest();
+					GUI::Object::update(button, Window::dimensions(window));
 
-					for (float lineWidth : button->textMetrics.lineWidths) {
-						maxLineWidth = maxLineWidth < lineWidth ? lineWidth : maxLineWidth;
-					}
-
-					GUI::Object::updateHandle(button->base, Window::dimensions(window));
-
-					F32x2 axisScale = button->base->properties.trueDimensions / F32x2(maxLineWidth, button->textMetrics.totalHeight);
-
-					Text::setText(button->text, engine, button->textMetrics, context, view.data(), view.size(), axisScale, Text::Alignment::CENTER);
+					Text::setText(button->text, engine, button->textMetrics, context, view.data(), view.size(), Text::Alignment::CENTER);
 				}
 			}
 		}

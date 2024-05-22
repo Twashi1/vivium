@@ -72,6 +72,5 @@ namespace Vivium {
 
 #define VIVIUM_CONTEXT(severity, message) \
 	Vivium::Log::Context{severity, message, __LINE__, __FUNCSIG__, __FILE__, std::chrono::system_clock::now()}
-// TODO: periodic log
 #define VIVIUM_LOG(severity, message, ...) \
 	Vivium::Log::m_state.logCallback(VIVIUM_CONTEXT(severity, std::format(message, __VA_ARGS__)))
