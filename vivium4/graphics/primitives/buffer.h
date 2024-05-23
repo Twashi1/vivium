@@ -14,6 +14,8 @@ namespace Vivium {
 		};
 
 		struct Resource {
+			// TODO: keeping this for now to reduce change required, but in future,
+			//	we will assume this object is stored at end of struct
 			VkBuffer buffer;
 			// Mapping is nullptr for unmappable types
 			void* mapping;

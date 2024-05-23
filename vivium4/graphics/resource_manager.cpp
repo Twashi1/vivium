@@ -83,7 +83,7 @@ namespace Vivium {
 						resource.usage = specification.usage;
 
 						// Create the VkBuffer and get the memory requirements
-						Commands::createBuffer(engine, &resource.buffer, specification.size, specification.usage, &memoryRequirements);
+						Commands::createBuffer(engine, &resource.buffer, specification.size, specification.usage, &memoryRequirements, nullptr);
 						// Calculate offset this buffer should be at in the device memory
 						uint64_t resourceOffset = Math::nearestMultiple(totalSize, memoryRequirements.alignment);
 						bufferOffsets[specificationIndex] = resourceOffset;
@@ -156,7 +156,7 @@ namespace Vivium {
 						}
 
 						// Create the VkBuffer and get the memory requirements
-						Commands::createBuffer(engine, &resource.buffer, totalBufferSize, specification.usage, &memoryRequirements);
+						Commands::createBuffer(engine, &resource.buffer, totalBufferSize, specification.usage, &memoryRequirements, nullptr);
 						// Calculate offset this buffer should be at in the device memory
 						uint64_t bufferOffset = Math::nearestMultiple(totalSize, memoryRequirements.alignment);
 						bufferOffsets[specificationIndex] = bufferOffset;
@@ -244,7 +244,8 @@ namespace Vivium {
 							// maybe not necessary ^^?
 							VK_SAMPLE_COUNT_1_BIT,
 							VK_IMAGE_LAYOUT_UNDEFINED,
-							VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+							VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+							nullptr
 						);
 
 						VkMemoryRequirements memoryRequirements;
@@ -370,8 +371,8 @@ namespace Vivium {
 						Texture::Resource& texture = resourceSpan[i];
 						Texture::Specification& specification = textures.specifications[specificationIndex];
 
-						Commands::createView(engine, &texture.view, specification.imageFormat, texture.image);
-						Commands::createSampler(engine, &texture.sampler, specification.imageFilter);
+						Commands::createView(engine, &texture.view, specification.imageFormat, texture.image, nullptr);
+						Commands::createSampler(engine, &texture.sampler, specification.imageFilter, nullptr);
 
 						++specificationIndex;
 					}
@@ -429,7 +430,8 @@ namespace Vivium {
 							resource.format,
 							VK_SAMPLE_COUNT_1_BIT,
 							VK_IMAGE_LAYOUT_UNDEFINED,
-							VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+							VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+							nullptr
 						);
 
 						VkMemoryRequirements requirements;
@@ -463,9 +465,9 @@ namespace Vivium {
 							imageMemoryLocations[specificationIndex]
 						), "Failed to bind image memory");
 
-						Commands::createView(engine, &resource.view, resource.format, resource.image);
+						Commands::createView(engine, &resource.view, resource.format, resource.image, nullptr);
 						// TODO: customiseable filter
-						Commands::createSampler(engine, &resource.sampler, Texture::Filter::LINEAR);
+						Commands::createSampler(engine, &resource.sampler, Texture::Filter::LINEAR, nullptr);
 				
 						// Creating render pass
 						VkAttachmentDescription colorAttachment{};
@@ -921,16 +923,16 @@ namespace Vivium {
 				vkDestroyDescriptorPool(engine->device, descriptorPool, nullptr);
 
 				// Free resources
-				resourceAllocator.free();
+				allocationContext.storage.free();
 			}
 
 			std::vector<Buffer::PromisedHandle> Resource::submit(MemoryType memoryType, const std::span<const Buffer::Specification> specifications)
 			{
 				switch (memoryType) {
 				case MemoryType::STAGING:
-					return hostBuffers.submit(&resourceAllocator, specifications); break;
+					return hostBuffers.submit(&allocationContext.storage, specifications); break;
 				case MemoryType::DEVICE:
-					return deviceBuffers.submit(&resourceAllocator, specifications); break;
+					return deviceBuffers.submit(&allocationContext.storage, specifications); break;
 				default:
 					VIVIUM_LOG(Log::FATAL, "Invalid memory type for submit"); break;
 				}
@@ -940,27 +942,102 @@ namespace Vivium {
 
 			std::vector<Buffer::Dynamic::PromisedHandle> Resource::submit(const std::span<const Buffer::Dynamic::Specification> specifications)
 			{
-				return dynamicHostBuffers.submit(&resourceAllocator, specifications);
+				return dynamicHostBuffers.submit(&allocationContext.storage, specifications);
 			}
 
 			std::vector<Texture::PromisedHandle> Resource::submit(const std::span<const Texture::Specification> specifications)
 			{
-				return textures.submit(&resourceAllocator, specifications);
+				return textures.submit(&allocationContext.storage, specifications);
 			}
 			
 			std::vector<DescriptorSet::PromisedHandle> Resource::submit(const std::span<const DescriptorSet::Specification> specifications)
 			{
-				return descriptorSets.submit(&resourceAllocator, specifications);
+				return descriptorSets.submit(&allocationContext.storage, specifications);
 			}
 
 			std::vector<Pipeline::PromisedHandle> Resource::submit(const std::span<const Pipeline::Specification> specifications)
 			{
-				return pipelines.submit(&resourceAllocator, specifications);
+				return pipelines.submit(&allocationContext.storage, specifications);
 			}
 
 			std::vector<Framebuffer::PromisedHandle> Resource::submit(const std::span<const Framebuffer::Specification> specifications)
 			{
-				return framebuffers.submit(&resourceAllocator, specifications);
+				return framebuffers.submit(&allocationContext.storage, specifications);
+			}
+
+			void* _vulkanAllocation(void* userData, uint64_t size, uint64_t alignment, VkSystemAllocationScope allocationScope)
+			{
+				AllocationContext* context = reinterpret_cast<AllocationContext*>(userData);
+
+				void* allocation = context->storage.allocate(4, alignment, 4 + size + context->nextAllocationMetadataSize);
+				// Include size of vulkan reosurce (before pointer, in header section)
+				*(reinterpret_cast<uint32_t*>(allocation) - 1) = size;
+				// Include size of metadata (after vulkan resource, in metadata section)
+				*reinterpret_cast<uint32_t*>(reinterpret_cast<uint8_t*>(allocation) + size) = context->nextAllocationMetadataSize;
+
+				VIVIUM_LOG(Log::DEBUG, "Allocated resource at {}", allocation);
+
+				return allocation;
+			}
+
+			void* _vulkanReallocation(void* userData, void* originalData, uint64_t size, uint64_t alignment, VkSystemAllocationScope allocationScope)
+			{
+				// TODO: actually attempt reallocation sometimes
+
+				// Create a deletion context for the free
+				AllocationContext* context = reinterpret_cast<AllocationContext*>(userData);
+				static_assert(sizeof(DeletionContext) == sizeof(DestructorFunction));
+				DeletionContext* deletionContext = reinterpret_cast<DeletionContext*>(&(context->destructor));
+
+				if (size == 0) {
+					VIVIUM_DEBUG_LOG("Reallocating with size 0, resorting to free");
+
+					_vulkanFree(deletionContext, originalData);
+
+					return NULL;
+				}
+
+				if (originalData == NULL) {
+					VIVIUM_DEBUG_LOG("Delegating empty original reallocation to allocation");
+
+					return _vulkanAllocation(userData, size, alignment, allocationScope);
+				}
+
+				void* allocation = context->storage.allocate(4, alignment, size + context->nextAllocationMetadataSize);
+
+				VIVIUM_LOG(Log::DEBUG, "Allocated resource at {}", allocation);
+
+				// Yikes
+				uint32_t originalAllocationSize = *(reinterpret_cast<uint32_t*>(allocation) - 1);
+				// Double yikes
+				uint32_t originalMetadataSize = *reinterpret_cast<uint32_t*>(reinterpret_cast<uint8_t*>(allocation) + originalAllocationSize);
+
+				// Copy vulkan data
+				std::memcpy(allocation, originalData, originalAllocationSize);
+				// Copy metadata (assuming byte copy is enough)
+				std::memcpy(
+					reinterpret_cast<uint8_t*>(allocation) + size + 4,
+					reinterpret_cast<uint8_t*>(originalData) + originalAllocationSize + 4, originalMetadataSize);
+				// Set old metadata to 0 (in case it has some complexity)
+				// TODO: parameterise this and only perform when necessary? insignificant performance difference
+				std::memset(reinterpret_cast<uint8_t*>(originalData) + originalAllocationSize + 4, 0, originalMetadataSize);
+
+				_vulkanFree(deletionContext, originalData);
+
+				return allocation;
+			}
+
+			void _vulkanFree(void* userData, void* memory)
+			{
+				if (memory == NULL) return;
+
+				DeletionContext* context = reinterpret_cast<DeletionContext*>(userData);
+
+				VIVIUM_LOG(Log::DEBUG, "Deleting resource at {}", memory);
+
+				uint32_t originalAllocationSize = *(reinterpret_cast<uint32_t*>(memory) - 1);
+
+				context->destructor(reinterpret_cast<uint8_t*>(memory) + originalAllocationSize + 4);
 			}
 
 			void allocate(Engine::Handle engine, Handle handle) {

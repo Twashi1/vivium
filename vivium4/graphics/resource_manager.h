@@ -24,6 +24,30 @@ namespace Vivium {
 		inline SharedTrackerData sharedTrackerData;
 
 		namespace Static {
+			typedef void(*DestructorFunction)(void* object);
+
+			struct AllocationContext {
+				DestructorFunction destructor;
+				
+				Allocator::Static::Pool storage;
+				uint64_t nextAllocationMetadataSize;
+			};
+
+			struct DeletionContext {
+				DestructorFunction destructor;
+			};
+
+			// TODO: methods to automatically extract such facts
+			// Format of vulkan allocation
+			// 4 byte allocation size
+			// n byte vulkan resource <- ptr
+			// 4 byte metadata size
+			// k byte metadata
+
+			void* _vulkanAllocation(void* userData, uint64_t size, uint64_t alignment, VkSystemAllocationScope allocationScope);
+			void* _vulkanReallocation(void* userData, void* originalData, uint64_t size, uint64_t alignment, VkSystemAllocationScope allocationScope);
+			void _vulkanFree(void* userData, void* memory);
+
 			struct Resource {
 				template <typename ResourceType, typename SpecificationType>
 				struct PreallocationData {
@@ -41,7 +65,7 @@ namespace Vivium {
 
 						std::vector<ResourceType*> handles(newSpecifications.size());
 
-						ResourceType* resourceBlock = reinterpret_cast<ResourceType*>(allocator->allocate(sizeof(ResourceType) * newSpecifications.size()));
+						ResourceType* resourceBlock = reinterpret_cast<ResourceType*>(allocator->allocate(0, sizeof(ResourceType) * newSpecifications.size()));
 
 						for (uint64_t i = 0; i < newSpecifications.size(); i++) {
 							new (resourceBlock + i) ResourceType{};
@@ -78,7 +102,7 @@ namespace Vivium {
 				VkDescriptorPool descriptorPool;
 
 				// TODO: in future, make this customiseable allocator
-				Allocator::Static::Pool resourceAllocator;
+				AllocationContext allocationContext;
 
 				DeviceMemoryHandle allocateDeviceMemory(Engine::Handle engine, uint32_t memoryTypeBits, MemoryType memoryType, uint64_t size);
 

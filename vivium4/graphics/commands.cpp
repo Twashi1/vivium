@@ -89,14 +89,14 @@ namespace Vivium {
 			}
 		}
 
-		void createBuffer(Engine::Handle engine, VkBuffer* buffer, uint64_t size, Buffer::Usage usage, VkMemoryRequirements* memoryRequirements) {
+		void createBuffer(Engine::Handle engine, VkBuffer* buffer, uint64_t size, Buffer::Usage usage, VkMemoryRequirements* memoryRequirements, const VkAllocationCallbacks* allocationCallbacks) {
 			VkBufferCreateInfo bufferCreateInfo{};
 			bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 			bufferCreateInfo.size = size;
 			bufferCreateInfo.usage = static_cast<VkBufferUsageFlags>(usage);
 			bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-			VIVIUM_VK_CHECK(vkCreateBuffer(engine->device, &bufferCreateInfo, nullptr, buffer), "Failed to create buffer");
+			VIVIUM_VK_CHECK(vkCreateBuffer(engine->device, &bufferCreateInfo, allocationCallbacks, buffer), "Failed to create buffer");
 			vkGetBufferMemoryRequirements(engine->device, *buffer, memoryRequirements);
 		}
 
@@ -159,7 +159,7 @@ namespace Vivium {
 		void createOneTimeStagingBuffer(Engine::Handle engine, VkBuffer* buffer, VkDeviceMemory* memory, uint64_t size, void** mapping)
 		{
 			VkMemoryRequirements memoryRequirements;
-			createBuffer(engine, buffer, size, Buffer::Usage::STAGING, &memoryRequirements);
+			createBuffer(engine, buffer, size, Buffer::Usage::STAGING, &memoryRequirements, nullptr);
 
 			VkMemoryAllocateInfo allocateInfo{};
 			allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -228,7 +228,7 @@ namespace Vivium {
 			);
 		}
 
-		void createImage(Engine::Handle engine, VkImage* image, uint32_t width, uint32_t height, Texture::Format format, VkSampleCountFlagBits sampleCount, VkImageLayout initialLayout, VkImageUsageFlags usage)
+		void createImage(Engine::Handle engine, VkImage* image, uint32_t width, uint32_t height, Texture::Format format, VkSampleCountFlagBits sampleCount, VkImageLayout initialLayout, VkImageUsageFlags usage, const VkAllocationCallbacks* allocationCallbacks)
 		{
 			VkImageCreateInfo imageCreateInfo{};
 			imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -249,13 +249,13 @@ namespace Vivium {
 			VIVIUM_VK_CHECK(vkCreateImage(
 				engine->device,
 				&imageCreateInfo,
-				nullptr,
+				allocationCallbacks,
 				image),
 				"Failed to create image"
 			);
 		}
 
-		void createView(Engine::Handle engine, VkImageView* view, Texture::Format format, VkImage image)
+		void createView(Engine::Handle engine, VkImageView* view, Texture::Format format, VkImage image, const VkAllocationCallbacks* allocationCallbacks)
 		{
 			VkImageViewCreateInfo viewCreateInfo{};
 			viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -271,13 +271,13 @@ namespace Vivium {
 			VIVIUM_VK_CHECK(vkCreateImageView(
 				engine->device,
 				&viewCreateInfo,
-				nullptr,
+				allocationCallbacks,
 				view),
 				"Failed to create image view"
 			);
 		}
 
-		void createSampler(Engine::Handle engine, VkSampler* sampler, Texture::Filter filter)
+		void createSampler(Engine::Handle engine, VkSampler* sampler, Texture::Filter filter, const VkAllocationCallbacks* allocationCallbacks)
 		{
 			VkSamplerCreateInfo samplerCreateInfo{};
 			samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -303,7 +303,7 @@ namespace Vivium {
 			VIVIUM_VK_CHECK(vkCreateSampler(
 				engine->device,
 				&samplerCreateInfo,
-				nullptr,
+				allocationCallbacks,
 				sampler
 			), "Failed to create texture sampler");
 		}

@@ -12,6 +12,7 @@ namespace Vivium {
 				: blockCapacity(blockCapacity)
 			{}
 
+			// TODO: remove alignment from this, we don't use it
 			void* Pool::allocate(uint64_t alignment, uint64_t bytes)
 			{
 				if (!blocks.empty()) {
@@ -39,6 +40,30 @@ namespace Vivium {
 				for (Block block : blocks) {
 					delete[] block.data;
 				}
+			}
+
+			void* Pool::allocate(uint64_t header, uint64_t alignment, uint64_t size)
+			{
+				if (!blocks.empty()) {
+					Block* last_block = &blocks.back();
+
+					uint64_t resourceLocation = Math::nearestMultiple(last_block->offset + header, alignment);
+
+					if (resourceLocation + size <= blockCapacity) {
+						uint8_t* ptr = last_block->data + resourceLocation;
+
+						last_block->offset = resourceLocation + size;
+
+						return ptr;
+					}
+				}
+
+				blocks.emplace_back(
+					new uint8_t[std::max(blockCapacity, size + header)],
+					size + header
+				);
+
+				return blocks.back().data + header;
 			}
 
 			Pool::Block::Block(uint8_t* data, uint64_t offset)

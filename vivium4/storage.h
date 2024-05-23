@@ -42,6 +42,9 @@ namespace Vivium {
 				// Public
 				void* allocate(uint64_t alignment, uint64_t bytes);
 				void free();
+
+				// Special method for vulkan allocation, pretty nasty
+				void* allocate(uint64_t header, uint64_t alignment, uint64_t size);
 			};
 
 			struct Transient {
@@ -70,7 +73,7 @@ namespace Vivium {
 		namespace Dynamic {
 			template <typename T>
 			concept AllocatorType = requires(T allocator) {
-				{ allocator.allocate(std::declval<uint64_t>()) } -> std::same_as<void*>;
+				{ allocator.allocate(std::declval<uint64_t>(), std::declval<uint64_t>()) } -> std::same_as<void*>;
 				{ allocator.free() } -> std::same_as<void>;
 				{ allocator.free(std::declval<void*>()) } -> std::same_as<void>;
 			};
@@ -83,7 +86,7 @@ namespace Vivium {
 		Resource* allocateResource(Allocator* allocator) {
 			VIVIUM_ASSERT(allocator != nullptr, "Can't allocate using null allocator");
 
-			Resource* handle = reinterpret_cast<Resource*>(allocator->allocate(sizeof(Resource)));
+			Resource* handle = reinterpret_cast<Resource*>(allocator->allocate(0, sizeof(Resource)));
 
 			new (handle) Resource();
 
