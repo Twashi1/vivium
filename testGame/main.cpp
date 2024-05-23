@@ -25,7 +25,7 @@ using namespace Vivium;
 int main(void) {
 	Font::init();
 
-	bool regenFont = true;
+	bool regenFont = false;
 
 	// Compile font if it doesn't exist
 	if (!std::filesystem::exists("testGame/res/fonts/consola.sdf") || regenFont)

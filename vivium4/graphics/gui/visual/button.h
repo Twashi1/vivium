@@ -22,13 +22,7 @@ namespace Vivium {
 
 					Buffer::Handle uniformBuffer;
 
-					Shader::Handle fragmentShader;
-					Shader::Handle vertexShader;
-
 					DescriptorSet::Handle descriptorSet;
-
-					DescriptorLayout::Handle descriptorLayout;
-					Pipeline::Handle pipeline;
 				};
 
 				typedef Resource* Handle;
@@ -48,18 +42,13 @@ namespace Vivium {
 					Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->deviceIndex, engine);
 					Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->uniformBuffer, engine);
 
-					Shader::drop(allocator, handle->fragmentShader, engine);
-					Shader::drop(allocator, handle->vertexShader, engine);
-
-					DescriptorLayout::drop(allocator, handle->descriptorLayout, engine);
 					DescriptorSet::drop(allocator, handle->descriptorSet);
-					Pipeline::drop(VIVIUM_RESOURCE_ALLOCATED, handle->pipeline, engine);
 
 					Allocator::dropResource(allocator, handle);
 				}
 
 				template <Allocator::AllocatorType AllocatorType>
-				PromisedHandle submit(AllocatorType* allocator, ResourceManager::Static::Handle manager, Context::Handle textContext, Engine::Handle engine, Window::Handle window)
+				PromisedHandle submit(AllocatorType* allocator, ResourceManager::Static::Handle manager, Context::Handle guiContext, Engine::Handle engine, Window::Handle window)
 				{
 					PromisedHandle button = Allocator::allocateResource<Resource, AllocatorType>(allocator);
 
@@ -85,14 +74,10 @@ namespace Vivium {
 					button->deviceVertex = deviceBuffers[0];
 					button->deviceIndex = deviceBuffers[1];
 
-					button->descriptorLayout = DescriptorLayout::create(allocator, engine, DescriptorLayout::Specification(
-						std::vector<Uniform::Binding>({ Uniform::Binding(Shader::Stage::FRAGMENT | Shader::Stage::VERTEX, 0, Uniform::Type::UNIFORM_BUFFER) })
-					));
-
 					std::vector<DescriptorSet::Handle> descriptorSets = ResourceManager::Static::submit(
 						manager, std::vector<DescriptorSet::Specification>({
 							DescriptorSet::Specification(
-								button->descriptorLayout, std::vector<Uniform::Data>({
+								guiContext->button.descriptorLayout, std::vector<Uniform::Data>({
 									Uniform::Data::fromBuffer(button->uniformBuffer, sizeof(F32x2) * 2 + sizeof(Color), 0)
 								})
 							)
@@ -101,14 +86,8 @@ namespace Vivium {
 
 					button->descriptorSet = descriptorSets[0];
 
-					Shader::Specification fragShaderSpec = Shader::compile(Shader::Stage::FRAGMENT, "testGame/res/button.frag", "testGame/res/button_frag.spv");
-					Shader::Specification vertShaderSpec = Shader::compile(Shader::Stage::VERTEX, "testGame/res/button.vert", "testGame/res/button_vert.spv");
-
-					button->fragmentShader = Shader::create(allocator, engine, fragShaderSpec);
-					button->vertexShader = Shader::create(allocator, engine, vertShaderSpec);
-
 					// TODO: maximum text length should be parameter
-					button->text = Text::submit(allocator, manager, engine, textContext, Text::Specification(64, Font::Font::fromDistanceFieldFile("testGame/res/fonts/consola.sdf")));
+					button->text = Text::submit(allocator, manager, engine, guiContext, Text::Specification(64, Font::Font::fromDistanceFieldFile("testGame/res/fonts/consola.sdf")));
 					// TODO: use different method
 					_addChild(button->base, { &button->text->base, 1 });
 					Properties& textProperties = GUI::Object::properties(button->text);
@@ -120,20 +99,6 @@ namespace Vivium {
 					textProperties.anchorY = Anchor::CENTER;
 					textProperties.centerX = Anchor::LEFT;
 					textProperties.centerY = Anchor::BOTTOM;
-
-					std::vector<Pipeline::Handle> pipelines = ResourceManager::Static::submit(manager,
-						std::vector<Pipeline::Specification>({
-							Pipeline::Specification::fromWindow(
-								std::vector<Shader::Handle>({ button->fragmentShader, button->vertexShader }),
-								Buffer::Layout::fromTypes(std::vector<Shader::DataType>({ Shader::DataType::VEC2 })),
-								std::vector<DescriptorLayout::Handle>({ button->descriptorLayout }),
-								std::vector<Uniform::PushConstant>({ Uniform::PushConstant(Shader::Stage::VERTEX, sizeof(Math::Perspective), 0)}),
-								engine,
-								window
-							)
-							}));
-
-					button->pipeline = pipelines[0];
 
 					return button;
 				}

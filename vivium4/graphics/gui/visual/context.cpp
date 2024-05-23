@@ -9,6 +9,9 @@ namespace Vivium {
 					Shader::drop(&handle->transientStorage, handle->text.fragmentShader, engine);
 					Shader::drop(&handle->transientStorage, handle->text.vertexShader, engine);
 
+					Shader::drop(&handle->transientStorage, handle->button.fragmentShader, engine);
+					Shader::drop(&handle->transientStorage, handle->button.vertexShader, engine);
+
 					// TODO: maybe the descriptor layout can be freed here?
 
 					handle->transientStorage.free();

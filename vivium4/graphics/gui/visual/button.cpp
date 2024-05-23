@@ -45,11 +45,11 @@ namespace Vivium {
 
 					Buffer::set(button->uniformBuffer, 0, &uniformData, sizeof(uniformData), 0);
 
-					Commands::bindPipeline(context, button->pipeline);
-					Commands::bindDescriptorSet(context, button->descriptorSet, button->pipeline);
+					Commands::bindPipeline(context, guiContext->button.pipeline);
+					Commands::bindDescriptorSet(context, button->descriptorSet, guiContext->button.pipeline);
 					Commands::bindIndexBuffer(context, button->deviceIndex);
 					Commands::bindVertexBuffer(context, button->deviceVertex);
-					Commands::pushConstants(context, &perspective, sizeof(Math::Perspective), 0, Shader::Stage::VERTEX, button->pipeline);
+					Commands::pushConstants(context, &perspective, sizeof(Math::Perspective), 0, Shader::Stage::VERTEX, guiContext->button.pipeline);
 					Commands::drawIndexed(context, 6, 1);
 
 					F32x2 axisScale = 0.9f * (button->base->properties.trueDimensions / F32x2(button->textMetrics.maxLineWidth, button->textMetrics.totalHeight));
