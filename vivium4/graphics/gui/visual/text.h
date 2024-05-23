@@ -42,8 +42,8 @@ namespace Vivium {
 					float maxLineWidth;
 				};
 
-				Metrics calculateMetrics(const char* characters, uint64_t length, const Font::Font& font);
-				std::vector<PerGlyphData> generateRenderData(Metrics metrics, const char* characters, uint64_t length, const Font::Font& font, F32x2 scale, Alignment alignment);
+				Metrics calculateMetrics(const std::string_view& text, const Font::Font& font);
+				std::vector<PerGlyphData> generateRenderData(Metrics metrics, const std::string_view& text, const Font::Font& font, F32x2 scale, Alignment alignment);
 
 				struct Specification {
 					uint64_t maxCharacterCount;
@@ -73,7 +73,7 @@ namespace Vivium {
 				typedef Resource* PromisedHandle;
 
 				void render(Handle handle, Metrics metrics, Commands::Context::Handle context, Context::Handle guiContext, Color color, F32x2 scale, Math::Perspective perspective);
-				void setText(Handle handle, Engine::Handle engine, Metrics metrics, Commands::Context::Handle context, const char* text, uint64_t length, Alignment alignment);
+				void setText(Handle handle, Engine::Handle engine, Metrics metrics, Commands::Context::Handle context, const std::string_view& text, Alignment alignment);
 
 				template <Allocator::AllocatorType AllocatorType>
 				PromisedHandle submit(AllocatorType* allocator, ResourceManager::Static::Handle manager, Engine::Handle engine, Context::Handle textContext, Specification specification) {

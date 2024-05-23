@@ -106,7 +106,7 @@ namespace Vivium {
 				void setup(Button::Handle button, Commands::Context::Handle context, Engine::Handle engine);
 				void render(Button::Handle button, Commands::Context::Handle context, Context::Handle textContext, Window::Handle window, Math::Perspective perspective);
 
-				void setText(Button::Handle button, Engine::Handle engine, Window::Handle window, Commands::Context::Handle context, const std::string_view view);
+				void setText(Button::Handle button, Engine::Handle engine, Window::Handle window, Commands::Context::Handle context, const std::string_view& text);
 			}
 		}
 	}

@@ -67,16 +67,16 @@ namespace Vivium {
 					);
 				}
 				
-				void setText(Button::Handle button, Engine::Handle engine, Window::Handle window, Commands::Context::Handle context, const std::string_view view)
+				void setText(Button::Handle button, Engine::Handle engine, Window::Handle window, Commands::Context::Handle context, const std::string_view& text)
 				{
 					// Early exit if no text
-					if (view.size() == 0) return;
+					if (text.size() == 0) return;
 
-					button->textMetrics = Text::calculateMetrics(view.data(), view.size(), button->text->font);
+					button->textMetrics = Text::calculateMetrics(text, button->text->font);
 
 					GUI::Object::update(button, Window::dimensions(window));
 
-					Text::setText(button->text, engine, button->textMetrics, context, view.data(), view.size(), Text::Alignment::CENTER);
+					Text::setText(button->text, engine, button->textMetrics, context, text, Text::Alignment::CENTER);
 				}
 			}
 		}

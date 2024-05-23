@@ -4,7 +4,7 @@ namespace Vivium {
 	namespace GUI {
 		namespace Visual {
 			namespace Text {
-				Metrics calculateMetrics(const char* characters, uint64_t length, const Font::Font& font) {
+				Metrics calculateMetrics(const std::string_view& text, const Font::Font& font) {
 					Metrics metrics;
 
 					metrics.newLineCount = 0;
@@ -15,8 +15,8 @@ namespace Vivium {
 
 					float currentLineWidth = 0.0f;
 
-					for (uint64_t i = 0; i < length; i++) {
-						char character = characters[i];
+					for (uint64_t i = 0; i < text.size(); i++) {
+						char character = text.data()[i];
 
 						if (character == '\n') {
 							++metrics.newLineCount;
@@ -50,7 +50,7 @@ namespace Vivium {
 					return metrics;
 				}
 
-				std::vector<PerGlyphData> generateRenderData(Metrics metrics, const char* characters, uint64_t length, const Font::Font& font, F32x2 scale, Alignment alignment)
+				std::vector<PerGlyphData> generateRenderData(Metrics metrics, const std::string_view& text, const Font::Font& font, F32x2 scale, Alignment alignment)
 				{
 					// TODO: investigate how this works with vertical scaling on multiple lines
 
@@ -73,8 +73,8 @@ namespace Vivium {
 
 					uint64_t newLineIndex = 0;
 
-					for (uint64_t i = 0; i < length; i++) {
-						char character = characters[i];
+					for (uint64_t i = 0; i < text.size(); i++) {
+						char character = text.data()[i];
 
 						if (character == '\n') {
 							++newLineIndex;
@@ -145,10 +145,10 @@ namespace Vivium {
 					Commands::drawIndexed(context, handle->result.indexCount, 1);
 				}
 
-				void setText(Handle handle, Engine::Handle engine, Metrics metrics, Commands::Context::Handle context, const char* text, uint64_t length, Alignment alignment)
+				void setText(Handle handle, Engine::Handle engine, Metrics metrics, Commands::Context::Handle context, const std::string_view& text, Alignment alignment)
 				{
 					// TODO: scale parameter now redundant
-					std::vector<PerGlyphData> renderData = Text::generateRenderData(metrics, text, length, handle->font, F32x2(1.0f), alignment);
+					std::vector<PerGlyphData> renderData = Text::generateRenderData(metrics, text, handle->font, F32x2(1.0f), alignment);
 
 					uint16_t indices[6] = { 0, 1, 2, 2, 3, 0 };
 
