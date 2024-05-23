@@ -29,18 +29,18 @@ namespace Vivium {
 				typedef Resource* PromisedHandle;
 
 				template <Allocator::AllocatorType AllocatorType>
-				void drop(AllocatorType* allocator, Handle handle, Engine::Handle engine) {
+				void drop(AllocatorType* allocator, ResourceManager::Static::Handle manager, Handle handle, Engine::Handle engine) {
 					VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 
 					GUI::Object::drop(allocator, handle->base);
 
-					Text::drop(allocator, handle->text, engine);
+					Text::drop(allocator, manager, handle->text, engine);
 
-					Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->stagingVertex, engine);
-					Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->stagingIndex, engine);
-					Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->deviceVertex, engine);
-					Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->deviceIndex, engine);
-					Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->uniformBuffer, engine);
+					Buffer::drop(manager, handle->stagingVertex, engine);
+					Buffer::drop(manager, handle->stagingIndex, engine);
+					Buffer::drop(manager, handle->deviceVertex, engine);
+					Buffer::drop(manager, handle->deviceIndex, engine);
+					Buffer::drop(manager, handle->uniformBuffer, engine);
 
 					DescriptorSet::drop(allocator, handle->descriptorSet);
 

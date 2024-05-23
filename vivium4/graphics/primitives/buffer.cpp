@@ -1,4 +1,5 @@
 #include "buffer.h"
+#include "../resource_manager.h"
 
 namespace Vivium {
 	namespace Buffer {
@@ -26,6 +27,14 @@ namespace Vivium {
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(buffer, Buffer::isNull);
 
 			return buffer->mapping;
+		}
+
+		void drop(ResourceManager::Static::Handle manager, Handle buffer, Engine::Handle engine)
+		{
+			VIVIUM_CHECK_HANDLE_EXISTS(manager);
+			VIVIUM_CHECK_HANDLE_EXISTS(buffer);
+
+			manager->drop(buffer, engine);
 		}
 			
 		Specification::Specification(uint64_t size, Usage usage)

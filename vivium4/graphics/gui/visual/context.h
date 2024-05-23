@@ -43,13 +43,13 @@ namespace Vivium {
 					);
 
 					// TODO: a bit illegal to steal manager's resource allocator
-					handle->text.descriptorLayout = DescriptorLayout::create(&manager->allocationContext.storage, engine, DescriptorLayout::Specification(std::vector<Uniform::Binding>({
+					handle->text.descriptorLayout = DescriptorLayout::create(&manager->resourceAllocator, engine, DescriptorLayout::Specification(std::vector<Uniform::Binding>({
 						Uniform::Binding(Shader::Stage::FRAGMENT, 0, Uniform::Type::TEXTURE),
 						Uniform::Binding(Shader::Stage::FRAGMENT, 1, Uniform::Type::UNIFORM_BUFFER),
 						Uniform::Binding(Shader::Stage::VERTEX, 2, Uniform::Type::UNIFORM_BUFFER)
 						})));
 
-					handle->button.descriptorLayout = DescriptorLayout::create(&manager->allocationContext.storage, engine, DescriptorLayout::Specification(
+					handle->button.descriptorLayout = DescriptorLayout::create(&manager->resourceAllocator, engine, DescriptorLayout::Specification(
 						std::vector<Uniform::Binding>({ Uniform::Binding(Shader::Stage::FRAGMENT | Shader::Stage::VERTEX, 0, Uniform::Type::UNIFORM_BUFFER) })
 					));
 

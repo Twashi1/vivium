@@ -40,15 +40,15 @@ namespace Vivium {
 		Result endSubmission(Handle handle, Commands::Context::Handle context, Engine::Handle engine);
 
 		template <Allocator::AllocatorType AllocatorType>
-		void drop(AllocatorType* allocator, Handle handle, Engine::Handle engine)
+		void drop(AllocatorType* allocator, ResourceManager::Static::Handle manager, Handle handle, Engine::Handle engine)
 		{
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 			VIVIUM_CHECK_HANDLE_EXISTS(handle);
 
-			Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->vertexStaging, engine);
-			Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->vertexDevice, engine);
-			Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->indexStaging, engine);
-			Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->indexDevice, engine);
+			Buffer::drop(manager, handle->vertexStaging, engine);
+			Buffer::drop(manager, handle->vertexDevice, engine);
+			Buffer::drop(manager, handle->indexStaging, engine);
+			Buffer::drop(manager, handle->indexDevice, engine);
 
 			Allocator::dropResource(allocator, handle);
 		}

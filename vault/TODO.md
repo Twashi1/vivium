@@ -4,7 +4,7 @@
 - All metadata of Vulkan resources must just be mostly trivial
 	- Can move by just copying bytes, and setting old ones to 0 (trivial move?)
 - Somehow deal with Vivium resources that contain multiple Vulkan resources (shaders)
-- Create `Commands::createPipeline` and such method, that take allocation callbacks
+- Create `Commands::createPipeline` and similar methods, and make them take allocation callbacks
 ## Core
 
 - Platform independence (OS module, Timer module)

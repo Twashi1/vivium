@@ -4,6 +4,14 @@
 #include "shader.h"
 
 namespace Vivium {
+	namespace ResourceManager {
+		namespace Static {
+			struct Resource;
+
+			typedef Resource* Handle;
+		}
+	}
+
 	namespace Buffer {
 		enum class Usage : VkFlags {
 			STAGING		= VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -69,6 +77,8 @@ namespace Vivium {
 
 			Allocator::dropResource(allocator, buffer);
 		}
+
+		void drop(ResourceManager::Static::Handle manager, Handle buffer, Engine::Handle engine);
 
 		namespace Dynamic {
 			struct Resource {

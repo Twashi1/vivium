@@ -29,7 +29,7 @@ namespace Vivium {
 			struct AllocationContext {
 				DestructorFunction destructor;
 				
-				Allocator::Static::Pool storage;
+				Allocator::Static::Pool* storage;
 				uint64_t nextAllocationMetadataSize;
 			};
 
@@ -103,6 +103,9 @@ namespace Vivium {
 
 				// TODO: in future, make this customiseable allocator
 				AllocationContext allocationContext;
+				DeletionContext deletionContext;
+				VkAllocationCallbacks allocationCallbacks;
+				Allocator::Static::Pool resourceAllocator;
 
 				DeviceMemoryHandle allocateDeviceMemory(Engine::Handle engine, uint32_t memoryTypeBits, MemoryType memoryType, uint64_t size);
 
@@ -117,6 +120,8 @@ namespace Vivium {
 
 				// 3.
 				void allocatePipelines(Engine::Handle engine);
+
+				void drop(Buffer::Handle buffer, Engine::Handle engine);
 
 				Resource();
 

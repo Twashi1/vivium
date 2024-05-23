@@ -44,80 +44,7 @@ int main(void) {
 
 	GUI::Visual::Context::Handle guiContext = GUI::Visual::Context::submit(&storage, manager, engine, window);
 
-	Batch::Handle batch = Batch::submit(&storage, engine, manager, Batch::Specification(4, 6, Buffer::Layout::fromTypes(
-		std::vector<Shader::DataType>({Shader::DataType::VEC2, Shader::DataType::VEC2})
-	)));
-
-	Batch::Handle batch2 = Batch::submit(&storage, engine, manager, Batch::Specification(4, 6, Buffer::Layout::fromTypes(
-		std::vector<Shader::DataType>({ Shader::DataType::VEC2, Shader::DataType::VEC2 })
-	)));
-
-	DescriptorLayout::Handle descriptorLayout = DescriptorLayout::create(&storage, engine, DescriptorLayout::Specification(
-		std::vector<Uniform::Binding>({
-			Uniform::Binding(Shader::Stage::FRAGMENT, 0, Uniform::Type::UNIFORM_BUFFER)
-		})
-	));
-
-	DescriptorLayout::Handle descriptorLayout2 = DescriptorLayout::create(&storage, engine, DescriptorLayout::Specification(
-		std::vector<Uniform::Binding>({
-			Uniform::Binding(Shader::Stage::FRAGMENT, 0, Uniform::Type::FRAMEBUFFER)
-		})
-	));
-
-	std::vector<Buffer::PromisedHandle> buffers = ResourceManager::Static::submit(
-		manager,
-		MemoryType::UNIFORM,
-		std::vector<Buffer::Specification>({Buffer::Specification(sizeof(float) * 3, Buffer::Usage::UNIFORM)})
-	);
-
-	Shader::Handle shaders[2] = {
-		Shader::create(&storage, engine, Shader::compile(Shader::Stage::VERTEX, "testGame/res/tri.vert", "testGame/res/tri_vert.spv")),
-		Shader::create(&storage, engine, Shader::compile(Shader::Stage::FRAGMENT, "testGame/res/tri.frag", "testGame/res/tri_frag.spv"))
-	};
-
-	Shader::Handle shaders2[2] = {
-		Shader::create(&storage, engine, Shader::compile(Shader::Stage::VERTEX, "testGame/res/invert.vert", "testGame/res/invert_vert.spv")),
-		Shader::create(&storage, engine, Shader::compile(Shader::Stage::FRAGMENT, "testGame/res/invert.frag", "testGame/res/invert_frag.spv"))
-	};
-
-	std::vector<Framebuffer::Handle> framebuffers = ResourceManager::Static::submit(manager, std::vector<Framebuffer::Specification>({
-		Framebuffer::Specification(Window::dimensions(window), Texture::Format::RGBA, 1)
-	}));
-
-	std::vector<DescriptorSet::Handle> descriptors = ResourceManager::Static::submit(
-		manager,
-		std::vector<DescriptorSet::Specification>({
-			DescriptorSet::Specification(descriptorLayout, std::vector<Uniform::Data>({
-				Uniform::Data::fromBuffer(buffers[0], sizeof(float) * 3, 0)
-			})),
-			DescriptorSet::Specification(descriptorLayout2, std::vector<Uniform::Data>({
-				Uniform::Data::fromFramebuffer(framebuffers[0])
-			}))
-		})
-	);
-
 	GUI::Visual::Button::Handle button = GUI::Visual::Button::submit(&storage, manager, guiContext, engine, window);
-
-	std::vector<Pipeline::PromisedHandle> pipelines = ResourceManager::Static::submit(manager,
-		std::vector<Pipeline::Specification>({
-			Pipeline::Specification::fromFramebuffer(
-				{ shaders, 2 },
-				Buffer::Layout::fromTypes(std::vector<Shader::DataType>({ Shader::DataType::VEC2, Shader::DataType::VEC2 })),
-				std::vector<DescriptorLayout::Handle>({ descriptorLayout }),
-				std::vector<Uniform::PushConstant>({ Uniform::PushConstant(Shader::Stage::VERTEX, sizeof(Math::Perspective), 0) }),
-				framebuffers[0],
-				VK_SAMPLE_COUNT_1_BIT
-			),
-			Pipeline::Specification::fromWindow(
-				{ shaders2, 2 },
-				Buffer::Layout::fromTypes(std::vector<Shader::DataType>({ Shader::DataType::VEC2, Shader::DataType::VEC2 })),
-				std::vector<DescriptorLayout::Handle>({ descriptorLayout2 }),
-				std::vector<Uniform::PushConstant>({ Uniform::PushConstant(Shader::Stage::VERTEX, sizeof(Math::Perspective), 0) }),
-				engine,
-				window
-			)
-		})
-	);
 
 	// TODO: reverse argument order
 	ResourceManager::Static::allocate(engine, manager);
@@ -131,23 +58,6 @@ int main(void) {
 	GUI::Object::properties(button).dimensions = F32x2(0.4f, 0.3f);
 	GUI::Object::properties(button).scaleType = GUI::ScaleType::RELATIVE;
 	GUI::Object::properties(button).positionType = GUI::PositionType::RELATIVE;
-
-	Shader::drop(&storage, shaders[0], engine);
-	Shader::drop(&storage, shaders[1], engine);
-	Shader::drop(&storage, shaders2[0], engine);
-	Shader::drop(&storage, shaders2[1], engine);
-
-	F32x2 windowDim = Window::dimensions(window);
-	Batch::submitRectangle(batch, 0, 0.0f, 0.0f, windowDim.x, windowDim.y);
-	Batch::submitRectangle(batch, 1, 0.0f, 0.0f, 1.0f, 1.0f);
-	Batch::endShape(batch, 4, std::vector<uint16_t>({ 0, 1, 2, 2, 3, 0 }));
-
-	Batch::submitRectangle(batch2, 0, 0.0f, 0.0f, 200.0f, 200.0f);
-	Batch::submitRectangle(batch2, 1, 0.0f, 0.0f, 1.0f, 1.0f);
-	Batch::endShape(batch2, 4, std::vector<uint16_t>({ 0, 1, 2, 2, 3, 0 }));
-
-	Batch::Result result = Batch::endSubmission(batch, context, engine);
-	Batch::Result result2 = Batch::endSubmission(batch2, context, engine);
 
 	while (Window::isOpen(window, engine)) {
 		Engine::beginFrame(engine, window);
@@ -166,20 +76,7 @@ int main(void) {
 	}
 
 	GUI::Visual::Context::drop(&storage, guiContext, engine);
-	GUI::Visual::Button::drop(&storage, button, engine);
-
-	Framebuffer::drop(VIVIUM_RESOURCE_ALLOCATED, framebuffers[0], engine);
-
-	Batch::drop(&storage, batch, engine);
-	Batch::drop(&storage, batch2, engine);
-
-	Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, buffers[0], engine);
-
-	DescriptorLayout::drop(&storage, descriptorLayout, engine);
-	DescriptorLayout::drop(&storage, descriptorLayout2, engine);
-
-	Pipeline::drop(VIVIUM_RESOURCE_ALLOCATED, pipelines[0], engine);
-	Pipeline::drop(VIVIUM_RESOURCE_ALLOCATED, pipelines[1], engine);
+	GUI::Visual::Button::drop(&storage, manager, button, engine);
 
 	ResourceManager::Static::drop(&storage, manager, engine);
 
