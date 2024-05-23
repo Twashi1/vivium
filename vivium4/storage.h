@@ -9,6 +9,7 @@
 #include <concepts>
 
 #include "core.h"
+#include "math/math.h"
 
 #define VIVIUM_RESOURCE_ALLOCATED (reinterpret_cast<Vivium::Allocator::Null*>(NULL))
 
@@ -19,7 +20,7 @@ namespace Vivium {
 		namespace Static {
 			template <typename T>
 			concept AllocatorType = requires(T allocator) {
-				{ allocator.allocate(std::declval<uint64_t>()) } -> std::same_as<void*>;
+				{ allocator.allocate(std::declval<uint64_t>(), std::declval<uint64_t>()) } -> std::same_as<void*>;
 				{ allocator.free() } -> std::same_as<void>;
 			};
 
@@ -39,7 +40,7 @@ namespace Vivium {
 				Pool(uint64_t blockCapacity);
 
 				// Public
-				void* allocate(uint64_t bytes);
+				void* allocate(uint64_t alignment, uint64_t bytes);
 				void free();
 			};
 
@@ -50,7 +51,7 @@ namespace Vivium {
 				Transient() = default;
 				Transient(uint64_t totalCapacity);
 
-				void* allocate(uint64_t bytes);
+				void* allocate(uint64_t alignment, uint64_t bytes);
 				void free();
 			};
 
@@ -61,7 +62,7 @@ namespace Vivium {
 				Inplace() = default;
 				Inplace(void* location);
 
-				void* allocate(uint64_t);
+				void* allocate(uint64_t, uint64_t);
 				void free();
 			};
 		}

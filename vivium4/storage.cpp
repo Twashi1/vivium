@@ -12,7 +12,7 @@ namespace Vivium {
 				: blockCapacity(blockCapacity)
 			{}
 
-			void* Pool::allocate(uint64_t bytes)
+			void* Pool::allocate(uint64_t alignment, uint64_t bytes)
 			{
 				if (!blocks.empty()) {
 					Block* last_block = &blocks.back();
@@ -51,7 +51,7 @@ namespace Vivium {
 				data = new uint8_t[totalCapacity];
 			}
 
-			void* Transient::allocate(uint64_t bytes)
+			void* Transient::allocate(uint64_t alignment, uint64_t bytes)
 			{
 				void* allocation = data + offset;
 
@@ -69,7 +69,7 @@ namespace Vivium {
 				: location(location)
 			{}
 
-			void* Inplace::allocate(uint64_t)
+			void* Inplace::allocate(uint64_t, uint64_t)
 			{
 				return location;
 			}

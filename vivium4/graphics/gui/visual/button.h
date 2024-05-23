@@ -109,8 +109,9 @@ namespace Vivium {
 
 					// TODO: maximum text length should be parameter
 					button->text = Text::submit(allocator, manager, engine, textContext, Text::Specification(64, Font::Font::fromDistanceFieldFile("testGame/res/fonts/consola.sdf")));
-					addChild(button->base, { &button->text->base, 1 });
-					Properties& textProperties = properties(button->text->base);
+					// TODO: use different method
+					_addChild(button->base, { &button->text->base, 1 });
+					Properties& textProperties = GUI::Object::properties(button->text);
 					textProperties.dimensions = F32x2(0.9f);
 					textProperties.position = F32x2(0.0f);
 					textProperties.scaleType = GUI::ScaleType::RELATIVE;

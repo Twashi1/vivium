@@ -17,7 +17,5 @@ namespace Vivium {
 		T nearestMultiple(T number, T multiple) {
 			return (number + multiple - 1) & (-multiple);
 		}
-
-		uint64_t calculateAlignmentOffset(uint64_t& currentOffset, uint64_t size, uint64_t alignment);
 	}
 }

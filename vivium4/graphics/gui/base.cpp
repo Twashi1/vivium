@@ -15,7 +15,7 @@ namespace Vivium {
 				: parent(VIVIUM_NULL_HANDLE)
 			{}
 
-			void updateHandle(Handle handle, F32x2 windowDimensions) {
+			void _updateHandle(Handle handle, F32x2 windowDimensions) {
 				VIVIUM_CHECK_HANDLE_EXISTS(handle);
 
 				// If we have no parent, resort to using window as a pseudo-parent
@@ -83,17 +83,17 @@ namespace Vivium {
 				}
 
 				for (Handle child : handle->children)
-					updateHandle(child, windowDimensions);
+					_updateHandle(child, windowDimensions);
 			}
 			
-			Properties& properties(GUI::Object::Handle object)
+			Properties& _properties(GUI::Object::Handle object)
 			{
 				VIVIUM_CHECK_HANDLE_EXISTS(object);
 
 				return object->properties;
 			}
 			
-			void addChild(Handle parent, std::span<Handle> children)
+			void _addChild(Handle parent, std::span<Handle> children)
 			{
 				for (Handle child : children) {
 					parent->children.push_back(child);

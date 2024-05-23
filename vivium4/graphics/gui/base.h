@@ -71,10 +71,9 @@ namespace Vivium {
 				Specification();
 			};
 
-			// TODO: make clearly private
-			void updateHandle(Handle objectHandle, F32x2 windowDimensions);
-			Properties& properties(Handle object);
-			void addChild(Handle parent, std::span<Handle> child);
+			void _updateHandle(Handle objectHandle, F32x2 windowDimensions);
+			Properties& _properties(Handle object);
+			void _addChild(Handle parent, std::span<Handle> child);
 
 			template <typename T>
 			concept GUIElement = requires(T element) {
@@ -83,12 +82,12 @@ namespace Vivium {
 
 			template <GUIElement T>
 			void update(T element, F32x2 windowDimensions) {
-				updateHandle(element->base, windowDimensions);
+				_updateHandle(element->base, windowDimensions);
 			}
 
 			template <GUIElement T>
 			Properties& properties(T element) {
-				return properties(element->base);
+				return _properties(element->base);
 			}
 
 			template <Allocator::AllocatorType AllocatorType>

@@ -13,8 +13,6 @@
 
 #include <atomic>
 
-// TODO: submit calls should take memory to fill, instead of returning vector
-
 namespace Vivium {
 	namespace ResourceManager {
 		struct SharedTrackerData {

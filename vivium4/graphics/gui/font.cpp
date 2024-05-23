@@ -143,6 +143,8 @@ namespace Vivium {
 		// TODO: lots of similarity in functionality
 		Font compileSignedDistanceField(const char* inputFontFile, int inputFontSize, const char* outputFile, int outputFieldSize, float spreadFactor)
 		{
+			// TODO: shouldn't pad the glpyh, only the field, so we need some extra math in computing the signed distance field on a glyph
+			
 			Font font;
 
 			FT_Face face;
@@ -152,15 +154,21 @@ namespace Vivium {
 
 			FT_Set_Pixel_Sizes(face, 0, inputFontSize);
 
-			font.imageDimensions = I32x2(VIVIUM_CHARACTERS_TO_EXTRACT * outputFieldSize, outputFieldSize);
-			font.atlas = TextureAtlas(font.imageDimensions, I32x2(outputFieldSize));
-			font.fontSize = outputFieldSize;
+			// TODO: parameterised padding
+			int padding = outputFieldSize * 0.3f;
+			int halfPadding = padding / 2;
+			int glyphPaddedSize = inputFontSize + padding;
+			int fieldPaddedSize = outputFieldSize + padding;
+
+			VIVIUM_LOG(Log::DEBUG, "Padding is: {}", padding);
+
+			font.fontSize = fieldPaddedSize;
+			font.imageDimensions = I32x2(VIVIUM_CHARACTERS_TO_EXTRACT * fieldPaddedSize, fieldPaddedSize);
+			font.atlas = TextureAtlas(font.imageDimensions, I32x2(fieldPaddedSize));
 			font.data = std::vector<uint8_t>(font.imageDimensions.x * font.imageDimensions.y, 0);
 
-			// TODO: why is this working? it should be overwriting the buffer like crazy???
-			// TODO: padding on characters dependent on image size
-			uint8_t* glyphPixels = new uint8_t[inputFontSize * inputFontSize];
-			uint8_t* glyphDistanceField = new uint8_t[outputFieldSize * outputFieldSize];
+			uint8_t* glyphPixels = reinterpret_cast<uint8_t*>(std::malloc(glyphPaddedSize * glyphPaddedSize));
+			uint8_t* glyphDistanceField = reinterpret_cast<uint8_t*>(std::malloc(fieldPaddedSize * fieldPaddedSize));
 
 			for (uint8_t character = 0; character < VIVIUM_CHARACTERS_TO_EXTRACT; character++) {
 				// TODO: FT_LOAD_RENDER probably a bad flag
@@ -173,61 +181,66 @@ namespace Vivium {
 				uint32_t glyphWidth = face->glyph->bitmap.width;
 				uint32_t glyphHeight = face->glyph->bitmap.rows;
 
+				for (uint64_t i = 0; i < glyphPaddedSize * glyphPaddedSize; i++) {
+					glyphPixels[i] = 0;
+				}
+
 				uint64_t glyphIndex = 0;
-				for (uint64_t i = 0; i < inputFontSize * inputFontSize; i++)
-					glyphPixels[i] = 0x0;
-				
-				// TODO: padding should be related to both radius, spread factor, and scale ratio
-				const int padding = 64;
 
-				// Dealing with the | character which is larger than the font size for some reason
-				if (glyphHeight + padding >= inputFontSize) glyphHeight = inputFontSize - padding;
-				if (glyphWidth + padding >= inputFontSize) glyphWidth = inputFontSize - padding;
+				// Deal with characters that might be larger than font size including padding
+				if (glyphHeight + padding >= glyphPaddedSize) glyphHeight = glyphPaddedSize - padding;
+				if (glyphWidth + padding >= glyphPaddedSize) glyphWidth = glyphPaddedSize - padding;
 
-				VIVIUM_ASSERT(glyphWidth <= inputFontSize && glyphHeight <= inputFontSize, "Font size not sufficient to fit glyph?");
-
-
-				for (uint32_t y = padding; y < glyphHeight + padding; y++) {
-					for (uint32_t x = padding; x < glyphWidth + padding; x++) {
-						glyphPixels[x + y * inputFontSize] = face->glyph->bitmap.buffer[(x - padding) + (y - padding) * glyphWidth];
+				for (uint32_t y = halfPadding; y < glyphHeight + halfPadding; y++) {
+					for (uint32_t x = halfPadding; x < glyphWidth + halfPadding; x++) {
+						glyphPixels[x + y * glyphPaddedSize] = face->glyph->bitmap.buffer[(x - halfPadding) + (y - halfPadding) * glyphWidth];
 					}
 				}
 
 				// Compute distance field
-				_computeSignedDistanceField(glyphPixels, inputFontSize, inputFontSize, glyphDistanceField, outputFieldSize, outputFieldSize, spreadFactor);
+				_computeSignedDistanceField(glyphPixels, glyphPaddedSize, glyphPaddedSize, glyphDistanceField, fieldPaddedSize, fieldPaddedSize, spreadFactor);
 
 				// Write back into texture atlas
 				// Horizontal offset for each character
-				uint64_t characterBufferOffset = character * outputFieldSize;
+				uint64_t characterBufferOffset = character * fieldPaddedSize;
 
-				for (uint64_t fieldY = 0; fieldY < outputFieldSize; fieldY++) {
-					for (uint64_t fieldX = 0; fieldX < outputFieldSize; fieldX++) {
-						uint8_t source = glyphDistanceField[fieldX + fieldY * outputFieldSize];
+				for (uint64_t fieldY = 0; fieldY < fieldPaddedSize; fieldY++) {
+					for (uint64_t fieldX = 0; fieldX < fieldPaddedSize; fieldX++) {
+						uint8_t source = glyphDistanceField[fieldX + fieldY * fieldPaddedSize];
 
 						font.data[characterBufferOffset + fieldX + fieldY * font.imageDimensions.x] = source;
 					}
 				}
 
-				// TODO: deal with padding
-
 				TextureAtlas::Index index = TextureAtlas::Index(character, font.atlas);
 
-				float scaleRatio = static_cast<float>(inputFontSize) / static_cast<float>(outputFieldSize);
+				// Scaling from glyph parameters to field parameters
+				float scaleRatio = static_cast<float>(fieldPaddedSize) / static_cast<float>(glyphPaddedSize);
+				// Scaling from field parameters to UV coordinates
+				F32x2 uvRatio = F32x2(1.0f) / font.imageDimensions;
 
-				// TODO: constructor
+				I32x2 fieldSize = F32x2(glyphWidth, glyphHeight) * scaleRatio + I32x2(halfPadding);
+				I32x2 fieldBearing = F32x2(face->glyph->bitmap_left, face->glyph->bitmap_top) * scaleRatio;
+				int fieldAdvance = (static_cast<int>(face->glyph->advance.x * scaleRatio) >> 6) + halfPadding;
+
+				F32x2 uvSize = F32x2(fieldSize) * uvRatio;
+
 				font.characters[character] = Character{
-					I32x2(face->glyph->bitmap.width, face->glyph->bitmap.rows) / scaleRatio,
-					I32x2(face->glyph->bitmap_left, face->glyph->bitmap_top) / scaleRatio,
-					(face->glyph->advance.x / static_cast<int>(scaleRatio)) >> 6,
-					index.left + padding / static_cast<float>(font.imageDimensions.x) / scaleRatio,
-					index.left + face->glyph->bitmap.width / static_cast<float>(font.imageDimensions.x) / scaleRatio + padding / static_cast<float>(font.imageDimensions.x) / scaleRatio,
-					index.top + face->glyph->bitmap.rows / static_cast<float>(font.imageDimensions.y) / scaleRatio + padding / static_cast<float>(font.imageDimensions.y) / scaleRatio,
-					index.top + padding / static_cast<float>(font.imageDimensions.y) / scaleRatio
+					fieldSize,
+					fieldBearing,
+					fieldAdvance,
+					index.left,
+					index.left + uvSize.x,
+					index.top + uvSize.y,
+					index.top
 				};
 			}
 
-			delete[] glyphPixels;
-			delete[] glyphDistanceField;
+			// TODO: remove
+			stbi_write_png("testGame/res/font.png", font.imageDimensions.x, font.imageDimensions.y, 1, font.data.data(), font.imageDimensions.x);
+
+			std::free(glyphPixels);
+			std::free(glyphDistanceField);
 
 			FT_Done_Face(face);
 

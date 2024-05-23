@@ -85,7 +85,10 @@ namespace Vivium {
 						// Create the VkBuffer and get the memory requirements
 						Commands::createBuffer(engine, &resource.buffer, specification.size, specification.usage, &memoryRequirements);
 						// Calculate offset this buffer should be at in the device memory
-						bufferOffsets[specificationIndex] = Math::calculateAlignmentOffset(totalSize, memoryRequirements.size, memoryRequirements.alignment);
+						uint64_t resourceOffset = Math::nearestMultiple(totalSize, memoryRequirements.alignment);
+						bufferOffsets[specificationIndex] = resourceOffset;
+						totalSize = resourceOffset + memoryRequirements.size;
+						
 						// Include memory type bits
 						memoryTypeBits |= memoryRequirements.memoryTypeBits;
 
@@ -147,13 +150,17 @@ namespace Vivium {
 
 						for (uint64_t j = 0; j < specification.suballocations.size(); j++) {
 							resource.suballocationSizes[j] = specification.suballocations[j];
-							resource.suballocationOffsets[j] = static_cast<uint32_t>(Math::calculateAlignmentOffset(totalBufferSize, resource.suballocationSizes[j], suballocationAlignment));
+							uint32_t suballocationOffset = Math::nearestMultiple(totalBufferSize, suballocationAlignment);
+							resource.suballocationOffsets[j] = suballocationOffset;
+							totalBufferSize = suballocationOffset + resource.suballocationSizes[j];
 						}
 
 						// Create the VkBuffer and get the memory requirements
 						Commands::createBuffer(engine, &resource.buffer, totalBufferSize, specification.usage, &memoryRequirements);
 						// Calculate offset this buffer should be at in the device memory
-						bufferOffsets[specificationIndex] = Math::calculateAlignmentOffset(totalSize, memoryRequirements.size, memoryRequirements.alignment);
+						uint64_t bufferOffset = Math::nearestMultiple(totalSize, memoryRequirements.alignment);
+						bufferOffsets[specificationIndex] = bufferOffset;
+						totalSize = bufferOffset + memoryRequirements.size;
 						// Include memory type bits
 						memoryTypeBits |= memoryRequirements.memoryTypeBits;
 
@@ -248,11 +255,9 @@ namespace Vivium {
 							&memoryRequirements
 						);
 
-						offsets[specificationIndex] = Math::calculateAlignmentOffset(
-							totalSize,
-							memoryRequirements.size,
-							memoryRequirements.alignment
-						);
+						uint64_t resourceOffset = Math::nearestMultiple(totalSize, memoryRequirements.alignment);
+						offsets[specificationIndex] = resourceOffset;
+						totalSize = resourceOffset + memoryRequirements.size;
 
 						memoryTypeBits |= memoryRequirements.memoryTypeBits;
 
@@ -434,7 +439,9 @@ namespace Vivium {
 
 						memoryTypeBits = requirements.memoryTypeBits;
 
-						imageMemoryLocations[specificationIndex] = Math::calculateAlignmentOffset(totalMemoryRequired, requirements.size, requirements.alignment);
+						uint64_t resourceOffset = Math::nearestMultiple(totalMemoryRequired, requirements.alignment);
+						imageMemoryLocations[specificationIndex] = resourceOffset;
+						totalMemoryRequired = resourceOffset + requirements.size;
 
 						++specificationIndex;
 					}
