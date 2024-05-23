@@ -12,7 +12,6 @@
 - Test physics modules
 - Span synonymous type
 - Vector synonymous type
-- Convert text functions to use `std::string_view`
 - Rust-style errors (try to make `Option` efficient?)
 - Clear render/GUI/computation threads. Ability to submit from multiple threads
 - Using filesystem or better file referencing (not just passing file data, but truly passing file path in a way that guarantees the existence of that path)
@@ -47,6 +46,7 @@
 - Rename private functions with underscore prefix
 - `Math::calculateAlignment` brought back in some form, under new name with new structure
 - Use `VIVIUM_DEBUG_LOG` instead of `VIVIUM_LOG` when we only want to log in `DEBUG` mode
+- `T const&` a lot of things 
 
 Resources contain metadata, at the end of the resource, the Vulkan resource itself is stored. In order to create a resource, with our current model, we would be required to know the size of the Vulkan resource, so we can place the Vivium resource in memory. We wouldn't be allowed to hold references in the form of Handles to uninitialized resources, since they don't exist yet. Instead, we hold references to the specification? Then when the resource is created in the previous step, we obtain the actual resource itself by looking into the given mapping of specification indices to allocation locations.
 

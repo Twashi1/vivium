@@ -79,6 +79,15 @@ namespace Vivium {
 
 				return buffer->mapping;
 			}
+			
+			void drop(ResourceManager::Static::Handle manager, Handle buffer, Engine::Handle engine)
+			{
+				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
+				VIVIUM_CHECK_HANDLE_EXISTS(manager);
+				VIVIUM_CHECK_HANDLE_EXISTS(buffer);
+
+				manager->drop(buffer, engine);
+			}
 		}
 		
 		Layout Layout::fromTypes(const std::span<const Shader::DataType> types)

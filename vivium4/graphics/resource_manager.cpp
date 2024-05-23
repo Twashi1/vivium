@@ -887,6 +887,46 @@ namespace Vivium {
 				vkDestroyBuffer(engine->device, buffer->buffer, &allocationCallbacks);
 			}
 
+			void Resource::drop(Buffer::Dynamic::Handle buffer, Engine::Handle engine)
+			{
+				deletionContext.destructor = [](void* memory) { reinterpret_cast<Buffer::Dynamic::Resource*>(memory)->~Resource(); };
+				allocationCallbacks.pUserData = &deletionContext;
+
+				// TODO
+			}
+
+			void Resource::drop(Texture::Handle texture, Engine::Handle engine)
+			{
+				deletionContext.destructor = [](void* memory) { reinterpret_cast<Texture::Resource*>(memory)->~Resource(); };
+				allocationCallbacks.pUserData = &deletionContext;
+
+				// TODO
+			}
+
+			void Resource::drop(Framebuffer::Handle framebuffer, Engine::Handle engine)
+			{
+				deletionContext.destructor = [](void* memory) { reinterpret_cast<Framebuffer::Resource*>(memory)->~Resource(); };
+				allocationCallbacks.pUserData = &deletionContext;
+
+				// TODO
+			}
+
+			void Resource::drop(DescriptorSet::Handle descriptorSet, Engine::Handle engine)
+			{
+				deletionContext.destructor = [](void* memory) { reinterpret_cast<DescriptorSet::Resource*>(memory)->~Resource(); };
+				allocationCallbacks.pUserData = &deletionContext;
+
+				// TODO
+			}
+
+			void Resource::drop(Pipeline::Handle pipeline, Engine::Handle engine)
+			{
+				deletionContext.destructor = [](void* memory) { reinterpret_cast<Pipeline::Resource*>(memory)->~Resource(); };
+				allocationCallbacks.pUserData = &deletionContext;
+
+				// TODO
+			}
+
 			Resource::Resource()
 				// TODO: editable block size
 				: descriptorPool(VK_NULL_HANDLE) {}

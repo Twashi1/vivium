@@ -122,6 +122,11 @@ namespace Vivium {
 				void allocatePipelines(Engine::Handle engine);
 
 				void drop(Buffer::Handle buffer, Engine::Handle engine);
+				void drop(Buffer::Dynamic::Handle buffer, Engine::Handle engine);
+				void drop(Texture::Handle texture, Engine::Handle engine);
+				void drop(Framebuffer::Handle framebuffer, Engine::Handle engine);
+				void drop(DescriptorSet::Handle descriptorSet, Engine::Handle engine);
+				void drop(Pipeline::Handle pipeline, Engine::Handle engine);
 
 				Resource();
 

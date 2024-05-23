@@ -119,6 +119,8 @@ namespace Vivium {
 
 				Allocator::dropResource(allocator, buffer);
 			}
+
+			void drop(ResourceManager::Static::Handle manager, Handle buffer, Engine::Handle engine);
 		}
 	}
 }
