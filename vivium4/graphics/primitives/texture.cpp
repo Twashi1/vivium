@@ -1,4 +1,5 @@
 #include "texture.h"
+#include "../resource_manager.h"
 
 namespace Vivium {
 	namespace Texture {
@@ -79,6 +80,15 @@ namespace Vivium {
 			specification.imageFormat = imageFormat;
 
 			return specification;
+		}
+		
+		void drop(ResourceManager::Static::Handle manager, Texture::Handle texture, Engine::Handle engine)
+		{
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
+			VIVIUM_CHECK_HANDLE_EXISTS(manager);
+			VIVIUM_CHECK_HANDLE_EXISTS(texture);
+
+			manager->drop(texture, engine);
 		}
 	}
 }

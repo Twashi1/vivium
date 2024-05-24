@@ -28,7 +28,7 @@ namespace Vivium {
 		void createView(Engine::Handle engine, VkImageView* view, Texture::Format format, VkImage image, const VkAllocationCallbacks* allocationCallbacks);
 		void createSampler(Engine::Handle engine, VkSampler* sampler, Texture::Filter filter, const VkAllocationCallbacks* allocationCallbacks);
 		
-		void createPipeline(Engine::Handle engine, VkPipeline* pipeline, VkPipelineLayout* layout, VkRenderPass renderPass, const std::span<Shader::Handle> shaders, const std::span<DescriptorLayout::Handle> descriptorLayouts, const std::span<Uniform::PushConstant> pushConstants, const Buffer::Layout& bufferLayout, VkSampleCountFlagBits sampleCount, const VkAllocationCallbacks* layoutAllocationCallback, const VkAllocationCallbacks* pipelineAllocationCallback);
+		void createPipeline(Engine::Handle engine, VkPipeline* pipeline, VkPipelineLayout* layout, VkRenderPass renderPass, const std::span<const Shader::Handle> shaders, const std::span<const DescriptorLayout::Handle> descriptorLayouts, const std::span<const Uniform::PushConstant> pushConstants, const Buffer::Layout& bufferLayout, VkSampleCountFlagBits sampleCount, const VkAllocationCallbacks* layoutAllocationCallback, const VkAllocationCallbacks* pipelineAllocationCallback);
 
 		void moveBufferToImage(VkBuffer imageBuffer, VkImage image, VkCommandBuffer commandBuffer, uint32_t width, uint32_t height, VkBufferImageCopy* region);
 

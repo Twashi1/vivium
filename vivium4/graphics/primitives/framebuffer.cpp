@@ -1,6 +1,6 @@
 #include "framebuffer.h"
-
 #include "../commands.h"
+#include "../resource_manager.h"
 
 namespace Vivium {
 	namespace Framebuffer {
@@ -41,6 +41,15 @@ namespace Vivium {
 			}
 
 			return multisampleCount;
+		}
+
+		void drop(ResourceManager::Static::Handle manager, Framebuffer::Handle framebuffer, Engine::Handle engine)
+		{
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine);
+			VIVIUM_CHECK_HANDLE_EXISTS(framebuffer);
+			VIVIUM_CHECK_HANDLE_EXISTS(manager);
+
+			manager->drop(framebuffer, engine);
 		}
 
 		void beginFrame(Handle handle, Commands::Context::Handle context, Engine::Handle engine)

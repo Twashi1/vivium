@@ -32,6 +32,12 @@ namespace Vivium {
 			Usage usage;
 		};
 
+		struct Metadata {
+			void* mapping;
+			uint64_t size;
+			Usage usage;
+		};
+
 		struct Specification {
 			uint64_t size;
 			Usage usage;

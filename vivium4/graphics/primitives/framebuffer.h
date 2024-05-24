@@ -3,28 +3,18 @@
 #include "../../engine.h"
 #include "texture.h"
 
-/*
-TODO: framebuffers
-
-Create render pass of some width/height, and suitable format
-
-Create an image (w/ sample rate, color format, etc.)
-Create an image view
-Create a sampler
-
-Create frame attachment (pure data)
-Create color reference
-Create subpass + subpass dependencies
-Create render pass
-
-Create framebuffer
-Create descriptor?
-*/
-
 namespace Vivium {
 	namespace Commands {
 		namespace Context {
 			struct Resource;
+			typedef Resource* Handle;
+		}
+	}
+
+	namespace ResourceManager {
+		namespace Static {
+			struct Resource;
+
 			typedef Resource* Handle;
 		}
 	}
@@ -68,6 +58,8 @@ namespace Vivium {
 
 			Allocator::dropResource(allocator, handle);
 		}
+
+		void drop(ResourceManager::Static::Handle manager, Framebuffer::Handle framebuffer, Engine::Handle engine);
 
 		void beginFrame(Handle handle, Commands::Context::Handle context, Engine::Handle engine);
 		void beginRender(Handle handle, Commands::Context::Handle context);

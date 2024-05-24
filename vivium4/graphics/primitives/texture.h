@@ -5,6 +5,14 @@
 #include "../gui/font.h"
 
 namespace Vivium {
+	namespace ResourceManager {
+		namespace Static {
+			struct Resource;
+
+			typedef Resource* Handle;
+		}
+	}
+
 	namespace Texture {
 		enum class Format {
 			RGBA = VK_FORMAT_R8G8B8A8_SRGB,
@@ -52,5 +60,7 @@ namespace Vivium {
 
 			Allocator::dropResource(allocator, handle);
 		}
+
+		void drop(ResourceManager::Static::Handle manager, Texture::Handle texture, Engine::Handle engine);
 	}
 }

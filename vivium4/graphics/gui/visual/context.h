@@ -108,14 +108,14 @@ namespace Vivium {
 				void clean(Handle handle, Engine::Handle engine);
 
 				template <Allocator::AllocatorType AllocatorType>
-				void drop(AllocatorType* allocator, Handle handle, Engine::Handle engine) {
+				void drop(AllocatorType* allocator, ResourceManager::Static::Handle manager, Handle handle, Engine::Handle engine) {
 					VIVIUM_CHECK_HANDLE_EXISTS(handle);
 
 					DescriptorLayout::drop(VIVIUM_RESOURCE_ALLOCATED, handle->text.descriptorLayout, engine);
-					Pipeline::drop(VIVIUM_RESOURCE_ALLOCATED, handle->text.pipeline, engine);
+					Pipeline::drop(manager, handle->text.pipeline, engine);
 
 					DescriptorLayout::drop(VIVIUM_RESOURCE_ALLOCATED, handle->button.descriptorLayout, engine);
-					Pipeline::drop(VIVIUM_RESOURCE_ALLOCATED, handle->button.pipeline, engine);
+					Pipeline::drop(manager, handle->button.pipeline, engine);
 					
 					Allocator::dropResource(allocator, handle);
 				}

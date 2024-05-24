@@ -6,6 +6,13 @@
 #include "uniform.h"
 
 namespace Vivium {
+	namespace ResourceManager {
+		namespace Static {
+			struct Resource;
+			typedef Resource* Handle;
+		}
+	}
+
 	namespace Pipeline {
 		enum Target {
 			FRAMEBUFFER,
@@ -71,5 +78,7 @@ namespace Vivium {
 
 			Allocator::dropResource(allocator, handle);
 		}
+
+		void drop(ResourceManager::Static::Handle manager, Pipeline::Handle pipeline, Engine::Handle engine);
 	}
 }

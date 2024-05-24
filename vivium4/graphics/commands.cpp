@@ -308,7 +308,7 @@ namespace Vivium {
 			), "Failed to create texture sampler");
 		}
 
-		void createPipeline(Engine::Handle engine, VkPipeline* pipeline, VkPipelineLayout* layout, VkRenderPass renderPass, const std::span<Shader::Handle> shaders, const std::span<DescriptorLayout::Handle> descriptorLayouts, const std::span<Uniform::PushConstant> pushConstants, const Buffer::Layout& bufferLayout, VkSampleCountFlagBits sampleCount, const VkAllocationCallbacks* layoutAllocationCallback, const VkAllocationCallbacks* pipelineAllocationCallback) {
+		void createPipeline(Engine::Handle engine, VkPipeline* pipeline, VkPipelineLayout* layout, VkRenderPass renderPass, const std::span<const Shader::Handle> shaders, const std::span<const DescriptorLayout::Handle> descriptorLayouts, const std::span<const Uniform::PushConstant> pushConstants, const Buffer::Layout& bufferLayout, VkSampleCountFlagBits sampleCount, const VkAllocationCallbacks* layoutAllocationCallback, const VkAllocationCallbacks* pipelineAllocationCallback) {
 			std::vector<VkPipelineShaderStageCreateInfo> shaderStages(shaders.size());
 
 			for (uint32_t i = 0; i < shaders.size(); i++) {

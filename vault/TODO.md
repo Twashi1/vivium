@@ -4,7 +4,8 @@
 - All metadata of Vulkan resources must just be mostly trivial
 	- Can move by just copying bytes, and setting old ones to 0 (trivial move?)
 - Somehow deal with Vivium resources that contain multiple Vulkan resources (shaders)
-- Create `Commands::createPipeline` and similar methods, and make them take allocation callbacks
+- Somehow figure out how metadata can store multi-resource objects
+- Move creation of render pass to `Commands::createRenderPass`
 ## Core
 
 - Platform independence (OS module, Timer module)
@@ -48,15 +49,25 @@
 - Use `VIVIUM_DEBUG_LOG` instead of `VIVIUM_LOG` when we only want to log in `DEBUG` mode
 - `T const&` a lot of things 
 
-Resources contain metadata, at the end of the resource, the Vulkan resource itself is stored. In order to create a resource, with our current model, we would be required to know the size of the Vulkan resource, so we can place the Vivium resource in memory. We wouldn't be allowed to hold references in the form of Handles to uninitialized resources, since they don't exist yet. Instead, we hold references to the specification? Then when the resource is created in the previous step, we obtain the actual resource itself by looking into the given mapping of specification indices to allocation locations.
+```
+Header: u32 size, u16 metadataSize
 
-Steps of program should be:
-- Create vulkan allocation
-- Place metadata after (requires passing size of metadata to ensure a contiguous region can be allocated)
-- Assume we get back the location of the allocation (safe to assume this is just the Vulkan resource itself?), so that we can map the specification index to the location of the allocation
+(alignment)
+-sizeof(Header):  Header
+0:    PrimaryVulkanResource
+size: Metadata (contains pointers to additional resources)
+```
 
-All vulkan resource allocations require an additional piece of metadata, the size of the vulkan resource + alignment, so that we can accurately determine the beginning of the metadata given the vulkan resource pointer. This additional piece of metadata is also required for the re-allocation function
+We have no way to guarantee additional resources are allocated contiguously with the primary, unless we gather all resources to be allocated with that particular object first (which is just impractical)
 
-Must investigate the assumption that the vulkan handle is equivalent to the pointer given for memory allocation
+```
+vector<ResourceReferences> references = submit(ResourceManager, specifications)
+// Where the specifications take references to some previous resources
+vector<ResourceReferences> secondary = submit(ResourceManager, specifications + references);
 
-For reallocation, we must be able to ascertain the total size of the previous allocation (excluding metadata), including where that is stored, given only the pointer of the allocation. Thus the first 4 bytes before the allocation pointer, we should define to store the size of the previous allocation (but then alignment struggles, need to grab 4 bytes from somewhere)
+allocate();
+
+vector<handles> handles = grab(references)
+
+draw/use/copy (handles)
+```

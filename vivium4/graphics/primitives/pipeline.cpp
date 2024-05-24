@@ -1,10 +1,20 @@
 #include "pipeline.h"
+#include "../resource_manager.h"
 
 namespace Vivium {
 	namespace Pipeline {
 		bool isNull(const Handle pipeline)
 		{
 			return pipeline->pipeline == VK_NULL_HANDLE;
+		}
+
+		void drop(ResourceManager::Static::Handle manager, Pipeline::Handle pipeline, Engine::Handle engine)
+		{
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
+			VIVIUM_CHECK_HANDLE_EXISTS(manager);
+			VIVIUM_CHECK_HANDLE_EXISTS(pipeline);
+
+			manager->drop(pipeline, engine);
 		}
 
 		Specification Specification::fromWindow(const std::span<const Shader::Handle> shaders, const Buffer::Layout bufferLayout, const std::span<const DescriptorLayout::Handle> descriptorLayouts, const std::span<const Uniform::PushConstant> pushConstants, Engine::Handle engine, Window::Handle window)

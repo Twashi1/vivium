@@ -15,13 +15,13 @@
 
 namespace Vivium {
 	namespace ResourceManager {
-		struct SharedTrackerData {
+		struct _SharedTrackerData {
 			std::atomic_uint32_t deviceMemoryAllocations;
 
-			SharedTrackerData();
+			_SharedTrackerData();
 		};
 
-		inline SharedTrackerData sharedTrackerData;
+		inline _SharedTrackerData _sharedTrackerData;
 
 		namespace Static {
 			typedef void(*DestructorFunction)(void* object);
@@ -30,59 +30,32 @@ namespace Vivium {
 				DestructorFunction destructor;
 				
 				Allocator::Static::Pool* storage;
-				uint64_t nextAllocationMetadataSize;
+				uint16_t nextAllocationMetadataSize;
 			};
 
 			struct DeletionContext {
 				DestructorFunction destructor;
 			};
 
-			// TODO: methods to automatically extract such facts
-			// Format of vulkan allocation
-			// 4 byte allocation size
-			// n byte vulkan resource <- ptr
-			// 4 byte metadata size
-			// k byte metadata
+			struct AllocationHeader {
+				uint32_t allocationSize;
+				uint16_t metadataSize;
+			};
+
+			AllocationHeader* _getHeader(void* viviumResource);
+			void* _getMetadata(void* viviumResource, AllocationHeader* header);
 
 			void* _vulkanAllocation(void* userData, uint64_t size, uint64_t alignment, VkSystemAllocationScope allocationScope);
 			void* _vulkanReallocation(void* userData, void* originalData, uint64_t size, uint64_t alignment, VkSystemAllocationScope allocationScope);
 			void _vulkanFree(void* userData, void* memory);
 
+			uint64_t _calculateAlignedOffset(uint64_t* offset, uint64_t alignment, uint64_t size);
+
+			struct Reference {
+				uint64_t specificationIndex;
+			};
+
 			struct Resource {
-				template <typename ResourceType, typename SpecificationType>
-				struct PreallocationData {
-					std::vector<std::span<ResourceType>> resources;
-					std::vector<SpecificationType> specifications;
-
-					std::vector<ResourceType*> submit(Allocator::Static::Pool* allocator, const std::span<const SpecificationType> newSpecifications)
-					{
-						specifications.reserve(std::max(
-							(specifications.size() >> 1) + specifications.size(),
-							specifications.size() + newSpecifications.size()
-						));
-
-						specifications.insert(specifications.end(), newSpecifications.begin(), newSpecifications.end());
-
-						std::vector<ResourceType*> handles(newSpecifications.size());
-
-						ResourceType* resourceBlock = reinterpret_cast<ResourceType*>(allocator->allocate(0, sizeof(ResourceType) * newSpecifications.size()));
-
-						for (uint64_t i = 0; i < newSpecifications.size(); i++) {
-							new (resourceBlock + i) ResourceType{};
-							handles[i] = resourceBlock + i;
-						}
-
-						resources.push_back({ resourceBlock, newSpecifications.size() });
-
-						return handles;
-					}
-
-					void clear() {
-						resources = {};
-						specifications = {};
-					}
-				};
-
 				struct DeviceMemoryHandle {
 					VkDeviceMemory memory;
 					void* mapping;
@@ -90,21 +63,29 @@ namespace Vivium {
 					DeviceMemoryHandle();
 				};
 
-				PreallocationData<Buffer::Resource, Buffer::Specification> hostBuffers;
-				PreallocationData<Buffer::Resource, Buffer::Specification> deviceBuffers;
-				PreallocationData<Buffer::Dynamic::Resource, Buffer::Dynamic::Specification> dynamicHostBuffers;
-				PreallocationData<Texture::Resource, Texture::Specification> textures;
-				PreallocationData<Framebuffer::Resource, Framebuffer::Specification> framebuffers;
-				PreallocationData<DescriptorSet::Resource, DescriptorSet::Specification> descriptorSets;
-				PreallocationData<Pipeline::Resource, Pipeline::Specification> pipelines;
+				std::vector<Buffer::Specification> hostBuffers;
+				std::vector<Buffer::Specification> deviceBuffers;
+				std::vector<Buffer::Dynamic::Specification> dynamicHostBuffers;
+				std::vector<Texture::Specification> textures;
+				std::vector<Framebuffer::Specification> framebuffers;
+				std::vector<DescriptorSet::Specification> descriptors;
+				std::vector<Pipeline::Specification> pipelines;
+
+				Buffer::Handle* hostBufferHandles;
+				Buffer::Handle* deviceBufferHandles;
+				Buffer::Dynamic::Handle* dynamicBufferHandles;
+				Texture::Handle* textureHandles;
+				Framebuffer::Handle* framebufferHandles;
+				DescriptorSet::Handle* descriptorHandles;
+				Pipeline::Handle* pipelineHandles;
 
 				std::vector<DeviceMemoryHandle> deviceMemoryHandles;
-				VkDescriptorPool descriptorPool;
+				std::vector<VkDescriptorPool> descriptorPools;
 
-				// TODO: in future, make this customiseable allocator
 				AllocationContext allocationContext;
 				DeletionContext deletionContext;
 				VkAllocationCallbacks allocationCallbacks;
+				// TODO: in future, make this customiseable allocator
 				Allocator::Static::Pool resourceAllocator;
 
 				DeviceMemoryHandle allocateDeviceMemory(Engine::Handle engine, uint32_t memoryTypeBits, MemoryType memoryType, uint64_t size);
@@ -125,7 +106,6 @@ namespace Vivium {
 				void drop(Buffer::Dynamic::Handle buffer, Engine::Handle engine);
 				void drop(Texture::Handle texture, Engine::Handle engine);
 				void drop(Framebuffer::Handle framebuffer, Engine::Handle engine);
-				void drop(DescriptorSet::Handle descriptorSet, Engine::Handle engine);
 				void drop(Pipeline::Handle pipeline, Engine::Handle engine);
 
 				Resource();
@@ -135,12 +115,12 @@ namespace Vivium {
 
 				void drop(Engine::Handle engine);
 
-				std::vector<Buffer::PromisedHandle> submit(MemoryType memoryType, const std::span<const Buffer::Specification> specifications);
-				std::vector<Buffer::Dynamic::PromisedHandle> submit(const std::span<const Buffer::Dynamic::Specification> specifications);
-				std::vector<Texture::PromisedHandle> submit(const std::span<const Texture::Specification> specifications);
-				std::vector<DescriptorSet::PromisedHandle> submit(const std::span<const DescriptorSet::Specification> specifications);
-				std::vector<Pipeline::PromisedHandle> submit(const std::span<const Pipeline::Specification> specifications);
-				std::vector<Framebuffer::PromisedHandle> submit(const std::span<const Framebuffer::Specification> specifications);
+				void submit(Reference* const referenceMemory, MemoryType memoryType, const std::span<const Buffer::Specification> specifications);
+				void submit(Reference* const referenceMemory, const std::span<const Buffer::Dynamic::Specification> specifications);
+				void submit(Reference* const referenceMemory, const std::span<const Texture::Specification> specifications);
+				void submit(Reference* const referenceMemory, const std::span<const DescriptorSet::Specification> specifications);
+				void submit(Reference* const referenceMemory, const std::span<const Pipeline::Specification> specifications);
+				void submit(Reference* const referenceMemory, const std::span<const Framebuffer::Specification> specifications);
 			};
 
 			typedef Resource* Handle;
