@@ -2,7 +2,7 @@
 
 namespace Vivium {
 	namespace ResourceManager {
-		_SharedTrackerData::_SharedTrackerData()
+		SharedTrackerData::SharedTrackerData()
 			: deviceMemoryAllocations(0)
 		{}
 
@@ -46,7 +46,7 @@ namespace Vivium {
 					);
 				}
 
-				_sharedTrackerData.deviceMemoryAllocations++;
+				sharedTrackerData.deviceMemoryAllocations++;
 
 				deviceMemoryHandles.push_back(deviceMemoryHandle);
 
@@ -55,56 +55,45 @@ namespace Vivium {
 
 			void Resource::allocateBuffers(Engine::Handle engine, MemoryType memoryType)
 			{
-				std::vector<Buffer::Specification>* bufferSpecificationsPointer;
-				Buffer::Handle* handleArray;
+				// TODO: edit this, so messy
+
+				PreallocationData<Buffer::Resource, Buffer::Specification>* preallocationDataPointer;
 
 				switch (memoryType) {
-				case MemoryType::DEVICE:
-					bufferSpecificationsPointer = &deviceBuffers;
-					handleArray = deviceBufferHandles;
-					break;
-				case MemoryType::UNIFORM:
-					bufferSpecificationsPointer = &hostBuffers;
-					handleArray = hostBufferHandles; 
-					break;
+				case MemoryType::DEVICE: preallocationDataPointer = &deviceBuffers; break;
+				case MemoryType::UNIFORM: preallocationDataPointer = &hostBuffers; break;
 				default: VIVIUM_LOG(Log::FATAL, "Invalid memory type to allocate buffer to"); break;
 				}
 
-				const std::vector<Buffer::Specification>& specifications = *bufferSpecificationsPointer;
+				PreallocationData<Buffer::Resource, Buffer::Specification>& preallocationData = *preallocationDataPointer;
 
-				allocationContext.nextAllocationMetadataSize = sizeof(Buffer::Metadata);
-
+				uint64_t specificationIndex = 0;
 				uint64_t totalSize = 0;
 
-				std::vector<uint64_t> bufferOffsets(specifications.size());
+				std::vector<uint64_t> bufferOffsets(preallocationData.specifications.size());
 				uint32_t memoryTypeBits = 0;
 
-				for (uint64_t i = 0; i < specifications.size(); i++) {
-					const Buffer::Specification& specification = specifications[i];
-					VkMemoryRequirements memoryRequirements;
+				for (std::span<Buffer::Resource>& resourceSpan : preallocationData.resources) {
+					for (uint64_t i = 0; i < resourceSpan.size(); i++) {
+						Buffer::Resource& resource = resourceSpan[i];
+						Buffer::Specification& specification = preallocationData.specifications[specificationIndex];
+						VkMemoryRequirements memoryRequirements;
 
-					// TODO: this is where we assume that the VkBuffer object returned is at
-					//	the same address as our allocation
-					VkBuffer bufferHandle;
+						resource.size = specification.size;
+						resource.usage = specification.usage;
 
-					// Create the VkBuffer and get the memory requirements
-					Commands::createBuffer(engine, &bufferHandle, specification.size, specification.usage, &memoryRequirements, &allocationCallbacks);
-					// Calculate offset this buffer should be at in the device memory
-					bufferOffsets[i] = _calculateAlignedOffset(&totalSize, memoryRequirements.alignment, memoryRequirements.size);
-					// Include memory type bits
-					memoryTypeBits |= memoryRequirements.memoryTypeBits;
+						// Create the VkBuffer and get the memory requirements
+						Commands::createBuffer(engine, &resource.buffer, specification.size, specification.usage, &memoryRequirements, nullptr);
+						// Calculate offset this buffer should be at in the device memory
+						uint64_t resourceOffset = Math::nearestMultiple(totalSize, memoryRequirements.alignment);
+						bufferOffsets[specificationIndex] = resourceOffset;
+						totalSize = resourceOffset + memoryRequirements.size;
 
-					// TODO: remove
-					VIVIUM_LOG(Log::DEBUG, "Found VkBuffer at {}", (void*)bufferHandle);
+						// Include memory type bits
+						memoryTypeBits |= memoryRequirements.memoryTypeBits;
 
-					// Assign metadata
-					Buffer::Metadata metadata;
-					metadata.size = specification.size;
-					metadata.usage = specification.usage;
-
-					_getMetadata<Buffer::Metadata>(bufferHandle) = metadata;
-				
-					handleArray[i] = reinterpret_cast<Buffer::Handle>(bufferHandle);
+						++specificationIndex;
+					}
 				}
 
 				// Get some device memory for these buffers
@@ -116,64 +105,67 @@ namespace Vivium {
 				);
 
 				// Bind buffers to memory
-				for (uint64_t i = 0; i < specifications.size(); i++) {
-					Buffer::Handle buffer = handleArray[i];
+				specificationIndex = 0;
 
-					vkBindBufferMemory(engine->device, reinterpret_cast<VkBuffer>(buffer), deviceMemoryHandle.memory, bufferOffsets[i]);
+				for (std::span<Buffer::Resource>& resourceSpan : preallocationData.resources) {
+					for (uint64_t i = 0; i < resourceSpan.size(); i++) {
+						Buffer::Resource& resource = resourceSpan[i];
 
-					if (deviceMemoryHandle.mapping != nullptr)
-						reinterpret_cast<Buffer::Metadata*>(_getMetadata(buffer, _getHeader(buffer)))->mapping = reinterpret_cast<uint8_t*>(deviceMemoryHandle.mapping) + bufferOffsets[i];
+						vkBindBufferMemory(engine->device, resource.buffer, deviceMemoryHandle.memory, bufferOffsets[specificationIndex]);
+
+						if (deviceMemoryHandle.mapping != nullptr)
+							resource.mapping = reinterpret_cast<uint8_t*>(deviceMemoryHandle.mapping) + bufferOffsets[specificationIndex];
+
+						++specificationIndex;
+					}
 				}
 			}
-			
+
 			void Resource::allocateDynamicBuffers(Engine::Handle engine)
 			{
+				PreallocationData<Buffer::Dynamic::Resource, Buffer::Dynamic::Specification>& preallocationData = dynamicHostBuffers;
+
+				uint64_t specificationIndex = 0;
 				uint64_t totalSize = 0;
 
-				std::vector<uint64_t> bufferOffsets(dynamicHostBuffers.size());
+				std::vector<uint64_t> bufferOffsets(preallocationData.specifications.size());
 				uint32_t memoryTypeBits = 0;
 
-				// Calculate suballocation alignment
-				VkPhysicalDeviceProperties deviceProperties;
-				vkGetPhysicalDeviceProperties(engine->physicalDevice, &deviceProperties);
+				for (std::span<Buffer::Dynamic::Resource>& resourceSpan : preallocationData.resources) {
+					for (uint64_t i = 0; i < resourceSpan.size(); i++) {
+						Buffer::Dynamic::Resource& resource = resourceSpan[i];
+						Buffer::Dynamic::Specification& specification = preallocationData.specifications[specificationIndex];
+						VkMemoryRequirements memoryRequirements;
 
-				uint64_t suballocationAlignment = deviceProperties.limits.minUniformBufferOffsetAlignment;
+						uint64_t totalBufferSize = 0;
 
-				for (uint64_t i = 0; i < dynamicHostBuffers.size(); i++) {
-					const Buffer::Dynamic::Specification& specification = dynamicHostBuffers[i];
-					VkMemoryRequirements memoryRequirements;
+						// Calculate suballocation alignment
+						VkPhysicalDeviceProperties deviceProperties;
+						vkGetPhysicalDeviceProperties(engine->physicalDevice, &deviceProperties);
 
-					uint64_t totalBufferSize = 0;
+						uint64_t suballocationAlignment = deviceProperties.limits.minUniformBufferOffsetAlignment;
 
-					std::vector<uint32_t> suballocationOffsets(specification.suballocations.size());
+						resource.suballocationSizes.resize(specification.suballocationSizes.size());
+						resource.suballocationOffsets.resize(specification.suballocationSizes.size());
 
-					for (uint64_t j = 0; j < specification.suballocations.size(); j++) {
-						suballocationOffsets[j] = _calculateAlignedOffset(
-							&totalBufferSize,
-							suballocationAlignment,
-							specification.suballocations[j]
-						);
+						for (uint64_t j = 0; j < specification.suballocationSizes.size(); j++) {
+							resource.suballocationSizes[j] = specification.suballocationSizes[j];
+							uint32_t suballocationOffset = Math::nearestMultiple(totalBufferSize, suballocationAlignment);
+							resource.suballocationOffsets[j] = suballocationOffset;
+							totalBufferSize = suballocationOffset + resource.suballocationSizes[j];
+						}
+
+						// Create the VkBuffer and get the memory requirements
+						Commands::createBuffer(engine, &resource.buffer, totalBufferSize, specification.usage, &memoryRequirements, nullptr);
+						// Calculate offset this buffer should be at in the device memory
+						uint64_t bufferOffset = Math::nearestMultiple(totalSize, memoryRequirements.alignment);
+						bufferOffsets[specificationIndex] = bufferOffset;
+						totalSize = bufferOffset + memoryRequirements.size;
+						// Include memory type bits
+						memoryTypeBits |= memoryRequirements.memoryTypeBits;
+
+						++specificationIndex;
 					}
-
-					VkBuffer buffer;
-
-					// Create the VkBuffer and get the memory requirements
-					Commands::createBuffer(engine, &buffer, totalBufferSize, specification.usage, &memoryRequirements, nullptr);
-					// Calculate offset this buffer should be at in the device memory
-					bufferOffsets[i] = _calculateAlignedOffset(&totalSize, memoryRequirements.alignment, memoryRequirements.size);
-					// Include memory type bits
-					memoryTypeBits |= memoryRequirements.memoryTypeBits;
-
-					_getMetadata<Buffer::Dynamic::Metadata>(buffer) =
-						Buffer::Dynamic::Metadata(
-							VK_NULL_HANDLE,
-							nullptr,
-							specification.usage,
-							specification.suballocations,
-							suballocationOffsets
-						);
-
-					dynamicHostBufferHandles[i] = buffer;
 				}
 
 				// Get some device memory for these buffers
@@ -185,17 +177,22 @@ namespace Vivium {
 				);
 
 				// Bind buffers to memory
-				for (uint64_t i = 0; i < dynamicHostBuffers.size(); i++) {
-					Buffer::Dynamic::Handle handle = dynamicHostBufferHandles[i];
-					Buffer::Dynamic::Metadata& metadata = _getMetadata<Buffer::Dynamic::Metadata>(handle);
+				specificationIndex = 0;
 
-					vkBindBufferMemory(engine->device, reinterpret_cast<VkBuffer>(handle), deviceMemoryHandle.memory, bufferOffsets[i]);
+				for (std::span<Buffer::Dynamic::Resource>& resource_span : preallocationData.resources) {
+					for (uint64_t i = 0; i < resource_span.size(); i++) {
+						Buffer::Dynamic::Resource& resource = resource_span[i];
 
-					if (deviceMemoryHandle.mapping != nullptr)
-						metadata.mapping = reinterpret_cast<uint8_t*>(deviceMemoryHandle.mapping) + bufferOffsets[i];
+						vkBindBufferMemory(engine->device, resource.buffer, deviceMemoryHandle.memory, bufferOffsets[specificationIndex]);
+
+						if (deviceMemoryHandle.mapping != nullptr)
+							resource.mapping = reinterpret_cast<uint8_t*>(deviceMemoryHandle.mapping) + bufferOffsets[specificationIndex];
+
+						++specificationIndex;
+					}
 				}
 			}
-			
+
 			void Resource::allocateTextures(Engine::Handle engine)
 			{
 				// TODO: assert number of specifications passed is less than the number
@@ -218,7 +215,7 @@ namespace Vivium {
 				std::vector<VkBufferImageCopy> textureRegions;
 
 				// Reserve space for texture temporaries
-				uint64_t specificationCount = textures.size();
+				uint64_t specificationCount = textures.specifications.size();
 				textureBarriers.reserve(specificationCount * 2);
 				textureBuffers.reserve(specificationCount);
 				textureRegions.reserve(specificationCount);
@@ -229,37 +226,44 @@ namespace Vivium {
 				uint32_t memoryTypeBits = 0;
 				std::vector<uint64_t> offsets(specificationCount);
 
-				for (uint64_t i = 0; i < textures.size(); i++) {
-					const Texture::Specification& specification = textures[i];
+				uint64_t specificationIndex = 0;
 
-					Commands::createImage(
-						engine,
-						&texture.image,
-						specification.width,
-						specification.height,
-						specification.imageFormat,
-						// TODO: through some method, convert to n samples
-						// TODO: cant do it here though, since this image must be a transfer destination
-						// maybe not necessary ^^?
-						VK_SAMPLE_COUNT_1_BIT,
-						VK_IMAGE_LAYOUT_UNDEFINED,
-						VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-						nullptr
-					);
+				for (std::span<Texture::Resource>& resourceSpan : textures.resources) {
+					for (uint64_t i = 0; i < resourceSpan.size(); i++) {
+						Texture::Resource& texture = resourceSpan[i];
+						Texture::Specification& specification = textures.specifications[specificationIndex];
 
-					VkMemoryRequirements memoryRequirements;
+						Commands::createImage(
+							engine,
+							&texture.image,
+							specification.width,
+							specification.height,
+							specification.imageFormat,
+							// TODO: through some method, convert to n samples
+							// TODO: cant do it here though, since this image must be a transfer destination
+							// maybe not necessary ^^?
+							VK_SAMPLE_COUNT_1_BIT,
+							VK_IMAGE_LAYOUT_UNDEFINED,
+							VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+							nullptr
+						);
 
-					vkGetImageMemoryRequirements(
-						engine->device,
-						texture.image,
-						&memoryRequirements
-					);
+						VkMemoryRequirements memoryRequirements;
 
-					uint64_t resourceOffset = Math::nearestMultiple(totalSize, memoryRequirements.alignment);
-					offsets[specificationIndex] = resourceOffset;
-					totalSize = resourceOffset + memoryRequirements.size;
+						vkGetImageMemoryRequirements(
+							engine->device,
+							texture.image,
+							&memoryRequirements
+						);
 
-					memoryTypeBits |= memoryRequirements.memoryTypeBits;
+						uint64_t resourceOffset = Math::nearestMultiple(totalSize, memoryRequirements.alignment);
+						offsets[specificationIndex] = resourceOffset;
+						totalSize = resourceOffset + memoryRequirements.size;
+
+						memoryTypeBits |= memoryRequirements.memoryTypeBits;
+
+						++specificationIndex;
+					}
 				}
 
 				// Begin command buffers
@@ -406,7 +410,7 @@ namespace Vivium {
 				uint64_t specificationIndex = 0;
 
 				uint64_t totalMemoryRequired = 0;
-				uint32_t memoryTypeBits = 0;
+				uint32_t memoryTypeBits = NULL;
 
 				std::vector<uint64_t> imageMemoryLocations(framebuffers.specifications.size());
 
@@ -435,7 +439,7 @@ namespace Vivium {
 
 						VIVIUM_ASSERT(memoryTypeBits == requirements.memoryTypeBits || specificationIndex == 0, "Multiple memory types required?");
 
-						memoryTypeBits |= requirements.memoryTypeBits;
+						memoryTypeBits = requirements.memoryTypeBits;
 
 						uint64_t resourceOffset = Math::nearestMultiple(totalMemoryRequired, requirements.alignment);
 						imageMemoryLocations[specificationIndex] = resourceOffset;
@@ -464,7 +468,7 @@ namespace Vivium {
 						Commands::createView(engine, &resource.view, resource.format, resource.image, nullptr);
 						// TODO: customiseable filter
 						Commands::createSampler(engine, &resource.sampler, Texture::Filter::LINEAR, nullptr);
-				
+
 						// Creating render pass
 						VkAttachmentDescription colorAttachment{};
 						colorAttachment.format = static_cast<VkFormat>(resource.format);
@@ -723,7 +727,7 @@ namespace Vivium {
 				vkUpdateDescriptorSets(engine->device,
 					static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 			}
-			
+
 			void Resource::allocatePipelines(Engine::Handle engine)
 			{
 				uint64_t specificationIndex = 0;
@@ -731,209 +735,145 @@ namespace Vivium {
 				for (const std::span<Pipeline::Resource>& resourceSpan : pipelines.resources) {
 					for (uint64_t resourceIndex = 0; resourceIndex < resourceSpan.size(); resourceIndex++) {
 						const Pipeline::Specification& specification = pipelines.specifications[specificationIndex++];
-						Pipeline::Resource& resource = resourceSpan[resourceIndex];
-						
-						VkRenderPass targetRenderPass = VK_NULL_HANDLE;
 
+						Pipeline::Resource& resource = resourceSpan[resourceIndex];
 						switch (specification.target) {
 						case Pipeline::Target::WINDOW:
-							targetRenderPass = specification.engine->renderPass; break;
+							resource.renderPass = specification.engine->renderPass; break;
 						case Pipeline::Target::FRAMEBUFFER:
-							targetRenderPass = specification.framebuffer->renderPass; break;
+							resource.renderPass = specification.framebuffer->renderPass; break;
 						default:
 							VIVIUM_LOG(Log::FATAL, "Invalid pipeline target, can't find render pass"); break;
 						}
 
-						Commands::createPipeline(
-							engine,
-							&resource.pipeline,
-							&resource.layout,
-							targetRenderPass,
-							specification.shaders,
-							specification.descriptorLayouts,
-							specification.pushConstants,
-							specification.bufferLayout,
-							specification.sampleCount,
+						std::vector<VkPipelineShaderStageCreateInfo> shaderStages(specification.shaders.size());
+
+						for (uint32_t i = 0; i < specification.shaders.size(); i++) {
+							Shader::Handle shader = specification.shaders[i];
+
+							VkPipelineShaderStageCreateInfo shaderStageInfo{};
+							shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+							shaderStageInfo.stage = shader->flags;
+							shaderStageInfo.module = shader->shader;
+							shaderStageInfo.pName = "main";
+
+							shaderStages[i] = shaderStageInfo;
+						}
+
+						VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+						vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+						vertexInputInfo.vertexBindingDescriptionCount = 1;
+						vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(specification.bufferLayout.attributeDescriptions.size());
+						vertexInputInfo.pVertexBindingDescriptions = &(specification.bufferLayout.bindingDescription);
+						vertexInputInfo.pVertexAttributeDescriptions = specification.bufferLayout.attributeDescriptions.data();
+
+						VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
+						inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+						inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+						inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+						VkPipelineViewportStateCreateInfo viewportState{};
+						viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+						viewportState.viewportCount = 1;
+						viewportState.scissorCount = 1;
+
+						VkPipelineRasterizationStateCreateInfo rasterizer{};
+						rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+						rasterizer.depthClampEnable = VK_FALSE;
+						rasterizer.rasterizerDiscardEnable = VK_FALSE;
+						rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+						rasterizer.lineWidth = 1.0f;
+						rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+						rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+						rasterizer.depthBiasEnable = VK_FALSE;
+
+						VkPipelineMultisampleStateCreateInfo multisampling{};
+						multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+						multisampling.sampleShadingEnable = VK_FALSE;
+						multisampling.rasterizationSamples = specification.sampleCount;
+
+						VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+						colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+						colorBlendAttachment.blendEnable = VK_TRUE;
+						colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+						colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+						colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+						colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+						colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+						colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+
+						// TODO: possibly re-enable
+						VkPipelineColorBlendStateCreateInfo colorBlending{};
+						colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+						// colorBlending.logicOpEnable = VK_FALSE;
+						// colorBlending.logicOp = VK_LOGIC_OP_COPY;
+						colorBlending.attachmentCount = 1;
+						colorBlending.pAttachments = &colorBlendAttachment;
+						// colorBlending.blendConstants[0] = 0.0f;
+						// colorBlending.blendConstants[1] = 0.0f;
+						// colorBlending.blendConstants[2] = 0.0f;
+						// colorBlending.blendConstants[3] = 0.0f;
+
+						std::vector<VkDynamicState> dynamicStates = {
+							VK_DYNAMIC_STATE_VIEWPORT,
+							VK_DYNAMIC_STATE_SCISSOR
+						};
+
+						VkPipelineDynamicStateCreateInfo dynamicState{};
+						dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+						dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
+						dynamicState.pDynamicStates = dynamicStates.data();
+
+						std::vector<VkDescriptorSetLayout> descriptorLayouts(specification.descriptorLayouts.size());
+
+						for (uint32_t i = 0; i < descriptorLayouts.size(); i++) {
+							descriptorLayouts[i] = specification.descriptorLayouts[i]->layout;
+						}
+
+						VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+						pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+						pipelineLayoutInfo.pSetLayouts = descriptorLayouts.data();
+						pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorLayouts.size());
+						// TODO: dirty, better to just make the copy
+						pipelineLayoutInfo.pPushConstantRanges = reinterpret_cast<const VkPushConstantRange*>(specification.pushConstants.data());
+						pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(specification.pushConstants.size());
+
+						VIVIUM_VK_CHECK(vkCreatePipelineLayout(
+							engine->device,
+							&pipelineLayoutInfo,
 							nullptr,
-							nullptr
+							&resource.layout),
+							"Failed to create pipeline layout"
 						);
-						
-						//std::vector<VkPipelineShaderStageCreateInfo> shaderStages(specification.shaders.size());
 
-						//for (uint32_t i = 0; i < specification.shaders.size(); i++) {
-						//	Shader::Handle shader = specification.shaders[i];
+						VkGraphicsPipelineCreateInfo pipelineInfo{};
+						pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+						pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
+						pipelineInfo.pStages = shaderStages.data();
+						pipelineInfo.pVertexInputState = &vertexInputInfo;
+						pipelineInfo.pInputAssemblyState = &inputAssembly;
+						pipelineInfo.pViewportState = &viewportState;
+						pipelineInfo.pRasterizationState = &rasterizer;
+						pipelineInfo.pMultisampleState = &multisampling;
+						pipelineInfo.pDepthStencilState = nullptr;
+						pipelineInfo.pColorBlendState = &colorBlending;
+						pipelineInfo.pDynamicState = &dynamicState;
+						pipelineInfo.layout = resource.layout;
+						pipelineInfo.renderPass = resource.renderPass;
+						pipelineInfo.subpass = 0;
+						pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+						pipelineInfo.basePipelineIndex = -1;
 
-						//	VkPipelineShaderStageCreateInfo shaderStageInfo{};
-						//	shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-						//	shaderStageInfo.stage = shader->flags;
-						//	shaderStageInfo.module = shader->shader;
-						//	shaderStageInfo.pName = "main";
-
-						//	shaderStages[i] = shaderStageInfo;
-						//}
-
-						//VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-						//vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-						//vertexInputInfo.vertexBindingDescriptionCount = 1;
-						//vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(specification.bufferLayout.attributeDescriptions.size());
-						//vertexInputInfo.pVertexBindingDescriptions = &(specification.bufferLayout.bindingDescription);
-						//vertexInputInfo.pVertexAttributeDescriptions = specification.bufferLayout.attributeDescriptions.data();
-
-						//VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
-						//inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-						//inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-						//inputAssembly.primitiveRestartEnable = VK_FALSE;
-
-						//VkPipelineViewportStateCreateInfo viewportState{};
-						//viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-						//viewportState.viewportCount = 1;
-						//viewportState.scissorCount = 1;
-
-						//VkPipelineRasterizationStateCreateInfo rasterizer{};
-						//rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-						//rasterizer.depthClampEnable = VK_FALSE;
-						//rasterizer.rasterizerDiscardEnable = VK_FALSE;
-						//rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-						//rasterizer.lineWidth = 1.0f;
-						//rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-						//rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-						//rasterizer.depthBiasEnable = VK_FALSE;
-
-						//VkPipelineMultisampleStateCreateInfo multisampling{};
-						//multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-						//multisampling.sampleShadingEnable = VK_FALSE;
-						//multisampling.rasterizationSamples = specification.sampleCount;
-
-						//VkPipelineColorBlendAttachmentState colorBlendAttachment{};
-						//colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-						//colorBlendAttachment.blendEnable = VK_TRUE;
-						//colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-						//colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-						//colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-						//colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-						//colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-						//colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
-
-						//// TODO: possibly re-enable
-						//VkPipelineColorBlendStateCreateInfo colorBlending{};
-						//colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-						//// colorBlending.logicOpEnable = VK_FALSE;
-						//// colorBlending.logicOp = VK_LOGIC_OP_COPY;
-						//colorBlending.attachmentCount = 1;
-						//colorBlending.pAttachments = &colorBlendAttachment;
-						//// colorBlending.blendConstants[0] = 0.0f;
-						//// colorBlending.blendConstants[1] = 0.0f;
-						//// colorBlending.blendConstants[2] = 0.0f;
-						//// colorBlending.blendConstants[3] = 0.0f;
-
-						//std::vector<VkDynamicState> dynamicStates = {
-						//	VK_DYNAMIC_STATE_VIEWPORT,
-						//	VK_DYNAMIC_STATE_SCISSOR
-						//};
-
-						//VkPipelineDynamicStateCreateInfo dynamicState{};
-						//dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-						//dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
-						//dynamicState.pDynamicStates = dynamicStates.data();
-
-						//std::vector<VkDescriptorSetLayout> descriptorLayouts(specification.descriptorLayouts.size());
-
-						//for (uint32_t i = 0; i < descriptorLayouts.size(); i++) {
-						//	descriptorLayouts[i] = specification.descriptorLayouts[i]->layout;
-						//}
-
-						//VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-						//pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-						//pipelineLayoutInfo.pSetLayouts = descriptorLayouts.data();
-						//pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorLayouts.size());
-						//// TODO: dirty, better to just make the copy
-						//pipelineLayoutInfo.pPushConstantRanges = reinterpret_cast<const VkPushConstantRange*>(specification.pushConstants.data());
-						//pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(specification.pushConstants.size());
-
-						//VIVIUM_VK_CHECK(vkCreatePipelineLayout(
-						//	engine->device,
-						//	&pipelineLayoutInfo,
-						//	nullptr,
-						//	&resource.layout),
-						//	"Failed to create pipeline layout"
-						//);
-
-						//VkGraphicsPipelineCreateInfo pipelineInfo{};
-						//pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-						//pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
-						//pipelineInfo.pStages = shaderStages.data();
-						//pipelineInfo.pVertexInputState = &vertexInputInfo;
-						//pipelineInfo.pInputAssemblyState = &inputAssembly;
-						//pipelineInfo.pViewportState = &viewportState;
-						//pipelineInfo.pRasterizationState = &rasterizer;
-						//pipelineInfo.pMultisampleState = &multisampling;
-						//pipelineInfo.pDepthStencilState = nullptr;
-						//pipelineInfo.pColorBlendState = &colorBlending;
-						//pipelineInfo.pDynamicState = &dynamicState;
-						//pipelineInfo.layout = resource.layout;
-						//pipelineInfo.renderPass = resource.renderPass;
-						//pipelineInfo.subpass = 0;
-						//pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-						//pipelineInfo.basePipelineIndex = -1;
-
-						//VIVIUM_VK_CHECK(vkCreateGraphicsPipelines(
-						//	engine->device,
-						//	VK_NULL_HANDLE,
-						//	1,
-						//	&pipelineInfo,
-						//	nullptr,
-						//	&resource.pipeline
-						//), "Failed to create graphics pipeline");
+						VIVIUM_VK_CHECK(vkCreateGraphicsPipelines(
+							engine->device,
+							VK_NULL_HANDLE,
+							1,
+							&pipelineInfo,
+							nullptr,
+							&resource.pipeline
+						), "Failed to create graphics pipeline");
 					}
 				}
-			}
-
-			void Resource::drop(Buffer::Handle buffer, Engine::Handle engine)
-			{
-				deletionContext.destructor = [](void* memory) { reinterpret_cast<Buffer::Resource*>(memory)->~Resource(); };
-				allocationCallbacks.pUserData = &deletionContext;
-
-				vkDestroyBuffer(engine->device, buffer->buffer, &allocationCallbacks);
-			}
-
-			void Resource::drop(Buffer::Dynamic::Handle buffer, Engine::Handle engine)
-			{
-				deletionContext.destructor = [](void* memory) { reinterpret_cast<Buffer::Dynamic::Resource*>(memory)->~Resource(); };
-				allocationCallbacks.pUserData = &deletionContext;
-
-				vkDestroyBuffer(engine->device, buffer->buffer, &allocationCallbacks);
-			}
-
-			void Resource::drop(Texture::Handle texture, Engine::Handle engine)
-			{
-				deletionContext.destructor = [](void* memory) { reinterpret_cast<Texture::Resource*>(memory)->~Resource(); };
-				allocationCallbacks.pUserData = &deletionContext;
-
-				vkDestroySampler(engine->device, texture->sampler, &allocationCallbacks);
-				vkDestroyImageView(engine->device, texture->view, &allocationCallbacks);
-				vkDestroyImage(engine->device, texture->image, &allocationCallbacks);
-			}
-
-			void Resource::drop(Framebuffer::Handle framebuffer, Engine::Handle engine)
-			{
-				deletionContext.destructor = [](void* memory) { reinterpret_cast<Framebuffer::Resource*>(memory)->~Resource(); };
-				allocationCallbacks.pUserData = &deletionContext;
-
-				vkDestroyImage(engine->device, framebuffer->image, &allocationCallbacks);
-				vkDestroySampler(engine->device, framebuffer->sampler, &allocationCallbacks);
-				vkDestroyImageView(engine->device, framebuffer->view, &allocationCallbacks);
-
-				vkDestroyRenderPass(engine->device, framebuffer->renderPass, &allocationCallbacks);
-				vkDestroyFramebuffer(engine->device, framebuffer->framebuffer, &allocationCallbacks);
-			}
-
-			void Resource::drop(Pipeline::Handle pipeline, Engine::Handle engine)
-			{
-				deletionContext.destructor = [](void* memory) { reinterpret_cast<Pipeline::Resource*>(memory)->~Resource(); };
-				allocationCallbacks.pUserData = &deletionContext;
-
-				vkDestroyPipelineLayout(engine->device, pipeline->layout, &allocationCallbacks);
-				vkDestroyPipeline(engine->device, pipeline->pipeline, &allocationCallbacks);
 			}
 
 			Resource::Resource()
@@ -941,50 +881,21 @@ namespace Vivium {
 				: descriptorPool(VK_NULL_HANDLE) {}
 
 			void Resource::allocate(Engine::Handle engine) {
-				allocationCallbacks.pfnAllocation = _vulkanAllocation;
-				allocationCallbacks.pfnReallocation = _vulkanReallocation;
-				allocationCallbacks.pfnFree = _vulkanFree;
-				allocationCallbacks.pfnInternalAllocation = nullptr;
-				allocationCallbacks.pfnInternalFree = nullptr;
-				allocationCallbacks.pUserData = &allocationContext;
-
-				allocationContext.storage = &resourceAllocator;
-
-				std::free(hostBufferHandles);
-				std::free(deviceBufferHandles);
-				std::free(dynamicHostBufferHandles);
-				std::free(framebufferHandles);
-				std::free(descriptorSetHandles);
-				std::free(pipelineHandles);
-
-				// TODO: set to nullptr if no specifications passed, do this in the if statement block instead?
-				hostBufferHandles = reinterpret_cast<Buffer::Handle*>(std::malloc(sizeof(Buffer::Handle) * hostBuffers.size()));
-				deviceBufferHandles = reinterpret_cast<Buffer::Handle*>(std::malloc(sizeof(Buffer::Handle) * hostBuffers.size()));
-				dynamicHostBufferHandles = reinterpret_cast<Buffer::Dynamic::Handle*>(std::malloc(sizeof(Buffer::Dynamic::Handle) * hostBuffers.size()));
-				framebufferHandles = reinterpret_cast<Framebuffer::Handle*>(std::malloc(sizeof(Framebuffer::Handle) * hostBuffers.size()));
-				descriptorSetHandles = reinterpret_cast<DescriptorSet::Handle*>(std::malloc(sizeof(DescriptorSet::Handle) * hostBuffers.size()));
-				pipelineHandles = reinterpret_cast<Pipeline::Handle*>(std::malloc(sizeof(Pipeline::Handle) * hostBuffers.size()));
-
-				// TODO: check for all
-				if (hostBufferHandles == nullptr) {
-					VIVIUM_LOG(Log::FATAL, "Failed to allocate memory for buffer handles");
-				}
-
-				if (!hostBuffers.empty())
+				if (!hostBuffers.specifications.empty())
 					allocateBuffers(engine, MemoryType::STAGING);
-				if (!deviceBuffers.empty())
+				if (!deviceBuffers.specifications.empty())
 					allocateBuffers(engine, MemoryType::DEVICE);
-				if (!dynamicHostBuffers.empty())
+				if (!dynamicHostBuffers.specifications.empty())
 					allocateDynamicBuffers(engine);
-				if (!textures.empty())
+				if (!textures.specifications.empty())
 					allocateTextures(engine);
-				if (!framebuffers.empty())
+				if (!framebuffers.specifications.empty())
 					allocateFramebuffers(engine);
 
-				if (!descriptorSets.empty())
+				if (!descriptorSets.specifications.empty())
 					allocateDescriptors(engine);
 
-				if (!pipelines.empty())
+				if (!pipelines.specifications.empty())
 					allocatePipelines(engine);
 
 				hostBuffers.clear();
@@ -995,7 +906,7 @@ namespace Vivium {
 				descriptorSets.clear();
 				pipelines.clear();
 			}
-			
+
 			void Resource::drop(Engine::Handle engine)
 			{
 				// Free vulkan memory
@@ -1006,203 +917,88 @@ namespace Vivium {
 					vkFreeMemory(engine->device, deviceMemoryHandle.memory, nullptr);
 				}
 
-				_sharedTrackerData.deviceMemoryAllocations -= static_cast<uint32_t>(deviceMemoryHandles.size());
+				sharedTrackerData.deviceMemoryAllocations -= static_cast<uint32_t>(deviceMemoryHandles.size());
 
-				// Free descriptor pools
-				for (VkDescriptorPool descriptorPool : descriptorPools)
-					vkDestroyDescriptorPool(engine->device, descriptorPool, nullptr);
+				// Free descriptor pool
+				vkDestroyDescriptorPool(engine->device, descriptorPool, nullptr);
 
 				// Free resources
 				resourceAllocator.free();
 			}
 
-			void submit(Handle handle, Reference* const referenceMemory, MemoryType memoryType, const std::span<const Buffer::Specification> specifications)
+			std::vector<Buffer::PromisedHandle> Resource::submit(MemoryType memoryType, const std::span<const Buffer::Specification> specifications)
 			{
-				for (uint64_t i = 0; i < specifications.size(); i++)
-					referenceMemory[i] = Reference{ i };
-
 				switch (memoryType) {
 				case MemoryType::STAGING:
-					handle->hostBuffers.insert(
-						handle->hostBuffers.end(),
-						specifications.begin(),
-						specifications.end()
-					);
-					break;
+					return hostBuffers.submit(&resourceAllocator, specifications); break;
 				case MemoryType::DEVICE:
-					handle->deviceBuffers.insert(
-						handle->deviceBuffers.end(),
-						specifications.begin(),
-						specifications.end()
-					);
-					break;
+					return deviceBuffers.submit(&resourceAllocator, specifications); break;
 				default:
-					VIVIUM_LOG(Log::FATAL, "Invalid memory type given, expected STAGING/UNIFORM or DEVICE");
-				}
-			}
-
-			void submit(Handle handle, Reference* const referenceMemory, const std::span<const Buffer::Dynamic::Specification> specifications)
-			{
-				for (uint64_t i = 0; i < specifications.size(); i++)
-					referenceMemory[i] = Reference{ i };
-
-				handle->dynamicHostBuffers.insert(
-					handle->dynamicHostBuffers.end(),
-					specifications.begin(),
-					specifications.end()
-				);
-			}
-
-			void submit(Handle handle, Reference* const referenceMemory, const std::span<const Texture::Specification> specifications)
-			{
-				for (uint64_t i = 0; i < specifications.size(); i++)
-					referenceMemory[i] = Reference{ i };
-
-				handle->textures.insert(
-					handle->textures.end(),
-					specifications.begin(),
-					specifications.end()
-				);
-			}
-			
-			void submit(Handle handle, Reference* const referenceMemory, const std::span<const DescriptorSet::Specification> specifications)
-			{
-				for (uint64_t i = 0; i < specifications.size(); i++)
-					referenceMemory[i] = Reference{ i };
-
-				handle->descriptorSets.insert(
-					handle->descriptorSets.end(),
-					specifications.begin(),
-					specifications.end()
-				);
-			}
-
-			void submit(Handle handle, Reference* const referenceMemory, const std::span<const Pipeline::Specification> specifications)
-			{
-				for (uint64_t i = 0; i < specifications.size(); i++)
-					referenceMemory[i] = Reference{ i };
-
-				handle->pipelines.insert(
-					handle->pipelines.end(),
-					specifications.begin(),
-					specifications.end()
-				);
-			}
-
-			void submit(Handle handle, Reference* const referenceMemory, const std::span<const Framebuffer::Specification> specifications)
-			{
-				for (uint64_t i = 0; i < specifications.size(); i++)
-					referenceMemory[i] = Reference{ i };
-
-				handle->framebuffers.insert(
-					handle->framebuffers.end(),
-					specifications.begin(),
-					specifications.end()
-				);
-			}
-
-			AllocationHeader* _getHeader(void* viviumResource)
-			{
-				return reinterpret_cast<AllocationHeader*>(
-					reinterpret_cast<uint8_t*>(viviumResource) - sizeof(AllocationHeader)
-				);
-			}
-
-			void* _getMetadata(void* viviumResource, AllocationHeader* header)
-			{
-				return reinterpret_cast<uint8_t*>(viviumResource) + header->allocationSize;
-			}
-
-			void* _vulkanAllocation(void* userData, uint64_t size, uint64_t alignment, VkSystemAllocationScope allocationScope)
-			{
-				AllocationContext* context = reinterpret_cast<AllocationContext*>(userData);
-
-				void* allocation = context->storage->allocate(sizeof(AllocationHeader), alignment, size + context->nextAllocationMetadataSize);
-				
-				AllocationHeader header;
-				header.allocationSize = size;
-				header.metadataSize = context->nextAllocationMetadataSize;
-
-				*_getHeader(allocation) = header;
-
-				VIVIUM_LOG(Log::DEBUG, "Allocated resource at {}", allocation);
-
-				return allocation;
-			}
-
-			void* _vulkanReallocation(void* userData, void* originalData, uint64_t size, uint64_t alignment, VkSystemAllocationScope allocationScope)
-			{
-				// TODO: actually attempt reallocation sometimes
-
-				// Create a deletion context for the free
-				AllocationContext* context = reinterpret_cast<AllocationContext*>(userData);
-				static_assert(sizeof(DeletionContext) == sizeof(DestructorFunction));
-				DeletionContext* deletionContext = reinterpret_cast<DeletionContext*>(&(context->destructor));
-
-				if (size == 0) {
-					VIVIUM_DEBUG_LOG("Reallocating with size 0, resorting to free");
-
-					_vulkanFree(deletionContext, originalData);
-
-					return NULL;
+					VIVIUM_LOG(Log::FATAL, "Invalid memory type for submit"); break;
 				}
 
-				if (originalData == NULL) {
-					VIVIUM_DEBUG_LOG("Delegating empty original reallocation to allocation");
-
-					return _vulkanAllocation(userData, size, alignment, allocationScope);
-				}
-
-				void* allocation = context->storage->allocate(sizeof(AllocationHeader), alignment, size + context->nextAllocationMetadataSize);
-
-				AllocationHeader* allocationHeader = _getHeader(allocation);
-				allocationHeader->allocationSize = size;
-				allocationHeader->metadataSize = context->nextAllocationMetadataSize;
-
-				VIVIUM_LOG(Log::DEBUG, "Allocated resource at {}", allocation);
-
-				AllocationHeader* originalHeader = _getHeader(originalData);
-
-				// Copy vulkan data
-				std::memcpy(allocation, originalData, originalHeader->allocationSize);
-				// Copy metadata (assuming byte copy is enough)
-				std::memcpy(
-					_getMetadata(allocation, _getHeader(allocation)),
-					_getMetadata(originalData, originalHeader), 
-					originalHeader->metadataSize
-				);
-				// Set old metadata to 0 (in case it has some complexity)
-				// TODO: parameterise this and only perform when necessary? insignificant performance difference
-				std::memset(_getMetadata(originalData, originalHeader), 0, originalHeader->metadataSize);
-
-				_vulkanFree(deletionContext, originalData);
-
-				return allocation;
+				return {};
 			}
 
-			void _vulkanFree(void* userData, void* memory)
+			std::vector<Buffer::Dynamic::PromisedHandle> Resource::submit(const std::span<const Buffer::Dynamic::Specification> specifications)
 			{
-				if (memory == NULL) return;
-
-				DeletionContext* context = reinterpret_cast<DeletionContext*>(userData);
-
-				VIVIUM_LOG(Log::DEBUG, "Deleting resource at {}", memory);
-
-				context->destructor(_getMetadata(memory, _getHeader(memory)));
+				return dynamicHostBuffers.submit(&resourceAllocator, specifications);
 			}
 
-			uint64_t _calculateAlignedOffset(uint64_t* offset, uint64_t alignment, uint64_t size)
+			std::vector<Texture::PromisedHandle> Resource::submit(const std::span<const Texture::Specification> specifications)
 			{
-				uint64_t location = Math::nearestMultiple(*offset, alignment);
-				*offset = location + size;
+				return textures.submit(&resourceAllocator, specifications);
+			}
 
-				return location;
+			std::vector<DescriptorSet::PromisedHandle> Resource::submit(const std::span<const DescriptorSet::Specification> specifications)
+			{
+				return descriptorSets.submit(&resourceAllocator, specifications);
+			}
+
+			std::vector<Pipeline::PromisedHandle> Resource::submit(const std::span<const Pipeline::Specification> specifications)
+			{
+				return pipelines.submit(&resourceAllocator, specifications);
+			}
+
+			std::vector<Framebuffer::PromisedHandle> Resource::submit(const std::span<const Framebuffer::Specification> specifications)
+			{
+				return framebuffers.submit(&resourceAllocator, specifications);
 			}
 
 			void allocate(Engine::Handle engine, Handle handle) {
 				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 
 				handle->allocate(engine);
+			}
+
+			std::vector<Buffer::PromisedHandle> submit(Handle handle, MemoryType memoryType, const std::span<const Buffer::Specification> specifications)
+			{
+				return handle->submit(memoryType, specifications);
+			}
+
+			std::vector<Buffer::Dynamic::PromisedHandle> submit(Handle handle, const std::span<const Buffer::Dynamic::Specification> specifications)
+			{
+				return handle->submit(specifications);
+			}
+
+			std::vector<Texture::PromisedHandle> submit(Handle handle, const std::span<const Texture::Specification> specifications)
+			{
+				return handle->submit(specifications);
+			}
+
+			std::vector<DescriptorSet::PromisedHandle> submit(Handle handle, const std::span<const DescriptorSet::Specification> specifications)
+			{
+				return handle->submit(specifications);
+			}
+
+			std::vector<Pipeline::PromisedHandle> submit(Handle handle, const std::span<const Pipeline::Specification> specifications)
+			{
+				return handle->submit(specifications);
+			}
+
+			std::vector<Framebuffer::PromisedHandle> submit(Handle handle, const std::span<const Framebuffer::Specification> specifications)
+			{
+				return handle->submit(specifications);
 			}
 		}
 	}

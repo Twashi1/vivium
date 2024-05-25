@@ -16,8 +16,8 @@ namespace Vivium {
 
 					uint16_t indices[6] = { 0, 1, 2, 2, 3, 0 };
 
-					Buffer::set(button->stagingVertex, 0, vertices, sizeof(vertices), 0);
-					Buffer::set(button->stagingIndex, 0, indices, sizeof(indices), 0);
+					Buffer::set(button->stagingVertex, 0, vertices, sizeof(vertices));
+					Buffer::set(button->stagingIndex, 0, indices, sizeof(indices));
 
 					Commands::Context::beginTransfer(context);
 
@@ -43,13 +43,13 @@ namespace Vivium {
 					uniformData.scale = button->base->properties.trueDimensions;
 					uniformData.color = button->color;
 
-					Buffer::set(button->uniformBuffer, 0, &uniformData, sizeof(uniformData), 0);
+					Buffer::set(button->uniformBuffer, 0, &uniformData, sizeof(uniformData));
 
-					Commands::bindPipeline(context, button->pipeline);
-					Commands::bindDescriptorSet(context, button->descriptorSet, button->pipeline);
+					Commands::bindPipeline(context, guiContext->button.pipeline);
+					Commands::bindDescriptorSet(context, button->descriptorSet, guiContext->button.pipeline);
 					Commands::bindIndexBuffer(context, button->deviceIndex);
 					Commands::bindVertexBuffer(context, button->deviceVertex);
-					Commands::pushConstants(context, &perspective, sizeof(Math::Perspective), 0, Shader::Stage::VERTEX, button->pipeline);
+					Commands::pushConstants(context, &perspective, sizeof(Math::Perspective), 0, Shader::Stage::VERTEX, guiContext->button.pipeline);
 					Commands::drawIndexed(context, 6, 1);
 
 					F32x2 axisScale = 0.9f * (button->base->properties.trueDimensions / F32x2(button->textMetrics.maxLineWidth, button->textMetrics.totalHeight));
@@ -66,7 +66,7 @@ namespace Vivium {
 						perspective
 					);
 				}
-				
+
 				void setText(Button::Handle button, Engine::Handle engine, Window::Handle window, Commands::Context::Handle context, const std::string_view& text)
 				{
 					// Early exit if no text

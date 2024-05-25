@@ -21,11 +21,18 @@ namespace Vivium {
 			STORAGE		= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
 		};
 
-		struct Metadata {
+		struct Resource {
+			VkBuffer buffer;
+
 			void* mapping;
 			uint64_t size;
 			Usage usage;
 		};
+
+		typedef Resource* Handle;
+		typedef Resource* PromisedHandle;
+
+		bool isNull(const Handle handle);
 
 		struct Specification {
 			uint64_t size;
@@ -53,17 +60,21 @@ namespace Vivium {
 
 			static Layout fromTypes(const std::span<const Shader::DataType> types);
 		};
-			
-		typedef void* Handle;
 
-		bool isNull(const Handle buffer);
-		void set(Handle buffer, uint64_t bufferOffset, const void* data, uint64_t size, uint64_t dataOffset);
+		void set(Handle buffer, uint64_t bufferOffset, const void* data, uint64_t size);
 		void* getMapping(Handle buffer);
 
-		void drop(ResourceManager::Static::Handle manager, Handle buffer, Engine::Handle engine);
+		template <Allocator::AllocatorType AllocatorType>
+		void drop(AllocatorType* allocator, Handle buffer, Engine::Handle engine)
+		{
+			vkDestroyBuffer(engine->device, buffer->buffer, nullptr);
+
+			Allocator::dropResource(allocator, buffer);
+		}
 
 		namespace Dynamic {
-			struct Metadata {
+			struct Resource {
+				VkBuffer buffer;
 				// TODO: this is unset right now and unused, since dynamic buffers are coherent
 				//	in future, would need to store necessary data to calculate where a the buffer
 				//	is mapped, so appropriate range can be flushed
@@ -76,18 +87,19 @@ namespace Vivium {
 				std::vector<uint32_t> suballocationOffsets;
 			};
 
+			typedef Resource* Handle;
+			typedef Resource* PromisedHandle;
+
 			struct Specification {
-				std::vector<uint32_t> suballocations;
+				std::vector<uint32_t> suballocationSizes;
 				Usage usage;
 			};
 
-			typedef void* Handle;
-
 			bool isNull(const Handle buffer);
+
+			// TODO: make indices exclusive?
 			// Inclusive
 			void set(Handle buffer, const void* data, uint64_t suballocationStartIndex, uint64_t suballocationEndIndex);
-			void* getMapping(Handle buffer);
-
 			void drop(ResourceManager::Static::Handle manager, Handle buffer, Engine::Handle engine);
 		}
 	}

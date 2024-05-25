@@ -14,7 +14,8 @@ namespace Vivium {
 			VIVIUM_CHECK_HANDLE_EXISTS(manager);
 			VIVIUM_CHECK_HANDLE_EXISTS(pipeline);
 
-			manager->drop(pipeline, engine);
+			vkDestroyPipelineLayout(engine->device, pipeline->layout, nullptr);
+			vkDestroyPipeline(engine->device, pipeline->pipeline, nullptr);
 		}
 
 		Specification Specification::fromWindow(const std::span<const Shader::Handle> shaders, const Buffer::Layout bufferLayout, const std::span<const DescriptorLayout::Handle> descriptorLayouts, const std::span<const Uniform::PushConstant> pushConstants, Engine::Handle engine, Window::Handle window)

@@ -1,9 +1,7 @@
 
 ## High priority
 
-- All metadata of Vulkan resources must just be mostly trivial
-	- Can move by just copying bytes, and setting old ones to 0
-- Move creation of render pass to `Commands::createRenderPass`
+- Make everything a handle again
 ## Core
 
 - Platform independence (OS module, Timer module)
@@ -17,10 +15,10 @@
 - Dynamic tree allocator
 - Methods for `Input` to be more concise
 - `VIVIUM_LOG_PERIODIC(interval, severity, message, ...)`
-- All allocated resources should be tracked in debug mode (regardless of static/dynamic or even type of allocator, need some intermediary registry)
+- All allocated resources should be tracked in debug mode (regardless of static/dynamic or even type of allocator, need some intermediary registry) - use `VkAllocationCallbacks` for this
 ## Vulkan
 
-- Vivium resources that contain multiple vulkan handles should allocate them together (pass additional context to achieve this)
+- Generalise `Commands::createRenderPass` for `Framebuffer` render passes as well
 - Make the static resource manager "re-useable", i.e., can `allocate` multiple times
 - Shader debugger tool - use CPU to simulate GPU actions for some fragments
 - Compute shaders and storage images (alternative to framebuffers?)
@@ -28,6 +26,8 @@
 
 ## GUI
 
+- `Scene` rendering for batching
+- `Button` not included in context
 - `Sprite` class (load similar sprites from texture atlas, data structure is difficult to think of)
 - `Slider` class
 - `Panel` class
@@ -41,32 +41,16 @@
 - Lots of things that should be `uint32_t` instead of `float` (in particular with respect to dimensions)
 - Work on cleaning up some warnings whenever bored
 - Use `maxLineWidth` of `Text::Metrics` where referenced
+- Use `std::string_view` where applicable
 - Rename private functions with underscore prefix
-- `Math::calculateAlignment` brought back in some form, under new name with new structure
 - Use `VIVIUM_DEBUG_LOG` instead of `VIVIUM_LOG` when we only want to log in `DEBUG` mode
 - `T const&` a lot of things 
+## Aspirational
 
-```
-Header: u32 size, u16 metadataSize
+- 3D workflow (camera + controller math)
+- Raytracing
 
-(alignment)
--Header:  Header
-0:    PrimaryVulkanResource
-size: Metadata (contains pointers to additional resources)
-```
+## Projects
 
-We have no way to guarantee additional resources are allocated contiguously with the primary, unless we gather all resources to be allocated with that particular object first (which is just impractical)
-
-Any such additional resources, we relegate to being allocated randomly by the Vulkan allocator
-
-```
-vector<ResourceReferences> references = submit(ResourceManager, specifications)
-// Where the specifications take references to some previous resources
-vector<ResourceReferences> secondary = submit(ResourceManager, specifications + references);
-
-allocate();
-
-vector<handles> handles = grab(references)
-
-draw/use/copy (handles)
-```
+- Simple shoot-em-up
+- Circuit simulator

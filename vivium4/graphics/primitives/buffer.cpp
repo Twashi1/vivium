@@ -8,16 +8,16 @@ namespace Vivium {
 			return buffer->buffer == VK_NULL_HANDLE;
 		}
 
-		void set(Handle buffer, uint64_t bufferOffset, const void* data, uint64_t size, uint64_t dataOffset)
+		void set(Handle buffer, uint64_t bufferOffset, const void* data, uint64_t size)
 		{
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(buffer, Buffer::isNull);
 
-			VIVIUM_ASSERT(size + dataOffset + bufferOffset <= buffer->size,
+			VIVIUM_ASSERT(size + bufferOffset <= buffer->size,
 				"Setting memory OOBs");
 
 			std::memcpy(
 				reinterpret_cast<uint8_t*>(buffer->mapping) + bufferOffset,
-				reinterpret_cast<const uint8_t*>(data) + dataOffset,
+				reinterpret_cast<const uint8_t*>(data),
 				size
 			);
 		}
@@ -27,14 +27,6 @@ namespace Vivium {
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(buffer, Buffer::isNull);
 
 			return buffer->mapping;
-		}
-
-		void drop(ResourceManager::Static::Handle manager, Handle buffer, Engine::Handle engine)
-		{
-			VIVIUM_CHECK_HANDLE_EXISTS(manager);
-			VIVIUM_CHECK_HANDLE_EXISTS(buffer);
-
-			manager->drop(buffer, engine);
 		}
 			
 		Specification::Specification(uint64_t size, Usage usage)
@@ -86,7 +78,7 @@ namespace Vivium {
 				VIVIUM_CHECK_HANDLE_EXISTS(manager);
 				VIVIUM_CHECK_HANDLE_EXISTS(buffer);
 
-				manager->drop(buffer, engine);
+				vkDestroyBuffer(engine->device, buffer->buffer, nullptr);
 			}
 		}
 		

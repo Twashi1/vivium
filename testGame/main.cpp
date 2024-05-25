@@ -75,8 +75,8 @@ int main(void) {
 		Engine::endFrame(engine, window);
 	}
 
-	GUI::Visual::Context::drop(&storage, manager, guiContext, engine);
-	GUI::Visual::Button::drop(&storage, manager, button, engine);
+	GUI::Visual::Context::drop(&storage, guiContext, engine);
+	GUI::Visual::Button::drop(&storage, button, engine);
 
 	ResourceManager::Static::drop(&storage, manager, engine);
 

@@ -49,7 +49,11 @@ namespace Vivium {
 			VIVIUM_CHECK_HANDLE_EXISTS(framebuffer);
 			VIVIUM_CHECK_HANDLE_EXISTS(manager);
 
-			manager->drop(framebuffer, engine);
+			vkDestroyImage(engine->device, framebuffer->image, nullptr);
+			vkDestroyImageView(engine->device, framebuffer->view, nullptr);
+			vkDestroySampler(engine->device, framebuffer->sampler, nullptr);
+			vkDestroyRenderPass(engine->device, framebuffer->renderPass, nullptr);
+			vkDestroyFramebuffer(engine->device, framebuffer->framebuffer, nullptr);
 		}
 
 		void beginFrame(Handle handle, Commands::Context::Handle context, Engine::Handle engine)

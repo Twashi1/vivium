@@ -27,7 +27,7 @@ namespace Vivium {
 				uint64_t vertexIndex = firstElementIndex + handle->bufferLayout.stride * i;
 
 				// Copy data from element data to vertex mapping
-				Buffer::set(handle->vertexStaging, vertexIndex, data.data() + elementDataIndex * element.size, element.size, 0);
+				Buffer::set(handle->vertexStaging, vertexIndex, data.data() + elementDataIndex * element.size, element.size);
 
 				++elementDataIndex;
 			}

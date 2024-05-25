@@ -124,16 +124,16 @@ namespace Vivium {
 				}
 
 				template <Allocator::AllocatorType AllocatorType>
-				void drop(AllocatorType* allocator, ResourceManager::Static::Handle manager, Handle handle, Engine::Handle engine) {
+				void drop(AllocatorType* allocator, Handle handle, Engine::Handle engine) {
 					VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 					VIVIUM_CHECK_HANDLE_EXISTS(handle);
 
 					GUI::Object::drop(allocator, handle->base);
 
-					Batch::drop(allocator, manager, handle->batch, engine);
+					Batch::drop(allocator, handle->batch, engine);
 
-					Buffer::drop(manager, handle->fragmentUniform, engine);
-					Buffer::drop(manager, handle->vertexUniform, engine);
+					Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->fragmentUniform, engine);
+					Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->vertexUniform, engine);
 					Texture::drop(VIVIUM_RESOURCE_ALLOCATED, handle->textAtlasTexture, engine);
 
 					DescriptorSet::drop(allocator, handle->descriptorSet);

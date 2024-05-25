@@ -88,7 +88,9 @@ namespace Vivium {
 			VIVIUM_CHECK_HANDLE_EXISTS(manager);
 			VIVIUM_CHECK_HANDLE_EXISTS(texture);
 
-			manager->drop(texture, engine);
+			vkDestroyImage(engine->device, texture->image, nullptr);
+			vkDestroyImageView(engine->device, texture->view, nullptr);
+			vkDestroySampler(engine->device, texture->sampler, nullptr);
 		}
 	}
 }

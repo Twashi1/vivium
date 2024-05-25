@@ -132,8 +132,8 @@ namespace Vivium {
 					VIVIUM_DEBUG_ONLY(default: VIVIUM_LOG(Log::FATAL, "Invalid alignment passed"); break);
 					}
 
-					Buffer::set(handle->fragmentUniform, 0, &color, sizeof(Color), 0);
-					Buffer::set(handle->vertexUniform, 0, &transform, sizeof(TransformData), 0);
+					Buffer::set(handle->fragmentUniform, 0, &color, sizeof(Color));
+					Buffer::set(handle->vertexUniform, 0, &transform, sizeof(TransformData));
 
 					Commands::pushConstants(context, &perspective, sizeof(Math::Perspective), 0, Shader::Stage::VERTEX, guiContext->text.pipeline);
 
