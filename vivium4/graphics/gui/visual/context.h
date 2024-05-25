@@ -16,11 +16,8 @@ namespace Vivium {
 					} text;
 
 					struct {
-						Shader::Handle fragmentShader;
-						Shader::Handle vertexShader;
-
-						DescriptorLayout::Handle descriptorLayout;
-						Pipeline::Handle pipeline;
+						// TODO
+						int temporary;
 					} button;
 
 					// For shaders
@@ -39,7 +36,7 @@ namespace Vivium {
 					Handle handle = Allocator::allocateResource<Resource>(allocator);
 
 					handle->transientStorage = Allocator::Static::Transient(
-						sizeof(Shader::Resource) * 4
+						sizeof(Shader::Resource) * 2
 					);
 
 					// TODO: a bit illegal to steal manager's resource allocator
@@ -57,50 +54,25 @@ namespace Vivium {
 						Shader::Specification fragmentSpecification = Shader::compile(Shader::Stage::FRAGMENT, "testGame/res/text.frag", "testGame/res/text_frag.spv");
 						Shader::Specification vertexSpecification = Shader::compile(Shader::Stage::VERTEX, "testGame/res/text.vert", "testGame/res/text_vert.spv");
 
-						handle->text.fragmentShader = Shader::create(&handle->transientStorage, engine, fragmentSpecification);
-						handle->text.vertexShader = Shader::create(&handle->transientStorage, engine, vertexSpecification);
-					}
+					handle->text.fragmentShader = Shader::create(&handle->transientStorage, engine, fragmentSpecification);
+					handle->text.vertexShader = Shader::create(&handle->transientStorage, engine, vertexSpecification);
 
-					{
-						Shader::Specification fragShaderSpec = Shader::compile(Shader::Stage::FRAGMENT, "testGame/res/button.frag", "testGame/res/button_frag.spv");
-						Shader::Specification vertShaderSpec = Shader::compile(Shader::Stage::VERTEX, "testGame/res/button.vert", "testGame/res/button_vert.spv");
+					std::vector<Pipeline::Handle> pipelines = ResourceManager::Static::submit(manager,
+						std::vector<Pipeline::Specification>({ Pipeline::Specification::fromWindow(
+							std::vector<Shader::Handle>({ handle->text.fragmentShader, handle->text.vertexShader }),
+							Buffer::Layout::fromTypes(std::vector<Shader::DataType>({
+								Shader::DataType::VEC2,
+								Shader::DataType::VEC2
+							})),
+							std::vector<DescriptorLayout::Handle>({ handle->text.descriptorLayout }),
+							std::vector<Uniform::PushConstant>({ Uniform::PushConstant(Shader::Stage::VERTEX, sizeof(Math::Perspective), 0)}),
+							engine,
+							window
+						) }));
 
-						handle->button.fragmentShader = Shader::create(&handle->transientStorage, engine, fragShaderSpec);
-						handle->button.vertexShader = Shader::create(&handle->transientStorage, engine, vertShaderSpec);
-					}
+					handle->text.pipeline = pipelines[0];
 
-					{
-						std::vector<Pipeline::Handle> pipelines = ResourceManager::Static::submit(manager,
-							std::vector<Pipeline::Specification>({ Pipeline::Specification::fromWindow(
-								std::vector<Shader::Handle>({ handle->text.fragmentShader, handle->text.vertexShader }),
-								Buffer::Layout::fromTypes(std::vector<Shader::DataType>({
-									Shader::DataType::VEC2,
-									Shader::DataType::VEC2
-								})),
-								std::vector<DescriptorLayout::Handle>({ handle->text.descriptorLayout }),
-								std::vector<Uniform::PushConstant>({ Uniform::PushConstant(Shader::Stage::VERTEX, sizeof(Math::Perspective), 0)}),
-								engine,
-								window
-							) }));
-
-						handle->text.pipeline = pipelines[0];
-					}
-
-					{
-						std::vector<Pipeline::Handle> pipelines = ResourceManager::Static::submit(manager,
-							std::vector<Pipeline::Specification>({
-								Pipeline::Specification::fromWindow(
-									std::vector<Shader::Handle>({ handle->button.fragmentShader, handle->button.vertexShader }),
-									Buffer::Layout::fromTypes(std::vector<Shader::DataType>({ Shader::DataType::VEC2 })),
-									std::vector<DescriptorLayout::Handle>({ handle->button.descriptorLayout }),
-									std::vector<Uniform::PushConstant>({ Uniform::PushConstant(Shader::Stage::VERTEX, sizeof(Math::Perspective), 0)}),
-									engine,
-									window
-								)
-								}));
-
-						handle->button.pipeline = pipelines[0];
-					}
+					// TODO: button context
 
 					return handle;
 				}
@@ -112,10 +84,10 @@ namespace Vivium {
 					VIVIUM_CHECK_HANDLE_EXISTS(handle);
 
 					DescriptorLayout::drop(VIVIUM_RESOURCE_ALLOCATED, handle->text.descriptorLayout, engine);
-					Pipeline::drop(manager, handle->text.pipeline, engine);
+					Pipeline::drop(VIVIUM_RESOURCE_ALLOCATED, handle->text.pipeline, engine);
 
 					DescriptorLayout::drop(VIVIUM_RESOURCE_ALLOCATED, handle->button.descriptorLayout, engine);
-					Pipeline::drop(manager, handle->button.pipeline, engine);
+					Pipeline::drop(VIVIUM_RESOURCE_ALLOCATED, handle->button.pipeline, engine);
 					
 					Allocator::dropResource(allocator, handle);
 				}
