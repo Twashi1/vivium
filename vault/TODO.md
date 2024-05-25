@@ -2,9 +2,7 @@
 ## High priority
 
 - All metadata of Vulkan resources must just be mostly trivial
-	- Can move by just copying bytes, and setting old ones to 0 (trivial move?)
-- Somehow deal with Vivium resources that contain multiple Vulkan resources (shaders)
-- Somehow figure out how metadata can store multi-resource objects
+	- Can move by just copying bytes, and setting old ones to 0
 - Move creation of render pass to `Commands::createRenderPass`
 ## Core
 
@@ -22,11 +20,10 @@
 - All allocated resources should be tracked in debug mode (regardless of static/dynamic or even type of allocator, need some intermediary registry)
 ## Vulkan
 
-- In-place allocation of resources to subvert double pointer indirection
+- Vivium resources that contain multiple vulkan handles should allocate them together (pass additional context to achieve this)
 - Make the static resource manager "re-useable", i.e., can `allocate` multiple times
 - Shader debugger tool - use CPU to simulate GPU actions for some fragments
 - Compute shaders and storage images (alternative to framebuffers?)
-- Submit calls should take memory to fill instead of returning a vector
 - Dynamic resource manager
 
 ## GUI
@@ -53,12 +50,14 @@
 Header: u32 size, u16 metadataSize
 
 (alignment)
--sizeof(Header):  Header
+-Header:  Header
 0:    PrimaryVulkanResource
 size: Metadata (contains pointers to additional resources)
 ```
 
 We have no way to guarantee additional resources are allocated contiguously with the primary, unless we gather all resources to be allocated with that particular object first (which is just impractical)
+
+Any such additional resources, we relegate to being allocated randomly by the Vulkan allocator
 
 ```
 vector<ResourceReferences> references = submit(ResourceManager, specifications)

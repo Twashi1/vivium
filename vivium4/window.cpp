@@ -192,7 +192,6 @@ namespace Vivium {
 
 		void Resource::createRenderPass(Engine::Handle engine)
 		{
-			// TODO: lots of code required for making this work when not multisampling
 			VkAttachmentDescription colorAttachment{};
 			colorAttachment.format = swapChainImageFormat;
 			colorAttachment.samples = multisampleCount;

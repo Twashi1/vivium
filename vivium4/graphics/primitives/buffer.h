@@ -21,17 +21,6 @@ namespace Vivium {
 			STORAGE		= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
 		};
 
-		struct Resource {
-			// TODO: keeping this for now to reduce change required, but in future,
-			//	we will assume this object is stored at end of struct
-			VkBuffer buffer;
-			// Mapping is nullptr for unmappable types
-			void* mapping;
-			// Size of data stored in the buffer (allocation size will be larger for alignment requirements)
-			uint64_t size;
-			Usage usage;
-		};
-
 		struct Metadata {
 			void* mapping;
 			uint64_t size;
@@ -65,34 +54,20 @@ namespace Vivium {
 			static Layout fromTypes(const std::span<const Shader::DataType> types);
 		};
 			
-		typedef Resource* Handle;
-		typedef Resource* PromisedHandle;
+		typedef void* Handle;
 
 		bool isNull(const Handle buffer);
 		void set(Handle buffer, uint64_t bufferOffset, const void* data, uint64_t size, uint64_t dataOffset);
 		void* getMapping(Handle buffer);
 
-		template <Allocator::AllocatorType AllocatorType>
-		void drop(AllocatorType* allocator, Handle buffer, Engine::Handle engine) {
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
-			VIVIUM_CHECK_HANDLE_EXISTS(buffer);
-
-			vkDestroyBuffer(engine->device, buffer->buffer, nullptr);
-
-			VIVIUM_DEBUG_ONLY(buffer = VK_NULL_HANDLE);
-
-			Allocator::dropResource(allocator, buffer);
-		}
-
 		void drop(ResourceManager::Static::Handle manager, Handle buffer, Engine::Handle engine);
 
 		namespace Dynamic {
-			struct Resource {
+			struct Metadata {
 				// TODO: this is unset right now and unused, since dynamic buffers are coherent
 				//	in future, would need to store necessary data to calculate where a the buffer
 				//	is mapped, so appropriate range can be flushed
 				VkDeviceMemory memory;	// Non-owning handle to memory for flush
-				VkBuffer buffer;
 
 				void* mapping;
 				Usage usage;
@@ -106,25 +81,12 @@ namespace Vivium {
 				Usage usage;
 			};
 
-			typedef Resource* Handle;
-			typedef Resource* PromisedHandle;
+			typedef void* Handle;
 
 			bool isNull(const Handle buffer);
 			// Inclusive
 			void set(Handle buffer, const void* data, uint64_t suballocationStartIndex, uint64_t suballocationEndIndex);
 			void* getMapping(Handle buffer);
-
-			template <Allocator::AllocatorType AllocatorType>
-			void drop(AllocatorType* allocator, Handle buffer, Engine::Handle engine) {
-				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
-				VIVIUM_CHECK_HANDLE_EXISTS(buffer);
-
-				vkDestroyBuffer(engine->device, buffer->buffer, nullptr);
-
-				VIVIUM_DEBUG_ONLY(buffer = VK_NULL_HANDLE);
-
-				Allocator::dropResource(allocator, buffer);
-			}
 
 			void drop(ResourceManager::Static::Handle manager, Handle buffer, Engine::Handle engine);
 		}

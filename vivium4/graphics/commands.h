@@ -12,6 +12,7 @@
 
 namespace Vivium {
 	namespace Commands {
+		// TODO: a lot of these should be private
 		void createBuffer(Engine::Handle engine, VkBuffer* buffer, uint64_t size, Buffer::Usage usage, VkMemoryRequirements* memoryRequirements, const VkAllocationCallbacks* allocationCallbacks);
 		void createCommandPool(Engine::Handle engine, VkCommandPool* pool, VkCommandPoolCreateFlags flags);
 		void createCommandBuffers(Engine::Handle engine, VkCommandPool pool, VkCommandBuffer* commandBuffers, uint64_t count);
@@ -29,6 +30,8 @@ namespace Vivium {
 		void createSampler(Engine::Handle engine, VkSampler* sampler, Texture::Filter filter, const VkAllocationCallbacks* allocationCallbacks);
 		
 		void createPipeline(Engine::Handle engine, VkPipeline* pipeline, VkPipelineLayout* layout, VkRenderPass renderPass, const std::span<const Shader::Handle> shaders, const std::span<const DescriptorLayout::Handle> descriptorLayouts, const std::span<const Uniform::PushConstant> pushConstants, const Buffer::Layout& bufferLayout, VkSampleCountFlagBits sampleCount, const VkAllocationCallbacks* layoutAllocationCallback, const VkAllocationCallbacks* pipelineAllocationCallback);
+		// TODO: need more options in order to use this to create a framebuffer render pass
+		void createRenderPass(Engine::Handle engine, VkRenderPass* renderPass, VkFormat imageFormat, VkSampleCountFlagBits sampleCount);
 
 		void moveBufferToImage(VkBuffer imageBuffer, VkImage image, VkCommandBuffer commandBuffer, uint32_t width, uint32_t height, VkBufferImageCopy* region);
 
