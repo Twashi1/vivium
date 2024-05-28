@@ -9,7 +9,7 @@ namespace Vivium {
 				std::vector<Button::Handle> buttons;
 				std::vector<Text::Handle> texts;
 
-
+				std::vector<Button::Specification> buttonSpecifications;
 			};
 		}
 	}

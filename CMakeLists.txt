@@ -80,7 +80,7 @@ set(VIVIUM_HEADERS
    "vivium4/physics/physics.h"
    "vivium4/math/transform.h"
    "vivium4/math/mat2x2.h"
-  "vivium4/graphics/gui/visual/button.h" "vivium4/graphics/color.h"   "vivium4/graphics/gui/list.h" "vivium4/structures/vector.h"  "vivium4/graphics/gui/visual/scene.h" "vivium4/graphics/primitives/framebuffer.h" "vivium4/graphics/gui/visual/context.h")
+  "vivium4/graphics/gui/visual/button.h" "vivium4/graphics/color.h"   "vivium4/graphics/gui/list.h" "vivium4/structures/vector.h"  "vivium4/graphics/gui/visual/scene.h" "vivium4/graphics/primitives/framebuffer.h" "vivium4/graphics/gui/visual/context.h" )
 
 add_subdirectory("${CMAKE_SOURCE_DIR}/external/glfw")
 

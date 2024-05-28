@@ -5,9 +5,12 @@
 ## Core
 
 - Platform independence (OS module, Timer module)
+- Test multi-window draws
+	- Requires multi-window application flow
 - `inl` files for all templates
 - Test physics modules
 - Span synonymous type
+	- `initializer_list` compatible
 - Vector synonymous type
 - Rust-style errors (try to make `Option` efficient?)
 - Clear render/GUI/computation threads. Ability to submit from multiple threads
@@ -26,15 +29,18 @@
 
 ## GUI
 
+- Reduce parameters on GUI visual, customiseability not the point of the system
 - `Scene` rendering for batching
-- `Button` not included in context
-- `Sprite` class (load similar sprites from texture atlas, data structure is difficult to think of)
+- `Button` functionality (hover/click events, colour changes on hover/click)
 - `Slider` class
 - `Panel` class
 - `Anchor` renamed since also used in `Center` parameters (also move to `Vec2`?)
 - Not considering the total y-extent of characters that go below the origin (like `p`, `q`, `y`, etc.), although whether it should be considered or not is to be determined
+- Better values of `spreadFactor` for signed distance field font rendering
 ## Minor
 
+- Significantly better debug checks (on things like `Batch` for example)
+- Use internal shaders/fonts, not external
 - Lots of methods missing validation of pointers
 - Lots of missing resetting handles to `nullptr`
 - Lots of methods call to implementation in `Resource`
@@ -49,7 +55,6 @@
 
 - 3D workflow (camera + controller math)
 - Raytracing
-
 ## Projects
 
 - Simple shoot-em-up

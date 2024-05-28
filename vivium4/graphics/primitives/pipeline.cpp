@@ -8,16 +8,6 @@ namespace Vivium {
 			return pipeline->pipeline == VK_NULL_HANDLE;
 		}
 
-		void drop(ResourceManager::Static::Handle manager, Pipeline::Handle pipeline, Engine::Handle engine)
-		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
-			VIVIUM_CHECK_HANDLE_EXISTS(manager);
-			VIVIUM_CHECK_HANDLE_EXISTS(pipeline);
-
-			vkDestroyPipelineLayout(engine->device, pipeline->layout, nullptr);
-			vkDestroyPipeline(engine->device, pipeline->pipeline, nullptr);
-		}
-
 		Specification Specification::fromWindow(const std::span<const Shader::Handle> shaders, const Buffer::Layout bufferLayout, const std::span<const DescriptorLayout::Handle> descriptorLayouts, const std::span<const Uniform::PushConstant> pushConstants, Engine::Handle engine, Window::Handle window)
 		{
 			Specification specification;

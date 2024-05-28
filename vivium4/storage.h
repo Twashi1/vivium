@@ -11,7 +11,7 @@
 #include "core.h"
 #include "math/math.h"
 
-#define VIVIUM_RESOURCE_ALLOCATED (reinterpret_cast<Vivium::Allocator::Null*>(NULL))
+#define VIVIUM_NULL_ALLOCATOR (reinterpret_cast<Vivium::Allocator::Null*>(NULL))
 
 namespace Vivium {
 	namespace Allocator {

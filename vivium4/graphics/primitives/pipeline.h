@@ -78,7 +78,5 @@ namespace Vivium {
 
 			Allocator::dropResource(allocator, handle);
 		}
-
-		void drop(ResourceManager::Static::Handle manager, Pipeline::Handle pipeline, Engine::Handle engine);
 	}
 }

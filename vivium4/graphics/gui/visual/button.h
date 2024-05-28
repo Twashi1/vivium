@@ -36,11 +36,11 @@ namespace Vivium {
 
 					Text::drop(allocator, handle->text, engine);
 
-					Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->stagingVertex, engine);
-					Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->stagingIndex, engine);
-					Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->deviceVertex, engine);
-					Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->deviceIndex, engine);
-					Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->uniformBuffer, engine);
+					Buffer::drop(VIVIUM_NULL_ALLOCATOR, handle->stagingVertex, engine);
+					Buffer::drop(VIVIUM_NULL_ALLOCATOR, handle->stagingIndex, engine);
+					Buffer::drop(VIVIUM_NULL_ALLOCATOR, handle->deviceVertex, engine);
+					Buffer::drop(VIVIUM_NULL_ALLOCATOR, handle->deviceIndex, engine);
+					Buffer::drop(VIVIUM_NULL_ALLOCATOR, handle->uniformBuffer, engine);
 
 					DescriptorSet::drop(allocator, handle->descriptorSet);
 

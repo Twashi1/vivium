@@ -132,9 +132,9 @@ namespace Vivium {
 
 					Batch::drop(allocator, handle->batch, engine);
 
-					Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->fragmentUniform, engine);
-					Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->vertexUniform, engine);
-					Texture::drop(VIVIUM_RESOURCE_ALLOCATED, handle->textAtlasTexture, engine);
+					Buffer::drop(VIVIUM_NULL_ALLOCATOR, handle->fragmentUniform, engine);
+					Buffer::drop(VIVIUM_NULL_ALLOCATOR, handle->vertexUniform, engine);
+					Texture::drop(VIVIUM_NULL_ALLOCATOR, handle->textAtlasTexture, engine);
 
 					DescriptorSet::drop(allocator, handle->descriptorSet);
 

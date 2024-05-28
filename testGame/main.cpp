@@ -1,31 +1,131 @@
 #include "../vivium4/vivium4.h"
 
-// TODO: better values on spreadFactor for signed distance field (too dependent on distance?)
-// TODO: adapt API to be near-completely c-friendly (no member functions, keep vector, for now, but change span)
-// TODO: better pointer handling with buffers, some way to pass a range pointer (maybe just using std::span)
-
-// TODO: load GUI object position data from file
-// TODO: GUI scene
-// TODO: GUI all objects batched together in one draw call (or 2, text requires different pipeline)
-// TODO: Visuals that require more complicated rendering (sliders, pressed buttons) should just pass everything through a
-//	buffer that can be indexed per instance, one big struct with lots of information, or a union with overlap data wherever possible
-// TODO: generalised serialisation?
-
-// TODO: allocate vulkan resources ourselves to avoid double pointer indirection
-//	+ access to vector operations
-
-// TODO: multi-window applications (both drawing to multiple windows, and switchign between target)
-
-// TODO: built-in shader/text loading system?
-
-// TODO: "file" format, for passing around various files, without need for validation at each step
-
 using namespace Vivium;
+
+struct SkyPushConstants {
+	F32x2 worldPosition;
+};
+
+struct State {
+	ResourceManager::Static::Handle manager;
+	Commands::Context::Handle context;
+	Engine::Handle engine;
+	Window::Handle window;
+	GUI::Visual::Context::Handle guiContext;
+	
+	Allocator::Static::Pool storage;
+
+	struct {
+		Pipeline::Handle pipeline;
+		Batch::Handle batch;
+		Batch::Result batchResult;
+
+		Shader::Handle fragmentShader;
+		Shader::Handle vertexShader;
+	} skyGraphics;
+};
+
+void _submitSky(State& state)
+{
+	state.skyGraphics.batch = Batch::submit(&state.storage, state.engine, state.manager, Batch::Specification(4, 6, Buffer::Layout::fromTypes(std::vector<Shader::DataType>({ Shader::DataType::VEC2, Shader::DataType::VEC2 }))));
+	state.skyGraphics.fragmentShader = Shader::create(&state.storage, state.engine, Shader::compile(Shader::Stage::FRAGMENT, "testGame/res/sky.frag", "testGame/res/sky_frag.spv"));
+	state.skyGraphics.vertexShader = Shader::create(&state.storage, state.engine, Shader::compile(Shader::Stage::VERTEX, "testGame/res/sky.vert", "testGame/res/sky_vert.spv"));
+
+	std::vector<Pipeline::PromisedHandle> pipelines = ResourceManager::Static::submit(state.manager,
+		std::vector<Pipeline::Specification>({
+			Pipeline::Specification::fromWindow(
+				std::vector<Shader::Handle>({ state.skyGraphics.fragmentShader, state.skyGraphics.vertexShader }),
+				Buffer::Layout::fromTypes(std::vector<Shader::DataType>({ Shader::DataType::VEC2, Shader::DataType::VEC2 })),
+				std::vector<DescriptorLayout::Handle>({}),
+				std::vector<Uniform::PushConstant>({ Uniform::PushConstant(Shader::Stage::FRAGMENT, sizeof(SkyPushConstants), 0)}),
+				state.engine,
+				state.window
+			)
+		}));
+
+	state.skyGraphics.pipeline = pipelines[0];
+}
+
+void _setupSky(State& state) {
+	Batch::submitRectangle(state.skyGraphics.batch, 0, -1.0f, -1.0f, 1.0f, 1.0f);
+	Batch::submitRectangle(state.skyGraphics.batch, 1, 0.0f, 0.0f, 1.0f, 1.0f);
+	Batch::endShape(state.skyGraphics.batch, 4, std::vector<uint16_t>({ 0, 3, 2, 2, 1, 0 }));
+	state.skyGraphics.batchResult = Batch::endSubmission(state.skyGraphics.batch, state.context, state.engine);
+
+	Shader::drop(VIVIUM_NULL_ALLOCATOR, state.skyGraphics.fragmentShader, state.engine);
+	Shader::drop(VIVIUM_NULL_ALLOCATOR, state.skyGraphics.vertexShader, state.engine);
+}
+
+void _freeSky(State& state) {
+	Batch::drop(&state.storage, state.skyGraphics.batch, state.engine);
+
+	Pipeline::drop(VIVIUM_NULL_ALLOCATOR, state.skyGraphics.pipeline, state.engine);
+}
+
+void _renderSky(State& state) {
+	SkyPushConstants pushConstants;
+	pushConstants.worldPosition = F32x2(0.0f);
+
+	Commands::bindPipeline(state.context, state.skyGraphics.pipeline);
+	Commands::bindVertexBuffer(state.context, state.skyGraphics.batchResult.vertexBuffer);
+	Commands::bindIndexBuffer(state.context, state.skyGraphics.batchResult.indexBuffer);
+	Commands::pushConstants(state.context, &pushConstants, sizeof(SkyPushConstants), 0, Shader::Stage::FRAGMENT, state.skyGraphics.pipeline);
+	Commands::drawIndexed(state.context, state.skyGraphics.batchResult.indexCount, 1);
+}
+
+void initialise(State& state) {
+	state.storage = Allocator::Static::Pool{};
+	state.window = Window::create(&state.storage, Window::Options{});
+	state.engine = Engine::create(&state.storage, Engine::Options{}, state.window);
+	state.context = Commands::Context::create(&state.storage, state.engine);
+	state.manager = ResourceManager::Static::create(&state.storage);
+	
+	Input::init(state.window);
+
+	// state.guiContext = GUI::Visual::Context::submit(&state.storage, state.manager, state.engine, state.window);
+	_submitSky(state);
+
+	// TODO: reverse argument order
+	ResourceManager::Static::allocate(state.engine, state.manager);
+
+	// GUI::Visual::Context::clean(state.guiContext, state.engine);
+	_setupSky(state);
+}
+
+void gameloop(State& state) {
+	while (Window::isOpen(state.window, state.engine)) {
+		Engine::beginFrame(state.engine, state.window);
+		Commands::Context::flush(state.context, state.engine);
+
+		Engine::beginRender(state.engine, state.window);
+
+		_renderSky(state);
+
+		Engine::endRender(state.engine);
+
+		Input::update(state.window);
+
+		Engine::endFrame(state.engine, state.window);
+	}
+}
+
+void terminate(State& state) {
+	_freeSky(state);
+
+	ResourceManager::Static::drop(&state.storage, state.manager, state.engine);
+	// GUI::Visual::Context::drop(&state.storage, state.guiContext, state.engine);
+	Commands::Context::drop(&state.storage, state.context, state.engine);
+	// Delete order not obvious
+	Window::drop(&state.storage, state.window, state.engine);
+	Engine::drop(&state.storage, state.engine, state.window);
+
+	state.storage.free();
+}
 
 int main(void) {
 	Font::init();
 
-	bool regenFont = true;
+	bool regenFont = false;
 
 	// Compile font if it doesn't exist
 	if (!std::filesystem::exists("testGame/res/fonts/consola.sdf") || regenFont)
@@ -33,59 +133,11 @@ int main(void) {
 		Font::compileSignedDistanceField("testGame/res/fonts/consola.ttf", 512, "testGame/res/fonts/consola.sdf", 48, 1.0f);
 	}
 
-	Allocator::Static::Pool storage = Allocator::Static::Pool();
-	Window::Handle window = Window::create(&storage, Window::Options{});
-	Engine::Handle engine = Engine::create(&storage, Engine::Options{}, window);
-	Commands::Context::Handle context = Commands::Context::create(&storage, engine);
+	State state;
 
-	Input::init(window);
-
-	ResourceManager::Static::Handle manager = ResourceManager::Static::create(&storage);
-
-	GUI::Visual::Context::Handle guiContext = GUI::Visual::Context::submit(&storage, manager, engine, window);
-
-	GUI::Visual::Button::Handle button = GUI::Visual::Button::submit(&storage, manager, guiContext, engine, window);
-
-	// TODO: reverse argument order
-	ResourceManager::Static::allocate(engine, manager);
-
-	// TODO: seems like "setup" is the convention
-	GUI::Visual::Context::clean(guiContext, engine);
-
-	GUI::Visual::Button::setup(button, context, engine);
-	GUI::Visual::Button::setText(button, engine, window, context, "Hello world\nHi\n\nSpace");
-	GUI::Object::properties(button).position = F32x2(0.0f, 0.0f);
-	GUI::Object::properties(button).dimensions = F32x2(0.4f, 0.3f);
-	GUI::Object::properties(button).scaleType = GUI::ScaleType::RELATIVE;
-	GUI::Object::properties(button).positionType = GUI::PositionType::RELATIVE;
-
-	while (Window::isOpen(window, engine)) {
-		Engine::beginFrame(engine, window);
-		Commands::Context::flush(context, engine);
-
-		Engine::beginRender(engine, window);
-		Math::Perspective perspective = Math::orthogonalPerspective2D(window, F32x2(0.0f), 0.0f, 1.0f);
-
-		GUI::Visual::Button::render(button, context, guiContext, window, perspective);
-
-		Engine::endRender(engine);
-
-		Input::update(window);
-
-		Engine::endFrame(engine, window);
-	}
-
-	GUI::Visual::Context::drop(&storage, guiContext, engine);
-	GUI::Visual::Button::drop(&storage, button, engine);
-
-	ResourceManager::Static::drop(&storage, manager, engine);
-
-	Commands::Context::drop(&storage, context, engine);
-	// TODO: delete order not obvious, needs to be window before engine
-	Window::drop(&storage, window, engine);
-	Engine::drop(&storage, engine, window);
-
-	storage.free();
+	initialise(state);
+	gameloop(state);
+	terminate(state);
 
 	Font::terminate();
 

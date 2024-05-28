@@ -100,7 +100,6 @@ namespace Vivium {
 			// TODO: make indices exclusive?
 			// Inclusive
 			void set(Handle buffer, const void* data, uint64_t suballocationStartIndex, uint64_t suballocationEndIndex);
-			void drop(ResourceManager::Static::Handle manager, Handle buffer, Engine::Handle engine);
 		}
 	}
 }

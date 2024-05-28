@@ -23,6 +23,14 @@ namespace Vivium {
 						Pipeline::Handle pipeline;
 					} button;
 
+					struct {
+						Shader::Handle fragmentShader;
+						Shader::Handle vertexShader;
+
+						DescriptorLayout::Handle descriptorLayout;
+						Pipeline::Handle pipeline;
+					} sprite;
+
 					// For shaders
 					// TODO: possible for descriptor layouts? investigate ocne working
 					Allocator::Static::Transient transientStorage;
@@ -39,7 +47,7 @@ namespace Vivium {
 					Handle handle = Allocator::allocateResource<Resource>(allocator);
 
 					handle->transientStorage = Allocator::Static::Transient(
-						sizeof(Shader::Resource) * 4
+						sizeof(Shader::Resource) * 6
 					);
 
 					// TODO: a bit illegal to steal manager's resource allocator
@@ -51,6 +59,10 @@ namespace Vivium {
 
 					handle->button.descriptorLayout = DescriptorLayout::create(&manager->resourceAllocator, engine, DescriptorLayout::Specification(
 						std::vector<Uniform::Binding>({ Uniform::Binding(Shader::Stage::FRAGMENT | Shader::Stage::VERTEX, 0, Uniform::Type::UNIFORM_BUFFER) })
+					));
+
+					handle->sprite.descriptorLayout = DescriptorLayout::create(&manager->resourceAllocator, engine, DescriptorLayout::Specification(
+						std::vector<Uniform::Binding>({ Uniform::Binding(Shader::Stage::FRAGMENT, 0, Uniform::Type::TEXTURE), Uniform::Binding(Shader::Stage::VERTEX, 0, Uniform::Type::STORAGE_BUFFER) })
 					));
 
 					{
@@ -67,6 +79,10 @@ namespace Vivium {
 
 						handle->button.fragmentShader = Shader::create(&handle->transientStorage, engine, fragShaderSpec);
 						handle->button.vertexShader = Shader::create(&handle->transientStorage, engine, vertShaderSpec);
+					}
+
+					{
+
 					}
 
 					{
@@ -102,20 +118,38 @@ namespace Vivium {
 						handle->button.pipeline = pipelines[0];
 					}
 
+					{
+						std::vector<Pipeline::Handle> pipelines = ResourceManager::Static::submit(manager,
+							std::vector<Pipeline::Specification>({ Pipeline::Specification::fromWindow(
+								std::vector<Shader::Handle>({ handle->sprite.fragmentShader, handle->sprite.vertexShader }),
+								Buffer::Layout::fromTypes(std::vector<Shader::DataType>({
+									Shader::DataType::VEC2,
+									Shader::DataType::VEC2
+								})),
+								std::vector<DescriptorLayout::Handle>({ handle->sprite.descriptorLayout }),
+								std::vector<Uniform::PushConstant>({ Uniform::PushConstant(Shader::Stage::VERTEX, sizeof(Math::Perspective), 0)}),
+								engine,
+								window
+							) }));
+
+						handle->sprite.pipeline = pipelines[0];
+					}
+
 					return handle;
 				}
-
+				
+				// TODO: seems like "setup" is the convention
 				void clean(Handle handle, Engine::Handle engine);
 
 				template <Allocator::AllocatorType AllocatorType>
 				void drop(AllocatorType* allocator, Handle handle, Engine::Handle engine) {
 					VIVIUM_CHECK_HANDLE_EXISTS(handle);
 
-					DescriptorLayout::drop(VIVIUM_RESOURCE_ALLOCATED, handle->text.descriptorLayout, engine);
-					Pipeline::drop(VIVIUM_RESOURCE_ALLOCATED, handle->text.pipeline, engine);
+					DescriptorLayout::drop(VIVIUM_NULL_ALLOCATOR, handle->text.descriptorLayout, engine);
+					Pipeline::drop(VIVIUM_NULL_ALLOCATOR, handle->text.pipeline, engine);
 
-					DescriptorLayout::drop(VIVIUM_RESOURCE_ALLOCATED, handle->button.descriptorLayout, engine);
-					Pipeline::drop(VIVIUM_RESOURCE_ALLOCATED, handle->button.pipeline, engine);
+					DescriptorLayout::drop(VIVIUM_NULL_ALLOCATOR, handle->button.descriptorLayout, engine);
+					Pipeline::drop(VIVIUM_NULL_ALLOCATOR, handle->button.pipeline, engine);
 
 					Allocator::dropResource(allocator, handle);
 				}

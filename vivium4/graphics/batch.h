@@ -11,8 +11,8 @@ namespace Vivium {
 
 			Buffer::Layout bufferLayout;
 
-			Specification() = default;
 			Specification(uint64_t vertexCount, uint64_t indexCount, Buffer::Layout bufferLayout);
+			Specification() = default;
 		};
 
 		struct Result {
@@ -45,10 +45,10 @@ namespace Vivium {
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 			VIVIUM_CHECK_HANDLE_EXISTS(handle);
 
-			Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->vertexStaging, engine);
-			Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->vertexDevice, engine);
-			Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->indexStaging, engine);
-			Buffer::drop(VIVIUM_RESOURCE_ALLOCATED, handle->indexDevice, engine);
+			Buffer::drop(VIVIUM_NULL_ALLOCATOR, handle->vertexStaging, engine);
+			Buffer::drop(VIVIUM_NULL_ALLOCATOR, handle->vertexDevice, engine);
+			Buffer::drop(VIVIUM_NULL_ALLOCATOR, handle->indexStaging, engine);
+			Buffer::drop(VIVIUM_NULL_ALLOCATOR, handle->indexDevice, engine);
 
 			Allocator::dropResource(allocator, handle);
 		}
