@@ -41,7 +41,8 @@ set(VIVIUM_SOURCES
    "vivium4/math/mat2x2.cpp"
    "vivium4/storage.cpp"
  "vivium4/graphics/color.cpp" "vivium4/graphics/gui/visual/button.cpp" "vivium4/graphics/gui/list.cpp"
-"vivium4/graphics/primitives/framebuffer.cpp" "vivium4/graphics/gui/visual/context.cpp")
+"vivium4/graphics/primitives/framebuffer.cpp" "vivium4/graphics/gui/visual/context.cpp"
+"vivium4/graphics/gui/visual/scene.cpp")
 set(VIVIUM_HEADERS
   "vivium4/error/result.h"
   "vivium4/graphics/primitives/buffer.h"
@@ -104,4 +105,5 @@ winmm.lib
 )
 
 file(COPY "${CMAKE_SOURCE_DIR}/testGame" DESTINATION "${CMAKE_BINARY_DIR}/")
+file(COPY "${CMAKE_SOURCE_DIR}/vivium4/res" DESTINATION "${CMAKE_BINARY_DIR}/vivium4/")
 configure_file("${CMAKE_SOURCE_DIR}/external/vulkan/Bin/glslc.exe" "${CMAKE_BINARY_DIR}/external/vulkan/Bin/glslc.exe" COPYONLY)

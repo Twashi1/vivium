@@ -2,11 +2,19 @@
 
 #include "../../../storage.h"
 #include "../../resource_manager.h"
+#include "../../color.h"
 
 namespace Vivium {
 	namespace GUI {
 		namespace Visual {
 			namespace Context {
+				struct _ButtonInstanceData {
+					F32x2 position;
+					F32x2 scale;
+					Color foregroundColor;
+					float _fill0, _fill1;
+				};
+
 				struct Resource {
 					struct {
 						Pipeline::Handle pipeline;
@@ -16,20 +24,20 @@ namespace Vivium {
 					} text;
 
 					struct {
+						static constexpr uint64_t MAX_BUTTONS = 128;
+
 						Shader::Handle fragmentShader;
 						Shader::Handle vertexShader;
 
+						Buffer::Handle storageBuffer;
+
 						DescriptorLayout::Handle descriptorLayout;
+						DescriptorSet::Handle descriptorSet;
 						Pipeline::Handle pipeline;
+
+						Buffer::Handle vertexBuffer;
+						Buffer::Handle indexBuffer;
 					} button;
-
-					struct {
-						Shader::Handle fragmentShader;
-						Shader::Handle vertexShader;
-
-						DescriptorLayout::Handle descriptorLayout;
-						Pipeline::Handle pipeline;
-					} sprite;
 
 					// For shaders
 					// TODO: possible for descriptor layouts? investigate ocne working
@@ -50,6 +58,20 @@ namespace Vivium {
 						sizeof(Shader::Resource) * 6
 					);
 
+					std::vector<Buffer::Handle> buffers = ResourceManager::Static::submit(manager, MemoryType::UNIFORM,
+						std::vector<Buffer::Specification>({ Buffer::Specification(handle->button.MAX_BUTTONS * sizeof(_ButtonInstanceData), Buffer::Usage::STORAGE) }));
+
+					handle->button.storageBuffer = buffers[0];
+
+					std::vector<Buffer::Handle> deviceBuffers = ResourceManager::Static::submit(manager, MemoryType::DEVICE,
+						std::vector<Buffer::Specification>({
+							Buffer::Specification(4 * sizeof(F32x2), Buffer::Usage::VERTEX),
+							Buffer::Specification(6 * sizeof(uint16_t), Buffer::Usage::INDEX)
+							}));
+
+					handle->button.vertexBuffer = deviceBuffers[0];
+					handle->button.indexBuffer = deviceBuffers[1];
+
 					// TODO: a bit illegal to steal manager's resource allocator
 					handle->text.descriptorLayout = DescriptorLayout::create(&manager->resourceAllocator, engine, DescriptorLayout::Specification(std::vector<Uniform::Binding>({
 						Uniform::Binding(Shader::Stage::FRAGMENT, 0, Uniform::Type::TEXTURE),
@@ -58,36 +80,37 @@ namespace Vivium {
 						})));
 
 					handle->button.descriptorLayout = DescriptorLayout::create(&manager->resourceAllocator, engine, DescriptorLayout::Specification(
-						std::vector<Uniform::Binding>({ Uniform::Binding(Shader::Stage::FRAGMENT | Shader::Stage::VERTEX, 0, Uniform::Type::UNIFORM_BUFFER) })
+						std::vector<Uniform::Binding>({ Uniform::Binding(Shader::Stage::VERTEX, 0, Uniform::Type::STORAGE_BUFFER) })
 					));
 
-					handle->sprite.descriptorLayout = DescriptorLayout::create(&manager->resourceAllocator, engine, DescriptorLayout::Specification(
-						std::vector<Uniform::Binding>({ Uniform::Binding(Shader::Stage::FRAGMENT, 0, Uniform::Type::TEXTURE), Uniform::Binding(Shader::Stage::VERTEX, 0, Uniform::Type::STORAGE_BUFFER) })
-					));
+					std::vector<DescriptorSet::Handle> descriptorSets = ResourceManager::Static::submit(manager, std::vector<DescriptorSet::Specification>({
+						DescriptorSet::Specification(handle->button.descriptorLayout, std::vector<Uniform::Data>({
+							Uniform::Data::fromBuffer(handle->button.storageBuffer, handle->button.MAX_BUTTONS * sizeof(_ButtonInstanceData), 0)
+							}))
+						}));
+
+					handle->button.descriptorSet = descriptorSets[0];
 
 					{
-						Shader::Specification fragmentSpecification = Shader::compile(Shader::Stage::FRAGMENT, "testGame/res/text.frag", "testGame/res/text_frag.spv");
-						Shader::Specification vertexSpecification = Shader::compile(Shader::Stage::VERTEX, "testGame/res/text.vert", "testGame/res/text_vert.spv");
+						Shader::Specification fragmentSpecification = Shader::compile(Shader::Stage::FRAGMENT, "vivium4/res/text.frag", "vivium4/res/text_frag.spv");
+						Shader::Specification vertexSpecification = Shader::compile(Shader::Stage::VERTEX, "vivium4/res/text.vert", "vivium4/res/text_vert.spv");
 
 						handle->text.fragmentShader = Shader::create(&handle->transientStorage, engine, fragmentSpecification);
 						handle->text.vertexShader = Shader::create(&handle->transientStorage, engine, vertexSpecification);
 					}
 
 					{
-						Shader::Specification fragShaderSpec = Shader::compile(Shader::Stage::FRAGMENT, "testGame/res/button.frag", "testGame/res/button_frag.spv");
-						Shader::Specification vertShaderSpec = Shader::compile(Shader::Stage::VERTEX, "testGame/res/button.vert", "testGame/res/button_vert.spv");
+						Shader::Specification fragShaderSpec = Shader::compile(Shader::Stage::FRAGMENT, "vivium4/res/button.frag", "vivium4/res/button_frag.spv");
+						Shader::Specification vertShaderSpec = Shader::compile(Shader::Stage::VERTEX, "vivium4/res/button.vert", "vivium4/res/button_vert.spv");
 
 						handle->button.fragmentShader = Shader::create(&handle->transientStorage, engine, fragShaderSpec);
 						handle->button.vertexShader = Shader::create(&handle->transientStorage, engine, vertShaderSpec);
 					}
 
 					{
-
-					}
-
-					{
 						std::vector<Pipeline::Handle> pipelines = ResourceManager::Static::submit(manager,
-							std::vector<Pipeline::Specification>({ Pipeline::Specification::fromWindow(
+							std::vector<Pipeline::Specification>({
+							Pipeline::Specification::fromWindow(
 								std::vector<Shader::Handle>({ handle->text.fragmentShader, handle->text.vertexShader }),
 								Buffer::Layout::fromTypes(std::vector<Shader::DataType>({
 									Shader::DataType::VEC2,
@@ -97,59 +120,39 @@ namespace Vivium {
 								std::vector<Uniform::PushConstant>({ Uniform::PushConstant(Shader::Stage::VERTEX, sizeof(Math::Perspective), 0)}),
 								engine,
 								window
-							) }));
-
-						handle->text.pipeline = pipelines[0];
-					}
-
-					{
-						std::vector<Pipeline::Handle> pipelines = ResourceManager::Static::submit(manager,
-							std::vector<Pipeline::Specification>({
-								Pipeline::Specification::fromWindow(
-									std::vector<Shader::Handle>({ handle->button.fragmentShader, handle->button.vertexShader }),
-									Buffer::Layout::fromTypes(std::vector<Shader::DataType>({ Shader::DataType::VEC2 })),
-									std::vector<DescriptorLayout::Handle>({ handle->button.descriptorLayout }),
-									std::vector<Uniform::PushConstant>({ Uniform::PushConstant(Shader::Stage::VERTEX, sizeof(Math::Perspective), 0)}),
-									engine,
-									window
-								)
-								}));
-
-						handle->button.pipeline = pipelines[0];
-					}
-
-					{
-						std::vector<Pipeline::Handle> pipelines = ResourceManager::Static::submit(manager,
-							std::vector<Pipeline::Specification>({ Pipeline::Specification::fromWindow(
-								std::vector<Shader::Handle>({ handle->sprite.fragmentShader, handle->sprite.vertexShader }),
-								Buffer::Layout::fromTypes(std::vector<Shader::DataType>({
-									Shader::DataType::VEC2,
-									Shader::DataType::VEC2
-								})),
-								std::vector<DescriptorLayout::Handle>({ handle->sprite.descriptorLayout }),
+							),
+							Pipeline::Specification::fromWindow(
+								std::vector<Shader::Handle>({ handle->button.fragmentShader, handle->button.vertexShader }),
+								Buffer::Layout::fromTypes(std::vector<Shader::DataType>({ Shader::DataType::VEC2 })),
+								std::vector<DescriptorLayout::Handle>({ handle->button.descriptorLayout }),
 								std::vector<Uniform::PushConstant>({ Uniform::PushConstant(Shader::Stage::VERTEX, sizeof(Math::Perspective), 0)}),
 								engine,
 								window
-							) }));
+							)}));
 
-						handle->sprite.pipeline = pipelines[0];
+						handle->text.pipeline = pipelines[0];
+						handle->button.pipeline = pipelines[1];
 					}
 
 					return handle;
 				}
 				
-				// TODO: seems like "setup" is the convention
-				void clean(Handle handle, Engine::Handle engine);
+				void setup(Handle handle, Commands::Context::Handle context, Engine::Handle engine);
 
 				template <Allocator::AllocatorType AllocatorType>
 				void drop(AllocatorType* allocator, Handle handle, Engine::Handle engine) {
 					VIVIUM_CHECK_HANDLE_EXISTS(handle);
 
-					DescriptorLayout::drop(VIVIUM_NULL_ALLOCATOR, handle->text.descriptorLayout, engine);
+					DescriptorLayout::drop(allocator, handle->text.descriptorLayout, engine);
 					Pipeline::drop(VIVIUM_NULL_ALLOCATOR, handle->text.pipeline, engine);
 
-					DescriptorLayout::drop(VIVIUM_NULL_ALLOCATOR, handle->button.descriptorLayout, engine);
+					DescriptorLayout::drop(allocator, handle->button.descriptorLayout, engine);
 					Pipeline::drop(VIVIUM_NULL_ALLOCATOR, handle->button.pipeline, engine);
+
+					Buffer::drop(VIVIUM_NULL_ALLOCATOR, handle->button.storageBuffer, engine);
+					Buffer::drop(VIVIUM_NULL_ALLOCATOR, handle->button.vertexBuffer, engine);
+					Buffer::drop(VIVIUM_NULL_ALLOCATOR, handle->button.indexBuffer, engine);
+					DescriptorSet::drop(allocator, handle->button.descriptorSet);
 
 					Allocator::dropResource(allocator, handle);
 				}

@@ -109,8 +109,6 @@ namespace Vivium {
 
 		Polygon Polygon::fromVertices(const std::span<const F32x2> vertices)
 		{
-			// TODO: ensure vertices contain origin
-
 			VIVIUM_ASSERT(vertices.size() >= 3, "Not enough vertices for valid polygon");
 
 			Polygon polygon;
@@ -120,11 +118,12 @@ namespace Vivium {
 			for (uint64_t i = 0; i < vertices.size(); i++)
 				polygon.vertices[i] = vertices[i];
 
+			// TODO: ensure vertices contain origin
+			// VIVIUM_ASSERT(polygon.contains(F32x2(0.0f), Transform::zero()), "Vertices must contain origin");
+
 			polygon.normals.resize(vertices.size());
 			polygon.min = polygon.vertices.front();
 			polygon.max = polygon.vertices.back();
-
-			VIVIUM_ASSERT(polygon.contains(F32x2(0.0f), Transform::zero()), "Vertices must contain origin");
 
 			F32x2 center = polygon.centroid();
 

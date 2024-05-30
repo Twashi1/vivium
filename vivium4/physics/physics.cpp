@@ -171,7 +171,7 @@ namespace Vivium {
 			return manifold;
 		}
 		
-		bool broadCollisionCheck(Body a, Body b)
+		bool broadCollisionCheck(Body const& a, Body const& b)
 		{
 			// If either is disabled, they are not colliding
 			if ((!a.enabled) || (!b.enabled)) return false;
@@ -303,14 +303,14 @@ namespace Vivium {
 			b.position += b.inverseMass * correction;
 		}
 		
-		void solve(std::span<Body> a, std::span<Body> b)
+		void solve(std::span<Body*> a, std::span<Body*> b)
 		{
 			for (uint64_t i = 0; i < a.size(); i++) {
 				// Start at i + 1 if intragroup, otherwise start at 0 for intergroup
 				uint64_t startIndex = a.data() == b.data() ? i + 1 : 0;
 
 				for (uint64_t j = startIndex; j < b.size(); j++) {
-					checkCollisionAndResolve(a[i], b[j]);
+					checkCollisionAndResolve(*a[i], *b[j]);
 				}
 			}
 		}

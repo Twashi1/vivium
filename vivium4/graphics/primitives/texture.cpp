@@ -48,6 +48,7 @@ namespace Vivium {
 			std::memcpy(specification.data.data(), data, imageSize);
 
 			specification.imageFormat = imageFormat;
+			specification.imageFilter = imageFilter;
 
 			stbi_image_free(data);
 

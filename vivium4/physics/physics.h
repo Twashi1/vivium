@@ -41,11 +41,11 @@ namespace Vivium {
 		PenetrationManifold polygonToPolygon(const Math::Polygon& a, const Math::Polygon& b, const Math::Transform& aTransform, const Math::Transform& bTransform);
 	
 		// Returns if two body AABBs are intersecting (broad phase collision check)
-		bool broadCollisionCheck(Body a, Body b);
+		bool broadCollisionCheck(Body const& a, Body const& b);
 		// Check if two objects are colliding (broad and narrow), if so, resolve the collision
 		void checkCollisionAndResolve(Body& a, Body& b);
 		// Solve all collisions between two groups of bodies
-		void solve(std::span<Body> a, std::span<Body> b);
+		void solve(std::span<Body*> a, std::span<Body*> b);
 
 		// TODO: update body
 		void update(Body& body, float deltaTime);

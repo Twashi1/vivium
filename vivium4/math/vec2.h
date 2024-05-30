@@ -11,10 +11,6 @@
 namespace Vivium {
 	template <typename T = float>
 	struct Vec2 {
-	private:
-		using is_vector_type = std::true_type;
-
-	public:
 		T x, y;
 
 		Vec2() = default;
@@ -52,7 +48,7 @@ namespace Vivium {
 		static Vec2 floor(Vec2 v) { return Vec2(std::floor(v.x), std::floor(v.y)); }
 		static Vec2 ceil(Vec2 v) { return Vec2(std::ceil(v.x), std::ceil(v.y)); }
 
-		static Vec2 normalise(Vec2 v) { return v / length(v); }
+		static Vec2 normalise(Vec2 v) { float l = length(v); return l == 0.0f ? Vec2(0) : v / length(v); }
 		static Vec2 right(Vec2 v) { return Vec2(-v.y, v.x); }
 		static Vec2 left(Vec2 v) { return Vec2(v.y, -v.x); }
 		static T dot(Vec2 a, Vec2 b) { return a.x * b.x + a.y * b.y; }
@@ -75,12 +71,6 @@ namespace Vivium {
 			return hash;
 		}
 	};
-
-	template <typename T>
-	concept c_vec2 = requires (T a) {
-		a.x;
-		a.y;
-	} && T::is_vector_type.value();
 }
 
 #define I32x2 Vivium::Vec2<int32_t>
@@ -89,16 +79,3 @@ namespace Vivium {
 #define U64x2 Vivium::Vec2<uint64_t>
 #define F32x2 Vivium::Vec2<float>
 #define F64x2 Vivium::Vec2<double>
-
-namespace std {
-	// TODO: better system than concept
-	template <Vivium::c_vec2 T>
-	struct formatter<T> : formatter<string> {
-		auto format(T v, format_context& ctx) {
-			return formatter<string>::format(
-				std::format("[{}, {}]", v.x, v.y),
-				ctx
-			);
-		}
-	};
-}
