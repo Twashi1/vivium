@@ -164,7 +164,7 @@ namespace Vivium {
 
 			font.fontSize = fieldPaddedSize;
 			font.imageDimensions = I32x2(VIVIUM_CHARACTERS_TO_EXTRACT * fieldPaddedSize, fieldPaddedSize);
-			font.atlas = TextureAtlas(font.imageDimensions, I32x2(fieldPaddedSize));
+			font.fontSpriteSize = I32x2(fieldPaddedSize);
 			font.data = std::vector<uint8_t>(font.imageDimensions.x * font.imageDimensions.y, 0);
 
 			uint8_t* glyphPixels = reinterpret_cast<uint8_t*>(std::malloc(glyphPaddedSize * glyphPaddedSize));
@@ -212,7 +212,7 @@ namespace Vivium {
 					}
 				}
 
-				TextureAtlas::Index index = TextureAtlas::Index(character, font.atlas);
+				Math::AtlasIndex index = Math::textureAtlasIndex(font.imageDimensions, font.fontSpriteSize, character);
 
 				// Scaling from glyph parameters to field parameters
 				float scaleRatio = static_cast<float>(fieldPaddedSize) / static_cast<float>(glyphPaddedSize);
@@ -260,7 +260,7 @@ namespace Vivium {
 			// Write font size
 			outputFile.write(reinterpret_cast<const char*>(&font.fontSize), sizeof(int));
 			// Write atlas
-			outputFile.write(reinterpret_cast<const char*>(&font.atlas), sizeof(TextureAtlas));
+			outputFile.write(reinterpret_cast<const char*>(&font.fontSpriteSize), sizeof(I32x2));
 			// Write image dimensions
 			outputFile.write(reinterpret_cast<const char*>(&font.imageDimensions), sizeof(I32x2));
 			// Write character table
@@ -291,7 +291,7 @@ namespace Vivium {
 			// TODO: reason for the * 4?
 			font.data = std::vector<uint8_t>(VIVIUM_CHARACTERS_TO_EXTRACT * fontSize * fontSize * 4, 0);
 			font.imageDimensions = I32x2(VIVIUM_CHARACTERS_TO_EXTRACT * fontSize, fontSize);
-			font.atlas = TextureAtlas(font.imageDimensions, I32x2(fontSize));
+			font.fontSpriteSize = I32x2(fontSize);
 
 			uint64_t bufferOffset = 0;
 
@@ -319,7 +319,7 @@ namespace Vivium {
 
 				bufferOffset += fontSize;
 
-				TextureAtlas::Index index = TextureAtlas::Index(character, font.atlas);
+				Math::AtlasIndex index = Math::textureAtlasIndex(font.imageDimensions, font.fontSpriteSize, character);
 
 				// TODO: constructor
 				font.characters[character] = Character{
@@ -354,7 +354,7 @@ namespace Vivium {
 			// Read font size
 			inputFile.read(reinterpret_cast<char*>(&font.fontSize), sizeof(int));
 			// Read atlas
-			inputFile.read(reinterpret_cast<char*>(&font.atlas), sizeof(TextureAtlas));
+			inputFile.read(reinterpret_cast<char*>(&font.fontSpriteSize), sizeof(I32x2));
 			// Read image dimensions
 			inputFile.read(reinterpret_cast<char*>(&font.imageDimensions), sizeof(I32x2));
 			// Read character table

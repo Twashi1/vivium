@@ -55,28 +55,35 @@ namespace Vivium {
 
 			void Resource::allocateBuffers(Engine::Handle engine, MemoryType memoryType)
 			{
-				// TODO: edit this, so messy
+				std::vector<Buffer::Specification>* bufferSpecificationsPtr;
+				std::vector<std::span<Buffer::Resource>>* bufferMemoryPtr;
 
-				PreallocationData<Buffer::Resource, Buffer::Specification>* preallocationDataPointer;
-
+				// TODO: should be checking for a specific tag (DEVICE_LOCAL)
 				switch (memoryType) {
-				case MemoryType::DEVICE: preallocationDataPointer = &deviceBuffers; break;
-				case MemoryType::UNIFORM: preallocationDataPointer = &hostBuffers; break;
+				case MemoryType::STAGING:
+					bufferSpecificationsPtr = &hostBufferSpecifications;
+					bufferMemoryPtr = &hostBufferMemory;
+					break;
+				case MemoryType::DEVICE:
+					bufferSpecificationsPtr = &deviceBufferSpecifications;
+					bufferMemoryPtr = &deviceBufferMemory;
+					break;
 				default: VIVIUM_LOG(Log::FATAL, "Invalid memory type to allocate buffer to"); break;
 				}
 
-				PreallocationData<Buffer::Resource, Buffer::Specification>& preallocationData = *preallocationDataPointer;
-
+				std::vector<Buffer::Specification>& bufferSpecifications = *bufferSpecificationsPtr;
+				std::vector<std::span<Buffer::Resource>>& bufferMemory = *bufferMemoryPtr;
+				
 				uint64_t specificationIndex = 0;
 				uint64_t totalSize = 0;
 
-				std::vector<uint64_t> bufferOffsets(preallocationData.specifications.size());
+				std::vector<uint64_t> bufferOffsets(bufferSpecifications.size());
 				uint32_t memoryTypeBits = 0;
 
-				for (std::span<Buffer::Resource>& resourceSpan : preallocationData.resources) {
+				for (std::span<Buffer::Resource>& resourceSpan : bufferMemory) {
 					for (uint64_t i = 0; i < resourceSpan.size(); i++) {
 						Buffer::Resource& resource = resourceSpan[i];
-						Buffer::Specification& specification = preallocationData.specifications[specificationIndex];
+						Buffer::Specification& specification = bufferSpecifications[specificationIndex];
 						VkMemoryRequirements memoryRequirements;
 
 						resource.size = specification.size;
@@ -107,7 +114,7 @@ namespace Vivium {
 				// Bind buffers to memory
 				specificationIndex = 0;
 
-				for (std::span<Buffer::Resource>& resourceSpan : preallocationData.resources) {
+				for (std::span<Buffer::Resource>& resourceSpan : bufferMemory) {
 					for (uint64_t i = 0; i < resourceSpan.size(); i++) {
 						Buffer::Resource& resource = resourceSpan[i];
 
@@ -123,18 +130,16 @@ namespace Vivium {
 
 			void Resource::allocateDynamicBuffers(Engine::Handle engine)
 			{
-				PreallocationData<Buffer::Dynamic::Resource, Buffer::Dynamic::Specification>& preallocationData = dynamicHostBuffers;
-
 				uint64_t specificationIndex = 0;
 				uint64_t totalSize = 0;
 
-				std::vector<uint64_t> bufferOffsets(preallocationData.specifications.size());
+				std::vector<uint64_t> bufferOffsets(dynamicHostBufferSpecifications.size());
 				uint32_t memoryTypeBits = 0;
 
-				for (std::span<Buffer::Dynamic::Resource>& resourceSpan : preallocationData.resources) {
+				for (std::span<Buffer::Dynamic::Resource>& resourceSpan : dynamicHostBufferMemory) {
 					for (uint64_t i = 0; i < resourceSpan.size(); i++) {
 						Buffer::Dynamic::Resource& resource = resourceSpan[i];
-						Buffer::Dynamic::Specification& specification = preallocationData.specifications[specificationIndex];
+						Buffer::Dynamic::Specification& specification = dynamicHostBufferSpecifications[specificationIndex];
 						VkMemoryRequirements memoryRequirements;
 
 						uint64_t totalBufferSize = 0;
@@ -179,7 +184,7 @@ namespace Vivium {
 				// Bind buffers to memory
 				specificationIndex = 0;
 
-				for (std::span<Buffer::Dynamic::Resource>& resource_span : preallocationData.resources) {
+				for (std::span<Buffer::Dynamic::Resource>& resource_span : dynamicHostBufferMemory) {
 					for (uint64_t i = 0; i < resource_span.size(); i++) {
 						Buffer::Dynamic::Resource& resource = resource_span[i];
 
@@ -215,7 +220,7 @@ namespace Vivium {
 				std::vector<VkBufferImageCopy> textureRegions;
 
 				// Reserve space for texture temporaries
-				uint64_t specificationCount = textures.specifications.size();
+				uint64_t specificationCount = textureSpecifications.size();
 				textureBarriers.reserve(specificationCount * 2);
 				textureBuffers.reserve(specificationCount);
 				textureRegions.reserve(specificationCount);
@@ -228,10 +233,10 @@ namespace Vivium {
 
 				uint64_t specificationIndex = 0;
 
-				for (std::span<Texture::Resource>& resourceSpan : textures.resources) {
+				for (std::span<Texture::Resource>& resourceSpan : textureMemory) {
 					for (uint64_t i = 0; i < resourceSpan.size(); i++) {
 						Texture::Resource& texture = resourceSpan[i];
-						Texture::Specification& specification = textures.specifications[specificationIndex];
+						Texture::Specification& specification = textureSpecifications[specificationIndex];
 
 						Commands::createImage(
 							engine,
@@ -281,10 +286,10 @@ namespace Vivium {
 				std::vector<VkDeviceMemory> oneTimeStagingMemories;
 				std::vector<VkBuffer> oneTimeStagingBuffers;
 
-				for (std::span<Texture::Resource>& resourceSpan : textures.resources) {
+				for (std::span<Texture::Resource>& resourceSpan : textureMemory) {
 					for (uint64_t i = 0; i < resourceSpan.size(); i++) {
 						Texture::Resource& texture = resourceSpan[i];
-						Texture::Specification& specification = textures.specifications[specificationIndex];
+						Texture::Specification& specification = textureSpecifications[specificationIndex];
 
 						// Bind image to memory
 						VIVIUM_VK_CHECK(vkBindImageMemory(
@@ -366,10 +371,10 @@ namespace Vivium {
 				specificationIndex = 0;
 
 				// TODO: maybe these don't need the image to be completely filled out beforehand?
-				for (std::span<Texture::Resource>& resourceSpan : textures.resources) {
+				for (std::span<Texture::Resource>& resourceSpan : textureMemory) {
 					for (uint64_t i = 0; i < resourceSpan.size(); i++) {
 						Texture::Resource& texture = resourceSpan[i];
-						Texture::Specification& specification = textures.specifications[specificationIndex];
+						Texture::Specification& specification = textureSpecifications[specificationIndex];
 
 						Commands::createView(engine, &texture.view, specification.imageFormat, texture.image, nullptr);
 						Commands::createSampler(engine, &texture.sampler, specification.imageFilter, nullptr);
@@ -412,12 +417,12 @@ namespace Vivium {
 				uint64_t totalMemoryRequired = 0;
 				uint32_t memoryTypeBits = NULL;
 
-				std::vector<uint64_t> imageMemoryLocations(framebuffers.specifications.size());
+				std::vector<uint64_t> imageMemoryLocations(framebufferSpecifications.size());
 
 				// Create images and count memory requirements
-				for (std::span<Framebuffer::Resource> resourceSpan : framebuffers.resources) {
+				for (std::span<Framebuffer::Resource> resourceSpan : framebufferMemory) {
 					for (uint64_t resourceIndex = 0; resourceIndex < resourceSpan.size(); resourceIndex++) {
-						const Framebuffer::Specification& specification = framebuffers.specifications[specificationIndex];
+						const Framebuffer::Specification& specification = framebufferSpecifications[specificationIndex];
 						Framebuffer::Resource& resource = resourceSpan[resourceIndex];
 
 						resource.dimensions = specification.dimensions;
@@ -453,9 +458,9 @@ namespace Vivium {
 
 				specificationIndex = 0;
 
-				for (std::span<Framebuffer::Resource> resourceSpan : framebuffers.resources) {
+				for (std::span<Framebuffer::Resource> resourceSpan : framebufferMemory) {
 					for (uint64_t resourceIndex = 0; resourceIndex < resourceSpan.size(); resourceIndex++) {
-						const Framebuffer::Specification& specification = framebuffers.specifications[specificationIndex];
+						const Framebuffer::Specification& specification = framebufferSpecifications[specificationIndex];
 						Framebuffer::Resource& resource = resourceSpan[resourceIndex];
 
 						VIVIUM_VK_CHECK(vkBindImageMemory(
@@ -551,7 +556,7 @@ namespace Vivium {
 					// NOTE: this is slow O(n^2), could use std::unordered_set, but doubt it would be faster
 					std::vector<DescriptorLayout::Handle> seenLayouts;
 
-					for (const DescriptorSet::Specification& specification : descriptorSets.specifications) {
+					for (const DescriptorSet::Specification& specification : descriptorSetSpecifications) {
 						if (std::find(seenLayouts.begin(), seenLayouts.end(), specification.layout) == seenLayouts.end())
 							seenLayouts.push_back(specification.layout);
 						else continue;
@@ -588,27 +593,29 @@ namespace Vivium {
 				poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 				poolInfo.poolSizeCount = static_cast<uint32_t>(nonZeroPoolSizes.size());
 				poolInfo.pPoolSizes = nonZeroPoolSizes.data();
-				poolInfo.maxSets = static_cast<uint32_t>(descriptorSets.specifications.size()); // TODO: should be fine?
+				poolInfo.maxSets = static_cast<uint32_t>(descriptorSetSpecifications.size()); // TODO: should be fine?
+
+				descriptorPools.push_back(VK_NULL_HANDLE);
 
 				VIVIUM_VK_CHECK(vkCreateDescriptorPool(engine->device,
-					&poolInfo, nullptr, &descriptorPool), "Failed to create descriptor pool");
+					&poolInfo, nullptr, &descriptorPools.back()), "Failed to create descriptor pool");
 
 				// Begin populating descriptor set layouts and descriptor sets
-				std::vector<VkDescriptorSetLayout> layouts = std::vector<VkDescriptorSetLayout>(descriptorSets.specifications.size());
-				std::vector<VkDescriptorSet> sets = std::vector<VkDescriptorSet>(descriptorSets.specifications.size());
+				std::vector<VkDescriptorSetLayout> layouts = std::vector<VkDescriptorSetLayout>(descriptorSetSpecifications.size());
+				std::vector<VkDescriptorSet> sets = std::vector<VkDescriptorSet>(descriptorSetSpecifications.size());
 
 				uint64_t specificationIndex = 0;
 
 				// Copy from specification layouts to layouts vector
-				for (uint64_t i = 0; i < descriptorSets.specifications.size(); i++) {
-					layouts[i] = descriptorSets.specifications[i].layout->layout;
+				for (uint64_t i = 0; i < descriptorSetSpecifications.size(); i++) {
+					layouts[i] = descriptorSetSpecifications[i].layout->layout;
 				}
 
 				// Create descriptor sets
 				VkDescriptorSetAllocateInfo setAllocateInfo{};
 				setAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-				setAllocateInfo.descriptorPool = descriptorPool;
-				setAllocateInfo.descriptorSetCount = static_cast<uint32_t>(descriptorSets.specifications.size());
+				setAllocateInfo.descriptorPool = descriptorPools.back();
+				setAllocateInfo.descriptorSetCount = static_cast<uint32_t>(descriptorSetSpecifications.size());
 				setAllocateInfo.pSetLayouts = layouts.data();
 
 				VIVIUM_VK_CHECK(vkAllocateDescriptorSets(engine->device,
@@ -617,7 +624,7 @@ namespace Vivium {
 				specificationIndex = 0;
 
 				// Copy from allocated sets to the descriptor resource
-				for (std::span<DescriptorSet::Resource>& resourceSpan : descriptorSets.resources) {
+				for (std::span<DescriptorSet::Resource>& resourceSpan : descriptorSetMemory) {
 					for (uint64_t i = 0; i < resourceSpan.size(); i++) {
 						resourceSpan[i].descriptorSet = sets[specificationIndex];
 
@@ -629,8 +636,8 @@ namespace Vivium {
 				uint64_t totalUniforms = 0;
 
 				// Quick iteration to count total uniforms
-				for (uint64_t i = 0; i < descriptorSets.specifications.size(); i++) {
-					totalUniforms += descriptorSets.specifications[i].uniforms.size();
+				for (uint64_t i = 0; i < descriptorSetSpecifications.size(); i++) {
+					totalUniforms += descriptorSetSpecifications[i].uniforms.size();
 				}
 
 				std::vector<VkWriteDescriptorSet> descriptorWrites(totalUniforms);
@@ -641,8 +648,8 @@ namespace Vivium {
 				std::vector<VkDescriptorImageInfo> imageInfos;
 				imageInfos.reserve(totalUniforms);
 
-				for (uint64_t i = 0; i < descriptorSets.specifications.size(); i++) {
-					const DescriptorSet::Specification& specification = descriptorSets.specifications[i];
+				for (uint64_t i = 0; i < descriptorSetSpecifications.size(); i++) {
+					const DescriptorSet::Specification& specification = descriptorSetSpecifications[i];
 
 					// Iterate each uniform in specification, and generate a descriptor set write
 					for (uint64_t j = 0; j < specification.uniforms.size(); j++) {
@@ -732,9 +739,9 @@ namespace Vivium {
 			{
 				uint64_t specificationIndex = 0;
 
-				for (const std::span<Pipeline::Resource>& resourceSpan : pipelines.resources) {
+				for (const std::span<Pipeline::Resource>& resourceSpan : pipelineMemory) {
 					for (uint64_t resourceIndex = 0; resourceIndex < resourceSpan.size(); resourceIndex++) {
-						const Pipeline::Specification& specification = pipelines.specifications[specificationIndex++];
+						const Pipeline::Specification& specification = pipelineSpecifications[specificationIndex++];
 
 						Pipeline::Resource& resource = resourceSpan[resourceIndex];
 						switch (specification.target) {
@@ -877,35 +884,39 @@ namespace Vivium {
 				}
 			}
 
-			Resource::Resource()
-				// TODO: editable block size
-				: descriptorPool(VK_NULL_HANDLE) {}
-
 			void Resource::allocate(Engine::Handle engine) {
-				if (!hostBuffers.specifications.empty())
+				if (!hostBufferSpecifications.empty())
 					allocateBuffers(engine, MemoryType::STAGING);
-				if (!deviceBuffers.specifications.empty())
+				if (!deviceBufferSpecifications.empty())
 					allocateBuffers(engine, MemoryType::DEVICE);
-				if (!dynamicHostBuffers.specifications.empty())
+				if (!dynamicHostBufferSpecifications.empty())
 					allocateDynamicBuffers(engine);
-				if (!textures.specifications.empty())
+				if (!textureSpecifications.empty())
 					allocateTextures(engine);
-				if (!framebuffers.specifications.empty())
+				if (!framebufferSpecifications.empty())
 					allocateFramebuffers(engine);
 
-				if (!descriptorSets.specifications.empty())
+				if (!descriptorSetSpecifications.empty())
 					allocateDescriptors(engine);
 
-				if (!pipelines.specifications.empty())
+				if (!pipelineSpecifications.empty())
 					allocatePipelines(engine);
 
-				hostBuffers.clear();
-				deviceBuffers.clear();
-				dynamicHostBuffers.clear();
-				textures.clear();
-				framebuffers.clear();
-				descriptorSets.clear();
-				pipelines.clear();
+				hostBufferSpecifications.clear();
+				deviceBufferSpecifications.clear();
+				dynamicHostBufferSpecifications.clear();
+				textureSpecifications.clear();
+				framebufferSpecifications.clear();
+				descriptorSetSpecifications.clear();
+				hostBufferSpecifications.clear();
+
+				hostBufferMemory.clear();
+				deviceBufferMemory.clear();
+				dynamicHostBufferMemory.clear();
+				textureMemory.clear();
+				framebufferMemory.clear();
+				descriptorSetMemory.clear();
+				pipelineMemory.clear();
 			}
 
 			void Resource::drop(Engine::Handle engine)
@@ -921,49 +932,11 @@ namespace Vivium {
 				sharedTrackerData.deviceMemoryAllocations -= static_cast<uint32_t>(deviceMemoryHandles.size());
 
 				// Free descriptor pool
-				vkDestroyDescriptorPool(engine->device, descriptorPool, nullptr);
+				for (VkDescriptorPool descriptorPool : descriptorPools)
+					vkDestroyDescriptorPool(engine->device, descriptorPool, nullptr);
 
 				// Free resources
 				resourceAllocator.free();
-			}
-
-			std::vector<Buffer::PromisedHandle> Resource::submit(MemoryType memoryType, const std::span<const Buffer::Specification> specifications)
-			{
-				switch (memoryType) {
-				case MemoryType::STAGING:
-					return hostBuffers.submit(&resourceAllocator, specifications); break;
-				case MemoryType::DEVICE:
-					return deviceBuffers.submit(&resourceAllocator, specifications); break;
-				default:
-					VIVIUM_LOG(Log::FATAL, "Invalid memory type for submit"); break;
-				}
-
-				return {};
-			}
-
-			std::vector<Buffer::Dynamic::PromisedHandle> Resource::submit(const std::span<const Buffer::Dynamic::Specification> specifications)
-			{
-				return dynamicHostBuffers.submit(&resourceAllocator, specifications);
-			}
-
-			std::vector<Texture::PromisedHandle> Resource::submit(const std::span<const Texture::Specification> specifications)
-			{
-				return textures.submit(&resourceAllocator, specifications);
-			}
-
-			std::vector<DescriptorSet::PromisedHandle> Resource::submit(const std::span<const DescriptorSet::Specification> specifications)
-			{
-				return descriptorSets.submit(&resourceAllocator, specifications);
-			}
-
-			std::vector<Pipeline::PromisedHandle> Resource::submit(const std::span<const Pipeline::Specification> specifications)
-			{
-				return pipelines.submit(&resourceAllocator, specifications);
-			}
-
-			std::vector<Framebuffer::PromisedHandle> Resource::submit(const std::span<const Framebuffer::Specification> specifications)
-			{
-				return framebuffers.submit(&resourceAllocator, specifications);
 			}
 
 			void allocate(Engine::Handle engine, Handle handle) {
@@ -972,34 +945,53 @@ namespace Vivium {
 				handle->allocate(engine);
 			}
 
-			std::vector<Buffer::PromisedHandle> submit(Handle handle, MemoryType memoryType, const std::span<const Buffer::Specification> specifications)
+			void submit(Handle handle, Buffer::Handle* memory, MemoryType memoryType, const std::span<const Buffer::Specification> specifications)
 			{
-				return handle->submit(memoryType, specifications);
+				switch (memoryType) {
+				case MemoryType::STAGING:
+					handle->hostBufferSpecifications.insert(handle->hostBufferSpecifications.end(), specifications.begin(), specifications.end());
+					handle->hostBufferMemory.push_back(_getSpan(handle, memory, specifications.size()));
+					break;
+				case MemoryType::DEVICE:
+					handle->deviceBufferSpecifications.insert(handle->deviceBufferSpecifications.end(), specifications.begin(), specifications.end());
+					handle->deviceBufferMemory.push_back(_getSpan(handle, memory, specifications.size()));
+					break;
+				VIVIUM_DEBUG_ONLY(
+				default:
+					VIVIUM_DEBUG_LOG("Invalid memory type: {}", (uint64_t)memoryType);
+					break
+				);
+				}
 			}
 
-			std::vector<Buffer::Dynamic::PromisedHandle> submit(Handle handle, const std::span<const Buffer::Dynamic::Specification> specifications)
+			void submit(Handle handle, Buffer::Dynamic::Handle* memory, const std::span<const Buffer::Dynamic::Specification> specifications)
 			{
-				return handle->submit(specifications);
+				handle->dynamicHostBufferSpecifications.insert(handle->dynamicHostBufferSpecifications.end(), specifications.begin(), specifications.end());
+				handle->dynamicHostBufferMemory.push_back(_getSpan(handle, memory, specifications.size()));
 			}
 
-			std::vector<Texture::PromisedHandle> submit(Handle handle, const std::span<const Texture::Specification> specifications)
+			void submit(Handle handle, Texture::Handle* memory, const std::span<const Texture::Specification> specifications)
 			{
-				return handle->submit(specifications);
+				handle->textureSpecifications.insert(handle->textureSpecifications.end(), specifications.begin(), specifications.end());
+				handle->textureMemory.push_back(_getSpan(handle, memory, specifications.size()));
 			}
 
-			std::vector<DescriptorSet::PromisedHandle> submit(Handle handle, const std::span<const DescriptorSet::Specification> specifications)
+			void submit(Handle handle, DescriptorSet::Handle* memory, const std::span<const DescriptorSet::Specification> specifications)
 			{
-				return handle->submit(specifications);
+				handle->descriptorSetSpecifications.insert(handle->descriptorSetSpecifications.end(), specifications.begin(), specifications.end());
+				handle->descriptorSetMemory.push_back(_getSpan(handle, memory, specifications.size()));
 			}
 
-			std::vector<Pipeline::PromisedHandle> submit(Handle handle, const std::span<const Pipeline::Specification> specifications)
+			void submit(Handle handle, Pipeline::Handle* memory, const std::span<const Pipeline::Specification> specifications)
 			{
-				return handle->submit(specifications);
+				handle->pipelineSpecifications.insert(handle->pipelineSpecifications.end(), specifications.begin(), specifications.end());
+				handle->pipelineMemory.push_back(_getSpan(handle, memory, specifications.size()));
 			}
 
-			std::vector<Framebuffer::PromisedHandle> submit(Handle handle, const std::span<const Framebuffer::Specification> specifications)
+			void submit(Handle handle, Framebuffer::Handle* memory, const std::span<const Framebuffer::Specification> specifications)
 			{
-				return handle->submit(specifications);
+				handle->framebufferSpecifications.insert(handle->framebufferSpecifications.end(), specifications.begin(), specifications.end());
+				handle->framebufferMemory.push_back(_getSpan(handle, memory, specifications.size()));
 			}
 		}
 	}

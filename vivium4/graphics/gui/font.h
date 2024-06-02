@@ -8,7 +8,6 @@
 #include <ft2build.h>
 #include <freetype/freetype.h>
 
-#include "../texture_atlas.h"
 #include "../../storage.h"
 
 #define VIVIUM_CHARACTERS_TO_EXTRACT 128
@@ -32,8 +31,7 @@ namespace Vivium {
 
 			I32x2 imageDimensions;
 			int fontSize;
-
-			TextureAtlas atlas;
+			I32x2 fontSpriteSize;
 
 			std::array<Character, VIVIUM_CHARACTERS_TO_EXTRACT> characters;
 

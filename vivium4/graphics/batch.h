@@ -60,12 +60,16 @@ namespace Vivium {
 
 			PromisedHandle handle = Allocator::allocateResource<Resource>(allocator);
 
-			std::vector<Buffer::Handle> staging = ResourceManager::Static::submit(manager, MemoryType::STAGING, std::vector<Buffer::Specification>({
+			std::array<Buffer::Handle, 2> staging;
+
+			ResourceManager::Static::submit(manager, staging.data(), MemoryType::STAGING, std::vector<Buffer::Specification>({
 				Buffer::Specification(specification.vertexCount * specification.bufferLayout.stride, Buffer::Usage::STAGING),
 				Buffer::Specification(specification.indexCount * sizeof(uint16_t), Buffer::Usage::STAGING)
 				}));
 
-			std::vector<Buffer::Handle> device = ResourceManager::Static::submit(manager, MemoryType::DEVICE, std::vector<Buffer::Specification>({
+			std::array<Buffer::Handle, 2> device;
+
+			ResourceManager::Static::submit(manager, device.data(), MemoryType::DEVICE, std::vector<Buffer::Specification>({
 				Buffer::Specification(specification.vertexCount * specification.bufferLayout.stride, Buffer::Usage::VERTEX),
 				Buffer::Specification(specification.indexCount * sizeof(uint16_t), Buffer::Usage::INDEX)
 				}));

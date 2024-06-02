@@ -6,7 +6,12 @@ namespace Vivium {
 			: positionType(PositionType::RELATIVE), scaleType(ScaleType::VIEWPORT), anchorX(Anchor::CENTER), anchorY(Anchor::CENTER), centerX(Anchor::CENTER), centerY(Anchor::CENTER), truePosition(0.0f), trueDimensions(0.0f)
 		{}
 
-		bool pointInObject(F32x2 point, Properties properties) {
+		Properties::Properties(F32x2 dimensions, F32x2 position, PositionType positionType, ScaleType scaleType, Anchor anchorX, Anchor anchorY, Anchor centerX, Anchor centerY)
+			: dimensions(dimensions), position(position), positionType(positionType), scaleType(scaleType), anchorX(anchorX), anchorY(anchorY), centerX(centerX), centerY(centerY),
+			trueDimensions(F32x2(0.0f)), truePosition(F32x2(0.0f))
+		{}
+
+		bool pointInObject(F32x2 point, Properties const& properties) {
 			return Math::pointInAABB(point, properties.truePosition, properties.truePosition + properties.trueDimensions);
 		}
 

@@ -94,31 +94,29 @@ namespace Vivium {
 						handle->bufferLayout
 					));
 
-					std::vector<Buffer::Handle> hostBuffers = ResourceManager::Static::submit(manager, MemoryType::UNIFORM, std::vector<Buffer::Specification>({
+					std::array<Buffer::Handle, 2> hostBuffers;
+					
+					ResourceManager::Static::submit(manager, hostBuffers.data(), MemoryType::UNIFORM, std::vector<Buffer::Specification>({
 						Buffer::Specification(sizeof(Color), Buffer::Usage::UNIFORM),
 						Buffer::Specification(sizeof(TransformData), Buffer::Usage::UNIFORM),
-						}));
+					}));
 
 					handle->fragmentUniform = hostBuffers[0];
 					handle->vertexUniform = hostBuffers[1];
 
 					handle->font = specification.font;
 
-					std::vector<Texture::Handle> textures = ResourceManager::Static::submit(manager, std::vector<Texture::Specification>({
+					ResourceManager::Static::submit(manager, &handle->textAtlasTexture, std::vector<Texture::Specification>({
 						Texture::Specification::fromFont(specification.font, Texture::Format::MONOCHROME, Texture::Filter::NEAREST)
-						}));
+					}));
 
-					handle->textAtlasTexture = textures[0];
-
-					std::vector<DescriptorSet::Handle> descriptorSets = ResourceManager::Static::submit(manager, std::vector<DescriptorSet::Specification>({
+					ResourceManager::Static::submit(manager, &handle->descriptorSet, std::vector<DescriptorSet::Specification>({
 						DescriptorSet::Specification(textContext->text.descriptorLayout, std::vector<Uniform::Data>({
 							Uniform::Data::fromTexture(handle->textAtlasTexture),
 							Uniform::Data::fromBuffer(handle->fragmentUniform, sizeof(Color), 0),
 							Uniform::Data::fromBuffer(handle->vertexUniform, sizeof(F32x2), 0)
 							}))
 						}));
-
-					handle->descriptorSet = descriptorSets[0];
 
 					return handle;
 				}

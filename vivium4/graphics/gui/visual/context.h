@@ -58,12 +58,12 @@ namespace Vivium {
 						sizeof(Shader::Resource) * 6
 					);
 
-					std::vector<Buffer::Handle> buffers = ResourceManager::Static::submit(manager, MemoryType::UNIFORM,
+					ResourceManager::Static::submit(manager, &handle->button.storageBuffer, MemoryType::UNIFORM,
 						std::vector<Buffer::Specification>({ Buffer::Specification(handle->button.MAX_BUTTONS * sizeof(_ButtonInstanceData), Buffer::Usage::STORAGE) }));
 
-					handle->button.storageBuffer = buffers[0];
+					std::array<Buffer::Handle, 2> deviceBuffers;
 
-					std::vector<Buffer::Handle> deviceBuffers = ResourceManager::Static::submit(manager, MemoryType::DEVICE,
+					ResourceManager::Static::submit(manager, deviceBuffers.data(), MemoryType::DEVICE,
 						std::vector<Buffer::Specification>({
 							Buffer::Specification(4 * sizeof(F32x2), Buffer::Usage::VERTEX),
 							Buffer::Specification(6 * sizeof(uint16_t), Buffer::Usage::INDEX)
@@ -83,13 +83,11 @@ namespace Vivium {
 						std::vector<Uniform::Binding>({ Uniform::Binding(Shader::Stage::VERTEX, 0, Uniform::Type::STORAGE_BUFFER) })
 					));
 
-					std::vector<DescriptorSet::Handle> descriptorSets = ResourceManager::Static::submit(manager, std::vector<DescriptorSet::Specification>({
+					ResourceManager::Static::submit(manager, &handle->button.descriptorSet, std::vector<DescriptorSet::Specification>({
 						DescriptorSet::Specification(handle->button.descriptorLayout, std::vector<Uniform::Data>({
 							Uniform::Data::fromBuffer(handle->button.storageBuffer, handle->button.MAX_BUTTONS * sizeof(_ButtonInstanceData), 0)
 							}))
 						}));
-
-					handle->button.descriptorSet = descriptorSets[0];
 
 					{
 						Shader::Specification fragmentSpecification = Shader::compile(Shader::Stage::FRAGMENT, "vivium4/res/text.frag", "vivium4/res/text_frag.spv");
@@ -108,7 +106,10 @@ namespace Vivium {
 					}
 
 					{
-						std::vector<Pipeline::Handle> pipelines = ResourceManager::Static::submit(manager,
+						std::array<Pipeline::Handle, 2> pipelines;
+						
+						ResourceManager::Static::submit(manager,
+							pipelines.data(),
 							std::vector<Pipeline::Specification>({
 							Pipeline::Specification::fromWindow(
 								std::vector<Shader::Handle>({ handle->text.fragmentShader, handle->text.vertexShader }),

@@ -5,10 +5,10 @@
 	- Requires multi-window application flow (around the engine creation mostly)
 ## Core
 
+- Context should be multi-thread compatible
 - Easier to use temporary staging
 - Platform independence (OS module, Timer module)
 - `inl` files for all templates
-- Test physics modules
 - Span synonymous type
 	- `initializer_list` compatible (seems impossible)
 - Vector synonymous type
@@ -21,15 +21,14 @@
 - All allocated resources should be tracked in debug mode (regardless of static/dynamic or even type of allocator, need some intermediary registry) - use `VkAllocationCallbacks` for this (how?)
 ## Vulkan
 
+- Test re-useable resource manager
 - Generalise `Commands::createRenderPass` for `Framebuffer` render passes as well
-- Make the static resource manager "re-useable", i.e., can `allocate` multiple times
-- Resource manager should take memory instead of returning vector
 - Initialiser lists for resource manager
 - Shader debugger tool - use CPU to simulate GPU actions for some fragments
 - Compute shaders and storage images (alternative to framebuffers?)
 - Dynamic resource manager
-- Texture atlas should not store state
 - Vertex input rate: `VK_VERTEX_INPUT_RATE_INSTANCE`
+- Check for `DEVICE_LOCAL`, not whether it is `UNIFORM` or `DEVICE`
 
 ## GUI
 
@@ -63,6 +62,7 @@
 - Use `std::string_view` where applicable
 - Rename private functions with underscore prefix
 - Use `VIVIUM_DEBUG_LOG` instead of `VIVIUM_LOG` when we only want to log in `DEBUG` mode
+	- should still have customisable warning level
 - `T const&` a lot of things
 
 ## Possible
@@ -81,5 +81,4 @@
 
 ## General
 
-- Camera not consistent
 - Enemy spawning
