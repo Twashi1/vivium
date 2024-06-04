@@ -1,5 +1,6 @@
 #include "../vivium4/vivium4.h"
 
+#ifdef ENABLED
 using namespace Vivium;
 
 struct SkyPushConstants {
@@ -608,7 +609,7 @@ void terminate(State& state) {
 	state.storage.free();
 }
 
-int main(void) {
+int testGame(void) {
 	Font::init();
 
 	State state;
@@ -621,3 +622,4 @@ int main(void) {
 
 	return NULL;
 }
+#endif

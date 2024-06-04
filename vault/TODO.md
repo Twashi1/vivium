@@ -5,11 +5,13 @@
 	- Requires multi-window application flow (around the engine creation mostly)
 ## Core
 
+- Renaming Allocators to `Storage` objects, and `ResourceManager` to `Allocator::Static`
+- RAII storage objects are appealing (delete copy, define move)
 - Context should be multi-thread compatible
 - Easier to use temporary staging
 - Platform independence (OS module, Timer module)
 - `inl` files for all templates
-- Span synonymous type
+- Span synonymous type (`Slice`)
 	- `initializer_list` compatible (seems impossible)
 - Vector synonymous type
 - Rust-style errors (try to make `Option` efficient?)
@@ -18,7 +20,8 @@
 	- Resource management system
 - Dynamic tree allocator
 - Methods for `Input` to be more concise
-- All allocated resources should be tracked in debug mode (regardless of static/dynamic or even type of allocator, need some intermediary registry) - use `VkAllocationCallbacks` for this (how?)
+- All allocated resources should be tracked in debug mode (regardless of static/dynamic or even type of allocator, need some intermediary registry)
+- `Buffer::Slice(buffer)` - ability to allocate multiple slices within a buffer as a more aspirational goal
 ## Vulkan
 
 - Test re-useable resource manager
@@ -50,9 +53,9 @@
 - `VIVIUM_LOG_PERIODIC(interval, severity, message, ...)`
 - 8-bit index buffers
 - In-place allocation where possible (use `Resource` internally more often)
+	- Ability to `Inplace` statically allocated resources (involves passing allocator type to `ResourceManager::Static` functions)
 - Determine whether or not bindings of resources are per shader stage, or shared
 - Significantly better debug checks (on things like `Batch` for example)
-- Use internal shaders/fonts, not external
 - Lots of methods missing validation of pointers
 - Lots of missing resetting handles to `nullptr`
 - Lots of methods call to implementation in `Resource`
@@ -82,3 +85,4 @@
 ## General
 
 - Enemy spawning
+- Values should be given in units, not relative to size of monitor?

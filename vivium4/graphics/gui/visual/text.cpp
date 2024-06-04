@@ -113,7 +113,7 @@ namespace Vivium {
 
 				void render(Handle handle, Text::Metrics metrics, Commands::Context::Handle context, Context::Handle guiContext, Color color, F32x2 scale, Math::Perspective perspective)
 				{
-					if (handle->result.indexBuffer == VIVIUM_NULL_HANDLE) return;
+					if (Batch::indexBuffer(handle->batch) == VIVIUM_NULL_HANDLE) return;
 
 					TransformData transform;
 					transform.translation = handle->base->properties.truePosition;
@@ -139,10 +139,10 @@ namespace Vivium {
 
 					Commands::bindPipeline(context, guiContext->text.pipeline);
 					Commands::bindDescriptorSet(context, handle->descriptorSet, guiContext->text.pipeline);
-					Commands::bindVertexBuffer(context, handle->result.vertexBuffer);
-					Commands::bindIndexBuffer(context, handle->result.indexBuffer);
+					Commands::bindVertexBuffer(context, Batch::vertexBuffer(handle->batch));
+					Commands::bindIndexBuffer(context, Batch::indexBuffer(handle->batch));
 
-					Commands::drawIndexed(context, handle->result.indexCount, 1);
+					Commands::drawIndexed(context, Batch::indexCount(handle->batch), 1);
 				}
 
 				void setText(Handle handle, Engine::Handle engine, Metrics metrics, Commands::Context::Handle context, const std::string_view& text, Alignment alignment)
@@ -158,7 +158,7 @@ namespace Vivium {
 						Batch::endShape(handle->batch, 4, indices);
 					}
 
-					handle->result = Batch::endSubmission(handle->batch, context, engine);
+					Batch::endSubmission(handle->batch, context, engine);
 				}
 			}
 		}

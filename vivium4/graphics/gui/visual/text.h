@@ -55,7 +55,6 @@ namespace Vivium {
 					Object::Handle base;
 
 					Batch::Handle batch;
-					Batch::Result result;
 					Buffer::Layout bufferLayout;
 
 					Font::Font font;

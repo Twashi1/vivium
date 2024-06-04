@@ -58,25 +58,38 @@ namespace Vivium {
 			handle->verticesSubmitted += vertexCount;
 		}
 
-		Result endSubmission(Handle handle, Commands::Context::Handle context, Engine::Handle engine)
+		Buffer::Handle vertexBuffer(Batch::Handle batch)
 		{
-			Result result;
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(batch, Batch::isNull);
 
-			result.vertexBuffer = handle->vertexDevice;
-			result.indexBuffer = handle->indexDevice;
+			return batch->vertexDevice;
+		}
 
+		Buffer::Handle indexBuffer(Batch::Handle batch)
+		{
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(batch, Batch::isNull);
+
+			return batch->indexDevice;
+		}
+
+		uint32_t indexCount(Batch::Handle batch)
+		{
+			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(batch, Batch::isNull);
+
+			return batch->lastSubmissionIndexCount;
+		}
+
+		void endSubmission(Handle handle, Commands::Context::Handle context, Engine::Handle engine)
+		{
 			Commands::Context::beginTransfer(context);
 			Commands::transferBuffer(context, handle->vertexStaging, handle->vertexDevice);
 			Commands::transferBuffer(context, handle->indexStaging, handle->indexDevice);
 			Commands::Context::endTransfer(context, engine);
 
-			result.indexCount = static_cast<uint32_t>(handle->indexBufferIndex);
-
+			handle->lastSubmissionIndexCount = handle->indexBufferIndex;
 			handle->indexBufferIndex = 0;
 			handle->vertexBufferIndex = 0;
 			handle->verticesSubmitted = 0;
-
-			return result;
 		}
 	}
 }

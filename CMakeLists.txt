@@ -42,7 +42,7 @@ set(VIVIUM_SOURCES
    "vivium4/storage.cpp"
  "vivium4/graphics/color.cpp" "vivium4/graphics/gui/visual/button.cpp" "vivium4/graphics/gui/list.cpp"
 "vivium4/graphics/primitives/framebuffer.cpp" "vivium4/graphics/gui/visual/context.cpp"
-"vivium4/graphics/gui/visual/scene.cpp")
+"vivium4/graphics/gui/visual/scene.cpp" "game2/main.cpp")
 set(VIVIUM_HEADERS
   "vivium4/error/result.h"
   "vivium4/graphics/primitives/buffer.h"

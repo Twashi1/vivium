@@ -15,13 +15,9 @@ namespace Vivium {
 			Specification() = default;
 		};
 
-		struct Result {
-			Buffer::Handle vertexBuffer, indexBuffer;
-			uint32_t indexCount;
-		};
-
 		struct Resource {
 			uint64_t vertexBufferIndex, indexBufferIndex, verticesSubmitted;
+			uint32_t lastSubmissionIndexCount;
 
 			Buffer::Layout bufferLayout;
 
@@ -37,7 +33,12 @@ namespace Vivium {
 		void submitRectangle(Handle handle, uint64_t elementIndex, float left, float bottom, float right, float top);
 		void endShape(Handle handle, uint64_t vertexCount, const std::span<const uint16_t> indices);
 
-		Result endSubmission(Handle handle, Commands::Context::Handle context, Engine::Handle engine);
+		Buffer::Handle vertexBuffer(Batch::Handle batch);
+		Buffer::Handle indexBuffer(Batch::Handle batch);
+		// Returns index count of last endSubmission
+		uint32_t indexCount(Batch::Handle batch);
+
+		void endSubmission(Handle handle, Commands::Context::Handle context, Engine::Handle engine);
 
 		template <Allocator::AllocatorType AllocatorType>
 		void drop(AllocatorType* allocator, Handle handle, Engine::Handle engine)
@@ -83,6 +84,7 @@ namespace Vivium {
 			handle->vertexBufferIndex = 0;
 			handle->indexBufferIndex = 0;
 			handle->verticesSubmitted = 0;
+			handle->lastSubmissionIndexCount = 0;
 
 			handle->bufferLayout = specification.bufferLayout;
 

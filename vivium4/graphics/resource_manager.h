@@ -96,7 +96,7 @@ namespace Vivium {
 			template <typename ResourceType>
 			std::span<ResourceType> _getSpan(Handle handle, ResourceType** memory, uint64_t count)
 			{
-				ResourceType* resourceSpan = reinterpret_cast<ResourceType*>(handle->resourceAllocator.allocate(0, sizeof(ResourceType) * count));
+				ResourceType* resourceSpan = reinterpret_cast<ResourceType*>(handle->resourceAllocator.allocate(sizeof(ResourceType) * count));
 
 				for (uint64_t i = 0; i < count; i++) {
 					memory[i] = resourceSpan + i;
