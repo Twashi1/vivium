@@ -52,7 +52,7 @@ namespace Vivium {
 				std::vector<VkDescriptorPool> descriptorPools;
 
 				// TODO: in future, make this customiseable allocator
-				Allocator::Static::Pool resourceAllocator;
+				Storage::Static::Pool resourceAllocator;
 
 				DeviceMemoryHandle allocateDeviceMemory(Engine::Handle engine, uint32_t memoryTypeBits, MemoryType memoryType, uint64_t size);
 
@@ -76,19 +76,19 @@ namespace Vivium {
 
 			typedef Resource* Handle;
 
-			template <Allocator::AllocatorType AllocatorType>
-			Handle create(AllocatorType* allocator) {
-				return Allocator::allocateResource<Resource>(allocator);
+			template <Storage::StorageType StorageType>
+			Handle create(StorageType* allocator) {
+				return Storage::allocateResource<Resource>(allocator);
 			}
 
-			template <Allocator::AllocatorType AllocatorType>
-			void drop(AllocatorType* allocator, Handle handle, Engine::Handle engine) {
+			template <Storage::StorageType StorageType>
+			void drop(StorageType* allocator, Handle handle, Engine::Handle engine) {
 				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 				VIVIUM_CHECK_HANDLE_EXISTS(handle);
 
 				handle->drop(engine);
 
-				Allocator::dropResource(allocator, handle);
+				Storage::dropResource(allocator, handle);
 			}
 
 			void allocate(Engine::Handle engine, Handle handle);

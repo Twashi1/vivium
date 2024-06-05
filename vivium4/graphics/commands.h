@@ -67,10 +67,10 @@ namespace Vivium {
 
 			typedef Resource* Handle;
 
-			template <Allocator::AllocatorType AllocatorType>
-			Handle create(AllocatorType* allocator, Engine::Handle engine)
+			template <Storage::StorageType StorageType>
+			Handle create(StorageType* allocator, Engine::Handle engine)
 			{
-				Handle handle = Allocator::allocateResource<Resource>(allocator);
+				Handle handle = Storage::allocateResource<Resource>(allocator);
 
 				handle->create(engine);
 
@@ -82,12 +82,12 @@ namespace Vivium {
 			void endTransfer(Handle context, Engine::Handle engine);
 			bool isNull(const Handle context);
 
-			template <Allocator::AllocatorType AllocatorType>
-			void drop(AllocatorType* allocator, Handle handle, Engine::Handle engine)
+			template <Storage::StorageType StorageType>
+			void drop(StorageType* allocator, Handle handle, Engine::Handle engine)
 			{
 				handle->drop(engine);
 
-				Allocator::dropResource(allocator, handle);
+				Storage::dropResource(allocator, handle);
 			}
 		}
 

@@ -1,7 +1,7 @@
 #include "storage.h"
 
 namespace Vivium {
-	namespace Allocator {
+	namespace Storage {
 		namespace Static {
 			Pool::Pool()
 				// Default block capacity

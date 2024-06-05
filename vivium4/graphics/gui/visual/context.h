@@ -41,20 +41,20 @@ namespace Vivium {
 
 					// For shaders
 					// TODO: possible for descriptor layouts? investigate ocne working
-					Allocator::Static::Transient transientStorage;
+					Storage::Static::Transient transientStorage;
 				};
 
 				typedef Resource* Handle;
 				typedef Resource* PromisedHandle;
 
-				template <Allocator::AllocatorType AllocatorType>
-				PromisedHandle submit(AllocatorType* allocator, ResourceManager::Static::Handle manager, Engine::Handle engine, Window::Handle window) {
+				template <Storage::StorageType StorageType>
+				PromisedHandle submit(StorageType* allocator, ResourceManager::Static::Handle manager, Engine::Handle engine, Window::Handle window) {
 					VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 					VIVIUM_CHECK_HANDLE_EXISTS(manager);
 
-					Handle handle = Allocator::allocateResource<Resource>(allocator);
+					Handle handle = Storage::allocateResource<Resource>(allocator);
 
-					handle->transientStorage = Allocator::Static::Transient(
+					handle->transientStorage = Storage::Static::Transient(
 						sizeof(Shader::Resource) * 6
 					);
 
@@ -140,22 +140,22 @@ namespace Vivium {
 				
 				void setup(Handle handle, Commands::Context::Handle context, Engine::Handle engine);
 
-				template <Allocator::AllocatorType AllocatorType>
-				void drop(AllocatorType* allocator, Handle handle, Engine::Handle engine) {
+				template <Storage::StorageType StorageType>
+				void drop(StorageType* allocator, Handle handle, Engine::Handle engine) {
 					VIVIUM_CHECK_HANDLE_EXISTS(handle);
 
 					DescriptorLayout::drop(allocator, handle->text.descriptorLayout, engine);
-					Pipeline::drop(VIVIUM_NULL_ALLOCATOR, handle->text.pipeline, engine);
+					Pipeline::drop(VIVIUM_NULL_STORAGE, handle->text.pipeline, engine);
 
 					DescriptorLayout::drop(allocator, handle->button.descriptorLayout, engine);
-					Pipeline::drop(VIVIUM_NULL_ALLOCATOR, handle->button.pipeline, engine);
+					Pipeline::drop(VIVIUM_NULL_STORAGE, handle->button.pipeline, engine);
 
-					Buffer::drop(VIVIUM_NULL_ALLOCATOR, handle->button.storageBuffer, engine);
-					Buffer::drop(VIVIUM_NULL_ALLOCATOR, handle->button.vertexBuffer, engine);
-					Buffer::drop(VIVIUM_NULL_ALLOCATOR, handle->button.indexBuffer, engine);
+					Buffer::drop(VIVIUM_NULL_STORAGE, handle->button.storageBuffer, engine);
+					Buffer::drop(VIVIUM_NULL_STORAGE, handle->button.vertexBuffer, engine);
+					Buffer::drop(VIVIUM_NULL_STORAGE, handle->button.indexBuffer, engine);
 					DescriptorSet::drop(allocator, handle->button.descriptorSet);
 
-					Allocator::dropResource(allocator, handle);
+					Storage::dropResource(allocator, handle);
 				}
 			}
 		}

@@ -44,8 +44,8 @@ namespace Vivium {
 
 		int getRequestedMultisamples(Engine::Handle engine, int multisampleCount);
 		
-		template <Allocator::AllocatorType AllocatorType>
-		void drop(AllocatorType* allocator , Handle handle, Engine::Handle engine) {
+		template <Storage::StorageType StorageType>
+		void drop(StorageType* allocator , Handle handle, Engine::Handle engine) {
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 			VIVIUM_CHECK_HANDLE_EXISTS(handle);
 
@@ -56,7 +56,7 @@ namespace Vivium {
 			vkDestroyRenderPass(engine->device, handle->renderPass, nullptr);
 			vkDestroyFramebuffer(engine->device, handle->framebuffer, nullptr);
 
-			Allocator::dropResource(allocator, handle);
+			Storage::dropResource(allocator, handle);
 		}
 
 		void drop(ResourceManager::Static::Handle manager, Framebuffer::Handle framebuffer, Engine::Handle engine);

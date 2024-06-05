@@ -40,26 +40,26 @@ namespace Vivium {
 
 		void endSubmission(Handle handle, Commands::Context::Handle context, Engine::Handle engine);
 
-		template <Allocator::AllocatorType AllocatorType>
-		void drop(AllocatorType* allocator, Handle handle, Engine::Handle engine)
+		template <Storage::StorageType StorageType>
+		void drop(StorageType* allocator, Handle handle, Engine::Handle engine)
 		{
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 			VIVIUM_CHECK_HANDLE_EXISTS(handle);
 
-			Buffer::drop(VIVIUM_NULL_ALLOCATOR, handle->vertexStaging, engine);
-			Buffer::drop(VIVIUM_NULL_ALLOCATOR, handle->vertexDevice, engine);
-			Buffer::drop(VIVIUM_NULL_ALLOCATOR, handle->indexStaging, engine);
-			Buffer::drop(VIVIUM_NULL_ALLOCATOR, handle->indexDevice, engine);
+			Buffer::drop(VIVIUM_NULL_STORAGE, handle->vertexStaging, engine);
+			Buffer::drop(VIVIUM_NULL_STORAGE, handle->vertexDevice, engine);
+			Buffer::drop(VIVIUM_NULL_STORAGE, handle->indexStaging, engine);
+			Buffer::drop(VIVIUM_NULL_STORAGE, handle->indexDevice, engine);
 
-			Allocator::dropResource(allocator, handle);
+			Storage::dropResource(allocator, handle);
 		}
 
-		template <Allocator::AllocatorType AllocatorType>
-		PromisedHandle submit(AllocatorType* allocator, Engine::Handle engine, ResourceManager::Static::Handle manager, Specification specification)
+		template <Storage::StorageType StorageType>
+		PromisedHandle submit(StorageType* allocator, Engine::Handle engine, ResourceManager::Static::Handle manager, Specification specification)
 		{
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 
-			PromisedHandle handle = Allocator::allocateResource<Resource>(allocator);
+			PromisedHandle handle = Storage::allocateResource<Resource>(allocator);
 
 			std::array<Buffer::Handle, 2> staging;
 

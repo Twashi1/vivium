@@ -51,14 +51,14 @@ namespace Vivium {
 		typedef Resource* Handle;
 		typedef Resource* PromisedHandle;
 
-		template <Allocator::AllocatorType AllocatorType>
-		void drop(AllocatorType* allocator, Handle handle, Engine::Handle engine) {
+		template <Storage::StorageType StorageType>
+		void drop(StorageType* allocator, Handle handle, Engine::Handle engine) {
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 			VIVIUM_CHECK_HANDLE_EXISTS(handle);
 
 			handle->drop(engine);
 
-			Allocator::dropResource(allocator, handle);
+			Storage::dropResource(allocator, handle);
 		}
 
 		void drop(ResourceManager::Static::Handle manager, Texture::Handle texture, Engine::Handle engine);

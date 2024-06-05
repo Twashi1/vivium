@@ -74,11 +74,11 @@ namespace Vivium {
 				void render(Handle handle, Metrics metrics, Commands::Context::Handle context, Context::Handle guiContext, Color color, F32x2 scale, Math::Perspective perspective);
 				void setText(Handle handle, Engine::Handle engine, Metrics metrics, Commands::Context::Handle context, const std::string_view& text, Alignment alignment);
 
-				template <Allocator::AllocatorType AllocatorType>
-				PromisedHandle submit(AllocatorType* allocator, ResourceManager::Static::Handle manager, Engine::Handle engine, Context::Handle textContext, Specification specification) {
+				template <Storage::StorageType StorageType>
+				PromisedHandle submit(StorageType* allocator, ResourceManager::Static::Handle manager, Engine::Handle engine, Context::Handle textContext, Specification specification) {
 					VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 
-					PromisedHandle handle = Allocator::allocateResource<Resource>(allocator);
+					PromisedHandle handle = Storage::allocateResource<Resource>(allocator);
 
 					handle->base = Object::create(allocator, GUI::Object::Specification());
 
@@ -120,8 +120,8 @@ namespace Vivium {
 					return handle;
 				}
 
-				template <Allocator::AllocatorType AllocatorType>
-				void drop(AllocatorType* allocator, Handle handle, Engine::Handle engine) {
+				template <Storage::StorageType StorageType>
+				void drop(StorageType* allocator, Handle handle, Engine::Handle engine) {
 					VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 					VIVIUM_CHECK_HANDLE_EXISTS(handle);
 
@@ -129,13 +129,13 @@ namespace Vivium {
 
 					Batch::drop(allocator, handle->batch, engine);
 
-					Buffer::drop(VIVIUM_NULL_ALLOCATOR, handle->fragmentUniform, engine);
-					Buffer::drop(VIVIUM_NULL_ALLOCATOR, handle->vertexUniform, engine);
-					Texture::drop(VIVIUM_NULL_ALLOCATOR, handle->textAtlasTexture, engine);
+					Buffer::drop(VIVIUM_NULL_STORAGE, handle->fragmentUniform, engine);
+					Buffer::drop(VIVIUM_NULL_STORAGE, handle->vertexUniform, engine);
+					Texture::drop(VIVIUM_NULL_STORAGE, handle->textAtlasTexture, engine);
 
 					DescriptorSet::drop(allocator, handle->descriptorSet);
 
-					Allocator::dropResource(allocator, handle);
+					Storage::dropResource(allocator, handle);
 				}
 			}
 		}

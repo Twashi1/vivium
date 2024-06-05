@@ -25,7 +25,7 @@ struct State {
 	Commands::Context::Handle context;
 	ResourceManager::Static::Handle manager;
 	
-	Allocator::Static::Pool storage;
+	Storage::Static::Pool storage;
 
 	Math::Perspective perspective;
 
@@ -205,25 +205,25 @@ void _setupGround(State& state) {
 }
 
 void _freeCharacter(State& state) {
-	Buffer::drop(VIVIUM_NULL_ALLOCATOR, state.character.uniformBuffer, state.engine);
+	Buffer::drop(VIVIUM_NULL_STORAGE, state.character.uniformBuffer, state.engine);
 	Batch::drop(&state.storage, state.character.batch, state.engine);
-	DescriptorSet::drop(VIVIUM_NULL_ALLOCATOR, state.character.descriptorSet);
+	DescriptorSet::drop(VIVIUM_NULL_STORAGE, state.character.descriptorSet);
 	DescriptorLayout::drop(&state.storage, state.character.descriptorLayout, state.engine);
-	Pipeline::drop(VIVIUM_NULL_ALLOCATOR, state.character.pipeline, state.engine);
+	Pipeline::drop(VIVIUM_NULL_STORAGE, state.character.pipeline, state.engine);
 }
 
 void _freeSky(State& state) {
 	Batch::drop(&state.storage, state.sky.batch, state.engine);
 
-	Pipeline::drop(VIVIUM_NULL_ALLOCATOR, state.sky.pipeline, state.engine);
+	Pipeline::drop(VIVIUM_NULL_STORAGE, state.sky.pipeline, state.engine);
 }
 
 void _freeGround(State& state) {
-	Buffer::drop(VIVIUM_NULL_ALLOCATOR, state.ground.uniformBuffer, state.engine);
+	Buffer::drop(VIVIUM_NULL_STORAGE, state.ground.uniformBuffer, state.engine);
 	Batch::drop(&state.storage, state.ground.batch, state.engine);
-	DescriptorSet::drop(VIVIUM_NULL_ALLOCATOR, state.ground.descriptorSet);
+	DescriptorSet::drop(VIVIUM_NULL_STORAGE, state.ground.descriptorSet);
 	DescriptorLayout::drop(&state.storage, state.ground.descriptorLayout, state.engine);
-	Pipeline::drop(VIVIUM_NULL_ALLOCATOR, state.ground.pipeline, state.engine);
+	Pipeline::drop(VIVIUM_NULL_STORAGE, state.ground.pipeline, state.engine);
 }
 
 void _updateCharacter(State& state) {

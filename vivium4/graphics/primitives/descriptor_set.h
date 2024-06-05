@@ -21,10 +21,10 @@ namespace Vivium {
 
 		bool isNull(const Handle set);
 
-		template <Allocator::AllocatorType AllocatorType>
-		void drop(AllocatorType* allocator, Handle handle) {
+		template <Storage::StorageType StorageType>
+		void drop(StorageType* allocator, Handle handle) {
 			// No need to do anything else, descriptor set has no destructor
-			Allocator::dropResource(allocator, handle);
+			Storage::dropResource(allocator, handle);
 		}
 	}
 }

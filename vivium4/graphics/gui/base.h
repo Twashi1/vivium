@@ -109,9 +109,9 @@ namespace Vivium {
 				_addChild(_extract(element), { _extract(child), 1 });
 			}
 
-			template <Allocator::AllocatorType AllocatorType>
-			Handle create(AllocatorType* allocator, Specification specification) {
-				Handle handle = Allocator::allocateResource<Resource>(allocator);
+			template <Storage::StorageType StorageType>
+			Handle create(StorageType* allocator, Specification specification) {
+				Handle handle = Storage::allocateResource<Resource>(allocator);
 
 				handle->properties = specification.properties;
 				handle->children = specification.children;
@@ -119,9 +119,9 @@ namespace Vivium {
 				return handle;
 			}
 
-			template <Allocator::AllocatorType AllocatorType>
-			void drop(AllocatorType* allocator, Handle handle) {
-				Allocator::dropResource(allocator, handle);
+			template <Storage::StorageType StorageType>
+			void drop(StorageType* allocator, Handle handle) {
+				Storage::dropResource(allocator, handle);
 			}
 		}
 	}

@@ -76,24 +76,24 @@ namespace Vivium {
 
 		bool isNull(const Handle handle);
 
-		template <Allocator::AllocatorType AllocatorType>
-		Handle create(AllocatorType* allocator, Options options)
+		template <Storage::StorageType StorageType>
+		Handle create(StorageType* allocator, Options options)
 		{
-			Handle window = Allocator::allocateResource<Resource>(allocator);
+			Handle window = Storage::allocateResource<Resource>(allocator);
 
 			window->create(options);
 
 			return window;
 		}
 
-		template <Allocator::AllocatorType AllocatorType>
-		void drop(AllocatorType* allocator, Handle handle, Engine::Handle engine)
+		template <Storage::StorageType StorageType>
+		void drop(StorageType* allocator, Handle handle, Engine::Handle engine)
 		{
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle, Window::isNull);
 
 			handle->deleteSwapChain(engine);
 
-			Allocator::dropResource(allocator, handle);
+			Storage::dropResource(allocator, handle);
 		}
 
 		I32x2 dimensions(Window::Handle window);

@@ -11,15 +11,15 @@
 #include "core.h"
 #include "math/math.h"
 
-#define VIVIUM_NULL_ALLOCATOR (reinterpret_cast<Vivium::Allocator::Null*>(NULL))
+#define VIVIUM_NULL_STORAGE (reinterpret_cast<Vivium::Storage::Null*>(NULL))
 
 namespace Vivium {
-	namespace Allocator {
+	namespace Storage {
 		struct Null {};
 
 		namespace Static {
 			template <typename T>
-			concept AllocatorType = requires(T allocator) {
+			concept StorageType = requires(T allocator) {
 				{ allocator.allocate(std::declval<uint64_t>()) } -> std::same_as<void*>;
 				{ allocator.free() } -> std::same_as<void>;
 			};
@@ -68,7 +68,7 @@ namespace Vivium {
 
 		namespace Dynamic {
 			template <typename T>
-			concept AllocatorType = requires(T allocator) {
+			concept StorageType = requires(T allocator) {
 				{ allocator.allocate(std::declval<uint64_t>()) } -> std::same_as<void*>;
 				{ allocator.free() } -> std::same_as<void>;
 				{ allocator.free(std::declval<void*>()) } -> std::same_as<void>;
@@ -76,10 +76,10 @@ namespace Vivium {
 		}
 
 		template <typename T>
-		concept AllocatorType = Dynamic::AllocatorType<T> || Static::AllocatorType<T> || std::is_same_v<Null, T>;
+		concept StorageType = Dynamic::StorageType<T> || Static::StorageType<T> || std::is_same_v<Null, T>;
 
-		template <typename Resource, AllocatorType Allocator>
-		Resource* allocateResource(Allocator* allocator) {
+		template <typename Resource, StorageType Storage>
+		Resource* allocateResource(Storage* allocator) {
 			VIVIUM_ASSERT(allocator != nullptr, "Can't allocate using null allocator");
 
 			Resource* handle = reinterpret_cast<Resource*>(allocator->allocate(sizeof(Resource)));
@@ -89,11 +89,11 @@ namespace Vivium {
 			return handle;
 		}
 
-		template <typename Resource, AllocatorType Allocator>
-		void dropResource(Allocator* allocator, Resource* handle) {
+		template <typename Resource, StorageType Storage>
+		void dropResource(Storage* allocator, Resource* handle) {
 			handle->~Resource();
 
-			if constexpr (Dynamic::AllocatorType<Allocator>)
+			if constexpr (Dynamic::StorageType<Storage>)
 				allocator->free(handle);
 		}
 	}

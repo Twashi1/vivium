@@ -64,12 +64,12 @@ namespace Vivium {
 		void set(Handle buffer, uint64_t bufferOffset, const void* data, uint64_t size);
 		void* getMapping(Handle buffer);
 
-		template <Allocator::AllocatorType AllocatorType>
-		void drop(AllocatorType* allocator, Handle buffer, Engine::Handle engine)
+		template <Storage::StorageType StorageType>
+		void drop(StorageType* allocator, Handle buffer, Engine::Handle engine)
 		{
 			vkDestroyBuffer(engine->device, buffer->buffer, nullptr);
 
-			Allocator::dropResource(allocator, buffer);
+			Storage::dropResource(allocator, buffer);
 		}
 
 		namespace Dynamic {

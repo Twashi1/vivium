@@ -62,11 +62,11 @@ namespace Vivium {
 
 		typedef Resource* Handle;
 
-		template <Allocator::AllocatorType AllocatorType>
-		Handle create(AllocatorType* allocator, Engine::Handle engine, Specification specification) {
+		template <Storage::StorageType StorageType>
+		Handle create(StorageType* allocator, Engine::Handle engine, Specification specification) {
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 
-			Handle handle = Allocator::allocateResource<Resource>(allocator);
+			Handle handle = Storage::allocateResource<Resource>(allocator);
 
 			{
 				handle->flags = static_cast<VkShaderStageFlagBits>(specification.stage);
@@ -88,14 +88,14 @@ namespace Vivium {
 			return handle;
 		}
 
-		template <Allocator::AllocatorType AllocatorType>
-		void drop(AllocatorType* allocator, Shader::Handle shader, Engine::Handle engine) {
+		template <Storage::StorageType StorageType>
+		void drop(StorageType* allocator, Shader::Handle shader, Engine::Handle engine) {
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 			VIVIUM_CHECK_HANDLE_EXISTS(shader);
 
 			vkDestroyShaderModule(engine->device, shader->shader, nullptr);
 
-			Allocator::dropResource(allocator, shader);
+			Storage::dropResource(allocator, shader);
 		}
 
 		// TODO: returning the specification is convenient, but promotes bad practice

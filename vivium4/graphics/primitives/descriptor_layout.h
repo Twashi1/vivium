@@ -21,10 +21,10 @@ namespace Vivium {
 
 		bool isNull(const Handle layout);
 
-		template <Allocator::AllocatorType AllocatorType>
-		Handle create(AllocatorType* allocator, Engine::Handle engine, Specification specification)
+		template <Storage::StorageType StorageType>
+		Handle create(StorageType* allocator, Engine::Handle engine, Specification specification)
 		{
-			Handle handle = Allocator::allocateResource<Resource>(allocator);
+			Handle handle = Storage::allocateResource<Resource>(allocator);
 
 			std::vector<VkDescriptorSetLayoutBinding> vulkanBindings(specification.bindings.size());
 			handle->bindings.resize(specification.bindings.size());
@@ -52,15 +52,15 @@ namespace Vivium {
 			return handle;
 		}
 
-		template <Allocator::AllocatorType AllocatorType>
-		void drop(AllocatorType* allocator, Handle handle, Engine::Handle engine)
+		template <Storage::StorageType StorageType>
+		void drop(StorageType* allocator, Handle handle, Engine::Handle engine)
 		{
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 			VIVIUM_CHECK_HANDLE_EXISTS(handle);
 
 			vkDestroyDescriptorSetLayout(engine->device, handle->layout, nullptr);
 
-			Allocator::dropResource(allocator, handle);
+			Storage::dropResource(allocator, handle);
 		}
 	}
 }

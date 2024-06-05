@@ -18,21 +18,21 @@ namespace Vivium {
 				typedef Resource* Handle;
 				typedef Resource* PromisedHandle;
 
-				template <Allocator::AllocatorType AllocatorType>
-				void drop(AllocatorType* allocator, Handle handle, Engine::Handle engine) {
+				template <Storage::StorageType StorageType>
+				void drop(StorageType* allocator, Handle handle, Engine::Handle engine) {
 					VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 
 					GUI::Object::drop(allocator, handle->base);
 
 					Text::drop(allocator, handle->text, engine);
 
-					Allocator::dropResource(allocator, handle);
+					Storage::dropResource(allocator, handle);
 				}
 
-				template <Allocator::AllocatorType AllocatorType>
-				PromisedHandle submit(AllocatorType* allocator, ResourceManager::Static::Handle manager, Context::Handle guiContext, Engine::Handle engine, Window::Handle window)
+				template <Storage::StorageType StorageType>
+				PromisedHandle submit(StorageType* allocator, ResourceManager::Static::Handle manager, Context::Handle guiContext, Engine::Handle engine, Window::Handle window)
 				{
-					PromisedHandle button = Allocator::allocateResource<Resource, AllocatorType>(allocator);
+					PromisedHandle button = Storage::allocateResource<Resource, StorageType>(allocator);
 
 					button->base = GUI::Object::create(allocator, GUI::Object::Specification{});
 					button->color = Color::Gray;

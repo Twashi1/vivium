@@ -54,7 +54,7 @@ struct State {
 	Window::Handle window;
 	GUI::Visual::Context::Handle guiContext;
 	
-	Allocator::Static::Pool storage;
+	Storage::Static::Pool storage;
 
 	Texture::Handle textureAtlas;
 
@@ -265,23 +265,23 @@ void _updateScore(State& state) {
 void _freeSky(State& state) {
 	Batch::drop(&state.storage, state.skyGraphics.batch, state.engine);
 
-	Pipeline::drop(VIVIUM_NULL_ALLOCATOR, state.skyGraphics.pipeline, state.engine);
+	Pipeline::drop(VIVIUM_NULL_STORAGE, state.skyGraphics.pipeline, state.engine);
 }
 
 void _freeCharacter(State& state) {
 	Batch::drop(&state.storage, state.character.batch, state.engine);
 	DescriptorLayout::drop(&state.storage, state.character.descriptorLayout, state.engine);
-	DescriptorSet::drop(VIVIUM_NULL_ALLOCATOR, state.character.descriptorSet);
-	Buffer::drop(VIVIUM_NULL_ALLOCATOR, state.character.uniformBuffer, state.engine);
-	Pipeline::drop(VIVIUM_NULL_ALLOCATOR, state.character.pipeline, state.engine);
+	DescriptorSet::drop(VIVIUM_NULL_STORAGE, state.character.descriptorSet);
+	Buffer::drop(VIVIUM_NULL_STORAGE, state.character.uniformBuffer, state.engine);
+	Pipeline::drop(VIVIUM_NULL_STORAGE, state.character.pipeline, state.engine);
 }
 
 void _freeSpriteRenderer(State& state) {
 	Batch::drop(&state.storage, state.spriteRenderer.batch, state.engine);
 	DescriptorLayout::drop(&state.storage, state.spriteRenderer.descriptorLayout, state.engine);
-	DescriptorSet::drop(VIVIUM_NULL_ALLOCATOR, state.spriteRenderer.descriptorSet);
-	Buffer::drop(VIVIUM_NULL_ALLOCATOR, state.spriteRenderer.storageBuffer, state.engine);
-	Pipeline::drop(VIVIUM_NULL_ALLOCATOR, state.spriteRenderer.pipeline, state.engine);
+	DescriptorSet::drop(VIVIUM_NULL_STORAGE, state.spriteRenderer.descriptorSet);
+	Buffer::drop(VIVIUM_NULL_STORAGE, state.spriteRenderer.storageBuffer, state.engine);
+	Pipeline::drop(VIVIUM_NULL_STORAGE, state.spriteRenderer.pipeline, state.engine);
 }
 
 void _freeScore(State& state) {
@@ -474,7 +474,7 @@ void _updateEnemies(State& state) {
 }
 
 void initialise(State& state) {
-	state.storage = Allocator::Static::Pool{};
+	state.storage = Storage::Static::Pool{};
 	state.window = Window::create(&state.storage, Window::Options{});
 	state.engine = Engine::create(&state.storage, Engine::Options{}, state.window);
 	state.context = Commands::Context::create(&state.storage, state.engine);
@@ -596,7 +596,7 @@ void terminate(State& state) {
 	_freeSpriteRenderer(state);
 	_freeScore(state);
 
-	Texture::drop(VIVIUM_NULL_ALLOCATOR, state.textureAtlas, state.engine);
+	Texture::drop(VIVIUM_NULL_STORAGE, state.textureAtlas, state.engine);
 
 	GUI::Visual::Context::drop(&state.storage, state.guiContext, state.engine);
 	Commands::Context::drop(&state.storage, state.context, state.engine);

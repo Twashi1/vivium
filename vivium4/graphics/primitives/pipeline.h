@@ -67,8 +67,8 @@ namespace Vivium {
 
 		bool isNull(const Handle pipeline);
 
-		template <Allocator::AllocatorType AllocatorType>
-		void drop(AllocatorType* allocator, Handle handle, Engine::Handle engine)
+		template <Storage::StorageType StorageType>
+		void drop(StorageType* allocator, Handle handle, Engine::Handle engine)
 		{
 			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 			VIVIUM_CHECK_HANDLE_EXISTS(handle);
@@ -76,7 +76,7 @@ namespace Vivium {
 			vkDestroyPipelineLayout(engine->device, handle->layout, nullptr);
 			vkDestroyPipeline(engine->device, handle->pipeline, nullptr);
 
-			Allocator::dropResource(allocator, handle);
+			Storage::dropResource(allocator, handle);
 		}
 	}
 }
