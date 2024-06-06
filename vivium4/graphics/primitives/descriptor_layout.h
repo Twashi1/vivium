@@ -4,63 +4,62 @@
 #include "uniform.h"
 
 namespace Vivium {
-	namespace DescriptorLayout {
-		struct Specification {
-			const std::span<const Uniform::Binding> bindings;
+	// TODO: worrying data lifetimes
+	struct DescriptorLayoutSpecification {
+		std::vector<Uniform::Binding> bindings;
+	};
 
-			Specification();
-			Specification(const std::span<const Uniform::Binding> bindings);
-		};
+	struct DescriptorLayout {
+		VkDescriptorSetLayout layout;
+	};
 
-		struct Resource {
-			VkDescriptorSetLayout layout;
-			std::vector<Uniform::Binding> bindings;
-		};
+	struct DescriptorLayoutReference {
+		uint64_t referenceIndex;
+	};
 		
-		typedef Resource* Handle;
+	bool isDescriptorLayoutNull(DescriptorLayout const& layout);
 
-		bool isNull(const Handle layout);
+	template <Storage::StorageType StorageType>
+	void dropDescriptorLayout(StorageType* allocator, DescriptorLayout const& layout, Engine::Handle engine)
+	{
+		VIVIUM_NULLPTR_CHECK(engine, VIVIUM_CHECK_RESOURCE_EXISTS(*engine, Engine::isNull));
 
-		template <Storage::StorageType StorageType>
-		Handle create(StorageType* allocator, Engine::Handle engine, Specification specification)
-		{
-			Handle handle = Storage::allocateResource<Resource>(allocator);
+		vkDestroyDescriptorSetLayout(engine->device, layout.layout, nullptr);
 
-			std::vector<VkDescriptorSetLayoutBinding> vulkanBindings(specification.bindings.size());
-			handle->bindings.resize(specification.bindings.size());
-
-			for (uint64_t i = 0; i < specification.bindings.size(); i++) {
-				VkDescriptorSetLayoutBinding& vulkanBinding = vulkanBindings[i];
-				const Uniform::Binding& binding = specification.bindings[i];
-
-				handle->bindings[i] = binding;
-
-				vulkanBinding.binding = binding.slot;
-				vulkanBinding.descriptorCount = 1; // TODO: UBO arrays would require this to be editable
-				vulkanBinding.descriptorType = static_cast<VkDescriptorType>(binding.type);
-				vulkanBinding.stageFlags = static_cast<VkShaderStageFlags>(binding.stage);
-				vulkanBinding.pImmutableSamplers = nullptr;
-			}
-
-			VkDescriptorSetLayoutCreateInfo createInfo{};
-			createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-			createInfo.bindingCount = static_cast<uint32_t>(vulkanBindings.size());
-			createInfo.pBindings = vulkanBindings.data();
-
-			vkCreateDescriptorSetLayout(engine->device, &createInfo, nullptr, &handle->layout);
-
-			return handle;
-		}
-
-		template <Storage::StorageType StorageType>
-		void drop(StorageType* allocator, Handle handle, Engine::Handle engine)
-		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
-			VIVIUM_CHECK_HANDLE_EXISTS(handle);
-
-			vkDestroyDescriptorSetLayout(engine->device, handle->layout, nullptr);
-
-			Storage::dropResource(allocator, handle);
-		}
+		Storage::dropResource(allocator, &layout);
 	}
+
+	// TODO: needs to be on resource manager now
+	/*
+	template <Storage::StorageType StorageType>
+	Handle create(StorageType* allocator, Engine::Handle engine, Specification specification)
+	{
+		Handle handle = Storage::allocateResource<Resource>(allocator);
+
+		std::vector<VkDescriptorSetLayoutBinding> vulkanBindings(specification.bindings.size());
+		handle->bindings.resize(specification.bindings.size());
+
+		for (uint64_t i = 0; i < specification.bindings.size(); i++) {
+			VkDescriptorSetLayoutBinding& vulkanBinding = vulkanBindings[i];
+			const Uniform::Binding& binding = specification.bindings[i];
+
+			handle->bindings[i] = binding;
+
+			vulkanBinding.binding = binding.slot;
+			vulkanBinding.descriptorCount = 1; // TODO: UBO arrays would require this to be editable
+			vulkanBinding.descriptorType = static_cast<VkDescriptorType>(binding.type);
+			vulkanBinding.stageFlags = static_cast<VkShaderStageFlags>(binding.stage);
+			vulkanBinding.pImmutableSamplers = nullptr;
+		}
+
+		VkDescriptorSetLayoutCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		createInfo.bindingCount = static_cast<uint32_t>(vulkanBindings.size());
+		createInfo.pBindings = vulkanBindings.data();
+
+		vkCreateDescriptorSetLayout(engine->device, &createInfo, nullptr, &handle->layout);
+
+		return handle;
+	}
+	*/
 }

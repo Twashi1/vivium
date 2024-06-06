@@ -6,77 +6,63 @@
 #include "uniform.h"
 
 namespace Vivium {
-	namespace ResourceManager {
-		namespace Static {
-			struct Resource;
-			typedef Resource* Handle;
-		}
-	}
+	enum _RenderTarget {
+		FRAMEBUFFER,
+		WINDOW
+	};
 
-	namespace Pipeline {
-		enum Target {
-			FRAMEBUFFER,
-			WINDOW
-		};
-
-		struct Specification {
-			std::vector<Shader::Handle> shaders;
-			Buffer::Layout bufferLayout;
-			std::vector<DescriptorLayout::Handle> descriptorLayouts;
-			std::vector<Uniform::PushConstant> pushConstants;
+	struct PipelineSpecification {
+		std::vector<ShaderReference> shaders;
+		BufferLayout bufferLayout;
+		std::vector<DescriptorLayoutReference> descriptorLayouts;
+		std::vector<Uniform::PushConstant> pushConstants;
 			
-			// Render pass source
-			Target target;
+		_RenderTarget target;
 
-			union {
-				Engine::Handle engine;
-				Framebuffer::Handle framebuffer;
-			};
-
-			VkSampleCountFlagBits sampleCount;
-
-			Specification() = default;
-
-			static Specification fromWindow(
-				const std::span<const Shader::Handle> shaders,
-				const Buffer::Layout bufferLayout,
-				const std::span<const DescriptorLayout::Handle> descriptorLayouts,
-				const std::span<const Uniform::PushConstant> pushConstants,
-				Engine::Handle engine,
-				Window::Handle window
-			);
-
-			static Specification fromFramebuffer(
-				const std::span<const Shader::Handle> shaders,
-				const Buffer::Layout bufferLayout,
-				const std::span<const DescriptorLayout::Handle> descriptorLayouts,
-				const std::span<const Uniform::PushConstant> pushConstants,
-				Framebuffer::Handle framebuffer,
-				int multisampleCount
-			);
+		union {
+			Engine::Handle engine;
+			FramebufferReference framebuffer;
 		};
 
-		struct Resource {
-			VkPipelineLayout layout;
-			VkPipeline pipeline;
-			VkRenderPass renderPass;
-		};	
+		VkSampleCountFlagBits sampleCount;
 
-		typedef Resource* Handle;
-		typedef Resource* PromisedHandle;
+		PipelineSpecification() = default;
 
-		bool isNull(const Handle pipeline);
+		static PipelineSpecification fromWindow(
+			const std::span<const ShaderReference> shaders,
+			const BufferLayout& bufferLayout,
+			const std::span<const DescriptorLayoutReference> descriptorLayouts,
+			const std::span<const Uniform::PushConstant> pushConstants,
+			Engine::Handle engine,
+			Window::Handle window
+		);
 
-		template <Storage::StorageType StorageType>
-		void drop(StorageType* allocator, Handle handle, Engine::Handle engine)
-		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
-			VIVIUM_CHECK_HANDLE_EXISTS(handle);
+		static PipelineSpecification fromFramebuffer(
+			const std::span<const ShaderReference> shaders,
+			const BufferLayout& bufferLayout,
+			const std::span<const DescriptorLayoutReference> descriptorLayouts,
+			const std::span<const Uniform::PushConstant> pushConstants,
+			FramebufferReference framebuffer,
+			int multisampleCount
+		);
+	};
 
-			vkDestroyPipelineLayout(engine->device, handle->layout, nullptr);
-			vkDestroyPipeline(engine->device, handle->pipeline, nullptr);
+	struct Pipeline {
+		VkPipelineLayout layout;
+		VkPipeline pipeline;
+		VkRenderPass renderPass;
+	};
 
-			Storage::dropResource(allocator, handle);
-		}
+	struct PipelineReference {
+		uint64_t referenceIndex;
+	};
+
+	template <Storage::StorageType StorageType>
+	void drop(StorageType* allocator, Pipeline& pipeline, Engine::Handle engine)
+	{
+		vkDestroyPipelineLayout(engine->device, pipeline.layout, nullptr);
+		vkDestroyPipeline(engine->device, pipeline.pipeline, nullptr);
+
+		Storage::dropResource(allocator, &pipeline);
 	}
 }

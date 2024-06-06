@@ -1,15 +1,28 @@
 
 ## High priority
 
-- Test multi-window draws
-	- Requires multi-window application flow (around the engine creation mostly)
+- Offset before size on `PushConstant`, update old systems
+- Double deconstructor call on `Storage::dropResource`
 ## Core
 
-- Renaming Allocators to `Storage` objects, and `ResourceManager` to `Allocator::Static`
-- RAII storage objects are appealing (delete copy, define move)
-- Context should be multi-thread compatible
-- Easier to use temporary staging
-- Platform independence (OS module, Timer module)
+- Test multi-window draws
+	- Requires multi-window application flow (around the engine creation mostly)
+- Abstract creation functions of resources to maximum extent without compromising performance
+- Most `isNull` methods are only relevant in degenerate use-cases?
+- Fix `beginFramebufferFrame` and `endFramebufferFrame`, and plan easy render-target setting
+- Re-implementation of dynamic buffers
+- Minimal overrides
+- No static member functions (even for specifications): just define a method
+- `Math::orthogonalPerspective2D` should not be taking `Window::Handle`, but a dimension
+- Renaming `ResourceManager` to `Allocator::Static`
+- RAII storage objects are appealing (delete copy, define move) (`Storage::Static` and `Storage::Dynamic`)
+	- Alternative is to just `malloc` and `free` these, they're already only used as pointers anyway
+- `Commands::Context` should be multi-thread compatible
+- Easier-to-use temporary staging
+	- `Stager s = Commands::createStage(maximumSize)`
+	- `Commands::setStageData(s, ...)`
+	- `Commands::uploadStage(s, bufferSlice, ...)`
+	- `Commands::freeStage(s)` (issues with `VkDeviceIdle` possible - schedule with a `Context` instead?)
 - `inl` files for all templates
 - Span synonymous type (`Slice`)
 	- `initializer_list` compatible (seems impossible)
@@ -27,7 +40,7 @@
 - Test re-useable resource manager
 - Generalise `Commands::createRenderPass` for `Framebuffer` render passes as well
 - Initialiser lists for resource manager
-- Shader debugger tool - use CPU to simulate GPU actions for some fragments
+	- Add functions that take initialiser lists
 - Compute shaders and storage images (alternative to framebuffers?)
 - Dynamic resource manager
 - Vertex input rate: `VK_VERTEX_INPUT_RATE_INSTANCE`
@@ -44,10 +57,11 @@
 - `Anchor` renamed since also used in `Center` parameters (also move to `Vec2`?)
 - Not considering the total y-extent of characters that go below the origin (like `p`, `q`, `y`, etc.), although whether it should be considered or not is to be determined
 - Better values of `spreadFactor` for signed distance field font rendering
+- `List` type is still poorly integrated and not tested
 
 ## Physics
 
-- Substeps
+- Sub-steps
 ## Minor
 
 - `VIVIUM_LOG_PERIODIC(interval, severity, message, ...)`
@@ -70,11 +84,15 @@
 
 ## Possible
 
-- Minimal namespaces (only Vivium4.), instead just write everything out; `bufferDrop` instead of `Buffer::drop`
+- Minimal namespaces (only `Vivium`), instead just write everything out; `bufferDrop` instead of `Buffer::drop`
+	- `Storage::Static` and `Storage::Dynamic` no longer have a clear separation, would have to integrate it in the name somehow
+	- `Buffer::Dynamic` and `Buffer` need to be integrated into the name
 ## Aspirational
 
 - 3D workflow (camera + controller math)
 - Raytracing
+- Shader debugger tool - use CPU to simulate GPU actions for some fragments
+- Platform independence (OS module, Timer module)
 ## Projects
 
 - Simple shoot-em-up

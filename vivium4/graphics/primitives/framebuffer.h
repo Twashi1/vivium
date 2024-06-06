@@ -4,66 +4,49 @@
 #include "texture.h"
 
 namespace Vivium {
-	namespace Commands {
-		namespace Context {
-			struct Resource;
-			typedef Resource* Handle;
-		}
-	}
+	// TODO: dimensions and format not required?
+	struct Framebuffer {
+		VkImage image;
+		VkImageView view;
+		VkSampler sampler;
 
-	namespace ResourceManager {
-		namespace Static {
-			struct Resource;
+		VkRenderPass renderPass;
+		VkFramebuffer framebuffer;
 
-			typedef Resource* Handle;
-		}
-	}
+		U32x2 dimensions;
+	};
 
-	namespace Framebuffer {
-		// TODO: dimensions and format not required?
-		struct Resource {
-			F32x2 dimensions;
-			Texture::Format format;
+	struct FramebufferSpecification {
+		U32x2 dimensions;
+		Texture::Format format;
+		int multisampleCount;
+	};
 
-			VkImage image;
-			VkImageView view;
-			VkSampler sampler;
+	struct FramebufferReference {
+		uint64_t referenceIndex;
+	};
 
-			VkRenderPass renderPass;
-			VkFramebuffer framebuffer;
-		};
-
-		struct Specification {
-			F32x2 dimensions;
-			Texture::Format format;
-			int multisampleCount;
-		};
-
-		typedef Resource* Handle;
-		typedef Resource* PromisedHandle;
-
-		int getRequestedMultisamples(Engine::Handle engine, int multisampleCount);
+	int getRequestedMultisamples(Engine::Handle engine, int multisampleCount);
 		
-		template <Storage::StorageType StorageType>
-		void drop(StorageType* allocator , Handle handle, Engine::Handle engine) {
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
-			VIVIUM_CHECK_HANDLE_EXISTS(handle);
+	template <Storage::StorageType StorageType>
+	void drop(StorageType* allocator, Framebuffer& framebuffer, Engine::Handle engine) {
+		VIVIUM_CHECK_NULLPTR(engine, VIVIUM_CHECK_RESOURCE_EXISTS(*engine, Engine::isNull));
 
-			vkDestroyImage(engine->device, handle->image, nullptr);
-			vkDestroySampler(engine->device, handle->sampler, nullptr);
-			vkDestroyImageView(engine->device, handle->view, nullptr);
+		vkDestroyImage(engine->device, framebuffer.image, nullptr);
+		vkDestroySampler(engine->device, framebuffer.sampler, nullptr);
+		vkDestroyImageView(engine->device, framebuffer.view, nullptr);
 
-			vkDestroyRenderPass(engine->device, handle->renderPass, nullptr);
-			vkDestroyFramebuffer(engine->device, handle->framebuffer, nullptr);
+		vkDestroyRenderPass(engine->device, framebuffer.renderPass, nullptr);
+		vkDestroyFramebuffer(engine->device, framebuffer.framebuffer, nullptr);
 
-			Storage::dropResource(allocator, handle);
-		}
-
-		void drop(ResourceManager::Static::Handle manager, Framebuffer::Handle framebuffer, Engine::Handle engine);
-
-		void beginFrame(Handle handle, Commands::Context::Handle context, Engine::Handle engine);
-		void beginRender(Handle handle, Commands::Context::Handle context);
-		void endRender(Handle handle, Commands::Context::Handle context);
-		void endFrame(Handle handle, Commands::Context::Handle context, Engine::Handle engine);
+		Storage::dropResource(allocator, &framebuffer);
 	}
+
+	// TODO: how to organise these, so we can also render to window
+	// TODO: beginFrame/endFrame don't even require framebuffer at any point!!
+	void beginFramebufferFrame(Framebuffer& framebuffer, Commands::Context::Handle context, Engine::Handle engine);
+	void beginFramebufferRender(Framebuffer& framebuffer, Commands::Context::Handle context);
+	// TODO: doesn't even take fraembuffer?
+	void endFramebufferRender(Framebuffer& framebuffer, Commands::Context::Handle context);
+	void endFramebufferFrame(Framebuffer& framebuffer, Commands::Context::Handle context, Engine::Handle engine);
 }

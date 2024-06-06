@@ -5,62 +5,45 @@
 #include "../gui/font.h"
 
 namespace Vivium {
-	namespace ResourceManager {
-		namespace Static {
-			struct Resource;
+	enum class TextureFormat {
+		RGBA = VK_FORMAT_R8G8B8A8_SRGB,
+		MONOCHROME = VK_FORMAT_R8_UNORM
+	};
 
-			typedef Resource* Handle;
-		}
-	}
+	enum class TextureFilter {
+		NEAREST = VK_FILTER_NEAREST,
+		LINEAR = VK_FILTER_LINEAR
+	};
 
-	namespace Texture {
-		enum class Format {
-			RGBA = VK_FORMAT_R8G8B8A8_SRGB,
-			MONOCHROME = VK_FORMAT_R8_UNORM
-		};
+	struct Texture {
+		VkImage image;
+		VkImageView view;
+		VkSampler sampler;
+	};
 
-		enum class Filter {
-			NEAREST = VK_FILTER_NEAREST,
-			LINEAR = VK_FILTER_LINEAR
-		};
+	struct TextureSpecification {
+		int width, height, channels;
 
-		struct Resource {
-			VkImage image;
-			VkImageView view;
-			VkSampler sampler;
+		std::vector<uint8_t> data;
 
-			bool isNull() const;
-			void drop(Engine::Handle engine);
-		};
+		TextureFormat imageFormat;
+		TextureFilter imageFilter;
 
-		struct Specification {
-			int width, height, channels;
+		// TODO: from raw data
+		static TextureSpecification fromImageFile(const char* imageFile, TextureFormat imageFormat, TextureFilter imageFilter);
+		static TextureSpecification fromFont(Font::Font font, TextureFormat imageFormat, TextureFilter imageFilter);
+	};
+	
+	struct TextureReference {
+		uint64_t referenceIndex;
+	};
 
-			std::vector<uint8_t> data;
+	template <Storage::StorageType StorageType>
+	void drop(StorageType* allocator, Texture& texture, Engine::Handle engine) {
+		vkDestroySampler(engine->device, texture.sampler, nullptr);
+		vkDestroyImageView(engine->device, texture.view, nullptr);
+		vkDestroyImage(engine->device, texture.image, nullptr);
 
-			Format imageFormat;
-			Filter imageFilter;
-
-			Specification() = default;
-			Specification(const std::vector<uint8_t>& data, int width, int height, int channels, Format imageFormat, Filter imageFilter);
-		
-			static Specification fromImageFile(const char* imageFile, Format imageFormat, Filter imageFilter);
-			static Specification fromFont(Font::Font font, Format imageFormat, Filter imageFilter);
-		};
-
-		typedef Resource* Handle;
-		typedef Resource* PromisedHandle;
-
-		template <Storage::StorageType StorageType>
-		void drop(StorageType* allocator, Handle handle, Engine::Handle engine) {
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
-			VIVIUM_CHECK_HANDLE_EXISTS(handle);
-
-			handle->drop(engine);
-
-			Storage::dropResource(allocator, handle);
-		}
-
-		void drop(ResourceManager::Static::Handle manager, Texture::Handle texture, Engine::Handle engine);
+		Storage::dropResource(allocator, &texture);
 	}
 }

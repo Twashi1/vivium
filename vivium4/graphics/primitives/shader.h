@@ -8,97 +8,91 @@
 #include "../../storage.h"
 
 namespace Vivium {
-	namespace Shader {
-		enum class DataType : uint64_t {
-			BOOL	= (1Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R8_UINT),
-			INT		= (4Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32_SINT),
-			UINT	= (4Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32_UINT),
-			FLOAT	= (4Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32_SFLOAT),
-			DOUBLE	= (8Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R64_SFLOAT),
+	enum class ShaderDataType : uint64_t {
+		BOOL	= (1Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R8_UINT),
+		INT		= (4Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32_SINT),
+		UINT	= (4Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32_UINT),
+		FLOAT	= (4Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32_SFLOAT),
+		DOUBLE	= (8Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R64_SFLOAT),
 
-			BVEC2	= (2Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R8G8_UINT),
-			IVEC2	= (8Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32G32_SINT),
-			UVEC2	= (8Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32G32_UINT),
-			VEC2	= (8Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32G32_SFLOAT),
-			DVEC2	= (16Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R64G64_SINT),
+		BVEC2	= (2Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R8G8_UINT),
+		IVEC2	= (8Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32G32_SINT),
+		UVEC2	= (8Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32G32_UINT),
+		VEC2	= (8Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32G32_SFLOAT),
+		DVEC2	= (16Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R64G64_SINT),
 
-			BVEC3	= (3Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R8G8B8_UINT),
-			IVEC3	= (12Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32G32B32_SINT),
-			UVEC3	= (12Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32G32B32_UINT),
-			VEC3	= (12Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32G32B32_SFLOAT),
-			/* DVEC3 */
+		BVEC3	= (3Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R8G8B8_UINT),
+		IVEC3	= (12Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32G32B32_SINT),
+		UVEC3	= (12Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32G32B32_UINT),
+		VEC3	= (12Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32G32B32_SFLOAT),
+		/* DVEC3 */
 
-			BVEC4	= (4Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R8G8B8A8_UINT),
-			IVEC4	= (16Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32G32B32A32_SINT),
-			UVEC4	= (16Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32G32B32A32_UINT),
-			VEC4	= (16Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32G32B32A32_SFLOAT),
-			/* DVEC4 */
-		};
+		BVEC4	= (4Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R8G8B8A8_UINT),
+		IVEC4	= (16Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32G32B32A32_SINT),
+		UVEC4	= (16Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32G32B32A32_UINT),
+		VEC4	= (16Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32G32B32A32_SFLOAT),
+		/* DVEC4 */
+	};
 
-		uint32_t sizeOf(DataType type);
-		VkFormat formatOf(DataType type);
+	uint32_t _sizeOfShaderDataType(ShaderDataType type);
+	VkFormat _formatOfShaderDataType(ShaderDataType type);
 
-		enum class Stage {
-			VERTEX = VK_SHADER_STAGE_VERTEX_BIT,
-			FRAGMENT = VK_SHADER_STAGE_FRAGMENT_BIT,
-			GEOMETRY = VK_SHADER_STAGE_GEOMETRY_BIT
-		};
+	enum class ShaderStage {
+		VERTEX = VK_SHADER_STAGE_VERTEX_BIT,
+		FRAGMENT = VK_SHADER_STAGE_FRAGMENT_BIT,
+		GEOMETRY = VK_SHADER_STAGE_GEOMETRY_BIT
+	};
 
-		Stage operator|(Stage lhs, Stage rhs);
+	ShaderStage operator|(ShaderStage lhs, ShaderStage rhs);
 
-		struct Specification {
-			Stage stage;
-			std::string code;
-			uint32_t length;
+	struct ShaderSpecification {
+		ShaderStage stage;
+		std::string code;
+		uint32_t length;
+	};
 
-			Specification() = default;
-			Specification(Stage stage, std::string code, uint32_t length);
-		};
+	struct Shader {
+		VkShaderModule shader;
+	};
 
-		struct Resource {
-			VkShaderStageFlagBits flags;
-			VkShaderModule shader;
-		};
+	struct ShaderReference {
+		uint64_t referenceIndex;
+	};
 
-		typedef Resource* Handle;
+	// TODO: move to resource manager
+	/*template <Storage::StorageType StorageType>
+	Handle create(StorageType* allocator, Engine::Handle engine, Specification specification) {
+		VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
 
-		template <Storage::StorageType StorageType>
-		Handle create(StorageType* allocator, Engine::Handle engine, Specification specification) {
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
+		Handle handle = Storage::allocateResource<Resource>(allocator);
 
-			Handle handle = Storage::allocateResource<Resource>(allocator);
+		{
+			handle->flags = static_cast<VkShaderStageFlagBits>(specification.stage);
 
-			{
-				handle->flags = static_cast<VkShaderStageFlagBits>(specification.stage);
+			VkShaderModuleCreateInfo shaderCreateInfo{};
+			shaderCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+			shaderCreateInfo.codeSize = specification.length;
+			shaderCreateInfo.pCode = reinterpret_cast<const uint32_t*>(specification.code.c_str());
 
-				VkShaderModuleCreateInfo shaderCreateInfo{};
-				shaderCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-				shaderCreateInfo.codeSize = specification.length;
-				shaderCreateInfo.pCode = reinterpret_cast<const uint32_t*>(specification.code.c_str());
-
-				VIVIUM_VK_CHECK(vkCreateShaderModule(
-					engine->device,
-					&shaderCreateInfo,
-					nullptr,
-					&handle->shader
-				), "Failed to create shader module"
-				);
-			}
-
-			return handle;
+			VIVIUM_VK_CHECK(vkCreateShaderModule(
+				engine->device,
+				&shaderCreateInfo,
+				nullptr,
+				&handle->shader
+			), "Failed to create shader module"
+			);
 		}
 
-		template <Storage::StorageType StorageType>
-		void drop(StorageType* allocator, Shader::Handle shader, Engine::Handle engine) {
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
-			VIVIUM_CHECK_HANDLE_EXISTS(shader);
+		return handle;
+	}*/
 
-			vkDestroyShaderModule(engine->device, shader->shader, nullptr);
+	template <Storage::StorageType StorageType>
+	void drop(StorageType* allocator, Shader& shader, Engine::Handle engine) {
+		vkDestroyShaderModule(engine->device, shader->shader, nullptr);
 
-			Storage::dropResource(allocator, shader);
-		}
-
-		// TODO: returning the specification is convenient, but promotes bad practice
-		Specification compile(Shader::Stage stage, const char* sourceFilename, const char* destFilename);
+		Storage::dropResource(allocator, shader);
 	}
+
+	// TODO: returning the specification is convenient, but promotes bad practice
+	ShaderSpecification compile(ShaderStage stage, const char* sourceFilename, const char* destFilename);
 }

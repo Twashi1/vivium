@@ -1,114 +1,74 @@
 #include "buffer.h"
-#include "../resource_manager.h"
 
 namespace Vivium {
-	namespace Buffer {
-		bool isNull(const Handle buffer)
-		{
-			return buffer->buffer == VK_NULL_HANDLE;
-		}
+	bool isBufferNull(Buffer const& buffer)
+	{
+		return buffer.buffer == VK_NULL_HANDLE;
+	}
 
-		void set(Handle buffer, uint64_t bufferOffset, const void* data, uint64_t size)
-		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(buffer, Buffer::isNull);
+	void setBuffer(Buffer const& buffer, uint64_t bufferOffset, const void* data, uint64_t size)
+	{
+		VIVIUM_CHECK_RESOURCE_EXISTS(buffer, Vivium::isBufferNull);
 
-			VIVIUM_ASSERT(size + bufferOffset <= buffer->size,
-				"Setting memory OOBs");
+		// TODO: make assertion work in debug mode
+#ifdef 0
+		VIVIUM_ASSERT(size + bufferOffset <= buffer->size,
+			"Setting memory OOBs");
+#endif
 
-			std::memcpy(
-				reinterpret_cast<uint8_t*>(buffer->mapping) + bufferOffset,
-				reinterpret_cast<const uint8_t*>(data),
-				size
-			);
-		}
+		std::memcpy(
+			reinterpret_cast<uint8_t*>(buffer.mapping) + bufferOffset,
+			reinterpret_cast<const uint8_t*>(data),
+			size
+		);
+	}
 
-		void* getMapping(Handle buffer)
-		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(buffer, Buffer::isNull);
+	void* getBufferMapping(Buffer const& buffer)
+	{
+		VIVIUM_CHECK_RESOURCE_EXISTS(buffer, Vivium::isBufferNull);
 
-			return buffer->mapping;
-		}
+		return buffer.mapping;
+	}
 			
-		Specification::Specification(uint64_t size, Usage usage)
-			: size(size), usage(usage)
-		{}
-			
-		Layout::Element::Element(uint32_t size, uint32_t offset)
-			: size(size), offset(offset)
-		{}
-
-		namespace Dynamic {
-			bool isNull(const Handle buffer)
-			{
-				return buffer->buffer == VK_NULL_HANDLE;
-			}
-
-			// Inclusive
-			void set(Handle buffer, const void* data, uint64_t suballocationStartIndex, uint64_t suballocationEndIndex) {
-				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(buffer, Buffer::Dynamic::isNull);
-
-				// Advance into data passed, just advance by size of each sub-allocation
-				uint64_t totalSourceAdvance = 0;
-
-				for (uint64_t i = suballocationStartIndex; i <= suballocationEndIndex; i++) {
-					VIVIUM_ASSERT(i < buffer->suballocationOffsets.size(), "Invalid suballocation end index, went OOBs");
-
-					std::memcpy(
-						reinterpret_cast<uint8_t*>(buffer->mapping)
-						+ buffer->suballocationOffsets[i],
-						reinterpret_cast<const uint8_t*>(data)
-						+ totalSourceAdvance,
-						buffer->suballocationSizes[i]
-					);
-
-					totalSourceAdvance += buffer->suballocationSizes[i];
-				}
-			}
-			
-			void* getMapping(Handle buffer)
-			{
-				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(buffer, Buffer::Dynamic::isNull);
-
-				return buffer->mapping;
-			}
-		}
+	BufferLayout::Element::Element(uint32_t size, uint32_t offset)
+		: size(size), offset(offset)
+	{}
 		
-		Layout Layout::fromTypes(const std::span<const Shader::DataType> types)
-		{
-			Layout layout;
+	BufferLayout BufferLayout::fromTypes(const std::span<const Shader::DataType> types)
+	{
+		BufferLayout layout;
 
-			layout.attributeDescriptions.resize(types.size());
-			layout.elements.resize(types.size());
+		layout.attributeDescriptions.resize(types.size());
+		layout.elements.resize(types.size());
 
-			uint32_t currentOffset = 0;
+		uint32_t currentOffset = 0;
 
-			for (uint32_t index = 0; index < types.size(); index++) {
-				Shader::DataType type = types[index];
-				uint32_t size_of_type = Shader::sizeOf(type);
-				VkFormat format_of_type = Shader::formatOf(type);
+		for (uint32_t index = 0; index < types.size(); index++) {
+			Shader::DataType type = types[index];
+			uint32_t size_of_type = Shader::sizeOf(type);
+			VkFormat format_of_type = Shader::formatOf(type);
 
-				VkVertexInputAttributeDescription attribute{};
-				// TODO: customiseable binding
-				attribute.binding = 0;
-				// Assuming passed in chronological order
-				attribute.location = index;
-				attribute.format = format_of_type;
-				attribute.offset = currentOffset;
+			VkVertexInputAttributeDescription attribute{};
+			// TODO: customiseable binding
+			attribute.binding = 0;
+			// Assuming passed in chronological order
+			attribute.location = index;
+			attribute.format = format_of_type;
+			attribute.offset = currentOffset;
 
-				layout.attributeDescriptions[index] = attribute;
-				layout.elements[index] = Layout::Element(size_of_type, currentOffset);
+			layout.attributeDescriptions[index] = attribute;
+			layout.elements[index] = BufferLayout::Element(size_of_type, currentOffset);
 
-				currentOffset += size_of_type;
-			}
-
-			// Current offset is now the stride
-			layout.bindingDescription.binding = 0;
-			// TODO: allow different vertex input methods
-			layout.bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-			layout.bindingDescription.stride = currentOffset;
-			layout.stride = currentOffset;
-
-			return layout;
+			currentOffset += size_of_type;
 		}
+
+		// Current offset is now the stride
+		layout.bindingDescription.binding = 0;
+		// TODO: allow different vertex input methods
+		layout.bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+		layout.bindingDescription.stride = currentOffset;
+		layout.stride = currentOffset;
+
+		return layout;
 	}
 }

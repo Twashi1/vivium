@@ -34,6 +34,45 @@ while (gameloop) {}
 Time::stop(command);
 ```
 
+
+## Metadata
+
+### Buffer
+
+`VkBuffer buffer`
+`void* mapping`
+	-> obtained from mapping memory
+	: required for setting data
+### Descriptor Layout
+
+`VkDescriptorSetLayout layout`
+`std::vector<Binding> bindings`
+	-> given by user
+	: required for creation of descriptor sets (can subvert easily, almost by coincidence)
+
+### Descriptor Set
+
+`VkDescriptorSet descriptorSet`
+
+## Framebuffer
+
+`VkImage, VkImageView, VkSampler, VkRenderPass, VkFramebuffer`
+`F32x2 dimensions`
+	-> given by user
+	: required for `beginRender` (no way around)
+`Texture::Format format`
+	-> given by user
+	: seems to be only required for creation of other objects (can subvert)
+
+### Pipeline
+
+`VkPipelineLayout, VkPipeline, VkRenderPass`
+### Shader
+
+`VkShaderModule shader`
+`VkShaderStageFlagBits flags`
+	-> given by user
+	: required in pipeline creation (can subvert)
 ## Examples
 
 Exemplar program
@@ -44,12 +83,18 @@ Exemplar program
 using namespace Vivium;
 
 int void main() {
-	Storage::Static::Pool pool = Storage::createPool(0x1000);
+	PoolStaticStorage pool = createPoolStaticStorage(0x1000);
 
 	Engine engine = createEngine(pool, EngineOptions{ ... });
 	Window primary = createWindow(pool, engine, WindowOptions{ ... });
 
 	Allocator allocator = createAllocator(pool, engine);
+
+	BufferReference reference = staticAllocatorSubmitBuffers(...);
+
+	allocate(allocator);
+
+	Buffer buffer = staticAllocatorConvertReference(reference);
 
 	beginFrame(engine, primary);
 	beginRender(primary);

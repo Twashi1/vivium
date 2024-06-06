@@ -2,96 +2,67 @@
 #include "../resource_manager.h"
 
 namespace Vivium {
-	namespace Texture {
-		bool Resource::isNull() const
-		{
-			return image == VK_NULL_HANDLE;
+	TextureSpecification TextureSpecification::fromImageFile(const char* imageFile, TextureFormat imageFormat, TextureFilter imageFilter)
+	{
+		TextureSpecification specification;
+
+		int stbi_format;
+
+		switch (imageFormat) {
+		case TextureFormat::RGBA:
+			stbi_format = STBI_rgb_alpha; break;
+		case TextureFormat::MONOCHROME:
+			stbi_format = STBI_grey; break;
+		default:
+			stbi_format = STBI_default;
+
+			VIVIUM_LOG(Log::FATAL, "Invalid image format");
+
+			break;
 		}
 
-		void Resource::drop(Engine::Handle engine)
-		{
-			vkDestroySampler(engine->device, sampler, nullptr);
-			vkDestroyImageView(engine->device, view, nullptr);
-			vkDestroyImage(engine->device, image, nullptr);
-		}
+		uint8_t* data = stbi_load(imageFile, &specification.width, &specification.height, &specification.channels, stbi_format);
+		uint64_t imageSize = static_cast<uint64_t>(specification.width)
+			* static_cast<uint64_t>(specification.height)
+			* static_cast<uint64_t>(specification.channels);
+
+		// Copy image data into specification
+		specification.data = std::vector<uint8_t>(imageSize);
+		std::memcpy(specification.data.data(), data, imageSize);
+
+		specification.imageFormat = imageFormat;
+		specification.imageFilter = imageFilter;
+
+		stbi_image_free(data);
+
+		return specification;
+	}
 		
-		Specification::Specification(const std::vector<uint8_t>& data, int width, int height, int channels, Format imageFormat, Filter imageFilter)
-			: data(data), width(width), height(height), channels(channels), imageFormat(imageFormat), imageFilter(imageFilter)
-		{}
-		
-		Specification Specification::fromImageFile(const char* imageFile, Format imageFormat, Filter imageFilter)
-		{
-			Specification specification;
+	TextureSpecification TextureSpecification::fromFont(Font::Font font, TextureFormat imageFormat, TextureFilter imageFilter)
+	{
+		Specification specification;
 
-			int stbi_format;
+		// TODO; function for getting channels/stbi_image_format
+		int stbi_format;
 
-			switch (imageFormat) {
-			case Format::RGBA:
-				stbi_format = STBI_rgb_alpha; break;
-			case Format::MONOCHROME:
-				stbi_format = STBI_grey; break;
-			default:
-				stbi_format = STBI_default;
+		switch (imageFormat) {
+		case TextureFormat::RGBA:
+			stbi_format = STBI_rgb_alpha; break;
+		case TextureFormat::MONOCHROME:
+			stbi_format = STBI_grey; break;
+		default:
+			VIVIUM_LOG(Log::FATAL, "Invalid image format");
 
-				VIVIUM_LOG(Log::FATAL, "Invalid image format");
-
-				break;
-			}
-
-			uint8_t* data = stbi_load(imageFile, &specification.width, &specification.height, &specification.channels, stbi_format);
-			uint64_t imageSize = static_cast<uint64_t>(specification.width)
-				* static_cast<uint64_t>(specification.height)
-				* static_cast<uint64_t>(specification.channels);
-
-			// Copy image data into specification
-			specification.data = std::vector<uint8_t>(imageSize);
-			std::memcpy(specification.data.data(), data, imageSize);
-
-			specification.imageFormat = imageFormat;
-			specification.imageFilter = imageFilter;
-
-			stbi_image_free(data);
-
-			return specification;
+			break;
 		}
-		
-		Specification Specification::fromFont(Font::Font font, Format imageFormat, Filter imageFilter)
-		{
-			Specification specification;
 
-			// TODO; function for getting channels/stbi_image_format
-			int stbi_format;
+		specification.data = font.data;
+		specification.width = font.imageDimensions.x;
+		specification.height = font.imageDimensions.y;
+		specification.channels = stbi_format;
+		specification.imageFilter = imageFilter;
+		specification.imageFormat = imageFormat;
 
-			switch (imageFormat) {
-			case Format::RGBA:
-				stbi_format = STBI_rgb_alpha; break;
-			case Format::MONOCHROME:
-				stbi_format = STBI_grey; break;
-			default:
-				VIVIUM_LOG(Log::FATAL, "Invalid image format");
-
-				break;
-			}
-
-			specification.data = font.data;
-			specification.width = font.imageDimensions.x;
-			specification.height = font.imageDimensions.y;
-			specification.channels = stbi_format;
-			specification.imageFilter = imageFilter;
-			specification.imageFormat = imageFormat;
-
-			return specification;
-		}
-		
-		void drop(ResourceManager::Static::Handle manager, Texture::Handle texture, Engine::Handle engine)
-		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
-			VIVIUM_CHECK_HANDLE_EXISTS(manager);
-			VIVIUM_CHECK_HANDLE_EXISTS(texture);
-
-			vkDestroyImage(engine->device, texture->image, nullptr);
-			vkDestroyImageView(engine->device, texture->view, nullptr);
-			vkDestroySampler(engine->device, texture->sampler, nullptr);
-		}
+		return specification;
 	}
 }

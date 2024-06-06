@@ -2,40 +2,33 @@
 #include "../resource_manager.h"
 
 namespace Vivium {
-	namespace Pipeline {
-		bool isNull(const Handle pipeline)
-		{
-			return pipeline->pipeline == VK_NULL_HANDLE;
-		}
+	PipelineSpecification PipelineSpecification::fromWindow(const std::span<const ShaderReference> shaders, const BufferLayout& bufferLayout, const std::span<const DescriptorLayoutReference> descriptorLayouts, const std::span<const Uniform::PushConstant> pushConstants, Engine::Handle engine, Window::Handle window)
+	{
+		PipelineSpecification specification;
 
-		Specification Specification::fromWindow(const std::span<const Shader::Handle> shaders, const Buffer::Layout bufferLayout, const std::span<const DescriptorLayout::Handle> descriptorLayouts, const std::span<const Uniform::PushConstant> pushConstants, Engine::Handle engine, Window::Handle window)
-		{
-			Specification specification;
+		specification.shaders = std::vector<ShaderReference>(shaders.begin(), shaders.end());
+		specification.bufferLayout = bufferLayout;
+		specification.descriptorLayouts = std::vector<DescriptorLayoutReference>(descriptorLayouts.begin(), descriptorLayouts.end());
+		specification.pushConstants = std::vector<Uniform::PushConstant>(pushConstants.begin(), pushConstants.end());
+		specification.engine = engine;
+		specification.target = _RenderTarget::WINDOW;
+		specification.sampleCount = window->multisampleCount;
 
-			specification.shaders = std::vector<Shader::Handle>(shaders.begin(), shaders.end());
-			specification.bufferLayout = bufferLayout;
-			specification.descriptorLayouts = std::vector<DescriptorLayout::Handle>(descriptorLayouts.begin(), descriptorLayouts.end());
-			specification.pushConstants = std::vector<Uniform::PushConstant>(pushConstants.begin(), pushConstants.end());
-			specification.engine = engine;
-			specification.target = Target::WINDOW;
-			specification.sampleCount = window->multisampleCount;
-
-			return specification;
-		}
+		return specification;
+	}
 		
-		Specification Specification::fromFramebuffer(const std::span<const Shader::Handle> shaders, const Buffer::Layout bufferLayout, const std::span<const DescriptorLayout::Handle> descriptorLayouts, const std::span<const Uniform::PushConstant> pushConstants, Framebuffer::Handle framebuffer, int multisampleCount)
-		{
-			Specification specification;
+	PipelineSpecification PipelineSpecification::fromFramebuffer(const std::span<const ShaderReference> shaders, const BufferLayout& bufferLayout, const std::span<const DescriptorLayoutReference> descriptorLayouts, const std::span<const Uniform::PushConstant> pushConstants, FramebufferReference framebuffer, int multisampleCount)
+	{
+		PipelineSpecification specification;
 
-			specification.shaders = std::vector<Shader::Handle>(shaders.begin(), shaders.end());
-			specification.bufferLayout = bufferLayout;
-			specification.descriptorLayouts = std::vector<DescriptorLayout::Handle>(descriptorLayouts.begin(), descriptorLayouts.end());
-			specification.pushConstants = std::vector<Uniform::PushConstant>(pushConstants.begin(), pushConstants.end());
-			specification.framebuffer = framebuffer;
-			specification.target = Target::FRAMEBUFFER;
-			specification.sampleCount = static_cast<VkSampleCountFlagBits>(multisampleCount);
+		specification.shaders = std::vector<ShaderReference>(shaders.begin(), shaders.end());
+		specification.bufferLayout = bufferLayout;
+		specification.descriptorLayouts = std::vector<DescriptorLayoutReference>(descriptorLayouts.begin(), descriptorLayouts.end());
+		specification.pushConstants = std::vector<Uniform::PushConstant>(pushConstants.begin(), pushConstants.end());
+		specification.framebuffer = framebuffer;
+		specification.target = _RenderTarget::FRAMEBUFFER;
+		specification.sampleCount = static_cast<VkSampleCountFlagBits>(multisampleCount);
 
-			return specification;
-		}
+		return specification;
 	}
 }

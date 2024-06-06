@@ -11,8 +11,6 @@
 #include "stb_image.h"
 #include "stb_image_write.h"
 
-#define VIVIUM_NULL_HANDLE nullptr
-
 #include <format>
 #include <iostream>
 #include <string>
@@ -21,6 +19,7 @@
 #include "error/log.h"
 #include "vulkan/vk_enum_string_helper.h"
 
+#define VIVIUM_NULL_HANDLE nullptr
 #define VIVIUM_FORMAT(msg, ...) std::format(msg, __VA_ARGS__)
 #define VIVIUM_DETAIL(msg, ...) std::format("[{}] [{}:{}] {}",				\
 	Vivium::Time::getTimestampString(std::chrono::system_clock::now()),		\
@@ -35,7 +34,8 @@
 #define VIVIUM_ASSERT(condition, msg, ...)						((void)0)
 #define VIVIUM_VK_CHECK(command, message)						command
 #define VIVIUM_CHECK_HANDLE_EXISTS(handle)						((void)0)
-#define VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle, func)	((void)0)
+#define VIVIUM_CHECK_RESOURCE_EXISTS(handle, func)				((void)0)
+#define VIVIUM_NULLPTR_CHECK(handle, command)					command
 #else
 #define VIVIUM_IS_DEBUG 1
 #define VIVIUM_DEBUG_ONLY(statement) statement
@@ -55,11 +55,9 @@
 			string_VkResult(result),					 \
 			message										 \
 		)
-#define VIVIUM_CHECK_HANDLE_EXISTS(handle) \
-	VIVIUM_ASSERT(handle != VIVIUM_NULL_HANDLE, "Attempted to use null handle")
-#define VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle, func)								\
-	VIVIUM_CHECK_HANDLE_EXISTS(handle);												\
-	VIVIUM_ASSERT(!func(handle), "Attempted to use null resource")
+#define VIVIUM_CHECK_HANDLE_EXISTS(handle) VIVIUM_ASSERT(handle != VIVIUM_NULL_HANDLE, "Attempted to use null handle")
+#define VIVIUM_CHECK_RESOURCE_EXISTS(resource, func) VIVIUM_ASSERT(!func(resource), "Attempted to use null resource")
+#define VIVIUM_NULLPTR_CHECK(handle, command) if (handle == VK_NULL_HANDLE) { VIVIUM_ASSERT(handle == VK_NULL_HANDLE, "Passed nullptr handle"); } else command
 #endif
 
 #define VIVIUM_GLSLC_PATH "external/vulkan/Bin/glslc.exe"

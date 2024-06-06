@@ -3,28 +3,24 @@
 #include "descriptor_layout.h"
 
 namespace Vivium {
-	namespace DescriptorSet {
-		struct Resource {
-			VkDescriptorSet descriptorSet;
-		};
+	struct DescriptorSet {
+		VkDescriptorSet descriptorSet;
+	};
 
-		struct Specification {
-			DescriptorLayout::Handle layout;
-			std::vector<Uniform::Data> uniforms;
+	struct DescriptorSetReference {
+		uint64_t referenceIndex;
+	};
 
-			Specification() = default;
-			Specification(DescriptorLayout::Handle layout, const std::span<const Uniform::Data> uniforms);
-		};
+	struct DescriptorSetSpecification {
+		DescriptorLayout layout;
+		std::vector<Uniform::Data> uniforms;
+	};
 
-		typedef Resource* Handle;
-		typedef Resource* PromisedHandle;
+	bool isDescriptorSetNull(DescriptorSet const& set);
 
-		bool isNull(const Handle set);
-
-		template <Storage::StorageType StorageType>
-		void drop(StorageType* allocator, Handle handle) {
-			// No need to do anything else, descriptor set has no destructor
-			Storage::dropResource(allocator, handle);
-		}
+	template <Storage::StorageType StorageType>
+	void drop(StorageType* allocator, DescriptorSet& set) {
+		// No need to do anything else, descriptor set has no destructor
+		Storage::dropResource(allocator, &set);
 	}
 }

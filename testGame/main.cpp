@@ -117,16 +117,16 @@ struct State {
 };
 
 void _submitCharacter(State& state) {
-	state.character.batch = Batch::submit(&state.storage, state.engine, state.manager, Batch::Specification(4, 6, Buffer::Layout::fromTypes(std::vector<Shader::DataType>({ Shader::DataType::VEC2, Shader::DataType::VEC2 }))));
+	state.character.batch = Batch::submit(&state.storage, state.engine, state.manager, Batch::PipelineSpecification(4, 6, Buffer::Layout::fromTypes(std::vector<Shader::DataType>({ Shader::DataType::VEC2, Shader::DataType::VEC2 }))));
 	state.character.fragmentShader = Shader::create(&state.storage, state.engine, Shader::compile(Shader::Stage::FRAGMENT, "../../../testGame/res/character.frag", "../../../testGame/res/character_frag.spv"));
 	state.character.vertexShader = Shader::create(&state.storage, state.engine, Shader::compile(Shader::Stage::VERTEX, "../../../testGame/res/character.vert", "../../../testGame/res/character_vert.spv"));
 
-	ResourceManager::Static::submit(state.manager, &state.character.uniformBuffer, MemoryType::UNIFORM, std::vector<Buffer::Specification>({ Buffer::Specification(sizeof(CharacterUniformData), Buffer::Usage::UNIFORM) }));
+	ResourceManager::Static::submit(state.manager, &state.character.uniformBuffer, MemoryType::UNIFORM, std::vector<Buffer::PipelineSpecification>({ Buffer::PipelineSpecification(sizeof(CharacterUniformData), Buffer::Usage::UNIFORM) }));
 
-	state.character.descriptorLayout = DescriptorLayout::create(&state.storage, state.engine, DescriptorLayout::Specification(std::vector<Uniform::Binding>({ Uniform::Binding(Shader::Stage::VERTEX, 0, Uniform::Type::UNIFORM_BUFFER), Uniform::Binding(Shader::Stage::FRAGMENT, 1, Uniform::Type::TEXTURE) })));
+	state.character.descriptorLayout = DescriptorLayout::create(&state.storage, state.engine, DescriptorLayout::PipelineSpecification(std::vector<Uniform::Binding>({ Uniform::Binding(Shader::Stage::VERTEX, 0, Uniform::Type::UNIFORM_BUFFER), Uniform::Binding(Shader::Stage::FRAGMENT, 1, Uniform::Type::TEXTURE) })));
 
-	ResourceManager::Static::submit(state.manager, &state.character.descriptorSet, std::vector<DescriptorSet::Specification>({
-		DescriptorSet::Specification(state.character.descriptorLayout, std::vector<Uniform::Data>({
+	ResourceManager::Static::submit(state.manager, &state.character.descriptorSet, std::vector<DescriptorSet::PipelineSpecification>({
+		DescriptorSet::PipelineSpecification(state.character.descriptorLayout, std::vector<Uniform::Data>({
 			Uniform::Data::fromBuffer(state.character.uniformBuffer, sizeof(CharacterUniformData), 0),
 			Uniform::Data::fromTexture(state.textureAtlas)
 		}))
@@ -134,8 +134,8 @@ void _submitCharacter(State& state) {
 
 	ResourceManager::Static::submit(state.manager,
 		&state.character.pipeline,
-		std::vector<Pipeline::Specification>({
-			Pipeline::Specification::fromWindow(
+		std::vector<Pipeline::PipelineSpecification>({
+			Pipeline::PipelineSpecification::fromWindow(
 				std::vector<Shader::Handle>({ state.character.fragmentShader, state.character.vertexShader }),
 				Buffer::Layout::fromTypes(std::vector<Shader::DataType>({ Shader::DataType::VEC2, Shader::DataType::VEC2 })),
 				std::vector<DescriptorLayout::Handle>({ state.character.descriptorLayout }),
@@ -149,24 +149,24 @@ void _submitCharacter(State& state) {
 }
 
 void _submitSpriteRenderer(State& state) {
-	state.spriteRenderer.batch = Batch::submit(&state.storage, state.engine, state.manager, Batch::Specification(4, 6, Buffer::Layout::fromTypes(std::vector<Shader::DataType>({ Shader::DataType::VEC2, Shader::DataType::VEC2 }))));
+	state.spriteRenderer.batch = Batch::submit(&state.storage, state.engine, state.manager, Batch::PipelineSpecification(4, 6, Buffer::Layout::fromTypes(std::vector<Shader::DataType>({ Shader::DataType::VEC2, Shader::DataType::VEC2 }))));
 	state.spriteRenderer.fragmentShader = Shader::create(&state.storage, state.engine, Shader::compile(Shader::Stage::FRAGMENT, "../../../testGame/res/creature.frag", "../../../testGame/res/creature_frag.spv"));
 	state.spriteRenderer.vertexShader = Shader::create(&state.storage, state.engine, Shader::compile(Shader::Stage::VERTEX, "../../../testGame/res/creature.vert", "../../../testGame/res/creature_vert.spv"));
 
-	ResourceManager::Static::submit(state.manager, &state.spriteRenderer.storageBuffer, MemoryType::UNIFORM, std::vector<Buffer::Specification>({ Buffer::Specification(SPRITE_LIMIT * sizeof(SpriteUniformData), Buffer::Usage::STORAGE) }));
+	ResourceManager::Static::submit(state.manager, &state.spriteRenderer.storageBuffer, MemoryType::UNIFORM, std::vector<Buffer::PipelineSpecification>({ Buffer::PipelineSpecification(SPRITE_LIMIT * sizeof(SpriteUniformData), Buffer::Usage::STORAGE) }));
 
 	state.spriteRenderer.descriptorLayout = DescriptorLayout::create(
 		&state.storage,
 		state.engine,
-		DescriptorLayout::Specification(std::vector<Uniform::Binding>({
+		DescriptorLayout::PipelineSpecification(std::vector<Uniform::Binding>({
 			Uniform::Binding(Shader::Stage::FRAGMENT, 0, Uniform::Type::TEXTURE),
 			Uniform::Binding(Shader::Stage::VERTEX, 1, Uniform::Type::STORAGE_BUFFER),
 		})));
 
 	ResourceManager::Static::submit(state.manager,
 		&state.spriteRenderer.descriptorSet,
-		std::vector<DescriptorSet::Specification>({
-		DescriptorSet::Specification(state.spriteRenderer.descriptorLayout, std::vector<Uniform::Data>({
+		std::vector<DescriptorSet::PipelineSpecification>({
+		DescriptorSet::PipelineSpecification(state.spriteRenderer.descriptorLayout, std::vector<Uniform::Data>({
 			Uniform::Data::fromTexture(state.textureAtlas),
 			Uniform::Data::fromBuffer(state.spriteRenderer.storageBuffer, SPRITE_LIMIT * sizeof(SpriteUniformData), 0)
 		}))
@@ -174,8 +174,8 @@ void _submitSpriteRenderer(State& state) {
 
 	ResourceManager::Static::submit(state.manager,
 		&state.spriteRenderer.pipeline,
-		std::vector<Pipeline::Specification>({
-			Pipeline::Specification::fromWindow(
+		std::vector<Pipeline::PipelineSpecification>({
+			Pipeline::PipelineSpecification::fromWindow(
 				std::vector<Shader::Handle>({ state.spriteRenderer.fragmentShader, state.spriteRenderer.vertexShader }),
 				Buffer::Layout::fromTypes(std::vector<Shader::DataType>({ Shader::DataType::VEC2, Shader::DataType::VEC2 })),
 				std::vector<DescriptorLayout::Handle>({ state.spriteRenderer.descriptorLayout }),
@@ -188,14 +188,14 @@ void _submitSpriteRenderer(State& state) {
 
 void _submitSky(State& state)
 {
-	state.skyGraphics.batch = Batch::submit(&state.storage, state.engine, state.manager, Batch::Specification(4, 6, Buffer::Layout::fromTypes(std::vector<Shader::DataType>({ Shader::DataType::VEC2, Shader::DataType::VEC2 }))));
+	state.skyGraphics.batch = Batch::submit(&state.storage, state.engine, state.manager, Batch::PipelineSpecification(4, 6, Buffer::Layout::fromTypes(std::vector<Shader::DataType>({ Shader::DataType::VEC2, Shader::DataType::VEC2 }))));
 	state.skyGraphics.fragmentShader = Shader::create(&state.storage, state.engine, Shader::compile(Shader::Stage::FRAGMENT, "../../../testGame/res/sky.frag", "../../../testGame/res/sky_frag.spv"));
 	state.skyGraphics.vertexShader = Shader::create(&state.storage, state.engine, Shader::compile(Shader::Stage::VERTEX, "../../../testGame/res/sky.vert", "../../../testGame/res/sky_vert.spv"));
 
 	ResourceManager::Static::submit(state.manager,
 		&state.skyGraphics.pipeline,
-		std::vector<Pipeline::Specification>({
-			Pipeline::Specification::fromWindow(
+		std::vector<Pipeline::PipelineSpecification>({
+			Pipeline::PipelineSpecification::fromWindow(
 				std::vector<Shader::Handle>({ state.skyGraphics.fragmentShader, state.skyGraphics.vertexShader }),
 				Buffer::Layout::fromTypes(std::vector<Shader::DataType>({ Shader::DataType::VEC2, Shader::DataType::VEC2 })),
 				std::vector<DescriptorLayout::Handle>({}),
@@ -207,7 +207,7 @@ void _submitSky(State& state)
 }
 
 void _submitScore(State& state) {
-	state.score.text = GUI::Visual::Text::submit(&state.storage, state.manager, state.engine, state.guiContext, GUI::Visual::Text::Specification(64, state.font));
+	state.score.text = GUI::Visual::Text::submit(&state.storage, state.manager, state.engine, state.guiContext, GUI::Visual::Text::PipelineSpecification(64, state.font));
 	state.score.text->base->properties = GUI::Properties(
 		F32x2(0.0f),
 		F32x2(0.0f),
@@ -498,7 +498,7 @@ void initialise(State& state) {
 	state.guiContext = GUI::Visual::Context::submit(&state.storage, state.manager, state.engine, state.window);
 	_submitSky(state);
 
-	ResourceManager::Static::submit(state.manager, &state.textureAtlas, std::vector<Texture::Specification>({ Texture::Specification::fromImageFile("../../../testGame/res/game.png", Texture::Format::RGBA, Texture::Filter::NEAREST) }));
+	ResourceManager::Static::submit(state.manager, &state.textureAtlas, std::vector<Texture::PipelineSpecification>({ Texture::PipelineSpecification::fromImageFile("../../../testGame/res/game.png", Texture::Format::RGBA, Texture::Filter::NEAREST) }));
 	
 	_submitCharacter(state);
 	_submitScore(state);

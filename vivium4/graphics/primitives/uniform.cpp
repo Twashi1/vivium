@@ -1,58 +1,36 @@
 #include "uniform.h"
 
 namespace Vivium {
-	namespace Uniform {
-		Data Data::fromBuffer(Buffer::Handle buffer, uint64_t size, uint64_t offset)
-		{
-			Data data;
+	UniformData UniformData::fromBuffer(BufferReference buffer, uint64_t size, uint64_t offset)
+	{
+		UniformData data;
 
-			data.bufferData = Data::BufferData(buffer, size, offset);
+		data.bufferData = UniformData::BufferData(buffer, size, offset);
 
-			return data;
-		}
+		return data;
+	}
 
-		Data Data::fromDynamicBuffer(Buffer::Dynamic::Handle buffer, uint64_t size, uint64_t offset)
-		{
-			Data data;
+	UniformData UniformData::fromTexture(TextureReference texture)
+	{
+		UniformData data;
 
-			data.dynamicBufferData = Data::DynamicBufferData(buffer, size, offset);
-
-			return data;
-		}
-
-		Data Data::fromTexture(Texture::Handle texture)
-		{
-			Data data;
-
-			data.textureData = Data::TextureData(texture);
+		data.textureData = UniformData::TextureData(texture);
 				
-			return data;
-		}
+		return data;
+	}
 
-		Data Data::fromFramebuffer(Framebuffer::Handle framebuffer)
-		{
-			Data data;
+	UniformData UniformData::fromFramebuffer(FramebufferReference framebuffer)
+	{
+		UniformData data;
 
-			data.framebufferData = Data::FramebufferData(framebuffer);
+		data.framebufferData = UniformData::FramebufferData(framebuffer);
 
-			return data;
-		}
+		return data;
+	}
 		
-		PushConstant::PushConstant(Shader::Stage stage, uint32_t size, uint32_t offset)
-		{
-			range = VkPushConstantRange{};
-			range.stageFlags = static_cast<VkShaderStageFlags>(stage);
-			range.offset = offset;
-			range.size = size;
-		}
-		
-		Binding::Binding(Shader::Stage stage, uint32_t slot, Type type)
-			: stage(stage), slot(slot), type(type)
-		{}
-
-		VkDescriptorType descriptorType(Type type)
-		{
-			return static_cast<VkDescriptorType>(static_cast<uint32_t>(type) & 0xffffffff);
-		}
+	VkDescriptorType _descriptorType(UniformType type)
+	{
+		// TODO: different style of cast elsewhere
+		return static_cast<VkDescriptorType>(static_cast<uint32_t>(type) & 0xffffffff);
 	}
 }
