@@ -9,9 +9,9 @@ namespace Vivium {
 		struct Specification {
 			uint64_t vertexCount, indexCount;
 
-			Buffer::Layout bufferLayout;
+			BufferLayout bufferLayout;
 
-			Specification(uint64_t vertexCount, uint64_t indexCount, Buffer::Layout bufferLayout);
+			Specification(uint64_t vertexCount, uint64_t indexCount, BufferLayout bufferLayout);
 			Specification() = default;
 		};
 
@@ -19,22 +19,20 @@ namespace Vivium {
 			uint64_t vertexBufferIndex, indexBufferIndex, verticesSubmitted;
 			uint32_t lastSubmissionIndexCount;
 
-			Buffer::Layout bufferLayout;
+			BufferLayout bufferLayout;
 
-			Buffer::Handle vertexStaging, indexStaging, vertexDevice, indexDevice;
+			Ref<Buffer> vertexStaging, indexStaging, vertexDevice, indexDevice;
 		};
 
 		typedef Resource* Handle;
 		typedef Resource* PromisedHandle;
 
-		bool isNull(const Handle handle);
-
 		void submitElement(Handle handle, uint64_t elementIndex, const std::span<const uint8_t> data);
 		void submitRectangle(Handle handle, uint64_t elementIndex, float left, float bottom, float right, float top);
 		void endShape(Handle handle, uint64_t vertexCount, const std::span<const uint16_t> indices);
 
-		Buffer::Handle vertexBuffer(Batch::Handle batch);
-		Buffer::Handle indexBuffer(Batch::Handle batch);
+		Buffer const& vertexBuffer(Batch::Handle batch);
+		Buffer const& indexBuffer(Batch::Handle batch);
 		// Returns index count of last endSubmission
 		uint32_t indexCount(Batch::Handle batch);
 
@@ -43,13 +41,10 @@ namespace Vivium {
 		template <Storage::StorageType StorageType>
 		void drop(StorageType* allocator, Handle handle, Engine::Handle engine)
 		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
-			VIVIUM_CHECK_HANDLE_EXISTS(handle);
-
-			Buffer::drop(VIVIUM_NULL_STORAGE, handle->vertexStaging, engine);
-			Buffer::drop(VIVIUM_NULL_STORAGE, handle->vertexDevice, engine);
-			Buffer::drop(VIVIUM_NULL_STORAGE, handle->indexStaging, engine);
-			Buffer::drop(VIVIUM_NULL_STORAGE, handle->indexDevice, engine);
+			dropBuffer(VIVIUM_NULL_STORAGE, handle->vertexStaging.resource, engine);
+			dropBuffer(VIVIUM_NULL_STORAGE, handle->vertexDevice.resource, engine);
+			dropBuffer(VIVIUM_NULL_STORAGE, handle->indexStaging.resource, engine);
+			dropBuffer(VIVIUM_NULL_STORAGE, handle->indexDevice.resource, engine);
 
 			Storage::dropResource(allocator, handle);
 		}
@@ -57,29 +52,27 @@ namespace Vivium {
 		template <Storage::StorageType StorageType>
 		PromisedHandle submit(StorageType* allocator, Engine::Handle engine, ResourceManager::Static::Handle manager, Specification specification)
 		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
-
 			PromisedHandle handle = Storage::allocateResource<Resource>(allocator);
 
-			std::array<Buffer::Handle, 2> staging;
+			std::array<BufferReference, 2> staging;
 
-			ResourceManager::Static::submit(manager, staging.data(), MemoryType::STAGING, std::vector<Buffer::Specification>({
-				Buffer::Specification(specification.vertexCount * specification.bufferLayout.stride, Buffer::Usage::STAGING),
-				Buffer::Specification(specification.indexCount * sizeof(uint16_t), Buffer::Usage::STAGING)
+			ResourceManager::Static::submit(manager, staging.data(), MemoryType::STAGING, std::vector<BufferSpecification>({
+				BufferSpecification(specification.vertexCount * specification.bufferLayout.stride, BufferUsage::STAGING),
+				BufferSpecification(specification.indexCount * sizeof(uint16_t), BufferUsage::STAGING)
 				}));
 
-			std::array<Buffer::Handle, 2> device;
+			std::array<BufferReference, 2> device;
 
-			ResourceManager::Static::submit(manager, device.data(), MemoryType::DEVICE, std::vector<Buffer::Specification>({
-				Buffer::Specification(specification.vertexCount * specification.bufferLayout.stride, Buffer::Usage::VERTEX),
-				Buffer::Specification(specification.indexCount * sizeof(uint16_t), Buffer::Usage::INDEX)
+			ResourceManager::Static::submit(manager, device.data(), MemoryType::DEVICE, std::vector<BufferSpecification>({
+				BufferSpecification(specification.vertexCount * specification.bufferLayout.stride, BufferUsage::VERTEX),
+				BufferSpecification(specification.indexCount * sizeof(uint16_t), BufferUsage::INDEX)
 				}));
 
-			handle->vertexStaging = staging[0];
-			handle->indexStaging = staging[1];
+			handle->vertexStaging.reference = staging[0];
+			handle->indexStaging.reference = staging[1];
 
-			handle->vertexDevice = device[0];
-			handle->indexDevice = device[1];
+			handle->vertexDevice.reference = device[0];
+			handle->indexDevice.reference = device[1];
 
 			handle->vertexBufferIndex = 0;
 			handle->indexBufferIndex = 0;
@@ -90,5 +83,7 @@ namespace Vivium {
 
 			return handle;
 		}
+
+		void setup(Handle handle, ResourceManager::Static::Handle manager);
 	}
 }

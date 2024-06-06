@@ -3,6 +3,10 @@
 
 - Offset before size on `PushConstant`, update old systems
 - Double deconstructor call on `Storage::dropResource`
+- Update `Batch` and `GUI` to new system
+	- Remember `Batch::setup` now required to be called
+- Not all `drop` methods have correct naming convention
+- Some clean-up method on `ResourceManager::Static` that drops all resources once user is ready
 ## Core
 
 - Test multi-window draws

@@ -2,18 +2,13 @@
 
 namespace Vivium {
 	namespace Batch {
-		Specification::Specification(uint64_t vertexCount, uint64_t indexCount, Buffer::Layout bufferLayout)
+		Specification::Specification(uint64_t vertexCount, uint64_t indexCount, BufferLayout bufferLayout)
 			: vertexCount(vertexCount), indexCount(indexCount), bufferLayout(bufferLayout)
 		{}
 
-		bool isNull(const Handle handle)
-		{
-			return handle->vertexStaging == VK_NULL_HANDLE;
-		}
-
 		void submitElement(Handle handle, uint64_t elementIndex, const std::span<const uint8_t> data)
 		{
-			const Buffer::Layout::Element& element = handle->bufferLayout.elements[elementIndex];
+			const BufferLayout::Element& element = handle->bufferLayout.elements[elementIndex];
 
 			// Number of instances of element to be submitted
 			uint64_t elementCount = data.size_bytes() / element.size;
@@ -27,7 +22,7 @@ namespace Vivium {
 				uint64_t vertexIndex = firstElementIndex + handle->bufferLayout.stride * i;
 
 				// Copy data from element data to vertex mapping
-				Buffer::set(handle->vertexStaging, vertexIndex, data.data() + elementDataIndex * element.size, element.size);
+				setBuffer(handle->vertexStaging.resource, vertexIndex, data.data() + elementDataIndex * element.size, element.size);
 
 				++elementDataIndex;
 			}
@@ -47,7 +42,7 @@ namespace Vivium {
 
 		void endShape(Handle handle, uint64_t vertexCount, const std::span<const uint16_t> indicies)
 		{
-			uint16_t* indexMapping = reinterpret_cast<uint16_t*>(Buffer::getMapping(handle->indexStaging));
+			uint16_t* indexMapping = reinterpret_cast<uint16_t*>(getBufferMapping(handle->indexStaging.resource));
 
 			for (uint64_t i = 0; i < indicies.size(); i++) {
 				indexMapping[handle->indexBufferIndex + i] = static_cast<uint16_t>(indicies[i] + handle->verticesSubmitted);
@@ -58,24 +53,18 @@ namespace Vivium {
 			handle->verticesSubmitted += vertexCount;
 		}
 
-		Buffer::Handle vertexBuffer(Batch::Handle batch)
+		Buffer const& vertexBuffer(Batch::Handle batch)
 		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(batch, Batch::isNull);
-
-			return batch->vertexDevice;
+			return batch->vertexDevice.resource;
 		}
 
-		Buffer::Handle indexBuffer(Batch::Handle batch)
+		Buffer const& indexBuffer(Batch::Handle batch)
 		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(batch, Batch::isNull);
-
-			return batch->indexDevice;
+			return batch->indexDevice.resource;
 		}
 
 		uint32_t indexCount(Batch::Handle batch)
 		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(batch, Batch::isNull);
-
 			return batch->lastSubmissionIndexCount;
 		}
 
@@ -90,6 +79,14 @@ namespace Vivium {
 			handle->indexBufferIndex = 0;
 			handle->vertexBufferIndex = 0;
 			handle->verticesSubmitted = 0;
+		}
+		
+		void setup(Handle handle, ResourceManager::Static::Handle manager)
+		{
+			ResourceManager::Static::getReference(manager, handle->vertexStaging);
+			ResourceManager::Static::getReference(manager, handle->vertexDevice);
+			ResourceManager::Static::getReference(manager, handle->indexStaging);
+			ResourceManager::Static::getReference(manager, handle->indexDevice);
 		}
 	}
 }

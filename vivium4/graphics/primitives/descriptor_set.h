@@ -12,8 +12,8 @@ namespace Vivium {
 	};
 
 	struct DescriptorSetSpecification {
-		DescriptorLayout layout;
-		std::vector<Uniform::Data> uniforms;
+		DescriptorLayoutReference layout;
+		std::vector<UniformData> uniforms;
 	};
 
 	bool isDescriptorSetNull(DescriptorSet const& set);

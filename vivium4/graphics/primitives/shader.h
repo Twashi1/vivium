@@ -59,33 +59,6 @@ namespace Vivium {
 		uint64_t referenceIndex;
 	};
 
-	// TODO: move to resource manager
-	/*template <Storage::StorageType StorageType>
-	Handle create(StorageType* allocator, Engine::Handle engine, Specification specification) {
-		VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
-
-		Handle handle = Storage::allocateResource<Resource>(allocator);
-
-		{
-			handle->flags = static_cast<VkShaderStageFlagBits>(specification.stage);
-
-			VkShaderModuleCreateInfo shaderCreateInfo{};
-			shaderCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-			shaderCreateInfo.codeSize = specification.length;
-			shaderCreateInfo.pCode = reinterpret_cast<const uint32_t*>(specification.code.c_str());
-
-			VIVIUM_VK_CHECK(vkCreateShaderModule(
-				engine->device,
-				&shaderCreateInfo,
-				nullptr,
-				&handle->shader
-			), "Failed to create shader module"
-			);
-		}
-
-		return handle;
-	}*/
-
 	template <Storage::StorageType StorageType>
 	void drop(StorageType* allocator, Shader& shader, Engine::Handle engine) {
 		vkDestroyShaderModule(engine->device, shader->shader, nullptr);
@@ -94,5 +67,5 @@ namespace Vivium {
 	}
 
 	// TODO: returning the specification is convenient, but promotes bad practice
-	ShaderSpecification compile(ShaderStage stage, const char* sourceFilename, const char* destFilename);
+	ShaderSpecification compileShader(ShaderStage stage, const char* sourceFilename, const char* destFilename);
 }

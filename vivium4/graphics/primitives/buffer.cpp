@@ -34,7 +34,7 @@ namespace Vivium {
 		: size(size), offset(offset)
 	{}
 		
-	BufferLayout BufferLayout::fromTypes(const std::span<const Shader::DataType> types)
+	BufferLayout BufferLayout::fromTypes(const std::span<const ShaderDataType> types)
 	{
 		BufferLayout layout;
 
@@ -44,9 +44,9 @@ namespace Vivium {
 		uint32_t currentOffset = 0;
 
 		for (uint32_t index = 0; index < types.size(); index++) {
-			Shader::DataType type = types[index];
-			uint32_t size_of_type = Shader::sizeOf(type);
-			VkFormat format_of_type = Shader::formatOf(type);
+			ShaderDataType type = types[index];
+			uint32_t size_of_type = _sizeOfShaderDataType(type);
+			VkFormat format_of_type = _formatOfShaderDataType(type);
 
 			VkVertexInputAttributeDescription attribute{};
 			// TODO: customiseable binding

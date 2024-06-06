@@ -32,14 +32,14 @@ struct State {
 	Math::Polygon box;
 
 	struct {
-		Pipeline::Handle pipeline;
-		DescriptorSet::Handle descriptorSet;
-		DescriptorLayout::Handle descriptorLayout;
+		Ref<Pipeline> pipeline;
+		Ref<DescriptorSet> descriptorSet;
+		Ref<DescriptorLayout> descriptorLayout;
 
-		Buffer::Handle uniformBuffer;
+		Ref<Buffer> uniformBuffer;
 
-		Shader::Handle fragmentShader;
-		Shader::Handle vertexShader;
+		Ref<Shader> fragmentShader;
+		Ref<Shader> vertexShader;
 
 		Batch::Handle batch;
 
@@ -49,24 +49,24 @@ struct State {
 	} character;
 
 	struct {
-		Pipeline::Handle pipeline;
+		Ref<Pipeline> pipeline;
 		Batch::Handle batch;
 
-		Shader::Handle fragmentShader;
-		Shader::Handle vertexShader;
+		Ref<Shader> fragmentShader;
+		Ref<Shader> vertexShader;
 	} sky;
 
 	struct {
-		Pipeline::Handle pipeline;
+		Ref<Pipeline> pipeline;
 		Batch::Handle batch;
 
-		Buffer::Handle uniformBuffer;
+		Ref<Buffer> uniformBuffer;
 
-		DescriptorSet::Handle descriptorSet;
-		DescriptorLayout::Handle descriptorLayout;
+		Ref<DescriptorSet> descriptorSet;
+		Ref<DescriptorLayout> descriptorLayout;
 
-		Shader::Handle fragmentShader;
-		Shader::Handle vertexShader;
+		Ref<Shader> fragmentShader;
+		Ref<Shader> vertexShader;
 	} ground;
 };
 
@@ -82,36 +82,36 @@ void _submitCharacter(State& state) {
 	state.character.body.inverseInertia = 1.0f / state.box.inertia();
 	state.character.body.inverseMass = 1.0f / state.box.area();
 
-	state.character.batch = Batch::submit(&state.storage, state.engine, state.manager, Batch::Specification(4, 6, Buffer::Layout::fromTypes(
-		std::vector<Shader::DataType>{
-			Shader::DataType::VEC2,
-			Shader::DataType::VEC2
+	state.character.batch = Batch::submit(&state.storage, state.engine, state.manager, Batch::Specification(4, 6, BufferLayout::fromTypes(
+		std::vector<ShaderDataType>{
+			ShaderDataType::VEC2,
+			ShaderDataType::VEC2
 		}
 	)));
 
-	state.character.fragmentShader = Shader::create(&state.storage, state.engine, Shader::compile(Shader::Stage::FRAGMENT, "../../../game2/res/player.frag", "../../../game2/res/player_frag.spv"));
-	state.character.vertexShader = Shader::create(&state.storage, state.engine, Shader::compile(Shader::Stage::VERTEX, "../../../game2/res/player.vert", "../../../game2/res/player_vert.spv"));
+	ResourceManager::Static::submit(state.manager, &state.character.fragmentShader.reference, std::vector<ShaderSpecification>({ compileShader(ShaderStage::FRAGMENT, "../../../game2/res/player.frag", "../../../game2/res/player_frag.spv") }));
+	ResourceManager::Static::submit(state.manager, &state.character.vertexShader.reference, std::vector<ShaderSpecification>({ compileShader(ShaderStage::VERTEX, "../../../game2/res/player.vert", "../../../game2/res/player_vert.spv") }));
 
-	ResourceManager::Static::submit(state.manager, &state.character.uniformBuffer, MemoryType::UNIFORM, std::vector<Buffer::Specification>({
-		Buffer::Specification(sizeof(CharacterUniform), Buffer::Usage::UNIFORM)
+	ResourceManager::Static::submit(state.manager, &state.character.uniformBuffer.reference, MemoryType::UNIFORM, std::vector<BufferSpecification>({
+		BufferSpecification(sizeof(CharacterUniform), BufferUsage::UNIFORM)
 	}));
 
-	state.character.descriptorLayout = DescriptorLayout::create(&state.storage, state.engine, DescriptorLayout::Specification(
-		std::vector<Uniform::Binding>({ Uniform::Binding(Shader::Stage::FRAGMENT | Shader::Stage::VERTEX, 0, Uniform::Type::UNIFORM_BUFFER) })
-	));
+	ResourceManager::Static::submit(state.manager, &state.character.descriptorLayout.reference, std::vector<DescriptorLayoutSpecification>({
+		DescriptorLayoutSpecification(std::vector<UniformBinding>({ UniformBinding(ShaderStage::FRAGMENT | ShaderStage::VERTEX, 0, UniformType::UNIFORM_BUFFER) }))
+	}));
 
-	ResourceManager::Static::submit(state.manager, &state.character.descriptorSet, std::vector<DescriptorSet::Specification>({
-		DescriptorSet::Specification(state.character.descriptorLayout, std::vector<Uniform::Data>({
-			Uniform::Data::fromBuffer(state.character.uniformBuffer, sizeof(CharacterUniform), 0)
+	ResourceManager::Static::submit(state.manager, &state.character.descriptorSet.reference, std::vector<DescriptorSetSpecification>({
+		DescriptorSetSpecification(state.character.descriptorLayout.reference, std::vector<UniformData>({
+			UniformData::fromBuffer(state.character.uniformBuffer.reference, sizeof(CharacterUniform), 0)
 		}))
 	}));
 
-	ResourceManager::Static::submit(state.manager, &state.character.pipeline, std::vector<Pipeline::Specification>({
-		Pipeline::Specification::fromWindow(
-			std::vector<Shader::Handle>({ state.character.fragmentShader, state.character.vertexShader }),
-			Buffer::Layout::fromTypes(std::vector<Shader::DataType>({ Shader::DataType::VEC2, Shader::DataType::VEC2 })),
-			std::vector<DescriptorLayout::Handle>({ state.character.descriptorLayout }),
-			std::vector<Uniform::PushConstant>({ Uniform::PushConstant(Shader::Stage::VERTEX, sizeof(Math::Perspective), 0) }),
+	ResourceManager::Static::submit(state.manager, &state.character.pipeline.reference, std::vector<PipelineSpecification>({
+		PipelineSpecification::fromWindow(
+			std::vector<ShaderReference>({ state.character.fragmentShader.reference, state.character.vertexShader.reference }),
+			BufferLayout::fromTypes(std::vector<ShaderDataType>({ ShaderDataType::VEC2, ShaderDataType::VEC2 })),
+			std::vector<DescriptorLayoutReference>({ state.character.descriptorLayout.reference }),
+			std::vector<PushConstant>({ PushConstant(ShaderStage::VERTEX, 0, sizeof(Math::Perspective)) }),
 			state.engine,
 			state.window
 		)
@@ -120,35 +120,35 @@ void _submitCharacter(State& state) {
 
 void _submitGround(State& state) {
 	state.ground.batch = Batch::submit(&state.storage, state.engine, state.manager, Batch::Specification(maxGroundVertices * 4, maxGroundVertices * 6, Buffer::Layout::fromTypes(
-		std::vector<Shader::DataType>{
-			Shader::DataType::VEC2,
-			Shader::DataType::VEC2
+		std::vector<ShaderDataType>{
+			ShaderDataType::VEC2,
+			ShaderDataType::VEC2
 		}
 	)));
 
-	state.ground.fragmentShader = Shader::create(&state.storage, state.engine, Shader::compile(Shader::Stage::FRAGMENT, "../../../game2/res/ground.frag", "../../../game2/res/ground_frag.spv"));
-	state.ground.vertexShader = Shader::create(&state.storage, state.engine, Shader::compile(Shader::Stage::VERTEX, "../../../game2/res/ground.vert", "../../../game2/res/ground_vert.spv"));
+	ResourceManager::Static::submit(state.manager, &state.ground.fragmentShader.reference, std::vector<ShaderSpecification>({ compileShader(ShaderStage::FRAGMENT, "../../../game2/res/ground.frag", "../../../game2/res/ground_frag.spv") }));
+	ResourceManager::Static::submit(state.manager, &state.ground.vertexShader.reference, std::vector<ShaderSpecification>({ compileShader(ShaderStage::VERTEX, "../../../game2/res/ground.vert", "../../../game2/res/ground_vert.spv") }));
 
-	ResourceManager::Static::submit(state.manager, &state.ground.uniformBuffer, MemoryType::UNIFORM, std::vector<Buffer::Specification>({
-		Buffer::Specification(sizeof(GroundUniform), Buffer::Usage::UNIFORM)
-		}));
+	ResourceManager::Static::submit(state.manager, &state.ground.uniformBuffer.reference, MemoryType::UNIFORM, std::vector<BufferSpecification>({
+		BufferSpecification(sizeof(GroundUniform), BufferUsage::UNIFORM)
+	}));
 
-	state.ground.descriptorLayout = DescriptorLayout::create(&state.storage, state.engine, DescriptorLayout::Specification(
-		std::vector<Uniform::Binding>({ Uniform::Binding(Shader::Stage::FRAGMENT | Shader::Stage::VERTEX, 0, Uniform::Type::UNIFORM_BUFFER) })
-	));
+	ResourceManager::Static::submit(state.manager, &state.ground.descriptorLayout.reference, std::vector<DescriptorLayoutSpecification>({
+		DescriptorLayoutSpecification(std::vector<UniformBinding>({ UniformBinding(ShaderStage::FRAGMENT | ShaderStage::VERTEX, 0, UniformType::UNIFORM_BUFFER) }))
+	}));
 
-	ResourceManager::Static::submit(state.manager, &state.ground.descriptorSet, std::vector<DescriptorSet::Specification>({
-		DescriptorSet::Specification(state.character.descriptorLayout, std::vector<Uniform::Data>({
-			Uniform::Data::fromBuffer(state.ground.uniformBuffer, sizeof(GroundUniform), 0)
+	ResourceManager::Static::submit(state.manager, &state.ground.descriptorSet.reference, std::vector<DescriptorSetSpecification>({
+		DescriptorSetSpecification(state.ground.descriptorLayout.reference, std::vector<UniformData>({
+			UniformData::fromBuffer(state.ground.uniformBuffer.reference, sizeof(GroundUniform), 0)
 		}))
 	}));
 
-	ResourceManager::Static::submit(state.manager, &state.ground.pipeline, std::vector<Pipeline::Specification>({
-		Pipeline::Specification::fromWindow(
-			std::vector<Shader::Handle>({ state.ground.fragmentShader, state.ground.vertexShader }),
-			Buffer::Layout::fromTypes(std::vector<Shader::DataType>({ Shader::DataType::VEC2, Shader::DataType::VEC2 })),
-			std::vector<DescriptorLayout::Handle>({ state.ground.descriptorLayout }),
-			std::vector<Uniform::PushConstant>({ Uniform::PushConstant(Shader::Stage::VERTEX, sizeof(Math::Perspective), 0) }),
+	ResourceManager::Static::submit(state.manager, &state.ground.pipeline.reference, std::vector<PipelineSpecification>({
+		PipelineSpecification::fromWindow(
+			std::vector<ShaderReference>({ state.ground.fragmentShader.reference, state.ground.vertexShader.reference }),
+			BufferLayout::fromTypes(std::vector<ShaderDataType>({ ShaderDataType::VEC2, ShaderDataType::VEC2 })),
+			std::vector<DescriptorLayoutReference>({ state.ground.descriptorLayout.reference }),
+			std::vector<PushConstant>({ PushConstant(ShaderStage::VERTEX, 0, sizeof(Math::Perspective)) }),
 			state.engine,
 			state.window
 		)
@@ -156,18 +156,20 @@ void _submitGround(State& state) {
 }
 
 void _submitSky(State& state) {
-	state.sky.batch = Batch::submit(&state.storage, state.engine, state.manager, Batch::Specification(4, 6, Buffer::Layout::fromTypes(std::vector<Shader::DataType>({ Shader::DataType::VEC2, Shader::DataType::VEC2 }))));
-	state.sky.fragmentShader = Shader::create(&state.storage, state.engine, Shader::compile(Shader::Stage::FRAGMENT, "../../../game2/res/sky.frag", "../../../game2/res/sky_frag.spv"));
-	state.sky.vertexShader = Shader::create(&state.storage, state.engine, Shader::compile(Shader::Stage::VERTEX, "../../../game2/res/sky.vert", "../../../game2/res/sky_vert.spv"));
+	state.sky.batch = Batch::submit(&state.storage, state.engine, state.manager, Batch::Specification(4, 6, BufferLayout::fromTypes(std::vector<ShaderDataType>({ ShaderDataType::VEC2, ShaderDataType::VEC2 }))));
+
+	ResourceManager::Static::submit(state.manager, &state.sky.fragmentShader.reference, std::vector<ShaderSpecification>({ compileShader(ShaderStage::FRAGMENT, "../../../game2/res/sky.frag", "../../../game2/res/sky_frag.spv") }));
+	ResourceManager::Static::submit(state.manager, &state.sky.vertexShader.reference, std::vector<ShaderSpecification>({ compileShader(ShaderStage::VERTEX, "../../../game2/res/sky.vert", "../../../game2/res/sky_vert.spv") }));
+
 
 	ResourceManager::Static::submit(state.manager,
-		&state.sky.pipeline,
-		std::vector<Pipeline::Specification>({
-			Pipeline::Specification::fromWindow(
-				std::vector<Shader::Handle>({ state.sky.fragmentShader, state.sky.vertexShader }),
-				Buffer::Layout::fromTypes(std::vector<Shader::DataType>({ Shader::DataType::VEC2, Shader::DataType::VEC2 })),
-				std::vector<DescriptorLayout::Handle>({}),
-				std::vector<Uniform::PushConstant>({ Uniform::PushConstant(Shader::Stage::FRAGMENT | Shader::Stage::VERTEX, sizeof(SkyPushConstants), 0)}),
+		&state.sky.pipeline.reference,
+		std::vector<PipelineSpecification>({
+			PipelineSpecification::fromWindow(
+				std::vector<ShaderReference>({ state.sky.fragmentShader.reference, state.sky.vertexShader.reference }),
+				BufferLayout::fromTypes(std::vector<ShaderDataType>({ ShaderDataType::VEC2, ShaderDataType::VEC2 })),
+				std::vector<DescriptorLayoutReference>({}),
+				std::vector<PushConstant>({ PushConstant(ShaderStage::FRAGMENT | ShaderStage::VERTEX, 0, sizeof(SkyPushConstants))}),
 				state.engine,
 				state.window
 			)
@@ -180,8 +182,10 @@ void _setupCharacter(State& state) {
 	Batch::endShape(state.character.batch, 4, std::vector<uint16_t>({ 0, 1, 2, 2, 3, 0 }));
 	Batch::endSubmission(state.character.batch, state.context, state.engine);
 
-	Shader::drop(&state.storage, state.character.fragmentShader, state.engine);
-	Shader::drop(&state.storage, state.character.vertexShader, state.engine);
+	// TODO: get references
+
+	drop(VIVIUM_NULL_STORAGE, state.character.fragmentShader.resource, state.engine);
+	drop(VIVIUM_NULL_STORAGE, state.character.vertexShader.resource, state.engine);
 }
 
 void _setupSky(State& state) {
@@ -190,8 +194,10 @@ void _setupSky(State& state) {
 	Batch::endShape(state.sky.batch, 4, std::vector<uint16_t>({ 0, 3, 2, 2, 1, 0 }));
 	Batch::endSubmission(state.sky.batch, state.context, state.engine);
 
-	Shader::drop(&state.storage, state.sky.fragmentShader, state.engine);
-	Shader::drop(&state.storage, state.sky.vertexShader, state.engine);
+	// TODO: get references
+
+	drop(VIVIUM_NULL_STORAGE, state.sky.fragmentShader.resource, state.engine);
+	drop(VIVIUM_NULL_STORAGE, state.sky.vertexShader.resource, state.engine);
 }
 
 void _setupGround(State& state) {
@@ -200,30 +206,32 @@ void _setupGround(State& state) {
 	Batch::endShape(state.ground.batch, 4, std::vector<uint16_t>({ 0, 1, 2, 2, 3, 0 }));
 	Batch::endSubmission(state.ground.batch, state.context, state.engine);
 
-	Shader::drop(&state.storage, state.ground.fragmentShader, state.engine);
-	Shader::drop(&state.storage, state.ground.vertexShader, state.engine);
+	// TODO: get references
+
+	drop(VIVIUM_NULL_STORAGE, state.ground.fragmentShader.resource, state.engine);
+	drop(VIVIUM_NULL_STORAGE, state.ground.vertexShader.resource, state.engine);
 }
 
 void _freeCharacter(State& state) {
-	Buffer::drop(VIVIUM_NULL_STORAGE, state.character.uniformBuffer, state.engine);
+	dropBuffer(VIVIUM_NULL_STORAGE, state.character.uniformBuffer.resource, state.engine);
 	Batch::drop(&state.storage, state.character.batch, state.engine);
-	DescriptorSet::drop(VIVIUM_NULL_STORAGE, state.character.descriptorSet);
-	DescriptorLayout::drop(&state.storage, state.character.descriptorLayout, state.engine);
-	Pipeline::drop(VIVIUM_NULL_STORAGE, state.character.pipeline, state.engine);
+	drop(VIVIUM_NULL_STORAGE, state.character.descriptorSet.resource);
+	dropDescriptorLayout(VIVIUM_NULL_STORAGE, state.character.descriptorLayout.resource, state.engine);
+	drop(VIVIUM_NULL_STORAGE, state.character.pipeline.resource, state.engine);
 }
 
 void _freeSky(State& state) {
 	Batch::drop(&state.storage, state.sky.batch, state.engine);
 
-	Pipeline::drop(VIVIUM_NULL_STORAGE, state.sky.pipeline, state.engine);
+	drop(VIVIUM_NULL_STORAGE, state.sky.pipeline.resource, state.engine);
 }
 
 void _freeGround(State& state) {
-	Buffer::drop(VIVIUM_NULL_STORAGE, state.ground.uniformBuffer, state.engine);
+	dropBuffer(VIVIUM_NULL_STORAGE, state.ground.uniformBuffer.resource, state.engine);
 	Batch::drop(&state.storage, state.ground.batch, state.engine);
-	DescriptorSet::drop(VIVIUM_NULL_STORAGE, state.ground.descriptorSet);
-	DescriptorLayout::drop(&state.storage, state.ground.descriptorLayout, state.engine);
-	Pipeline::drop(VIVIUM_NULL_STORAGE, state.ground.pipeline, state.engine);
+	drop(VIVIUM_NULL_STORAGE, state.ground.descriptorSet.resource);
+	dropDescriptorLayout(VIVIUM_NULL_STORAGE, state.ground.descriptorLayout.resource, state.engine);
+	drop(VIVIUM_NULL_STORAGE, state.ground.pipeline.resource, state.engine);
 }
 
 void _updateCharacter(State& state) {
@@ -248,13 +256,13 @@ void _renderCharacter(State& state) {
 	characterUniform.time = state.character.timer.getTime();
 	characterUniform.position = state.character.body.position;
 
-	Buffer::set(state.character.uniformBuffer, 0, &characterUniform, sizeof(CharacterUniform));
+	setBuffer(state.character.uniformBuffer.resource, 0, &characterUniform, sizeof(CharacterUniform));
 
 	Commands::bindPipeline(state.context, state.character.pipeline);
 	Commands::bindDescriptorSet(state.context, state.character.descriptorSet, state.character.pipeline);
 	Commands::bindVertexBuffer(state.context, Batch::vertexBuffer(state.character.batch));
 	Commands::bindIndexBuffer(state.context, Batch::indexBuffer(state.character.batch));
-	Commands::pushConstants(state.context, &state.perspective, sizeof(Math::Perspective), 0, Shader::Stage::VERTEX, state.character.pipeline);
+	Commands::pushConstants(state.context, &state.perspective, sizeof(Math::Perspective), 0, ShaderStage::VERTEX, state.character.pipeline);
 	
 	Commands::drawIndexed(state.context, 6, 1);
 }
@@ -263,13 +271,13 @@ void _renderGround(State& state) {
 	GroundUniform groundUniform;
 	groundUniform.time = state.character.timer.getTime();
 
-	Buffer::set(state.ground.uniformBuffer, 0, &groundUniform, sizeof(GroundUniform));
+	setBuffer(state.ground.uniformBuffer.resource, 0, &groundUniform, sizeof(GroundUniform));
 
 	Commands::bindPipeline(state.context, state.ground.pipeline);
 	Commands::bindDescriptorSet(state.context, state.ground.descriptorSet, state.ground.pipeline);
 	Commands::bindVertexBuffer(state.context, Batch::vertexBuffer(state.ground.batch));
 	Commands::bindIndexBuffer(state.context, Batch::indexBuffer(state.ground.batch));
-	Commands::pushConstants(state.context, &state.perspective, sizeof(Math::Perspective), 0, Shader::Stage::VERTEX, state.ground.pipeline);
+	Commands::pushConstants(state.context, &state.perspective, sizeof(Math::Perspective), 0, ShaderStage::VERTEX, state.ground.pipeline);
 
 	Commands::drawIndexed(state.context, Batch::indexCount(state.ground.batch), 1);
 }
@@ -283,7 +291,7 @@ void _renderSky(State& state) {
 	Commands::bindPipeline(state.context, state.sky.pipeline);
 	Commands::bindVertexBuffer(state.context, Batch::vertexBuffer(state.sky.batch));
 	Commands::bindIndexBuffer(state.context, Batch::indexBuffer(state.sky.batch));
-	Commands::pushConstants(state.context, &pushConstants, sizeof(SkyPushConstants), 0, Shader::Stage::FRAGMENT | Shader::Stage::VERTEX, state.sky.pipeline);
+	Commands::pushConstants(state.context, &pushConstants, sizeof(SkyPushConstants), 0, ShaderStage::FRAGMENT | ShaderStage::VERTEX, state.sky.pipeline);
 	Commands::drawIndexed(state.context, Batch::indexCount(state.sky.batch), 1);
 }
 
@@ -305,7 +313,7 @@ void initialise(State& state) {
 	_submitSky(state);
 	_submitGround(state);
 
-	ResourceManager::Static::allocate(state.engine, state.manager);
+	ResourceManager::Static::allocate(state.manager, state.engine);
 
 	_setupCharacter(state);
 	_setupSky(state);

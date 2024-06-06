@@ -28,7 +28,7 @@ namespace Vivium {
 		VkVertexInputBindingDescription bindingDescription;
 
 		// TODO: shouldn't have static functions
-		static BufferLayout fromTypes(const std::span<const Shader::DataType> types);
+		static BufferLayout fromTypes(const std::span<const ShaderDataType> types);
 	};
 
 	struct Buffer {
@@ -50,6 +50,7 @@ namespace Vivium {
 
 	struct BufferReference {
 		uint64_t referenceIndex;
+		uint8_t memoryIndex;
 	};
 
 	bool isBufferNull(Buffer const& buffer);

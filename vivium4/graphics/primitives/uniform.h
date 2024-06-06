@@ -50,7 +50,6 @@ namespace Vivium {
 
 	// TODO: offset before size!
 	struct PushConstant {
-		VkPushConstantRange range;
 		ShaderStage stage;
 		uint32_t offset;
 		uint32_t size;

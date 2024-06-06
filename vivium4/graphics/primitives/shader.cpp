@@ -6,7 +6,7 @@ namespace Vivium {
 		return static_cast<ShaderStage>(static_cast<int>(lhs) | static_cast<int>(rhs));
 	}
 
-	ShaderSpecification compile(ShaderStage stage, const char* sourceFilename, const char* destFilename) {
+	ShaderSpecification compileShader(ShaderStage stage, const char* sourceFilename, const char* destFilename) {
 		if (!std::filesystem::exists(VIVIUM_GLSLC_PATH)) {
 			VIVIUM_LOG(Log::FATAL, "Couldn't find glslc.exe for compiling shaders");
 		}

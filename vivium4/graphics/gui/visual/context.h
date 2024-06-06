@@ -90,16 +90,16 @@ namespace Vivium {
 						}));
 
 					{
-						Shader::Specification fragmentSpecification = Shader::compile(Shader::Stage::FRAGMENT, "vivium4/res/text.frag", "vivium4/res/text_frag.spv");
-						Shader::Specification vertexSpecification = Shader::compile(Shader::Stage::VERTEX, "vivium4/res/text.vert", "vivium4/res/text_vert.spv");
+						Shader::Specification fragmentSpecification = Shader::compileShader(Shader::Stage::FRAGMENT, "vivium4/res/text.frag", "vivium4/res/text_frag.spv");
+						Shader::Specification vertexSpecification = Shader::compileShader(Shader::Stage::VERTEX, "vivium4/res/text.vert", "vivium4/res/text_vert.spv");
 
 						handle->text.fragmentShader = Shader::create(&handle->transientStorage, engine, fragmentSpecification);
 						handle->text.vertexShader = Shader::create(&handle->transientStorage, engine, vertexSpecification);
 					}
 
 					{
-						Shader::Specification fragShaderSpec = Shader::compile(Shader::Stage::FRAGMENT, "vivium4/res/button.frag", "vivium4/res/button_frag.spv");
-						Shader::Specification vertShaderSpec = Shader::compile(Shader::Stage::VERTEX, "vivium4/res/button.vert", "vivium4/res/button_vert.spv");
+						Shader::Specification fragShaderSpec = Shader::compileShader(Shader::Stage::FRAGMENT, "vivium4/res/button.frag", "vivium4/res/button_frag.spv");
+						Shader::Specification vertShaderSpec = Shader::compileShader(Shader::Stage::VERTEX, "vivium4/res/button.vert", "vivium4/res/button_vert.spv");
 
 						handle->button.fragmentShader = Shader::create(&handle->transientStorage, engine, fragShaderSpec);
 						handle->button.vertexShader = Shader::create(&handle->transientStorage, engine, vertShaderSpec);
