@@ -57,7 +57,6 @@ namespace Vivium {
 				
 				// Checking present
 				VkBool32 hasPresentSupport = false;
-				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(window, Window::isNull);
 				vkGetPhysicalDeviceSurfaceSupportKHR(device, i, window->surface, &hasPresentSupport);
 
 				if (hasPresentSupport)
@@ -667,32 +666,21 @@ namespace Vivium {
 
 		void beginFrame(Engine::Handle engine, Window::Handle window)
 		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(window, Window::isNull);
-
 			engine->beginFrame(window);
 		}
 		
 		void endFrame(Engine::Handle engine, Window::Handle window)
 		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(window, Window::isNull);
-
 			engine->endFrame(window);
 		}
 		
 		void beginRender(Engine::Handle engine, Window::Handle window)
 		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(window, Window::isNull);
-
 			engine->beginRender(window);
 		}
 		
 		void endRender(Engine::Handle engine)
 		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
-
 			engine->endRender();
 		}
 	}

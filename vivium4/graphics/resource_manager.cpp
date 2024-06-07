@@ -553,15 +553,30 @@ namespace Vivium {
 				};
 
 				{
+					// TODO: might be faster now that we know everything is a uint64_t
 					// NOTE: this is slow O(n^2), could use std::unordered_set, but doubt it would be faster
 					std::vector<DescriptorLayoutReference> seenLayouts;
 
 					for (uint64_t i = 0; i < handle->descriptorSets.specifications.size(); i++) {
 						DescriptorSetSpecification const& specification = handle->descriptorSets.specifications[i];
 
-						if (std::find(seenLayouts.begin(), seenLayouts.end(), specification.layout) == seenLayouts.end())
+						uint64_t j = 0;
+						for (j = 0; j < seenLayouts.size(); j++) {
+							DescriptorLayoutReference const& seenLayout = seenLayouts[j];
+
+							if (seenLayout.referenceIndex == specification.layout.referenceIndex) {
+								j = UINT64_MAX;
+
+								break;
+							}
+						}
+
+						if (j == UINT64_MAX) {
+							continue;
+						}
+						else {
 							seenLayouts.push_back(specification.layout);
-						else continue;
+						}
 
 						std::vector<UniformBinding> const& bindings = handle->descriptorLayouts.specifications[specification.layout.referenceIndex].bindings;
 
@@ -614,7 +629,7 @@ namespace Vivium {
 
 				// Copy from specification layouts to layouts vector
 				for (uint64_t i = 0; i < handle->descriptorSets.specifications.size(); i++) {
-					layouts[i] = getReference(handle, handle->descriptorSets.specifications[i].layout).layout;
+					layouts[i] = _getReference(handle, handle->descriptorSets.specifications[i].layout).layout;
 				}
 
 				// Create descriptor sets
@@ -638,8 +653,6 @@ namespace Vivium {
 				}
 
 				// Populate descriptors
-				uint64_t totalUniforms = 0;
-
 				std::vector<VkWriteDescriptorSet> descriptorWrites(totalUniforms);
 				uint64_t descriptorWritesCount = 0;
 
@@ -668,7 +681,7 @@ namespace Vivium {
 							bufferInfos.push_back({});
 							VkDescriptorBufferInfo& bufferInfo = bufferInfos.back();
 
-							bufferInfo.buffer = getReference(handle, data.bufferData.buffer).buffer;
+							bufferInfo.buffer = _getReference(handle, data.bufferData.buffer).buffer;
 							bufferInfo.offset = data.bufferData.offset;
 							bufferInfo.range = data.bufferData.size;
 
@@ -681,7 +694,7 @@ namespace Vivium {
 							imageInfos.push_back({});
 							VkDescriptorImageInfo& imageInfo = imageInfos.back();
 
-							Texture const& texture = getReference(handle, data.textureData.texture);
+							Texture const& texture = _getReference(handle, data.textureData.texture);
 
 							imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 							imageInfo.imageView = texture.view;
@@ -696,7 +709,7 @@ namespace Vivium {
 							imageInfos.push_back({});
 							VkDescriptorImageInfo& imageInfo = imageInfos.back();
 
-							Framebuffer const& framebuffer = getReference(handle, data.framebufferData.framebuffer);
+							Framebuffer const& framebuffer = _getReference(handle, data.framebufferData.framebuffer);
 
 							imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 							imageInfo.imageView = framebuffer.view;
@@ -736,7 +749,7 @@ namespace Vivium {
 					case _RenderTarget::WINDOW:
 						resource.renderPass = specification.engine->renderPass; break;
 					case _RenderTarget::FRAMEBUFFER:
-						resource.renderPass = getReference(handle, specification.framebuffer).renderPass; break;
+						resource.renderPass = _getReference(handle, specification.framebuffer).renderPass; break;
 					default:
 						VIVIUM_LOG(Log::FATAL, "Invalid pipeline target, can't find render pass"); break;
 					}
@@ -745,7 +758,7 @@ namespace Vivium {
 
 					for (uint32_t i = 0; i < specification.shaders.size(); i++) {
 						ShaderReference const& shaderReference = specification.shaders[i];
-						Shader const& shader = getReference(handle, shaderReference);
+						Shader const& shader = _getReference(handle, shaderReference);
 
 						VkPipelineShaderStageCreateInfo shaderStageInfo{};
 						shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -824,7 +837,7 @@ namespace Vivium {
 					std::vector<VkDescriptorSetLayout> descriptorLayouts(specification.descriptorLayouts.size());
 
 					for (uint32_t i = 0; i < descriptorLayouts.size(); i++) {
-						descriptorLayouts[i] = getReference(handle, specification.descriptorLayouts[i]).layout;
+						descriptorLayouts[i] = _getReference(handle, specification.descriptorLayouts[i]).layout;
 					}
 
 					VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
@@ -892,7 +905,6 @@ namespace Vivium {
 				if (!handle->pipelines.specifications.empty())
 					_allocatePipelines(handle, engine);
 
-				// TODO: some system to deal with deleting all resources once user states they claimed them
 				handle->hostBuffers.specifications = {};
 				handle->deviceBuffers.specifications = {};
 				handle->textures.specifications = {};
@@ -901,6 +913,18 @@ namespace Vivium {
 				handle->descriptorLayouts.specifications = {};
 				handle->descriptorSets.specifications = {};
 				handle->pipelines.specifications = {};
+			}
+
+			void clearReferences(Handle handle)
+			{
+				handle->hostBuffers.resources = {};
+				handle->deviceBuffers.resources = {};
+				handle->textures.resources = {};
+				handle->framebuffers.resources = {};
+				handle->shaders.resources = {};
+				handle->descriptorLayouts.resources = {};
+				handle->descriptorSets.resources = {};
+				handle->pipelines.resources = {};
 			}
 
 			void submit(Handle handle, BufferReference* memory, MemoryType memoryType, const std::span<const BufferSpecification> specifications)
@@ -960,7 +984,7 @@ namespace Vivium {
 				_addToResourceField(handle->framebuffers, memory, specifications);
 			}
 
-			Buffer& getReference(Handle handle, BufferReference reference)
+			Buffer& _getReference(Handle handle, BufferReference reference)
 			{
 				// Probably not best to switch on "0"
 				switch (reference.memoryIndex) {
@@ -971,32 +995,32 @@ namespace Vivium {
 				VIVIUM_LOG(Log::FATAL, "Reference malformed");
 			}
 
-			Texture& getReference(Handle handle, TextureReference reference)
+			Texture& _getReference(Handle handle, TextureReference reference)
 			{
 				return handle->textures.resources[reference.referenceIndex];
 			}
 
-			Framebuffer& getReference(Handle handle, FramebufferReference reference)
+			Framebuffer& _getReference(Handle handle, FramebufferReference reference)
 			{
 				return handle->framebuffers.resources[reference.referenceIndex];
 			}
 
-			Shader& getReference(Handle handle, ShaderReference reference)
+			Shader& _getReference(Handle handle, ShaderReference reference)
 			{
 				return handle->shaders.resources[reference.referenceIndex];
 			}
 
-			DescriptorLayout& getReference(Handle handle, DescriptorLayoutReference reference)
+			DescriptorLayout& _getReference(Handle handle, DescriptorLayoutReference reference)
 			{
 				return handle->descriptorLayouts.resources[reference.referenceIndex];
 			}
 
-			DescriptorSet& getReference(Handle handle, DescriptorSetReference reference)
+			DescriptorSet& _getReference(Handle handle, DescriptorSetReference reference)
 			{
 				return handle->descriptorSets.resources[reference.referenceIndex];
 			}
 
-			Pipeline& getPipeline(Handle handle, PipelineReference reference)
+			Pipeline& _getReference(Handle handle, PipelineReference reference)
 			{
 				return handle->pipelines.resources[reference.referenceIndex];
 			}

@@ -21,32 +21,29 @@ namespace Vivium {
 					Commands::createOneTimeStagingBuffer(engine, &stagingBuffer, &temporaryMemory,
 						std::max(8 * sizeof(float), 6 * sizeof(uint16_t)), &stagingMapping);
 
-					Buffer::Resource resource;
+					Buffer resource;
 					resource.buffer = stagingBuffer;
 					resource.mapping = stagingMapping;
-					resource.size = 8 * sizeof(float);
 
 					Commands::Context::beginTransfer(context);
+
 					std::memcpy(stagingMapping, vertexData, 8 * sizeof(float));
-					Commands::transferBuffer(context, &resource, handle->button.vertexBuffer);
+					Commands::transferBuffer(context, resource, 8 * sizeof(float), handle->button.vertexBuffer.resource);
 
 					std::memcpy(stagingMapping, indexData, 6 * sizeof(uint16_t));
-					resource.size = 6 * sizeof(uint16_t);
-					Commands::transferBuffer(context, &resource, handle->button.indexBuffer);
+					Commands::transferBuffer(context, resource, 6 * sizeof(uint16_t), handle->button.indexBuffer.resource);
 
 					Commands::Context::endTransfer(context, engine);
 
 					Commands::freeOneTimeStagingBuffer(engine, stagingBuffer, temporaryMemory);
 
-					Shader::drop(&handle->transientStorage, handle->text.fragmentShader, engine);
-					Shader::drop(&handle->transientStorage, handle->text.vertexShader, engine);
+					drop(VIVIUM_NULL_STORAGE, handle->text.fragmentShader.resource, engine);
+					drop(VIVIUM_NULL_STORAGE, handle->text.vertexShader.resource, engine);
 
-					Shader::drop(&handle->transientStorage, handle->button.fragmentShader, engine);
-					Shader::drop(&handle->transientStorage, handle->button.vertexShader, engine);
+					drop(VIVIUM_NULL_STORAGE, handle->button.fragmentShader.resource, engine);
+					drop(VIVIUM_NULL_STORAGE, handle->button.vertexShader.resource, engine);
 
 					// TODO: maybe the descriptor layout can be freed here?
-
-					handle->transientStorage.free();
 				}
 			}
 		}

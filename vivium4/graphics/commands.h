@@ -13,7 +13,7 @@
 namespace Vivium {
 	namespace Commands {
 		// TODO: a lot of these should be private
-		void createBuffer(Engine::Handle engine, VkBuffer* buffer, uint64_t size, Buffer::Usage usage, VkMemoryRequirements* memoryRequirements, const VkAllocationCallbacks* allocationCallbacks);
+		void createBuffer(Engine::Handle engine, VkBuffer* buffer, uint64_t size, BufferUsage usage, VkMemoryRequirements* memoryRequirements, const VkAllocationCallbacks* allocationCallbacks);
 		void createCommandPool(Engine::Handle engine, VkCommandPool* pool, VkCommandPoolCreateFlags flags);
 		void createCommandBuffers(Engine::Handle engine, VkCommandPool pool, VkCommandBuffer* commandBuffers, uint64_t count);
 
@@ -25,11 +25,11 @@ namespace Vivium {
 
 		void transitionImageLayout(VkImage image, VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout, VkPipelineStageFlags sourceStage, VkPipelineStageFlags destinationStage, VkAccessFlags sourceAccess, VkAccessFlags destinationAccess, VkImageMemoryBarrier* barrier);
 
-		void createImage(Engine::Handle engine, VkImage* image, uint32_t width, uint32_t height, Texture::Format format, VkSampleCountFlagBits sampleCount, VkImageLayout initialLayout, VkImageUsageFlags usage, const VkAllocationCallbacks* allocationCallbacks);
-		void createView(Engine::Handle engine, VkImageView* view, Texture::Format format, VkImage image, const VkAllocationCallbacks* allocationCallbacks);
-		void createSampler(Engine::Handle engine, VkSampler* sampler, Texture::Filter filter, const VkAllocationCallbacks* allocationCallbacks);
+		void createImage(Engine::Handle engine, VkImage* image, uint32_t width, uint32_t height, TextureFormat format, VkSampleCountFlagBits sampleCount, VkImageLayout initialLayout, VkImageUsageFlags usage, const VkAllocationCallbacks* allocationCallbacks);
+		void createView(Engine::Handle engine, VkImageView* view, TextureFormat format, VkImage image, const VkAllocationCallbacks* allocationCallbacks);
+		void createSampler(Engine::Handle engine, VkSampler* sampler, TextureFilter filter, const VkAllocationCallbacks* allocationCallbacks);
 		
-		void createPipeline(Engine::Handle engine, VkPipeline* pipeline, VkPipelineLayout* layout, VkRenderPass renderPass, const std::span<const Shader::Handle> shaders, const std::span<const DescriptorLayout::Handle> descriptorLayouts, const std::span<const Uniform::PushConstant> pushConstants, const Buffer::Layout& bufferLayout, VkSampleCountFlagBits sampleCount, const VkAllocationCallbacks* layoutAllocationCallback, const VkAllocationCallbacks* pipelineAllocationCallback);
+		void createPipeline(Engine::Handle engine, VkPipeline* pipeline, VkPipelineLayout* layout, VkRenderPass renderPass, const std::span<const ShaderReference> shaders, const std::span<const DescriptorLayoutReference> descriptorLayouts, const std::span<const PushConstant> pushConstants, BufferLayout const& bufferLayout, VkSampleCountFlagBits sampleCount, const VkAllocationCallbacks* layoutAllocationCallback, const VkAllocationCallbacks* pipelineAllocationCallback);
 		// TODO: need more options in order to use this to create a framebuffer render pass
 		void createRenderPass(Engine::Handle engine, VkRenderPass* renderPass, VkFormat imageFormat, VkSampleCountFlagBits sampleCount);
 
@@ -91,16 +91,15 @@ namespace Vivium {
 			}
 		}
 
-		// TODO: allow passing region
-		void transferBuffer(Context::Handle context, Buffer::Handle source, Buffer::Handle destination);
+		// TODO: allow passing region/buffer slice
+		void transferBuffer(Context::Handle context, Buffer const& source, uint64_t sourceSize, Buffer& destination);
 
-		void bindPipeline(Context::Handle context, Pipeline::Handle handle);
-		void bindVertexBuffer(Context::Handle context, Buffer::Handle handle);
-		void bindIndexBuffer(Context::Handle context, Buffer::Handle handle);
-		void bindDescriptorSet(Context::Handle context, DescriptorSet::Handle descriptorSet, Pipeline::Handle pipeline);
-		void bindDescriptorSetDynamic(Context::Handle context, DescriptorSet::Handle descriptorSet, Pipeline::Handle pipeline, const std::span<const uint32_t>& offsets);
+		void bindPipeline(Context::Handle context, Pipeline const& handle);
+		void bindVertexBuffer(Context::Handle context, Buffer const& handle);
+		void bindIndexBuffer(Context::Handle context, Buffer const& handle);
+		void bindDescriptorSet(Context::Handle context, DescriptorSet const& descriptorSet, Pipeline const& pipeline);
 
-		void pushConstants(Context::Handle context, const void* data, uint64_t size, uint64_t offset, Shader::Stage stage, Pipeline::Handle pipeline);
+		void pushConstants(Context::Handle context, const void* data, uint64_t size, uint64_t offset, ShaderStage stage, Pipeline const& pipeline);
 
 		void drawIndexed(Context::Handle context, uint32_t indexCount, uint32_t instanceCount);
 	}

@@ -9,6 +9,8 @@
 - Some clean-up method on `ResourceManager::Static` that drops all resources once user is ready
 ## Core
 
+- Can free `DescriptorLayout` at same stage we free `Shader`?
+- Static allocator being re-useable is an anti-pattern
 - Test multi-window draws
 	- Requires multi-window application flow (around the engine creation mostly)
 - Abstract creation functions of resources to maximum extent without compromising performance
@@ -39,6 +41,8 @@
 - Methods for `Input` to be more concise
 - All allocated resources should be tracked in debug mode (regardless of static/dynamic or even type of allocator, need some intermediary registry)
 - `Buffer::Slice(buffer)` - ability to allocate multiple slices within a buffer as a more aspirational goal
+	- Update `transferBuffer` to use slices
+	- Should be very quick to create from a buffer (almost seamless)
 ## Vulkan
 
 - Test re-useable resource manager

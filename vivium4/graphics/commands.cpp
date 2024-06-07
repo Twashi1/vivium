@@ -1,4 +1,5 @@
 #include "commands.h"
+#include "resource_manager.h"
 
 namespace Vivium {
 	namespace Commands {
@@ -64,22 +65,16 @@ namespace Vivium {
 
 			void flush(Handle context, Engine::Handle engine)
 			{
-				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(context, Context::isNull);
-
 				context->flush(engine);
 			}
 			
 			void beginTransfer(Handle context)
 			{
-				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(context, Context::isNull);
-
 				context->beginTransfer();
 			}
 			
 			void endTransfer(Handle context, Engine::Handle engine)
 			{
-				VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(context, Context::isNull);
-
 				context->endTransfer(engine);
 			}
 			
@@ -155,7 +150,7 @@ namespace Vivium {
 				"Failed to create render pass");
 		}
 
-		void createBuffer(Engine::Handle engine, VkBuffer* buffer, uint64_t size, Buffer::Usage usage, VkMemoryRequirements* memoryRequirements, const VkAllocationCallbacks* allocationCallbacks) {
+		void createBuffer(Engine::Handle engine, VkBuffer* buffer, uint64_t size, BufferUsage usage, VkMemoryRequirements* memoryRequirements, const VkAllocationCallbacks* allocationCallbacks) {
 			VkBufferCreateInfo bufferCreateInfo{};
 			bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 			bufferCreateInfo.size = size;
@@ -225,7 +220,7 @@ namespace Vivium {
 		void createOneTimeStagingBuffer(Engine::Handle engine, VkBuffer* buffer, VkDeviceMemory* memory, uint64_t size, void** mapping)
 		{
 			VkMemoryRequirements memoryRequirements;
-			createBuffer(engine, buffer, size, Buffer::Usage::STAGING, &memoryRequirements, nullptr);
+			createBuffer(engine, buffer, size, BufferUsage::STAGING, &memoryRequirements, nullptr);
 
 			VkMemoryAllocateInfo allocateInfo{};
 			allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -294,7 +289,7 @@ namespace Vivium {
 			);
 		}
 
-		void createImage(Engine::Handle engine, VkImage* image, uint32_t width, uint32_t height, Texture::Format format, VkSampleCountFlagBits sampleCount, VkImageLayout initialLayout, VkImageUsageFlags usage, const VkAllocationCallbacks* allocationCallbacks)
+		void createImage(Engine::Handle engine, VkImage* image, uint32_t width, uint32_t height, TextureFormat format, VkSampleCountFlagBits sampleCount, VkImageLayout initialLayout, VkImageUsageFlags usage, const VkAllocationCallbacks* allocationCallbacks)
 		{
 			VkImageCreateInfo imageCreateInfo{};
 			imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -321,7 +316,7 @@ namespace Vivium {
 			);
 		}
 
-		void createView(Engine::Handle engine, VkImageView* view, Texture::Format format, VkImage image, const VkAllocationCallbacks* allocationCallbacks)
+		void createView(Engine::Handle engine, VkImageView* view, TextureFormat format, VkImage image, const VkAllocationCallbacks* allocationCallbacks)
 		{
 			VkImageViewCreateInfo viewCreateInfo{};
 			viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -343,7 +338,7 @@ namespace Vivium {
 			);
 		}
 
-		void createSampler(Engine::Handle engine, VkSampler* sampler, Texture::Filter filter, const VkAllocationCallbacks* allocationCallbacks)
+		void createSampler(Engine::Handle engine, VkSampler* sampler, TextureFilter filter, const VkAllocationCallbacks* allocationCallbacks)
 		{
 			VkSamplerCreateInfo samplerCreateInfo{};
 			samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -374,16 +369,18 @@ namespace Vivium {
 			), "Failed to create texture sampler");
 		}
 
-		void createPipeline(Engine::Handle engine, VkPipeline* pipeline, VkPipelineLayout* layout, VkRenderPass renderPass, const std::span<const Shader::Handle> shaders, const std::span<const DescriptorLayout::Handle> descriptorLayouts, const std::span<const Uniform::PushConstant> pushConstants, const Buffer::Layout& bufferLayout, VkSampleCountFlagBits sampleCount, const VkAllocationCallbacks* layoutAllocationCallback, const VkAllocationCallbacks* pipelineAllocationCallback) {
+		void createPipeline(Engine::Handle engine, ResourceManager::Static::Handle manager, VkPipeline* pipeline, VkPipelineLayout* layout, VkRenderPass renderPass, const std::span<const ShaderReference> shaders, const std::span<const DescriptorLayoutReference> descriptorLayouts, const std::span<const PushConstant> pushConstants, const BufferLayout& bufferLayout, VkSampleCountFlagBits sampleCount, const VkAllocationCallbacks* layoutAllocationCallback, const VkAllocationCallbacks* pipelineAllocationCallback) {
 			std::vector<VkPipelineShaderStageCreateInfo> shaderStages(shaders.size());
 
 			for (uint32_t i = 0; i < shaders.size(); i++) {
-				Shader::Handle shader = shaders[i];
+				ShaderReference const& shaderReference = shaders[i];
+				ShaderSpecification const& shaderSpecification = manager->shaders.specifications[shaderReference.referenceIndex];
+				Shader const& shader = ResourceManager::Static::_getReference(manager, shaderReference);
 
 				VkPipelineShaderStageCreateInfo shaderStageInfo{};
 				shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-				shaderStageInfo.stage = shader->flags;
-				shaderStageInfo.module = shader->shader;
+				shaderStageInfo.stage = static_cast<VkShaderStageFlagBits>(shaderSpecification.stage);
+				shaderStageInfo.module = shader.shader;
 				shaderStageInfo.pName = "main";
 
 				shaderStages[i] = shaderStageInfo;
@@ -452,11 +449,11 @@ namespace Vivium {
 			dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 			dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
 			dynamicState.pDynamicStates = dynamicStates.data();
-
+			
 			std::vector<VkDescriptorSetLayout> vulkanDescriptorLayouts(descriptorLayouts.size());
 
 			for (uint32_t i = 0; i < descriptorLayouts.size(); i++) {
-				vulkanDescriptorLayouts[i] = descriptorLayouts[i]->layout;
+				vulkanDescriptorLayouts[i] = ResourceManager::Static::_getReference(manager, descriptorLayouts[i]).layout;
 			}
 
 			VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
@@ -529,20 +526,16 @@ namespace Vivium {
 			);
 		}
 
-		void transferBuffer(Context::Handle context, Buffer::Handle source, Buffer::Handle destination) {
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(source, Buffer::isNull);
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(destination, Buffer::isNull);
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(context, Context::isNull);
-
+		void transferBuffer(Context::Handle context, Buffer const& source, uint64_t sourceSize, Buffer& destination) {
 			VkBufferCopy* copyRegion = new VkBufferCopy;
 			copyRegion->srcOffset = 0;
 			copyRegion->dstOffset = 0;
-			copyRegion->size = source->size;
+			copyRegion->size = sourceSize;
 
 			vkCmdCopyBuffer(
 				context->inTransfer ? context->transferCommandBuffer : context->currentCommandBuffer,
-				source->buffer,
-				destination->buffer,
+				source.buffer,
+				destination.buffer,
 				1,
 				copyRegion
 			);
@@ -550,81 +543,54 @@ namespace Vivium {
 			context->addFunction([copyRegion]() { delete copyRegion; });
 		}
 
-		void bindPipeline(Context::Handle context, Pipeline::Handle handle) {
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle, Pipeline::isNull);
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(context, Context::isNull);
-
-			vkCmdBindPipeline(context->currentCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, handle->pipeline);
+		void bindPipeline(Context::Handle context, Pipeline const& handle) {
+			vkCmdBindPipeline(context->currentCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, handle.pipeline);
 		}
 
-		void bindVertexBuffer(Context::Handle context, Buffer::Handle handle)
+		void bindVertexBuffer(Context::Handle context, Buffer const& handle)
 		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle, Buffer::isNull);
-			VIVIUM_ASSERT(handle->usage == Buffer::Usage::VERTEX,
-				"Buffer bound was not a vertex buffer");
+			// TODO: lost usage information, can't verify
 
 			vkCmdBindVertexBuffers(
 				context->currentCommandBuffer,
 				0,
 				1,
-				&(handle->buffer),
+				&handle.buffer,
 				&context->literalZero
 			);
 		}
 
-		void bindIndexBuffer(Context::Handle context, Buffer::Handle handle)
+		void bindIndexBuffer(Context::Handle context, Buffer const& handle)
 		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle, Buffer::isNull);
-			VIVIUM_ASSERT(handle->usage == Buffer::Usage::INDEX,
-				"Buffer bound was not an index buffer");
+			// TODO: lost usage information, can't verify
 
 			vkCmdBindIndexBuffer(
 				context->currentCommandBuffer,
-				handle->buffer,
+				handle.buffer,
 				0,
 				VK_INDEX_TYPE_UINT16
 			);
 		}
 
-		void bindDescriptorSet(Context::Handle context, DescriptorSet::Handle descriptorSet, Pipeline::Handle pipeline)
+		void bindDescriptorSet(Context::Handle context, DescriptorSet const& descriptorSet, Pipeline const& pipeline)
 		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(descriptorSet, DescriptorSet::isNull);
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(pipeline, Pipeline::isNull);
-
 			vkCmdBindDescriptorSets(
 				context->currentCommandBuffer,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				pipeline->layout,
+				pipeline.layout,
 				0,
 				1,
-				&(descriptorSet->descriptorSet),
+				&descriptorSet.descriptorSet,
 				0,
 				nullptr
 			);
 		}
 
-		void bindDescriptorSetDynamic(Context::Handle context, DescriptorSet::Handle descriptorSet, Pipeline::Handle pipeline, const std::span<const uint32_t>& offsets)
-		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(descriptorSet, DescriptorSet::isNull);
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(pipeline, Pipeline::isNull);
-
-			vkCmdBindDescriptorSets(
-				context->currentCommandBuffer,
-				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				pipeline->layout,
-				0,
-				1,
-				&(descriptorSet->descriptorSet),
-				static_cast<uint32_t>(offsets.size()),
-				offsets.data()
-			);
-		}
-
-		void pushConstants(Context::Handle context, const void* data, uint64_t size, uint64_t offset, Shader::Stage stage, Pipeline::Handle pipeline)
+		void pushConstants(Context::Handle context, const void* data, uint64_t size, uint64_t offset, ShaderStage stage, Pipeline const& pipeline)
 		{
 			vkCmdPushConstants(
 				context->inTransfer ? context->transferCommandBuffer : context->currentCommandBuffer,
-				pipeline->layout,
+				pipeline.layout,
 				static_cast<VkShaderStageFlags>(stage),
 				static_cast<uint32_t>(offset),
 				static_cast<uint32_t>(size),

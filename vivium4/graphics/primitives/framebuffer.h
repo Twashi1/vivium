@@ -4,6 +4,14 @@
 #include "texture.h"
 
 namespace Vivium {
+	namespace Commands {
+		namespace Context {
+			struct Resource;
+
+			typedef Resource* Handle;
+		}
+	}
+
 	// TODO: dimensions and format not required?
 	struct Framebuffer {
 		VkImage image;
@@ -18,7 +26,7 @@ namespace Vivium {
 
 	struct FramebufferSpecification {
 		U32x2 dimensions;
-		Texture::Format format;
+		TextureFormat format;
 		int multisampleCount;
 	};
 
@@ -30,8 +38,6 @@ namespace Vivium {
 		
 	template <Storage::StorageType StorageType>
 	void drop(StorageType* allocator, Framebuffer& framebuffer, Engine::Handle engine) {
-		VIVIUM_CHECK_NULLPTR(engine, VIVIUM_CHECK_RESOURCE_EXISTS(*engine, Engine::isNull));
-
 		vkDestroyImage(engine->device, framebuffer.image, nullptr);
 		vkDestroySampler(engine->device, framebuffer.sampler, nullptr);
 		vkDestroyImageView(engine->device, framebuffer.view, nullptr);

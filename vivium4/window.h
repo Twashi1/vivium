@@ -89,8 +89,6 @@ namespace Vivium {
 		template <Storage::StorageType StorageType>
 		void drop(StorageType* allocator, Handle handle, Engine::Handle engine)
 		{
-			VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(handle, Window::isNull);
-
 			handle->deleteSwapChain(engine);
 
 			Storage::dropResource(allocator, handle);

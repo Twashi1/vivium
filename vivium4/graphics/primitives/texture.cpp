@@ -40,7 +40,7 @@ namespace Vivium {
 		
 	TextureSpecification TextureSpecification::fromFont(Font::Font font, TextureFormat imageFormat, TextureFilter imageFilter)
 	{
-		Specification specification;
+		TextureSpecification specification;
 
 		// TODO; function for getting channels/stbi_image_format
 		int stbi_format;

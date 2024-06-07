@@ -4,6 +4,11 @@ namespace Vivium {
 	namespace GUI {
 		namespace Visual {
 			namespace Button {
+				void setup(Button::Handle button, ResourceManager::Static::Handle manager)
+				{
+					Text::setup(button->text, manager);
+				}
+
 				void setText(Button::Handle button, Engine::Handle engine, Window::Handle window, Commands::Context::Handle context, const std::string_view& text)
 				{
 					// Early exit if no text

@@ -55,15 +55,15 @@ namespace Vivium {
 					Object::Handle base;
 
 					Batch::Handle batch;
-					Buffer::Layout bufferLayout;
+					BufferLayout bufferLayout;
 
 					Font::Font font;
 
-					Buffer::Handle fragmentUniform;
-					Buffer::Handle vertexUniform;
-					Texture::Handle textAtlasTexture;
+					Ref<Buffer> fragmentUniform;
+					Ref<Buffer> vertexUniform;
+					Ref<Texture> textAtlasTexture;
 
-					DescriptorSet::Handle descriptorSet;
+					Ref<DescriptorSet> descriptorSet;
 
 					Alignment alignment;
 				};
@@ -76,15 +76,13 @@ namespace Vivium {
 
 				template <Storage::StorageType StorageType>
 				PromisedHandle submit(StorageType* allocator, ResourceManager::Static::Handle manager, Engine::Handle engine, Context::Handle textContext, Specification specification) {
-					VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
-
 					PromisedHandle handle = Storage::allocateResource<Resource>(allocator);
 
 					handle->base = Object::create(allocator, GUI::Object::Specification());
 
-					handle->bufferLayout = Buffer::Layout::fromTypes(std::vector<Shader::DataType>({
-						Shader::DataType::VEC2,
-						Shader::DataType::VEC2
+					handle->bufferLayout = BufferLayout::fromTypes(std::vector<ShaderDataType>({
+						ShaderDataType::VEC2,
+						ShaderDataType::VEC2
 						}));
 
 					handle->batch = Batch::submit(allocator, engine, manager, Batch::Specification(
@@ -93,47 +91,46 @@ namespace Vivium {
 						handle->bufferLayout
 					));
 
-					std::array<Buffer::Handle, 2> hostBuffers;
+					std::array<BufferReference, 2> hostBuffers;
 					
-					ResourceManager::Static::submit(manager, hostBuffers.data(), MemoryType::UNIFORM, std::vector<Buffer::Specification>({
-						Buffer::Specification(sizeof(Color), Buffer::Usage::UNIFORM),
-						Buffer::Specification(sizeof(TransformData), Buffer::Usage::UNIFORM),
+					ResourceManager::Static::submit(manager, hostBuffers.data(), MemoryType::UNIFORM, std::vector<BufferSpecification>({
+						BufferSpecification(sizeof(Color), BufferUsage::UNIFORM),
+						BufferSpecification(sizeof(TransformData), BufferUsage::UNIFORM),
 					}));
 
-					handle->fragmentUniform = hostBuffers[0];
-					handle->vertexUniform = hostBuffers[1];
+					handle->fragmentUniform.reference = hostBuffers[0];
+					handle->vertexUniform.reference = hostBuffers[1];
 
 					handle->font = specification.font;
 
-					ResourceManager::Static::submit(manager, &handle->textAtlasTexture, std::vector<Texture::Specification>({
-						Texture::Specification::fromFont(specification.font, Texture::Format::MONOCHROME, Texture::Filter::NEAREST)
+					ResourceManager::Static::submit(manager, &handle->textAtlasTexture.reference, std::vector<TextureSpecification>({
+						TextureSpecification::fromFont(specification.font, TextureFormat::MONOCHROME, TextureFilter::NEAREST)
 					}));
 
-					ResourceManager::Static::submit(manager, &handle->descriptorSet, std::vector<DescriptorSet::Specification>({
-						DescriptorSet::Specification(textContext->text.descriptorLayout, std::vector<Uniform::Data>({
-							Uniform::Data::fromTexture(handle->textAtlasTexture),
-							Uniform::Data::fromBuffer(handle->fragmentUniform, sizeof(Color), 0),
-							Uniform::Data::fromBuffer(handle->vertexUniform, sizeof(F32x2), 0)
+					ResourceManager::Static::submit(manager, &handle->descriptorSet.reference, std::vector<DescriptorSetSpecification>({
+						DescriptorSetSpecification(textContext->text.descriptorLayout, std::vector<UniformData>({
+							UniformData::fromTexture(handle->textAtlasTexture.reference),
+							UniformData::fromBuffer(handle->fragmentUniform.reference, sizeof(Color), 0),
+							UniformData::fromBuffer(handle->vertexUniform.reference, sizeof(F32x2), 0)
 							}))
 						}));
 
 					return handle;
 				}
 
+				void setup(Text::Handle text, ResourceManager::Static::Handle manager);
+
 				template <Storage::StorageType StorageType>
 				void drop(StorageType* allocator, Handle handle, Engine::Handle engine) {
-					VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
-					VIVIUM_CHECK_HANDLE_EXISTS(handle);
-
 					GUI::Object::drop(allocator, handle->base);
 
 					Batch::drop(allocator, handle->batch, engine);
 
-					Buffer::drop(VIVIUM_NULL_STORAGE, handle->fragmentUniform, engine);
-					Buffer::drop(VIVIUM_NULL_STORAGE, handle->vertexUniform, engine);
-					Texture::drop(VIVIUM_NULL_STORAGE, handle->textAtlasTexture, engine);
+					dropBuffer(VIVIUM_NULL_STORAGE, handle->fragmentUniform.resource, engine);
+					dropBuffer(VIVIUM_NULL_STORAGE, handle->vertexUniform.resource, engine);
+					drop(VIVIUM_NULL_STORAGE, handle->textAtlasTexture.resource, engine);
 
-					DescriptorSet::drop(allocator, handle->descriptorSet);
+					drop(allocator, handle->descriptorSet.resource);
 
 					Storage::dropResource(allocator, handle);
 				}

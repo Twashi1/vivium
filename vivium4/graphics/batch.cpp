@@ -71,8 +71,8 @@ namespace Vivium {
 		void endSubmission(Handle handle, Commands::Context::Handle context, Engine::Handle engine)
 		{
 			Commands::Context::beginTransfer(context);
-			Commands::transferBuffer(context, handle->vertexStaging, handle->vertexDevice);
-			Commands::transferBuffer(context, handle->indexStaging, handle->indexDevice);
+			Commands::transferBuffer(context, handle->vertexStaging.resource, handle->verticesSubmitted * handle->bufferLayout.stride, handle->vertexDevice.resource);
+			Commands::transferBuffer(context, handle->indexStaging.resource, handle->indexBufferIndex * sizeof(uint16_t), handle->indexDevice.resource);
 			Commands::Context::endTransfer(context, engine);
 
 			handle->lastSubmissionIndexCount = handle->indexBufferIndex;
@@ -83,10 +83,10 @@ namespace Vivium {
 		
 		void setup(Handle handle, ResourceManager::Static::Handle manager)
 		{
-			ResourceManager::Static::getReference(manager, handle->vertexStaging);
-			ResourceManager::Static::getReference(manager, handle->vertexDevice);
-			ResourceManager::Static::getReference(manager, handle->indexStaging);
-			ResourceManager::Static::getReference(manager, handle->indexDevice);
+			ResourceManager::Static::convertReference(manager, handle->vertexStaging);
+			ResourceManager::Static::convertReference(manager, handle->vertexDevice);
+			ResourceManager::Static::convertReference(manager, handle->indexStaging);
+			ResourceManager::Static::convertReference(manager, handle->indexDevice);
 		}
 	}
 }

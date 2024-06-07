@@ -6,12 +6,12 @@ namespace Vivium {
 		return buffer.buffer == VK_NULL_HANDLE;
 	}
 
-	void setBuffer(Buffer const& buffer, uint64_t bufferOffset, const void* data, uint64_t size)
+	void setBuffer(Buffer& buffer, uint64_t bufferOffset, const void* data, uint64_t size)
 	{
 		VIVIUM_CHECK_RESOURCE_EXISTS(buffer, Vivium::isBufferNull);
 
 		// TODO: make assertion work in debug mode
-#ifdef 0
+#if 0
 		VIVIUM_ASSERT(size + bufferOffset <= buffer->size,
 			"Setting memory OOBs");
 #endif
@@ -23,7 +23,7 @@ namespace Vivium {
 		);
 	}
 
-	void* getBufferMapping(Buffer const& buffer)
+	void* getBufferMapping(Buffer& buffer)
 	{
 		VIVIUM_CHECK_RESOURCE_EXISTS(buffer, Vivium::isBufferNull);
 

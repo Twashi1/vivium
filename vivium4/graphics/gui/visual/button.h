@@ -20,8 +20,6 @@ namespace Vivium {
 
 				template <Storage::StorageType StorageType>
 				void drop(StorageType* allocator, Handle handle, Engine::Handle engine) {
-					VIVIUM_CHECK_RESOURCE_EXISTS_AT_HANDLE(engine, Engine::isNull);
-
 					GUI::Object::drop(allocator, handle->base);
 
 					Text::drop(allocator, handle->text, engine);
@@ -53,6 +51,8 @@ namespace Vivium {
 
 					return button;
 				}
+
+				void setup(Button::Handle button, ResourceManager::Static::Handle manager);
 
 				void setText(Button::Handle button, Engine::Handle engine, Window::Handle window, Commands::Context::Handle context, const std::string_view& text);
 			}

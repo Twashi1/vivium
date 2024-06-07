@@ -113,8 +113,6 @@ namespace Vivium {
 
 				void render(Handle handle, Text::Metrics metrics, Commands::Context::Handle context, Context::Handle guiContext, Color color, F32x2 scale, Math::Perspective perspective)
 				{
-					if (Batch::indexBuffer(handle->batch) == VIVIUM_NULL_HANDLE) return;
-
 					TransformData transform;
 					transform.translation = handle->base->properties.truePosition;
 					transform.scale = scale;
@@ -132,13 +130,13 @@ namespace Vivium {
 					VIVIUM_DEBUG_ONLY(default: VIVIUM_LOG(Log::FATAL, "Invalid alignment passed"); break);
 					}
 
-					Buffer::set(handle->fragmentUniform, 0, &color, sizeof(Color));
-					Buffer::set(handle->vertexUniform, 0, &transform, sizeof(TransformData));
+					setBuffer(handle->fragmentUniform.resource, 0, &color, sizeof(Color));
+					setBuffer(handle->vertexUniform.resource, 0, &transform, sizeof(TransformData));
 
-					Commands::pushConstants(context, &perspective, sizeof(Math::Perspective), 0, Shader::Stage::VERTEX, guiContext->text.pipeline);
+					Commands::pushConstants(context, &perspective, sizeof(Math::Perspective), 0, ShaderStage::VERTEX, guiContext->text.pipeline.resource);
 
-					Commands::bindPipeline(context, guiContext->text.pipeline);
-					Commands::bindDescriptorSet(context, handle->descriptorSet, guiContext->text.pipeline);
+					Commands::bindPipeline(context, guiContext->text.pipeline.resource);
+					Commands::bindDescriptorSet(context, handle->descriptorSet.resource, guiContext->text.pipeline.resource);
 					Commands::bindVertexBuffer(context, Batch::vertexBuffer(handle->batch));
 					Commands::bindIndexBuffer(context, Batch::indexBuffer(handle->batch));
 
@@ -159,6 +157,11 @@ namespace Vivium {
 					}
 
 					Batch::endSubmission(handle->batch, context, engine);
+				}
+				
+				void setup(Text::Handle text, ResourceManager::Static::Handle manager)
+				{
+					Batch::setup(text->batch, manager);
 				}
 			}
 		}

@@ -15,38 +15,45 @@
 
 namespace Vivium {
 	template <typename Resource>
-	union Ref;
+	union Ref {};
 
+	template <>
 	union Ref<Pipeline> {
 		Pipeline resource;
 		PipelineReference reference;
 	};
 
+	template <>
 	union Ref<Buffer> {
 		Buffer resource;
 		BufferReference reference;
 	};
 
+	template <>
 	union Ref<Shader> {
 		Shader resource;
 		ShaderReference reference;
 	};
 
+	template <>
 	union Ref<DescriptorLayout> {
 		DescriptorLayout resource;
 		DescriptorLayoutReference reference;
 	};
 
+	template <>
 	union Ref<DescriptorSet> {
 		DescriptorSet resource;
 		DescriptorSetReference reference;
 	};
 
+	template <>
 	union Ref<Framebuffer> {
 		Framebuffer resource;
 		FramebufferReference reference;
 	};
 
+	template <>
 	union Ref<Texture> {
 		Texture resource;
 		TextureReference reference;
@@ -114,6 +121,7 @@ namespace Vivium {
 			void _allocatePipelines(Handle handle, Engine::Handle engine);
 
 			void allocate(Handle handle, Engine::Handle engine);
+			void clearReferences(Handle handle);
 
 			template <Storage::StorageType StorageType>
 			void drop(StorageType* allocator, Handle handle, Engine::Handle engine) {
@@ -125,10 +133,10 @@ namespace Vivium {
 					vkFreeMemory(engine->device, deviceMemoryHandle.memory, nullptr);
 				}
 
-				sharedTrackerData.deviceMemoryAllocations -= static_cast<uint32_t>(deviceMemoryHandles.size());
+				sharedTrackerData.deviceMemoryAllocations -= static_cast<uint32_t>(handle->deviceMemoryHandles.size());
 
 				// Free descriptor pool
-				for (VkDescriptorPool descriptorPool : descriptorPools)
+				for (VkDescriptorPool descriptorPool : handle->descriptorPools)
 					vkDestroyDescriptorPool(engine->device, descriptorPool, nullptr);
 
 				Storage::dropResource(allocator, handle);
@@ -147,7 +155,9 @@ namespace Vivium {
 					memory[i].referenceIndex = i + currentSize;
 				}
 
-				resourceField.resources.resize(std::max(nextGrowth, requiredSize));
+				// TODO: a bit messy
+				resourceField.resources.reserve(std::max(nextGrowth, requiredSize));
+				resourceField.resources.resize(requiredSize);
 
 				resourceField.specifications.insert(resourceField.specifications.end(), specifications.begin(), specifications.end());
 			}
@@ -160,18 +170,18 @@ namespace Vivium {
 			void submit(Handle handle, DescriptorSetReference* memory, const std::span<const DescriptorSetSpecification> specifications);
 			void submit(Handle handle, PipelineReference* memory, const std::span<const PipelineSpecification> specifications);
 
-			Buffer& getReference(Handle handle, BufferReference reference);
-			Texture& getReference(Handle handle, TextureReference reference);
-			Framebuffer& getReference(Handle handle, FramebufferReference reference);
-			Shader& getReference(Handle handle, ShaderReference reference);
-			DescriptorLayout& getReference(Handle handle, DescriptorLayoutReference reference);
-			DescriptorSet& getReference(Handle handle, DescriptorSetReference reference);
-			Pipeline& getPipeline(Handle handle, PipelineReference reference);
+			Buffer& _getReference(Handle handle, BufferReference reference);
+			Texture& _getReference(Handle handle, TextureReference reference);
+			Framebuffer& _getReference(Handle handle, FramebufferReference reference);
+			Shader& _getReference(Handle handle, ShaderReference reference);
+			DescriptorLayout& _getReference(Handle handle, DescriptorLayoutReference reference);
+			DescriptorSet& _getReference(Handle handle, DescriptorSetReference reference);
+			Pipeline& _getReference(Handle handle, PipelineReference reference);
 
 			template <typename Resource>
-			void getReference(Handle handle, Ref<Resource>& resourceReference)
+			void convertReference(Handle handle, Ref<Resource>& resourceReference)
 			{
-				resourceReference.resource = getReference(handle, resourceReference.reference);
+				resourceReference.resource = _getReference(handle, resourceReference.reference);
 			}
 		}
 	}

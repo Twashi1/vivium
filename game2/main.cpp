@@ -72,7 +72,6 @@ struct State {
 
 const uint64_t maxGroundVertices = 16;
 
-// Character
 void _submitCharacter(State& state) {
 	state.character.body.shape = Physics::Shape(&state.box);
 	state.character.body.position = F32x2(200.0f, 100.0f);
@@ -119,7 +118,7 @@ void _submitCharacter(State& state) {
 }
 
 void _submitGround(State& state) {
-	state.ground.batch = Batch::submit(&state.storage, state.engine, state.manager, Batch::Specification(maxGroundVertices * 4, maxGroundVertices * 6, Buffer::Layout::fromTypes(
+	state.ground.batch = Batch::submit(&state.storage, state.engine, state.manager, Batch::Specification(maxGroundVertices * 4, maxGroundVertices * 6, BufferLayout::fromTypes(
 		std::vector<ShaderDataType>{
 			ShaderDataType::VEC2,
 			ShaderDataType::VEC2
@@ -177,36 +176,54 @@ void _submitSky(State& state) {
 }
 
 void _setupCharacter(State& state) {
+	Batch::setup(state.character.batch, state.manager);
 	Batch::submitRectangle(state.character.batch, 0, -0.5f, -0.5f, 0.5f, 0.5f);
 	Batch::submitRectangle(state.character.batch, 1, 0.0f, 0.0f, 1.0f, 1.0f);
 	Batch::endShape(state.character.batch, 4, std::vector<uint16_t>({ 0, 1, 2, 2, 3, 0 }));
 	Batch::endSubmission(state.character.batch, state.context, state.engine);
 
-	// TODO: get references
+	ResourceManager::Static::convertReference(state.manager, state.character.pipeline);
+	ResourceManager::Static::convertReference(state.manager, state.character.uniformBuffer);
+	ResourceManager::Static::convertReference(state.manager, state.character.descriptorSet);
+	ResourceManager::Static::convertReference(state.manager, state.character.descriptorLayout);
+
+	ResourceManager::Static::convertReference(state.manager, state.character.fragmentShader);
+	ResourceManager::Static::convertReference(state.manager, state.character.vertexShader);
 
 	drop(VIVIUM_NULL_STORAGE, state.character.fragmentShader.resource, state.engine);
 	drop(VIVIUM_NULL_STORAGE, state.character.vertexShader.resource, state.engine);
 }
 
 void _setupSky(State& state) {
+	Batch::setup(state.sky.batch, state.manager);
 	Batch::submitRectangle(state.sky.batch, 0, -1.0f, -1.0f, 1.0f, 1.0f);
 	Batch::submitRectangle(state.sky.batch, 1, 0.0f, 0.0f, 1.0f, 1.0f);
 	Batch::endShape(state.sky.batch, 4, std::vector<uint16_t>({ 0, 3, 2, 2, 1, 0 }));
 	Batch::endSubmission(state.sky.batch, state.context, state.engine);
 
-	// TODO: get references
+	ResourceManager::Static::convertReference(state.manager, state.sky.pipeline);
+
+	ResourceManager::Static::convertReference(state.manager, state.sky.fragmentShader);
+	ResourceManager::Static::convertReference(state.manager, state.sky.vertexShader);
 
 	drop(VIVIUM_NULL_STORAGE, state.sky.fragmentShader.resource, state.engine);
 	drop(VIVIUM_NULL_STORAGE, state.sky.vertexShader.resource, state.engine);
 }
 
 void _setupGround(State& state) {
+	Batch::setup(state.ground.batch, state.manager);
 	Batch::submitRectangle(state.ground.batch, 0, 0.0f, -200.0f, 400.0f, -100.0f);
 	Batch::submitRectangle(state.ground.batch, 1, 0.0f, 0.0f, 1.0f, 1.0f);
 	Batch::endShape(state.ground.batch, 4, std::vector<uint16_t>({ 0, 1, 2, 2, 3, 0 }));
 	Batch::endSubmission(state.ground.batch, state.context, state.engine);
 
-	// TODO: get references
+	ResourceManager::Static::convertReference(state.manager, state.ground.pipeline);
+	ResourceManager::Static::convertReference(state.manager, state.ground.uniformBuffer);
+	ResourceManager::Static::convertReference(state.manager, state.ground.descriptorSet);
+	ResourceManager::Static::convertReference(state.manager, state.ground.descriptorLayout);
+
+	ResourceManager::Static::convertReference(state.manager, state.ground.fragmentShader);
+	ResourceManager::Static::convertReference(state.manager, state.ground.vertexShader);
 
 	drop(VIVIUM_NULL_STORAGE, state.ground.fragmentShader.resource, state.engine);
 	drop(VIVIUM_NULL_STORAGE, state.ground.vertexShader.resource, state.engine);
@@ -258,11 +275,11 @@ void _renderCharacter(State& state) {
 
 	setBuffer(state.character.uniformBuffer.resource, 0, &characterUniform, sizeof(CharacterUniform));
 
-	Commands::bindPipeline(state.context, state.character.pipeline);
-	Commands::bindDescriptorSet(state.context, state.character.descriptorSet, state.character.pipeline);
+	Commands::bindPipeline(state.context, state.character.pipeline.resource);
+	Commands::bindDescriptorSet(state.context, state.character.descriptorSet.resource, state.character.pipeline.resource);
 	Commands::bindVertexBuffer(state.context, Batch::vertexBuffer(state.character.batch));
 	Commands::bindIndexBuffer(state.context, Batch::indexBuffer(state.character.batch));
-	Commands::pushConstants(state.context, &state.perspective, sizeof(Math::Perspective), 0, ShaderStage::VERTEX, state.character.pipeline);
+	Commands::pushConstants(state.context, &state.perspective, sizeof(Math::Perspective), 0, ShaderStage::VERTEX, state.character.pipeline.resource);
 	
 	Commands::drawIndexed(state.context, 6, 1);
 }
@@ -273,11 +290,11 @@ void _renderGround(State& state) {
 
 	setBuffer(state.ground.uniformBuffer.resource, 0, &groundUniform, sizeof(GroundUniform));
 
-	Commands::bindPipeline(state.context, state.ground.pipeline);
-	Commands::bindDescriptorSet(state.context, state.ground.descriptorSet, state.ground.pipeline);
+	Commands::bindPipeline(state.context, state.ground.pipeline.resource);
+	Commands::bindDescriptorSet(state.context, state.ground.descriptorSet.resource, state.ground.pipeline.resource);
 	Commands::bindVertexBuffer(state.context, Batch::vertexBuffer(state.ground.batch));
 	Commands::bindIndexBuffer(state.context, Batch::indexBuffer(state.ground.batch));
-	Commands::pushConstants(state.context, &state.perspective, sizeof(Math::Perspective), 0, ShaderStage::VERTEX, state.ground.pipeline);
+	Commands::pushConstants(state.context, &state.perspective, sizeof(Math::Perspective), 0, ShaderStage::VERTEX, state.ground.pipeline.resource);
 
 	Commands::drawIndexed(state.context, Batch::indexCount(state.ground.batch), 1);
 }
@@ -288,10 +305,10 @@ void _renderSky(State& state) {
 	pushConstants.time = state.character.timer.getTime();
 	pushConstants.screenDimensions = Window::dimensions(state.window);
 
-	Commands::bindPipeline(state.context, state.sky.pipeline);
+	Commands::bindPipeline(state.context, state.sky.pipeline.resource);
 	Commands::bindVertexBuffer(state.context, Batch::vertexBuffer(state.sky.batch));
 	Commands::bindIndexBuffer(state.context, Batch::indexBuffer(state.sky.batch));
-	Commands::pushConstants(state.context, &pushConstants, sizeof(SkyPushConstants), 0, ShaderStage::FRAGMENT | ShaderStage::VERTEX, state.sky.pipeline);
+	Commands::pushConstants(state.context, &pushConstants, sizeof(SkyPushConstants), 0, ShaderStage::FRAGMENT | ShaderStage::VERTEX, state.sky.pipeline.resource);
 	Commands::drawIndexed(state.context, Batch::indexCount(state.sky.batch), 1);
 }
 
@@ -318,6 +335,8 @@ void initialise(State& state) {
 	_setupCharacter(state);
 	_setupSky(state);
 	_setupGround(state);
+
+	ResourceManager::Static::clearReferences(state.manager);
 }
 
 void gameloop(State& state) {

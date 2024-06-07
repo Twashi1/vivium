@@ -15,7 +15,7 @@ namespace Vivium {
 		std::vector<ShaderReference> shaders;
 		BufferLayout bufferLayout;
 		std::vector<DescriptorLayoutReference> descriptorLayouts;
-		std::vector<Uniform::PushConstant> pushConstants;
+		std::vector<PushConstant> pushConstants;
 			
 		_RenderTarget target;
 
@@ -32,7 +32,7 @@ namespace Vivium {
 			const std::span<const ShaderReference> shaders,
 			const BufferLayout& bufferLayout,
 			const std::span<const DescriptorLayoutReference> descriptorLayouts,
-			const std::span<const Uniform::PushConstant> pushConstants,
+			const std::span<const PushConstant> pushConstants,
 			Engine::Handle engine,
 			Window::Handle window
 		);
@@ -41,7 +41,7 @@ namespace Vivium {
 			const std::span<const ShaderReference> shaders,
 			const BufferLayout& bufferLayout,
 			const std::span<const DescriptorLayoutReference> descriptorLayouts,
-			const std::span<const Uniform::PushConstant> pushConstants,
+			const std::span<const PushConstant> pushConstants,
 			FramebufferReference framebuffer,
 			int multisampleCount
 		);

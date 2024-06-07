@@ -24,12 +24,12 @@ namespace Vivium {
 
 				Math::Perspective perspective = Math::orthogonalPerspective2D(window, F32x2(0.0f), 0.0f, 1.0f);
 
-				Buffer::set(guiContext->button.storageBuffer, 0, buttonData.data(), buttonData.size() * sizeof(Context::_ButtonInstanceData));
-				Commands::bindPipeline(context, guiContext->button.pipeline);
-				Commands::bindVertexBuffer(context, guiContext->button.vertexBuffer);
-				Commands::bindIndexBuffer(context, guiContext->button.indexBuffer);
-				Commands::bindDescriptorSet(context, guiContext->button.descriptorSet, guiContext->button.pipeline);
-				Commands::pushConstants(context, &perspective, sizeof(Math::Perspective), 0, Shader::Stage::VERTEX, guiContext->button.pipeline);
+				setBuffer(guiContext->button.storageBuffer.resource, 0, buttonData.data(), buttonData.size() * sizeof(Context::_ButtonInstanceData));
+				Commands::bindPipeline(context, guiContext->button.pipeline.resource);
+				Commands::bindVertexBuffer(context, guiContext->button.vertexBuffer.resource);
+				Commands::bindIndexBuffer(context, guiContext->button.indexBuffer.resource);
+				Commands::bindDescriptorSet(context, guiContext->button.descriptorSet.resource, guiContext->button.pipeline.resource);
+				Commands::pushConstants(context, &perspective, sizeof(Math::Perspective), 0, ShaderStage::VERTEX, guiContext->button.pipeline.resource);
 				Commands::drawIndexed(context, 6, scene.buttons.size());
 
 				for (Button::Handle button : scene.buttons) {
