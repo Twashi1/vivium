@@ -1,14 +1,11 @@
 
 ## High priority
 
-- Offset before size on `PushConstant`, update old systems
-- Double deconstructor call on `Storage::dropResource`
-- Update `Batch` and `GUI` to new system
-	- Remember `Batch::setup` now required to be called
-- Not all `drop` methods have correct naming convention
-- Some clean-up method on `ResourceManager::Static` that drops all resources once user is ready
+- Update `GUI` to new system (and test)
+- Fix bogus data making buttons rendering incorrectly (and fix the shader that's been brutalised for debugging)
 ## Core
 
+- Offset before size on `PushConstant`, not ideal
 - Can free `DescriptorLayout` at same stage we free `Shader`?
 - Static allocator being re-useable is an anti-pattern
 - Test multi-window draws
@@ -45,7 +42,6 @@
 	- Should be very quick to create from a buffer (almost seamless)
 ## Vulkan
 
-- Test re-useable resource manager
 - Generalise `Commands::createRenderPass` for `Framebuffer` render passes as well
 - Initialiser lists for resource manager
 	- Add functions that take initialiser lists
@@ -56,10 +52,14 @@
 
 ## GUI
 
+- Batch together multiple `Text` objects at different coordinates
 - Reduce parameters on GUI visual, customisability not the point of the system
 - `AddChild` public method
 - `Scene` rendering for instanced/batching
+- `Sprite` class
 - `Button` functionality (hover/click events, colour changes on hover/click)
+	- Pass `Specification` to submission
+	- Add ability for `Sprite` to display
 - `Slider` class
 - `Panel` class
 - `Anchor` renamed since also used in `Center` parameters (also move to `Vec2`?)

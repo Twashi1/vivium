@@ -60,7 +60,7 @@ namespace Vivium {
 	};
 
 	template <Storage::StorageType StorageType>
-	void drop(StorageType* allocator, Shader& shader, Engine::Handle engine) {
+	void dropShader(StorageType* allocator, Shader& shader, Engine::Handle engine) {
 		vkDestroyShaderModule(engine->device, shader.shader, nullptr);
 
 		Storage::dropResource(allocator, &shader);

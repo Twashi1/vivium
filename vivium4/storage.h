@@ -91,10 +91,15 @@ namespace Vivium {
 
 		template <typename Resource, StorageType Storage>
 		void dropResource(Storage* allocator, Resource* handle) {
-			handle->~Resource();
+			if constexpr (!std::is_same_v<Null, Storage>)
+			{
+				handle->~Resource();
+			}
 
 			if constexpr (Dynamic::StorageType<Storage>)
+			{
 				allocator->free(handle);
+			}
 		}
 	}
 }

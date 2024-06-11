@@ -162,6 +162,11 @@ namespace Vivium {
 				void setup(Text::Handle text, ResourceManager::Static::Handle manager)
 				{
 					Batch::setup(text->batch, manager);
+
+					ResourceManager::Static::convertReference(manager, text->fragmentUniform);
+					ResourceManager::Static::convertReference(manager, text->vertexUniform);
+					ResourceManager::Static::convertReference(manager, text->textAtlasTexture);
+					ResourceManager::Static::convertReference(manager, text->descriptorSet);
 				}
 			}
 		}

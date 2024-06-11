@@ -90,11 +90,11 @@ namespace Vivium {
 					}));
 
 					ResourceManager::Static::submit(manager, &handle->button.fragmentShader.reference, std::vector<ShaderSpecification>({
-						compileShader(Shader::Stage::FRAGMENT, "vivium4/res/button.frag", "vivium4/res/button_frag.spv")
+						compileShader(ShaderStage::FRAGMENT, "vivium4/res/button.frag", "vivium4/res/button_frag.spv")
 					}));
 
 					ResourceManager::Static::submit(manager, &handle->button.vertexShader.reference, std::vector<ShaderSpecification>({
-						compileShader(Shader::Stage::VERTEX, "vivium4/res/button.vert", "vivium4/res/button_vert.spv")
+						compileShader(ShaderStage::VERTEX, "vivium4/res/button.vert", "vivium4/res/button_vert.spv")
 					}));
 
 					{
@@ -115,9 +115,9 @@ namespace Vivium {
 								window
 							),
 							PipelineSpecification::fromWindow(
-								std::vector<ShaderReference>({ handle->button.fragmentShader, handle->button.vertexShader }),
+								std::vector<ShaderReference>({ handle->button.fragmentShader.reference, handle->button.vertexShader.reference }),
 								BufferLayout::fromTypes(std::vector<ShaderDataType>({ ShaderDataType::VEC2 })),
-								std::vector<DescriptorLayoutReference>({ handle->button.descriptorLayout }),
+								std::vector<DescriptorLayoutReference>({ handle->button.descriptorLayout.reference }),
 								std::vector<PushConstant>({ PushConstant(ShaderStage::VERTEX, 0, sizeof(Math::Perspective) )}),
 								engine,
 								window
@@ -130,22 +130,22 @@ namespace Vivium {
 					return handle;
 				}
 				
-				void setup(Handle handle, Commands::Context::Handle context, Engine::Handle engine);
+				void setup(Handle handle, ResourceManager::Static::Handle manager, Commands::Context::Handle context, Engine::Handle engine);
 
 				template <Storage::StorageType StorageType>
 				void drop(StorageType* allocator, Handle handle, Engine::Handle engine) {
 					VIVIUM_CHECK_HANDLE_EXISTS(handle);
 
 					dropDescriptorLayout(VIVIUM_NULL_STORAGE, handle->text.descriptorLayout.resource, engine);
-					drop(VIVIUM_NULL_STORAGE, handle->text.pipeline.resource, engine);
+					dropPipeline(VIVIUM_NULL_STORAGE, handle->text.pipeline.resource, engine);
 
 					dropDescriptorLayout(VIVIUM_NULL_STORAGE, handle->button.descriptorLayout.resource, engine);
-					drop(VIVIUM_NULL_STORAGE, handle->button.pipeline.resource, engine);
+					dropPipeline(VIVIUM_NULL_STORAGE, handle->button.pipeline.resource, engine);
 
 					dropBuffer(VIVIUM_NULL_STORAGE, handle->button.storageBuffer.resource, engine);
 					dropBuffer(VIVIUM_NULL_STORAGE, handle->button.vertexBuffer.resource, engine);
 					dropBuffer(VIVIUM_NULL_STORAGE, handle->button.indexBuffer.resource, engine);
-					drop(VIVIUM_NULL_STORAGE, handle->button.descriptorSet.resource);
+					dropDescriptorSet(VIVIUM_NULL_STORAGE, handle->button.descriptorSet.resource);
 
 					Storage::dropResource(allocator, handle);
 				}

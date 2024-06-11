@@ -526,9 +526,9 @@ namespace Vivium {
 			);
 		}
 
-		void transferBuffer(Context::Handle context, Buffer const& source, uint64_t sourceSize, Buffer& destination) {
+		void transferBuffer(Context::Handle context, Buffer const& source, uint64_t sourceSize, uint64_t sourceOffset, Buffer& destination) {
 			VkBufferCopy* copyRegion = new VkBufferCopy;
-			copyRegion->srcOffset = 0;
+			copyRegion->srcOffset = sourceOffset;
 			copyRegion->dstOffset = 0;
 			copyRegion->size = sourceSize;
 

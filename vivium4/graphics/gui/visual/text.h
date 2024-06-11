@@ -108,7 +108,7 @@ namespace Vivium {
 					}));
 
 					ResourceManager::Static::submit(manager, &handle->descriptorSet.reference, std::vector<DescriptorSetSpecification>({
-						DescriptorSetSpecification(textContext->text.descriptorLayout, std::vector<UniformData>({
+						DescriptorSetSpecification(textContext->text.descriptorLayout.reference, std::vector<UniformData>({
 							UniformData::fromTexture(handle->textAtlasTexture.reference),
 							UniformData::fromBuffer(handle->fragmentUniform.reference, sizeof(Color), 0),
 							UniformData::fromBuffer(handle->vertexUniform.reference, sizeof(F32x2), 0)
@@ -128,9 +128,9 @@ namespace Vivium {
 
 					dropBuffer(VIVIUM_NULL_STORAGE, handle->fragmentUniform.resource, engine);
 					dropBuffer(VIVIUM_NULL_STORAGE, handle->vertexUniform.resource, engine);
-					drop(VIVIUM_NULL_STORAGE, handle->textAtlasTexture.resource, engine);
+					dropTexture(VIVIUM_NULL_STORAGE, handle->textAtlasTexture.resource, engine);
 
-					drop(allocator, handle->descriptorSet.resource);
+					dropDescriptorSet(allocator, handle->descriptorSet.resource);
 
 					Storage::dropResource(allocator, handle);
 				}

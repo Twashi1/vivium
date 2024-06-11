@@ -12,7 +12,6 @@ namespace Vivium {
 		}
 	}
 
-	// TODO: dimensions and format not required?
 	struct Framebuffer {
 		VkImage image;
 		VkImageView view;
@@ -37,7 +36,7 @@ namespace Vivium {
 	int getRequestedMultisamples(Engine::Handle engine, int multisampleCount);
 		
 	template <Storage::StorageType StorageType>
-	void drop(StorageType* allocator, Framebuffer& framebuffer, Engine::Handle engine) {
+	void dropFramebuffer(StorageType* allocator, Framebuffer& framebuffer, Engine::Handle engine) {
 		vkDestroyImage(engine->device, framebuffer.image, nullptr);
 		vkDestroySampler(engine->device, framebuffer.sampler, nullptr);
 		vkDestroyImageView(engine->device, framebuffer.view, nullptr);

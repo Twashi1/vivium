@@ -71,8 +71,8 @@ namespace Vivium {
 		void endSubmission(Handle handle, Commands::Context::Handle context, Engine::Handle engine)
 		{
 			Commands::Context::beginTransfer(context);
-			Commands::transferBuffer(context, handle->vertexStaging.resource, handle->verticesSubmitted * handle->bufferLayout.stride, handle->vertexDevice.resource);
-			Commands::transferBuffer(context, handle->indexStaging.resource, handle->indexBufferIndex * sizeof(uint16_t), handle->indexDevice.resource);
+			Commands::transferBuffer(context, handle->vertexStaging.resource, handle->verticesSubmitted * handle->bufferLayout.stride, 0, handle->vertexDevice.resource);
+			Commands::transferBuffer(context, handle->indexStaging.resource, handle->indexBufferIndex * sizeof(uint16_t), 0, handle->indexDevice.resource);
 			Commands::Context::endTransfer(context, engine);
 
 			handle->lastSubmissionIndexCount = handle->indexBufferIndex;

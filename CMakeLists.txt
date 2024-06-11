@@ -15,7 +15,6 @@ set(VIVIUM_SOURCES
   "vivium4/error/log.cpp"
   "vivium4/window.cpp"
   "vivium4/engine.cpp"
-  "testGame/main.cpp"
   "vivium4/math/math.cpp"
   "vivium4/graphics/primitives/uniform.cpp"
   "vivium4/graphics/primitives/texture.cpp"
@@ -42,7 +41,7 @@ set(VIVIUM_SOURCES
    "vivium4/storage.cpp"
  "vivium4/graphics/color.cpp" "vivium4/graphics/gui/visual/button.cpp" "vivium4/graphics/gui/list.cpp"
 "vivium4/graphics/primitives/framebuffer.cpp" "vivium4/graphics/gui/visual/context.cpp"
-"vivium4/graphics/gui/visual/scene.cpp" "game2/main.cpp")
+"vivium4/graphics/gui/visual/scene.cpp" "bcds/main.cpp")
 set(VIVIUM_HEADERS
   "vivium4/error/result.h"
   "vivium4/graphics/primitives/buffer.h"
@@ -81,7 +80,12 @@ set(VIVIUM_HEADERS
    "vivium4/physics/physics.h"
    "vivium4/math/transform.h"
    "vivium4/math/mat2x2.h"
-  "vivium4/graphics/gui/visual/button.h" "vivium4/graphics/color.h"   "vivium4/graphics/gui/list.h"   "vivium4/graphics/gui/visual/scene.h" "vivium4/graphics/primitives/framebuffer.h" "vivium4/graphics/gui/visual/context.h"  )
+  "vivium4/graphics/gui/visual/button.h"
+  "vivium4/graphics/color.h"
+  "vivium4/graphics/gui/list.h"   
+  "vivium4/graphics/gui/visual/scene.h" 
+  "vivium4/graphics/primitives/framebuffer.h" 
+  "vivium4/graphics/gui/visual/context.h"  )
 
 add_subdirectory("${CMAKE_SOURCE_DIR}/external/glfw")
 
@@ -104,6 +108,5 @@ glfw
 winmm.lib
 )
 
-file(COPY "${CMAKE_SOURCE_DIR}/testGame" DESTINATION "${CMAKE_BINARY_DIR}/")
 file(COPY "${CMAKE_SOURCE_DIR}/vivium4/res" DESTINATION "${CMAKE_BINARY_DIR}/vivium4/")
 configure_file("${CMAKE_SOURCE_DIR}/external/vulkan/Bin/glslc.exe" "${CMAKE_BINARY_DIR}/external/vulkan/Bin/glslc.exe" COPYONLY)

@@ -92,7 +92,7 @@ namespace Vivium {
 		}
 
 		// TODO: allow passing region/buffer slice
-		void transferBuffer(Context::Handle context, Buffer const& source, uint64_t sourceSize, Buffer& destination);
+		void transferBuffer(Context::Handle context, Buffer const& source, uint64_t sourceSize, uint64_t sourceOffset, Buffer& destination);
 
 		void bindPipeline(Context::Handle context, Pipeline const& handle);
 		void bindVertexBuffer(Context::Handle context, Buffer const& handle);

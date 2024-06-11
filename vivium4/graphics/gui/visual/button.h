@@ -6,7 +6,6 @@ namespace Vivium {
 	namespace GUI {
 		namespace Visual {
 			namespace Button {
-				// TODO: use text->base, set as child class, do everything for that etc.
 				struct Resource {
 					Object::Handle base;
 
@@ -33,10 +32,10 @@ namespace Vivium {
 					PromisedHandle button = Storage::allocateResource<Resource, StorageType>(allocator);
 
 					button->base = GUI::Object::create(allocator, GUI::Object::Specification{});
-					button->color = Color::Gray;
+					button->color = Color::White;
 
 					// TODO: maximum text length should be parameter
-					button->text = Text::submit(allocator, manager, engine, guiContext, Text::Specification(64, Font::Font::fromDistanceFieldFile("testGame/res/fonts/consola.sdf")));
+					button->text = Text::submit(allocator, manager, engine, guiContext, Text::Specification(64, Font::Font::fromDistanceFieldFile("res/fonts/consola.sdf")));
 					// TODO: use different method
 					_addChild(button->base, { &button->text->base, 1 });
 					Properties& textProperties = GUI::Object::properties(button->text);

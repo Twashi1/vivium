@@ -19,7 +19,7 @@ namespace Vivium {
 	bool isDescriptorSetNull(DescriptorSet const& set);
 
 	template <Storage::StorageType StorageType>
-	void drop(StorageType* allocator, DescriptorSet& set) {
+	void dropDescriptorSet(StorageType* allocator, DescriptorSet& set) {
 		// No need to do anything else, descriptor set has no destructor
 		Storage::dropResource(allocator, &set);
 	}

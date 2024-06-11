@@ -3,15 +3,14 @@
 namespace Vivium {
 	namespace GUI {
 		namespace Visual {
-			void renderScene(Scene& scene, Commands::Context::Handle context, GUI::Visual::Context::Handle guiContext, Window::Handle window)
+			void renderButtons(const std::span<const Button::Handle> buttons, Commands::Context::Handle context, GUI::Visual::Context::Handle guiContext, Window::Handle window)
 			{
-				// TODO: batch together text objects somehow (needs to be on submission)
+				std::vector<Context::_ButtonInstanceData> buttonData(buttons.size());
 
-				std::vector<Context::_ButtonInstanceData> buttonData(scene.buttons.size());
-				
-				for (uint64_t i = 0; i < scene.buttons.size(); i++) {
-					Button::Handle button = scene.buttons[i];
+				for (uint64_t i = 0; i < buttons.size(); i++) {
+					Button::Handle button = buttons[i];
 
+					// TODO: modifies buttons
 					GUI::Object::update(button, Window::dimensions(window));
 
 					Context::_ButtonInstanceData instance;
@@ -30,13 +29,12 @@ namespace Vivium {
 				Commands::bindIndexBuffer(context, guiContext->button.indexBuffer.resource);
 				Commands::bindDescriptorSet(context, guiContext->button.descriptorSet.resource, guiContext->button.pipeline.resource);
 				Commands::pushConstants(context, &perspective, sizeof(Math::Perspective), 0, ShaderStage::VERTEX, guiContext->button.pipeline.resource);
-				Commands::drawIndexed(context, 6, scene.buttons.size());
+				Commands::drawIndexed(context, 6, buttons.size());
 
-				for (Button::Handle button : scene.buttons) {
+				for (Button::Handle button : buttons) {
 					F32x2 axisScale = 0.9f * (button->base->properties.trueDimensions / F32x2(button->textMetrics.maxLineWidth, button->textMetrics.totalHeight));
 
 					// TODO: pass in text color, or have solution for white text on black
-					// TODO: text should have auto-updating object base as well
 					Text::render(
 						button->text,
 						button->textMetrics,
