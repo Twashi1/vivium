@@ -1,92 +1,132 @@
 #include "batch.h"
 
 namespace Vivium {
-	namespace Batch {
-		Specification::Specification(uint64_t vertexCount, uint64_t indexCount, BufferLayout bufferLayout)
-			: vertexCount(vertexCount), indexCount(indexCount), bufferLayout(bufferLayout)
-		{}
+	BatchSpecification::BatchSpecification(uint64_t vertexCount, uint64_t indexCount, BufferLayout bufferLayout)
+		: vertexCount(vertexCount), indexCount(indexCount), bufferLayout(bufferLayout)
+	{}
 
-		void submitElement(Handle handle, uint64_t elementIndex, const std::span<const uint8_t> data)
-		{
-			const BufferLayout::Element& element = handle->bufferLayout.elements[elementIndex];
+	void submitElementBatch(Batch& batch, uint64_t elementIndex, const std::span<const uint8_t> data)
+	{
+		const BufferLayout::Element& element = batch.bufferLayout.elements[elementIndex];
 
-			// Number of instances of element to be submitted
-			uint64_t elementCount = data.size_bytes() / element.size;
-			// Index in vertex mapping of first element
-			uint64_t firstElementIndex = handle->vertexBufferIndex + element.offset;
-			// Index in element data to copy in
-			uint64_t elementDataIndex = 0;
+		// Number of instances of element to be submitted
+		uint64_t elementCount = data.size_bytes() / element.size;
+		// Index in vertex mapping of first element
+		uint64_t firstElementIndex = batch.vertexBufferIndex + element.offset;
+		// Index in element data to copy in
+		uint64_t elementDataIndex = 0;
 
-			for (uint64_t i = 0; i < elementCount; i++) {
-				// Calculate index in vertex mapping for this element
-				uint64_t vertexIndex = firstElementIndex + handle->bufferLayout.stride * i;
+		for (uint64_t i = 0; i < elementCount; i++) {
+			// Calculate index in vertex mapping for this element
+			uint64_t vertexIndex = firstElementIndex + batch.bufferLayout.stride * i;
 
-				// Copy data from element data to vertex mapping
-				setBuffer(handle->vertexStaging.resource, vertexIndex, data.data() + elementDataIndex * element.size, element.size);
+			// Copy data from element data to vertex mapping
+			setBuffer(batch.vertexStaging.resource, vertexIndex, data.data() + elementDataIndex * element.size, element.size);
 
-				++elementDataIndex;
-			}
+			++elementDataIndex;
+		}
+	}
+
+	void submitRectangleBatch(Batch& batch, uint64_t elementIndex, float left, float bottom, float right, float top)
+	{
+		float data[8] = {
+			left, bottom,
+			right, bottom,
+			right, top,
+			left, top
+		};
+
+		submitElementBatch(batch, elementIndex, std::span<uint8_t>(reinterpret_cast<uint8_t*>(data), sizeof(data)));
+	}
+
+	void endShapeBatch(Batch& batch, uint64_t vertexCount, const std::span<const uint16_t> indicies)
+	{
+		uint16_t* indexMapping = reinterpret_cast<uint16_t*>(getBufferMapping(batch.indexStaging.resource));
+
+		for (uint64_t i = 0; i < indicies.size(); i++) {
+			indexMapping[batch.indexBufferIndex + i] = static_cast<uint16_t>(indicies[i] + batch.verticesSubmitted);
 		}
 
-		void submitRectangle(Handle handle, uint64_t elementIndex, float left, float bottom, float right, float top)
-		{
-			float data[8] = {
-				left, bottom,
-				right, bottom,
-				right, top,
-				left, top
-			};
+		batch.indexBufferIndex += indicies.size();
+		batch.vertexBufferIndex += vertexCount * batch.bufferLayout.stride;
+		batch.verticesSubmitted += vertexCount;
+	}
 
-			submitElement(handle, elementIndex, std::span<uint8_t>(reinterpret_cast<uint8_t*>(data), sizeof(data)));
-		}
+	Buffer const& vertexBufferBatch(Batch const& batch)
+	{
+		return batch.vertexDevice.resource;
+	}
 
-		void endShape(Handle handle, uint64_t vertexCount, const std::span<const uint16_t> indicies)
-		{
-			uint16_t* indexMapping = reinterpret_cast<uint16_t*>(getBufferMapping(handle->indexStaging.resource));
+	Buffer const& indexBufferBatch(Batch const& batch)
+	{
+		return batch.indexDevice.resource;
+	}
 
-			for (uint64_t i = 0; i < indicies.size(); i++) {
-				indexMapping[handle->indexBufferIndex + i] = static_cast<uint16_t>(indicies[i] + handle->verticesSubmitted);
-			}
+	uint32_t indexCountBatch(Batch const& batch)
+	{
+		return batch.lastSubmissionIndexCount;
+	}
 
-			handle->indexBufferIndex += indicies.size();
-			handle->vertexBufferIndex += vertexCount * handle->bufferLayout.stride;
-			handle->verticesSubmitted += vertexCount;
-		}
+	void dropBatch(Batch& batch, Engine::Handle engine)
+	{
+		dropBuffer(batch.vertexStaging.resource, engine);
+		dropBuffer(batch.vertexDevice.resource, engine);
+		dropBuffer(batch.indexStaging.resource, engine);
+		dropBuffer(batch.indexDevice.resource, engine);
+	}
 
-		Buffer const& vertexBuffer(Batch::Handle batch)
-		{
-			return batch->vertexDevice.resource;
-		}
+	Batch submitBatch(Engine::Handle engine, ResourceManager::Static::Handle manager, BatchSpecification specification)
+	{
+		Batch batch;
 
-		Buffer const& indexBuffer(Batch::Handle batch)
-		{
-			return batch->indexDevice.resource;
-		}
+		std::array<BufferReference, 2> staging;
 
-		uint32_t indexCount(Batch::Handle batch)
-		{
-			return batch->lastSubmissionIndexCount;
-		}
+		ResourceManager::Static::submit(manager, staging.data(), MemoryType::STAGING, std::vector<BufferSpecification>({
+			BufferSpecification(specification.vertexCount * specification.bufferLayout.stride, BufferUsage::STAGING),
+			BufferSpecification(specification.indexCount * sizeof(uint16_t), BufferUsage::STAGING)
+			}));
 
-		void endSubmission(Handle handle, Commands::Context::Handle context, Engine::Handle engine)
-		{
-			Commands::Context::beginTransfer(context);
-			Commands::transferBuffer(context, handle->vertexStaging.resource, handle->verticesSubmitted * handle->bufferLayout.stride, 0, handle->vertexDevice.resource);
-			Commands::transferBuffer(context, handle->indexStaging.resource, handle->indexBufferIndex * sizeof(uint16_t), 0, handle->indexDevice.resource);
-			Commands::Context::endTransfer(context, engine);
+		std::array<BufferReference, 2> device;
 
-			handle->lastSubmissionIndexCount = handle->indexBufferIndex;
-			handle->indexBufferIndex = 0;
-			handle->vertexBufferIndex = 0;
-			handle->verticesSubmitted = 0;
-		}
+		ResourceManager::Static::submit(manager, device.data(), MemoryType::DEVICE, std::vector<BufferSpecification>({
+			BufferSpecification(specification.vertexCount * specification.bufferLayout.stride, BufferUsage::VERTEX),
+			BufferSpecification(specification.indexCount * sizeof(uint16_t), BufferUsage::INDEX)
+			}));
+
+		batch.vertexStaging.reference = staging[0];
+		batch.indexStaging.reference = staging[1];
+
+		batch.vertexDevice.reference = device[0];
+		batch.indexDevice.reference = device[1];
+
+		batch.vertexBufferIndex = 0;
+		batch.indexBufferIndex = 0;
+		batch.verticesSubmitted = 0;
+		batch.lastSubmissionIndexCount = 0;
+
+		batch.bufferLayout = specification.bufferLayout;
+
+		return batch;
+	}
+
+	void endSubmissionBatch(Batch& batch, Commands::Context::Handle context, Engine::Handle engine)
+	{
+		Commands::Context::beginTransfer(context);
+		Commands::transferBuffer(context, batch.vertexStaging.resource, batch.verticesSubmitted * batch.bufferLayout.stride, 0, batch.vertexDevice.resource);
+		Commands::transferBuffer(context, batch.indexStaging.resource, batch.indexBufferIndex * sizeof(uint16_t), 0, batch.indexDevice.resource);
+		Commands::Context::endTransfer(context, engine);
+
+		batch.lastSubmissionIndexCount = batch.indexBufferIndex;
+		batch.indexBufferIndex = 0;
+		batch.vertexBufferIndex = 0;
+		batch.verticesSubmitted = 0;
+	}
 		
-		void setup(Handle handle, ResourceManager::Static::Handle manager)
-		{
-			ResourceManager::Static::convertReference(manager, handle->vertexStaging);
-			ResourceManager::Static::convertReference(manager, handle->vertexDevice);
-			ResourceManager::Static::convertReference(manager, handle->indexStaging);
-			ResourceManager::Static::convertReference(manager, handle->indexDevice);
-		}
+	void setupBatch(Batch& batch, ResourceManager::Static::Handle manager)
+	{
+		ResourceManager::Static::convertReference(manager, batch.vertexStaging);
+		ResourceManager::Static::convertReference(manager, batch.vertexDevice);
+		ResourceManager::Static::convertReference(manager, batch.indexStaging);
+		ResourceManager::Static::convertReference(manager, batch.indexDevice);
 	}
 }

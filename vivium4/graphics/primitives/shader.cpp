@@ -50,4 +50,8 @@ namespace Vivium {
 		// Low 32 bits
 		return static_cast<VkFormat>(static_cast<uint64_t>(type) & ((1Ui64 << 32Ui64) - 1));
 	}
+
+	void dropShader(Shader& shader, Engine::Handle engine) {
+		vkDestroyShaderModule(engine->device, shader.shader, nullptr);
+	}
 }

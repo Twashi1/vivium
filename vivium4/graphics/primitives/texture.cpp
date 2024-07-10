@@ -65,4 +65,10 @@ namespace Vivium {
 
 		return specification;
 	}
+
+	void dropTexture(Texture& texture, Engine::Handle engine) {
+		vkDestroySampler(engine->device, texture.sampler, nullptr);
+		vkDestroyImageView(engine->device, texture.view, nullptr);
+		vkDestroyImage(engine->device, texture.image, nullptr);
+	}
 }

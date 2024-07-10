@@ -1,15 +1,8 @@
 #include "buffer.h"
 
 namespace Vivium {
-	bool isBufferNull(Buffer const& buffer)
-	{
-		return buffer.buffer == VK_NULL_HANDLE;
-	}
-
 	void setBuffer(Buffer& buffer, uint64_t bufferOffset, const void* data, uint64_t size)
 	{
-		VIVIUM_CHECK_RESOURCE_EXISTS(buffer, Vivium::isBufferNull);
-
 		// TODO: make assertion work in debug mode
 #if 0
 		VIVIUM_ASSERT(size + bufferOffset <= buffer->size,
@@ -25,8 +18,6 @@ namespace Vivium {
 
 	void* getBufferMapping(Buffer& buffer)
 	{
-		VIVIUM_CHECK_RESOURCE_EXISTS(buffer, Vivium::isBufferNull);
-
 		return buffer.mapping;
 	}
 			
@@ -70,5 +61,10 @@ namespace Vivium {
 		layout.stride = currentOffset;
 
 		return layout;
+	}
+
+	void dropBuffer(Buffer& buffer, Engine::Handle engine)
+	{
+		vkDestroyBuffer(engine->device, buffer.buffer, nullptr);
 	}
 }

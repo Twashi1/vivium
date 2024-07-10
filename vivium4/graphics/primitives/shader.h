@@ -59,12 +59,7 @@ namespace Vivium {
 		uint64_t referenceIndex;
 	};
 
-	template <Storage::StorageType StorageType>
-	void dropShader(StorageType* allocator, Shader& shader, Engine::Handle engine) {
-		vkDestroyShaderModule(engine->device, shader.shader, nullptr);
-
-		Storage::dropResource(allocator, &shader);
-	}
+	void dropShader(Shader& shader, Engine::Handle engine);
 
 	// TODO: returning the specification is convenient, but promotes bad practice
 	ShaderSpecification compileShader(ShaderStage stage, const char* sourceFilename, const char* destFilename);

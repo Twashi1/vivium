@@ -35,17 +35,7 @@ namespace Vivium {
 
 	int getRequestedMultisamples(Engine::Handle engine, int multisampleCount);
 		
-	template <Storage::StorageType StorageType>
-	void dropFramebuffer(StorageType* allocator, Framebuffer& framebuffer, Engine::Handle engine) {
-		vkDestroyImage(engine->device, framebuffer.image, nullptr);
-		vkDestroySampler(engine->device, framebuffer.sampler, nullptr);
-		vkDestroyImageView(engine->device, framebuffer.view, nullptr);
-
-		vkDestroyRenderPass(engine->device, framebuffer.renderPass, nullptr);
-		vkDestroyFramebuffer(engine->device, framebuffer.framebuffer, nullptr);
-
-		Storage::dropResource(allocator, &framebuffer);
-	}
+	void dropFramebuffer(Framebuffer& framebuffer, Engine::Handle engine);
 
 	// TODO: how to organise these, so we can also render to window
 	// TODO: beginFrame/endFrame don't even require framebuffer at any point!!

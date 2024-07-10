@@ -4,6 +4,11 @@ namespace Vivium {
 	namespace GUI {
 		namespace Visual {
 			namespace Context {
+				GUIElement* _allocateGUIElement(Context::Handle context)
+				{
+					return Storage::allocateResource<GUIElement>(&context->elementStorage);
+				}
+
 				void setup(Handle handle, ResourceManager::Static::Handle manager, Commands::Context::Handle context, Engine::Handle engine)
 				{
 					ResourceManager::Static::convertReference(manager, handle->text.pipeline);
@@ -54,11 +59,11 @@ namespace Vivium {
 
 					Commands::freeOneTimeStagingBuffer(engine, stagingBuffer, temporaryMemory);
 
-					dropShader(VIVIUM_NULL_STORAGE, handle->text.fragmentShader.resource, engine);
-					dropShader(VIVIUM_NULL_STORAGE, handle->text.vertexShader.resource, engine);
+					dropShader(handle->text.fragmentShader.resource, engine);
+					dropShader(handle->text.vertexShader.resource, engine);
 
-					dropShader(VIVIUM_NULL_STORAGE, handle->button.fragmentShader.resource, engine);
-					dropShader(VIVIUM_NULL_STORAGE, handle->button.vertexShader.resource, engine);
+					dropShader(handle->button.fragmentShader.resource, engine);
+					dropShader(handle->button.vertexShader.resource, engine);
 
 					// TODO: maybe the descriptor layout can be freed here?
 				}

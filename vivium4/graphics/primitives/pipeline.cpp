@@ -2,6 +2,12 @@
 #include "../resource_manager.h"
 
 namespace Vivium {
+	void dropPipeline(Pipeline& pipeline, Engine::Handle engine)
+	{
+		vkDestroyPipelineLayout(engine->device, pipeline.layout, nullptr);
+		vkDestroyPipeline(engine->device, pipeline.pipeline, nullptr);
+	}
+
 	PipelineSpecification PipelineSpecification::fromWindow(const std::span<const ShaderReference> shaders, const BufferLayout& bufferLayout, const std::span<const DescriptorLayoutReference> descriptorLayouts, const std::span<const PushConstant> pushConstants, Engine::Handle engine, Window::Handle window)
 	{
 		PipelineSpecification specification;

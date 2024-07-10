@@ -115,4 +115,13 @@ namespace Vivium {
 
 		// TODO: limit framerate maybe shouldn't be done here, since everything should happen in one frame
 	}
+
+	void dropFramebuffer(Framebuffer& framebuffer, Engine::Handle engine) {
+		vkDestroyImage(engine->device, framebuffer.image, nullptr);
+		vkDestroySampler(engine->device, framebuffer.sampler, nullptr);
+		vkDestroyImageView(engine->device, framebuffer.view, nullptr);
+
+		vkDestroyRenderPass(engine->device, framebuffer.renderPass, nullptr);
+		vkDestroyFramebuffer(engine->device, framebuffer.framebuffer, nullptr);
+	}
 }

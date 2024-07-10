@@ -53,16 +53,8 @@ namespace Vivium {
 		uint8_t memoryIndex;
 	};
 
-	bool isBufferNull(Buffer const& buffer);
-	
 	void setBuffer(Buffer& buffer, uint64_t bufferOffset, const void* data, uint64_t size);
 	void* getBufferMapping(Buffer& buffer);
 	
-	template <Storage::StorageType StorageType>
-	void dropBuffer(StorageType* allocator, Buffer& buffer, Engine::Handle engine)
-	{
-		vkDestroyBuffer(engine->device, buffer.buffer, nullptr);
-
-		Storage::dropResource(allocator, &buffer);
-	}
+	void dropBuffer(Buffer& buffer, Engine::Handle engine);
 }

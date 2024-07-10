@@ -3,6 +3,7 @@
 #include "../../../storage.h"
 #include "../../resource_manager.h"
 #include "../../color.h"
+#include "../base.h"
 
 namespace Vivium {
 	namespace GUI {
@@ -38,10 +39,14 @@ namespace Vivium {
 						Ref<Buffer> vertexBuffer;
 						Ref<Buffer> indexBuffer;
 					} button;
+
+					Storage::Static::Pool elementStorage;
 				};
 
 				typedef Resource* Handle;
 				typedef Resource* PromisedHandle;
+
+				GUIElement* _allocateGUIElement(Context::Handle context);
 
 				template <Storage::StorageType StorageType>
 				PromisedHandle submit(StorageType* allocator, ResourceManager::Static::Handle manager, Engine::Handle engine, Window::Handle window) {
@@ -136,16 +141,15 @@ namespace Vivium {
 				void drop(StorageType* allocator, Handle handle, Engine::Handle engine) {
 					VIVIUM_CHECK_HANDLE_EXISTS(handle);
 
-					dropDescriptorLayout(VIVIUM_NULL_STORAGE, handle->text.descriptorLayout.resource, engine);
-					dropPipeline(VIVIUM_NULL_STORAGE, handle->text.pipeline.resource, engine);
+					dropDescriptorLayout(handle->text.descriptorLayout.resource, engine);
+					dropPipeline(handle->text.pipeline.resource, engine);
 
-					dropDescriptorLayout(VIVIUM_NULL_STORAGE, handle->button.descriptorLayout.resource, engine);
-					dropPipeline(VIVIUM_NULL_STORAGE, handle->button.pipeline.resource, engine);
+					dropDescriptorLayout(handle->button.descriptorLayout.resource, engine);
+					dropPipeline(handle->button.pipeline.resource, engine);
 
-					dropBuffer(VIVIUM_NULL_STORAGE, handle->button.storageBuffer.resource, engine);
-					dropBuffer(VIVIUM_NULL_STORAGE, handle->button.vertexBuffer.resource, engine);
-					dropBuffer(VIVIUM_NULL_STORAGE, handle->button.indexBuffer.resource, engine);
-					dropDescriptorSet(VIVIUM_NULL_STORAGE, handle->button.descriptorSet.resource);
+					dropBuffer(handle->button.storageBuffer.resource, engine);
+					dropBuffer(handle->button.vertexBuffer.resource, engine);
+					dropBuffer(handle->button.indexBuffer.resource, engine);
 
 					Storage::dropResource(allocator, handle);
 				}

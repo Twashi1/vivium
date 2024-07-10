@@ -9,120 +9,81 @@
 #include "../../storage.h"
 
 namespace Vivium {
-	namespace GUI {
-		enum class PositionType {
-			RELATIVE, // Offset to parent
-			FIXED	  // Fixed
-		};
+	enum class GUIPositionType {
+		RELATIVE, // Offset to parent
+		FIXED	  // Fixed
+	};
 
-		// TODO: VIEWPORT_HEIGHT and VIEWPORT_WIDTH
-		enum class ScaleType {
-			FIXED,		// Scale in pixels
-			VIEWPORT,	// FRACTION of viewport dimensions
-			RELATIVE	// FRACTION of parent dimensions
-		};
+	// TODO: VIEWPORT_HEIGHT and VIEWPORT_WIDTH
+	enum class GUIScaleType {
+		FIXED,		// Scale in pixels
+		VIEWPORT,	// FRACTION of viewport dimensions
+		RELATIVE	// FRACTION of parent dimensions
+	};
 
-		enum class Anchor {
-			UNDEFINED, // Only valid with PositionType::FIXED
-			LEFT,
-			CENTER,
-			RIGHT,
-			TOP,
-			BOTTOM
-		};
+	enum class GUIAnchor {
+		UNDEFINED, // Only valid with PositionType::FIXED
+		LEFT,
+		CENTER,
+		RIGHT,
+		TOP,
+		BOTTOM
+	};
 
-		struct Properties {
-			F32x2 dimensions;
-			F32x2 position;
+	struct GUIProperties {
+		F32x2 dimensions = F32x2(1.0f);
+		F32x2 position = F32x2(0.0f);
 
-			F32x2 truePosition;
-			F32x2 trueDimensions;
+		GUIPositionType positionType = GUIPositionType::RELATIVE;
+		GUIScaleType scaleType = GUIScaleType::RELATIVE;
 
-			PositionType positionType;
-			ScaleType scaleType;
+		GUIAnchor anchorX = GUIAnchor::CENTER;
+		GUIAnchor anchorY = GUIAnchor::CENTER;
+		// TODO: different type? or generalise "Anchor"
+		GUIAnchor centerX = GUIAnchor::CENTER;
+		GUIAnchor centerY = GUIAnchor::CENTER;
 
-			Anchor anchorX, anchorY;
-			// TODO: different type? or generalise "Anchor"
-			Anchor centerX, centerY;
+		F32x2 truePosition = F32x2(0.0f);
+		F32x2 trueDimensions = F32x2(0.0f);
+	};
 
-			Properties();
-			Properties(F32x2 dimensions, F32x2 position, PositionType positionType, ScaleType scaleType, Anchor anchorX, Anchor anchorY, Anchor centerX, Anchor centerY);
-		};
+	bool pointInElement(F32x2 point, GUIProperties const& properties);
 
-		bool pointInObject(F32x2 point, Properties const& properties);
+	struct GUIElement {
+		GUIProperties properties;
 
-		namespace Object {
-			struct Resource;
+		std::vector<GUIElement*> children;
+	};
 
-			typedef Resource* Handle;
+	void _updateGUIElement(GUIElement* const objectHandle, GUIElement const* const parent, F32x2 windowDimensions);
+	GUIProperties& _properties(GUIElement* const objectHandle);
+	void _addChild(GUIElement* const parent, std::span<GUIElement*> child);
 
-			struct Resource {
-				Properties properties;
+	template <typename T>
+	concept GenericGUIElement = requires(T element) {
+		{ element.base } -> std::same_as<GUIElement*>;
+	} || std::is_same_v<T, GUIElement*>;
 
-				Handle parent;
-				std::vector<Handle> children;
-			};
+	template <GenericGUIElement T>
+	GUIElement* _extract(T& element) {
+		if constexpr (std::is_same_v<T, GUIElement*>)
+			return element;
 
-			struct Specification {
-				Properties properties;
+		return element.base;
+	}
 
-				Handle parent;
-				std::vector<Handle> children;
+	template <GenericGUIElement T>
+	void update(T& element, F32x2 windowDimensions) {
+		_updateGUIElement(_extract(element), nullptr, windowDimensions);
+	}
 
-				Specification();
-			};
+	template <GenericGUIElement T>
+	GUIProperties& properties(T& element) {
+		return _extract(element)->properties;
+	}
 
-			void _updateHandle(Handle objectHandle, F32x2 windowDimensions);
-			Properties& _properties(Handle object);
-			void _addChild(Handle parent, std::span<Handle> child);
-
-			template <typename T>
-			concept GUIElement = requires(T element) {
-				{ element->base } -> std::same_as<Handle&>;
-			} || std::is_same_v<T, Object::Handle>;
-
-			template <GUIElement T>
-			Object::Handle _extract(T& element) {
-				if constexpr (std::is_same_v<T, Object::Handle>)
-					return element;
-
-				return element->base;
-			}
-
-			template <GUIElement T>
-			void update(T& element, F32x2 windowDimensions) {
-				_updateHandle(_extract(element), windowDimensions);
-			}
-
-			template <GUIElement T>
-			Properties& properties(T& element) {
-				return _extract(element)->properties;
-			}
-
-			template <GUIElement T>
-			Properties const& properties(T const& element) {
-				return _extract(element)->properties;
-			}
-
-			template <GUIElement T, GUIElement U>
-			void addChild(T& element, U& child) {
-				_addChild(_extract(element), { _extract(child), 1 });
-			}
-
-			template <Storage::StorageType StorageType>
-			Handle create(StorageType* allocator, Specification specification) {
-				Handle handle = Storage::allocateResource<Resource>(allocator);
-
-				handle->properties = specification.properties;
-				handle->children = specification.children;
-
-				return handle;
-			}
-
-			template <Storage::StorageType StorageType>
-			void drop(StorageType* allocator, Handle handle) {
-				Storage::dropResource(allocator, handle);
-			}
-		}
+	template <GenericGUIElement T, GenericGUIElement U>
+	void addChild(T& element, U& child) {
+		_addChild(_extract(element), { _extract(child), 1 });
 	}
 }

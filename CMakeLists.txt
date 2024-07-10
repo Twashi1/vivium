@@ -23,8 +23,6 @@ set(VIVIUM_SOURCES
   "vivium4/graphics/resource_manager.cpp"
   "vivium4/graphics/primitives/pipeline.cpp"
   "vivium4/graphics/commands.cpp"
-  
-  
   "vivium4/input.cpp"
   "vivium4/graphics/batch.cpp"
   "vivium4/graphics/gui/font.cpp"
@@ -39,9 +37,9 @@ set(VIVIUM_SOURCES
    "vivium4/math/transform.cpp"
    "vivium4/math/mat2x2.cpp"
    "vivium4/storage.cpp"
- "vivium4/graphics/color.cpp" "vivium4/graphics/gui/visual/button.cpp" "vivium4/graphics/gui/list.cpp"
+ "vivium4/graphics/color.cpp" "vivium4/graphics/gui/visual/button.cpp" 
 "vivium4/graphics/primitives/framebuffer.cpp" "vivium4/graphics/gui/visual/context.cpp"
-"vivium4/graphics/gui/visual/scene.cpp" "bcds/main.cpp")
+ "bcds/main.cpp")
 set(VIVIUM_HEADERS
   "vivium4/error/result.h"
   "vivium4/graphics/primitives/buffer.h"
@@ -57,7 +55,6 @@ set(VIVIUM_HEADERS
   "vivium4/math/math.h" 
   "vivium4/engine.h"
   "vivium4/storage.h"
-  
   "vivium4/graphics/gui/base.h"
   "vivium4/graphics/primitives/descriptor_set.h"
   "vivium4/graphics/primitives/uniform.h"
@@ -66,8 +63,6 @@ set(VIVIUM_HEADERS
   "vivium4/graphics/resource_manager.h"
   "vivium4/graphics/commands.h"
   "vivium4/graphics/primitives/pipeline.h"
-  
-  
   "vivium4/input.h"
   "vivium4/graphics/batch.h"
   "vivium4/graphics/gui/visual/text.h"
@@ -82,8 +77,7 @@ set(VIVIUM_HEADERS
    "vivium4/math/mat2x2.h"
   "vivium4/graphics/gui/visual/button.h"
   "vivium4/graphics/color.h"
-  "vivium4/graphics/gui/list.h"   
-  "vivium4/graphics/gui/visual/scene.h" 
+     
   "vivium4/graphics/primitives/framebuffer.h" 
   "vivium4/graphics/gui/visual/context.h"  )
 

@@ -2,7 +2,8 @@
 ## High priority
 
 - Update `GUI` to new system (and test)
-- Fix bogus data making buttons rendering incorrectly (and fix the shader that's been brutalised for debugging)
+- Fix bogus data making buttons rendering incorrectly - re-using the same staging buffer is causing this (and fix the shader that's been brutalised for debugging)
+- Move `Scene` to `GUIContext`
 ## Core
 
 - Offset before size on `PushConstant`, not ideal
@@ -11,13 +12,12 @@
 - Test multi-window draws
 	- Requires multi-window application flow (around the engine creation mostly)
 - Abstract creation functions of resources to maximum extent without compromising performance
-- Most `isNull` methods are only relevant in degenerate use-cases?
 - Fix `beginFramebufferFrame` and `endFramebufferFrame`, and plan easy render-target setting
 - Re-implementation of dynamic buffers
 - Minimal overrides
 - No static member functions (even for specifications): just define a method
 - `Math::orthogonalPerspective2D` should not be taking `Window::Handle`, but a dimension
-- Renaming `ResourceManager` to `Allocator::Static`
+- Renaming `ResourceManager` to `ResourceAllocator`
 - RAII storage objects are appealing (delete copy, define move) (`Storage::Static` and `Storage::Dynamic`)
 	- Alternative is to just `malloc` and `free` these, they're already only used as pointers anyway
 - `Commands::Context` should be multi-thread compatible
@@ -27,11 +27,8 @@
 	- `Commands::uploadStage(s, bufferSlice, ...)`
 	- `Commands::freeStage(s)` (issues with `VkDeviceIdle` possible - schedule with a `Context` instead?)
 - `inl` files for all templates
-- Span synonymous type (`Slice`)
-	- `initializer_list` compatible (seems impossible)
-- Vector synonymous type
-- Rust-style errors (try to make `Option` efficient?)
-- Clear render/GUI/computation threads. Ability to submit from multiple threads
+- Error system
+- Clear separation render/GUI/computation threads. Ability to submit from multiple threads
 - Using filesystem or better file referencing (not just passing file data, but truly passing file path in a way that guarantees the existence of that path)
 	- Resource management system
 - Dynamic tree allocator
@@ -92,7 +89,9 @@
 
 ## Possible
 
-- Minimal namespaces (only `Vivium`), instead just write everything out; `bufferDrop` instead of `Buffer::drop`
+- Possibly introduce `Pending<Object>` or something similar for concept of objects that need a `setup` call, would make some functions return `Promised<Pending<Object>>`
+- Consider a less literal usage of `const`, where `const` does apply to objects whose GPU/host memory is being modified
+- Minimal namespaces (only `Vivium`), instead just write everything out
 	- `Storage::Static` and `Storage::Dynamic` no longer have a clear separation, would have to integrate it in the name somehow
 	- `Buffer::Dynamic` and `Buffer` need to be integrated into the name
 ## Aspirational

@@ -57,12 +57,5 @@ namespace Vivium {
 		uint64_t referenceIndex;
 	};
 
-	template <Storage::StorageType StorageType>
-	void dropPipeline(StorageType* allocator, Pipeline& pipeline, Engine::Handle engine)
-	{
-		vkDestroyPipelineLayout(engine->device, pipeline.layout, nullptr);
-		vkDestroyPipeline(engine->device, pipeline.pipeline, nullptr);
-
-		Storage::dropResource(allocator, &pipeline);
-	}
+	void dropPipeline(Pipeline& pipeline, Engine::Handle engine);
 }

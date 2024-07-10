@@ -11,4 +11,3 @@
 #include "physics/physics.h"
 #include "math/polygon.h"
 #include "math/math.h"
-#include "graphics/gui/visual/scene.h"
