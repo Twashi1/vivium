@@ -611,9 +611,9 @@ namespace Vivium {
 			renderPassInfo.renderArea.offset = { 0, 0 };
 			renderPassInfo.renderArea.extent = window->swapChainExtent;
 
-			VkClearValue clear_color = { {{0.0f, 0.0f, 0.0f, 1.0f}} };
+			VkClearValue clearColor = { {{0.0f, 0.0f, 0.0f, 1.0f}} };
 			renderPassInfo.clearValueCount = 1;
-			renderPassInfo.pClearValues = &clear_color;
+			renderPassInfo.pClearValues = &clearColor;
 
 			VkCommandBuffer& commandBuffer = commandBuffers[currentFrameIndex];
 

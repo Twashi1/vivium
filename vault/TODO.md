@@ -2,8 +2,6 @@
 ## High priority
 
 - Update `GUI` to new system (and test)
-- Fix bogus data making buttons rendering incorrectly - re-using the same staging buffer is causing this (and fix the shader that's been brutalised for debugging)
-- Move `Scene` to `GUIContext`
 ## Core
 
 - Offset before size on `PushConstant`, not ideal
@@ -17,7 +15,7 @@
 - Minimal overrides
 - No static member functions (even for specifications): just define a method
 - `Math::orthogonalPerspective2D` should not be taking `Window::Handle`, but a dimension
-- Renaming `ResourceManager` to `ResourceAllocator`
+- Renaming `ResourceManager` to `Allocator`
 - RAII storage objects are appealing (delete copy, define move) (`Storage::Static` and `Storage::Dynamic`)
 	- Alternative is to just `malloc` and `free` these, they're already only used as pointers anyway
 - `Commands::Context` should be multi-thread compatible
@@ -46,6 +44,7 @@
 - Dynamic resource manager
 - Vertex input rate: `VK_VERTEX_INPUT_RATE_INSTANCE`
 - Check for `DEVICE_LOCAL`, not whether it is `UNIFORM` or `DEVICE`
+- Shaders should not be created through `compileShader`, at least not internally
 
 ## GUI
 
@@ -62,7 +61,6 @@
 - `Anchor` renamed since also used in `Center` parameters (also move to `Vec2`?)
 - Not considering the total y-extent of characters that go below the origin (like `p`, `q`, `y`, etc.), although whether it should be considered or not is to be determined
 - Better values of `spreadFactor` for signed distance field font rendering
-- `List` type is still poorly integrated and not tested
 
 ## Physics
 
@@ -89,25 +87,13 @@
 
 ## Possible
 
-- Possibly introduce `Pending<Object>` or something similar for concept of objects that need a `setup` call, would make some functions return `Promised<Pending<Object>>`
 - Consider a less literal usage of `const`, where `const` does apply to objects whose GPU/host memory is being modified
 - Minimal namespaces (only `Vivium`), instead just write everything out
 	- `Storage::Static` and `Storage::Dynamic` no longer have a clear separation, would have to integrate it in the name somehow
-	- `Buffer::Dynamic` and `Buffer` need to be integrated into the name
+
 ## Aspirational
 
 - 3D workflow (camera + controller math)
 - Raytracing
 - Shader debugger tool - use CPU to simulate GPU actions for some fragments
 - Platform independence (OS module, Timer module)
-## Projects
-
-- Simple shoot-em-up
-- Circuit simulator
-
-# Game
-
-## General
-
-- Enemy spawning
-- Values should be given in units, not relative to size of monitor?

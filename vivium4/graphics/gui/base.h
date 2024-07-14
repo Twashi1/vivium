@@ -61,7 +61,7 @@ namespace Vivium {
 
 	template <typename T>
 	concept GenericGUIElement = requires(T element) {
-		{ element.base } -> std::same_as<GUIElement*>;
+		{ element.base } -> std::convertible_to<GUIElement*>;
 	} || std::is_same_v<T, GUIElement*>;
 
 	template <GenericGUIElement T>
@@ -78,8 +78,8 @@ namespace Vivium {
 	}
 
 	template <GenericGUIElement T>
-	GUIProperties& properties(T& element) {
-		return _extract(element)->properties;
+	GUIProperties* properties(T& element) {
+		return &_extract(element)->properties;
 	}
 
 	template <GenericGUIElement T, GenericGUIElement U>

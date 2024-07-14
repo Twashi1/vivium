@@ -16,8 +16,8 @@ struct State {
 	Math::Perspective perspective;
 
 	struct {
-		Button button;
-	} choiceMenu;
+		Panel background;
+	} test;
 };
 
 void initialise(State& state) {
@@ -41,14 +41,12 @@ void initialise(State& state) {
 	state.manager = ResourceManager::Static::create(&state.storage);
 
 	state.guiContext = GUI::Visual::Context::submit(&state.storage, state.manager, state.engine, state.window);
-	state.choiceMenu.button = submitButton(state.manager, state.guiContext, state.engine, state.window);
+	state.test.background = createPanel(state.guiContext, PanelSpecification { Color::Gray });
 
 	ResourceManager::Static::allocate(state.manager, state.engine);
 
 	GUI::Visual::Context::setup(state.guiContext, state.manager, state.context, state.engine);
-	setupButton(state.choiceMenu.button, state.manager);
-	setButtonText(state.choiceMenu.button, state.engine, state.window, state.context, "Hello");
-	state.choiceMenu.button.base->properties.dimensions = F32x2(0.8f, 0.8f);
+	properties(state.test.background)->dimensions = F32x2(0.8f, 0.8f);
 
 	ResourceManager::Static::clearReferences(state.manager);
 }
@@ -62,9 +60,9 @@ void gameloop(State& state) {
 
 		Engine::beginRender(state.engine, state.window);
 
-		Button* addr = &state.choiceMenu.button;
+		Panel* addr = &state.test.background;
 
-		renderButtons({ &addr, 1 }, state.context, state.guiContext, state.window);
+		renderPanels({ &addr, 1 }, state.context, state.guiContext, state.window);
 
 		Engine::endRender(state.engine);
 
@@ -77,7 +75,7 @@ void terminate(State& state) {
 	Commands::Context::drop(&state.storage, state.context, state.engine);
 	GUI::Visual::Context::drop(&state.storage, state.guiContext, state.engine);
 
-	dropButton(state.choiceMenu.button, state.engine);
+	// dropButton(state.choiceMenu.button, state.engine);
 
 	Window::drop(&state.storage, state.window, state.engine);
 	Engine::drop(&state.storage, state.engine, state.window);

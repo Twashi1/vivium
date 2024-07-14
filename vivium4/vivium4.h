@@ -7,6 +7,7 @@
 #include "graphics/commands.h"
 #include "input.h"
 #include "graphics/gui/visual/button.h"
+#include "graphics/gui/visual/panel.h"
 #include "graphics/primitives/framebuffer.h"
 #include "physics/physics.h"
 #include "math/polygon.h"

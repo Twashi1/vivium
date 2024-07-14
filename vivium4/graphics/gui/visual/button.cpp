@@ -70,8 +70,8 @@ namespace Vivium {
 
 		setBuffer(guiContext->button.storageBuffer.resource, 0, buttonData.data(), buttonData.size() * sizeof(GUI::Visual::Context::_ButtonInstanceData));
 		Commands::bindPipeline(context, guiContext->button.pipeline.resource);
-		Commands::bindVertexBuffer(context, guiContext->button.vertexBuffer.resource);
-		Commands::bindIndexBuffer(context, guiContext->button.indexBuffer.resource);
+		Commands::bindVertexBuffer(context, guiContext->rectVertexBuffer.resource);
+		Commands::bindIndexBuffer(context, guiContext->rectIndexBuffer.resource);
 		Commands::bindDescriptorSet(context, guiContext->button.descriptorSet.resource, guiContext->button.pipeline.resource);
 		Commands::pushConstants(context, &perspective, sizeof(Math::Perspective), 0, ShaderStage::VERTEX, guiContext->button.pipeline.resource);
 		Commands::drawIndexed(context, 6, buttons.size());
