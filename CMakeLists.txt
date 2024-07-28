@@ -39,7 +39,7 @@ set(VIVIUM_SOURCES
    "vivium4/storage.cpp"
  "vivium4/graphics/color.cpp" "vivium4/graphics/gui/visual/button.cpp" 
 "vivium4/graphics/primitives/framebuffer.cpp" "vivium4/graphics/gui/visual/context.cpp"
- "engine/main.cpp" "vivium4/graphics/gui/visual/panel.cpp")
+ "engine/main.cpp" "vivium4/graphics/gui/visual/panel.cpp" "vivium4/ecs/defines.cpp")
 set(VIVIUM_HEADERS
   "vivium4/error/result.h"
   "vivium4/graphics/primitives/buffer.h"
@@ -79,7 +79,7 @@ set(VIVIUM_HEADERS
   "vivium4/graphics/color.h"
      
   "vivium4/graphics/primitives/framebuffer.h" 
-  "vivium4/graphics/gui/visual/context.h"   "vivium4/ecs/registry.h" "vivium4/serialiser/serialiser.h" "vivium4/graphics/gui/visual/panel.h")
+  "vivium4/graphics/gui/visual/context.h"   "vivium4/ecs/registry.h" "vivium4/serialiser/serialiser.h" "vivium4/graphics/gui/visual/panel.h" "vivium4/ecs/component_array.h" "vivium4/ecs/component_manager.h" "vivium4/ecs/defines.h" "vivium4/ecs/paged_array.h")
 
 add_subdirectory("${CMAKE_SOURCE_DIR}/external/glfw")
 

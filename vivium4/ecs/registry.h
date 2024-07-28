@@ -1,12 +1,94 @@
 #pragma once
 
-// Archetype based ECS using static compile-time type generators for ID generation
-// https://ajmmertens.medium.com/building-an-ecs-2-archetypes-and-vectorization-fe21690805f9
-// ECS back and forth series
+#include "paged_array.h"
+#include "defines.h"
+#include "component_array.h"
+
+#include "../error/log.h"
 
 namespace Vivium {
 	struct Registry {
-		// Sparse-set maps entity ids to archetype directly?
-		// 
+		PagedArray<Signature, ECS_PAGE_SIZE, ECS_ENTITY_MAX> signatures;
+		// TODO: test allocating 64 components
+		std::array<ComponentArray*, ECS_COMPONENT_MAX> componentPools;
+
+		// Next to be recycled
+		Entity nextEntity = ECS_ENTITY_MAX;
+		// Next new available
+		Entity nextLargestEntity = ECS_ENTITY_MAX;
+		uint32_t availableEntities = 0;
+
+		// All alive/dead entities
+		std::vector<Entity> entities;
+
+		template <ValidComponent T>
+		ComponentArray*& _getPoolOrCreate() {
+			uint8_t componentID = TypeGenerator::getIdentifier<T>();
+			
+			ComponentArray*& arr = componentPools[componentID];
+			
+			if (arr == nullptr) { registerComponent<T>(); }
+
+			return arr;
+		}
+
+		template <ValidComponent T>
+		void resizePool(uint64_t newCapacity) {
+			ComponentArray* arr = _getPoolOrCreate<T>();
+
+			if (arr == nullptr) {
+				registerComponent<T>();
+			}
+
+			arr->resize(newCapacity);
+		}
+
+		template <ValidComponent T>
+		void registerComponent() {
+			uint8_t componentID = TypeGenerator::getIdentifier<T>();
+
+			ComponentArray*& arr = componentPools[componentID];
+
+			if (arr != nullptr) {
+				VIVIUM_LOG(Log::FATAL, "Already registered component");
+
+				return;
+			}
+
+			arr = new ComponentArray();
+			arr->manager = defaultComponentManager<T>();
+			arr->resize(0);
+		}
+
+		template <ValidComponent T>
+		void addComponent(Entity entity, T&& component) {
+			uint8_t componentID = TypeGenerator::getIdentifier<T>();
+			ComponentArray* arr = _getPoolOrCreate<T>();
+
+			arr->push<T>(entity, std::forward<T>(component));
+
+			Signature& signature = signatures.index(getIdentifier(entity));
+			signature.set(componentID);
+
+			// TODO: perform group operations
+		}
+
+		template <ValidComponent T>
+		void removeComponent(Entity entity) {
+			uint8_t componentID = TypeGenerator::getIdentifier<T>();
+			ComponentArray* arr = _getPoolOrCreate<T>();
+
+			// TODO: perform group operations
+
+			arr->free(entity);
+
+			Signature& signature = signatures.index(getIdentifier(entity));
+			signature.set(componentID, 0);
+		}
+
+		template <ValidComponent T>
+		T& getComponent(Entity entity) {
+			return _getPoolOrCreate<T>()->get<T>(entity);
+		}
 	};
 }
