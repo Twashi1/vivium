@@ -39,7 +39,7 @@ set(VIVIUM_SOURCES
    "vivium4/storage.cpp"
  "vivium4/graphics/color.cpp" "vivium4/graphics/gui/visual/button.cpp" 
 "vivium4/graphics/primitives/framebuffer.cpp" "vivium4/graphics/gui/visual/context.cpp"
- "engine/main.cpp" "vivium4/graphics/gui/visual/panel.cpp" "vivium4/ecs/defines.cpp")
+ "engine/main.cpp" "vivium4/graphics/gui/visual/panel.cpp" "vivium4/ecs/defines.cpp" "vivium4/ecs/component_array.cpp" "vivium4/ecs/registry.cpp")
 set(VIVIUM_HEADERS
   "vivium4/error/result.h"
   "vivium4/graphics/primitives/buffer.h"
