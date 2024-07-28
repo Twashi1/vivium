@@ -21,6 +21,12 @@ namespace Vivium {
 		// All alive/dead entities
 		std::vector<Entity> entities;
 
+		Registry();
+		~Registry();
+
+		void free(Entity entity);
+		Entity create();
+
 		template <ValidComponent T>
 		ComponentArray*& _getPoolOrCreate() {
 			uint8_t componentID = TypeGenerator::getIdentifier<T>();
