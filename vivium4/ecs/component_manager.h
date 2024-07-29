@@ -10,8 +10,12 @@ namespace Vivium {
 
 	template <ValidComponent T>
 	void defaultMoveComponent(void* source, void* dest) {
-		if constexpr (std::is_trivial_v<T> || std::is_copy_constructible_v<T>) { *reinterpret_cast<T*>(dest){ *reinterpret_cast<T*>(source) }; }
-		else if constexpr (std::is_move_constructible_v<T>) { *reinterpret_cast<T*>(dest){ std::move(*reinterpret_cast<T*>(source)) }; }
+		if constexpr (std::is_trivial_v<T> || std::is_copy_constructible_v<T>) {
+			new (dest) T(*reinterpret_cast<T*>(source));
+		}
+		else if constexpr (std::is_move_constructible_v<T>) {
+			new (dest) T(std::move(*reinterpret_cast<T*>(source)));
+		}
 	}
 
 	template <ValidComponent T>
@@ -24,7 +28,7 @@ namespace Vivium {
 	template <ValidComponent T>
 	void defaultDestroyComponent(void* data, uint64_t count) {
 		for (uint64_t i = 0; i < count; i++) {
-			(reinterpret_cast<T*>(data) + i)->~T();
+			delete (reinterpret_cast<T*>(data) + i);
 		}
 	}
 
@@ -38,7 +42,7 @@ namespace Vivium {
 		typedef void(*ReallocFunction)(void* src, void* dst, uint64_t);
 		typedef void(*DestroyFunction)(void*, uint64_t);
 		typedef void(*SwapFunction)(void*, void*);
-		typedef uint8_t(*ComponentIDFunction)(void);
+		typedef uint32_t(*ComponentIDFunction)(void);
 
 		MoveFunction moveFunction;
 		ReallocFunction reallocFunction;
