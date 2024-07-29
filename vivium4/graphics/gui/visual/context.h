@@ -16,6 +16,7 @@ namespace Vivium {
 					float _fill0; // 32 bytes
 				};
 
+				// TODO: border size not in px
 				struct _PanelInstanceData {
 					F32x2 position;
 					F32x2 scale;

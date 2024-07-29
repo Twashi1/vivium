@@ -14,7 +14,6 @@ struct ButtonData {
 	vec2 scale;
 	vec3 foregroundColor;
 	float _fill0;
-	float _fill1;
 };
 
 layout(std140, binding = 0) readonly buffer InstanceData {

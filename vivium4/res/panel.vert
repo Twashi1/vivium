@@ -3,6 +3,9 @@
 
 layout(location = 0) in vec2 inPosition;
 layout(location = 0) out vec3 vColor;
+layout(location = 1) out vec2 vUVCoords;
+layout(location = 2) out vec3 vBorderColor;
+layout(location = 3) out float vBorderSize;
 
 layout(push_constant) uniform Matrices {
 	mat4 view;
@@ -13,8 +16,9 @@ struct PanelData {
 	vec2 position;
 	vec2 scale;
 	vec3 backgroundColor;
+	float borderSize;
+	vec3 borderColor;
 	float _fill0;
-	float _fill1;
 };
 
 layout(std140, binding = 0) readonly buffer InstanceData {
@@ -29,4 +33,7 @@ void main() {
 	);
 
 	vColor = panel.backgroundColor;
+	vUVCoords = inPosition;
+	vBorderColor = panel.borderColor;
+	vBorderSize = panel.borderSize;
 }
