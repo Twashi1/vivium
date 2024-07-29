@@ -58,6 +58,7 @@
 	- Add ability for `Sprite` to display
 - `Slider` class
 - `Panel` class
+	- Border is not same in `y` and `x`
 - `Anchor` renamed since also used in `Center` parameters (also move to `Vec2`?)
 - Not considering the total y-extent of characters that go below the origin (like `p`, `q`, `y`, etc.), although whether it should be considered or not is to be determined
 - Better values of `spreadFactor` for signed distance field font rendering
