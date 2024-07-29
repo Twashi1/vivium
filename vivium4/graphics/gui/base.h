@@ -57,7 +57,7 @@ namespace Vivium {
 
 	void _updateGUIElement(GUIElement* const objectHandle, GUIElement const* const parent, F32x2 windowDimensions);
 	GUIProperties& _properties(GUIElement* const objectHandle);
-	void _addChild(GUIElement* const parent, std::span<GUIElement*> child);
+	void _addChild(GUIElement* const parent, std::span<GUIElement*> children);
 
 	template <typename T>
 	concept GenericGUIElement = requires(T element) {
@@ -65,11 +65,11 @@ namespace Vivium {
 	} || std::is_same_v<T, GUIElement*>;
 
 	template <GenericGUIElement T>
-	GUIElement* _extract(T& element) {
+	GUIElement*& _extract(T& element) {
 		if constexpr (std::is_same_v<T, GUIElement*>)
 			return element;
-
-		return element.base;
+		else
+			return element.base;
 	}
 
 	template <GenericGUIElement T>
@@ -84,6 +84,6 @@ namespace Vivium {
 
 	template <GenericGUIElement T, GenericGUIElement U>
 	void addChild(T& element, U& child) {
-		_addChild(_extract(element), { _extract(child), 1 });
+		_addChild(_extract(element), { &_extract(child), 1 });
 	}
 }

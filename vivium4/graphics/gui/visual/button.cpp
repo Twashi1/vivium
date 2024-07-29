@@ -6,17 +6,23 @@ namespace Vivium {
 		dropText(button.text, engine);
 	}
 
-	Button submitButton(ResourceManager::Static::Handle manager, GUI::Visual::Context::Handle guiContext, Engine::Handle engine, Window::Handle window)
+	Button submitButton(ResourceManager::Static::Handle manager, GUI::Visual::Context::Handle guiContext, Engine::Handle engine, Window::Handle window, ButtonSpecification specification)
 	{
 		Button button;
 
+		if (specification.parent == nullptr) {
+			specification.parent = guiContext->defaultParent;
+		}
+
 		button.base = GUI::Visual::Context::_allocateGUIElement(guiContext);
-		button.color = Color::White;
+		addChild(specification.parent, button.base);
+		button.color = specification.color;
+		button.textColor = specification.textColor;
 
 		// TODO: maximum text length should be parameter
 		button.text = submitText(manager, engine, guiContext, TextSpecification{ 64, Font::Font::fromDistanceFieldFile("res/fonts/consola.sdf") });
-		// TODO: use different method
-		_addChild(button.base, { &button.text.base, 1 });
+		addChild(button.base, button.text.base);
+		
 		GUIProperties& textProperties = _properties(button.text.base);
 		textProperties.dimensions = F32x2(0.9f);
 		textProperties.position = F32x2(0.0f);
@@ -51,12 +57,10 @@ namespace Vivium {
 	{
 		std::vector<GUI::Visual::Context::_ButtonInstanceData> buttonData(buttons.size());
 
+		constexpr int x = sizeof(GUI::Visual::Context::_ButtonInstanceData);
+
 		for (uint64_t i = 0; i < buttons.size(); i++) {
 			Button& button = *buttons[i];
-
-			// TODO: modifies buttons
-			// TODO: shouldn't do this, should have some root element that gets updated by user (or automatically)
-			_updateGUIElement(button.base, nullptr, Window::dimensions(window));
 
 			GUI::Visual::Context::_ButtonInstanceData instance;
 			instance.position = button.base->properties.truePosition;
@@ -87,7 +91,7 @@ namespace Vivium {
 				button.metrics,
 				context,
 				guiContext,
-				Color::multiply(button.color, 0.4f),
+				button.textColor,
 				F32x2(std::min(axisScale.x, axisScale.y)),
 				perspective
 			);

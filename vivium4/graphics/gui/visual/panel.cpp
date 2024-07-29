@@ -1,13 +1,21 @@
 #include "panel.h"
 
 namespace Vivium {
-	Panel createPanel(GUI::Visual::Context::Handle guiContext, PanelSpecification const& specification)
+	Panel createPanel(GUI::Visual::Context::Handle guiContext, PanelSpecification specification)
 	{
 		Panel panel{};
 
 		panel.base = GUI::Visual::Context::_allocateGUIElement(guiContext);
 		panel.backgroundColor = specification.backgroundColor;
+		panel.borderColor = specification.borderColor;
+		panel.borderSize = specification.borderSize;
+		
+		if (specification.parent == nullptr) {
+			specification.parent = guiContext->defaultParent;
+		}
 
+		addChild(specification.parent, panel.base);
+		
 		return panel;
 	}
 
@@ -18,14 +26,12 @@ namespace Vivium {
 		for (uint64_t i = 0; i < panels.size(); i++) {
 			Panel& panel = *panels[i];
 
-			// TODO: modifies panels
-			// TODO: shouldn't do this, should have some root element that gets updated by user (or automatically)
-			_updateGUIElement(panel.base, nullptr, Window::dimensions(window));
-
 			GUI::Visual::Context::_PanelInstanceData instance;
 			instance.position = panel.base->properties.truePosition;
 			instance.scale = panel.base->properties.trueDimensions;
 			instance.backgroundColor = panel.backgroundColor;
+			instance.borderColor = panel.borderColor;
+			instance.borderSizePx = panel.borderSize;
 
 			panelData[i] = instance;
 		}
@@ -38,6 +44,6 @@ namespace Vivium {
 		Commands::bindIndexBuffer(context, guiContext->rectIndexBuffer.resource);
 		Commands::bindDescriptorSet(context, guiContext->panel.descriptorSet.resource, guiContext->panel.pipeline.resource);
 		Commands::pushConstants(context, &perspective, sizeof(Math::Perspective), 0, ShaderStage::VERTEX, guiContext->panel.pipeline.resource);
-		Commands::drawIndexed(context, 6, panels.size());
+		Commands::drawIndexed(context, 6, panelData.size());
 	}
 }

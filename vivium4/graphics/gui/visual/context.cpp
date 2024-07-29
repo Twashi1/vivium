@@ -203,6 +203,11 @@ namespace Vivium {
 
 					// TODO: maybe the descriptor layout can be freed here?
 				}
+				
+				void updateContext(Handle handle, F32x2 windowDimensions)
+				{
+					_updateGUIElement(handle->defaultParent, nullptr, windowDimensions);
+				}
 			}
 		}
 	}

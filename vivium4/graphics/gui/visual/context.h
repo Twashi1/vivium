@@ -10,17 +10,19 @@ namespace Vivium {
 		namespace Visual {
 			namespace Context {
 				struct _ButtonInstanceData {
-					F32x2 position;
-					F32x2 scale;
-					Color foregroundColor;
-					float _fill0, _fill1;
+					F32x2 position; // 8 bytes
+					F32x2 scale;    // 16 bytes
+					Color foregroundColor; // 28 bytes
+					float _fill0; // 32 bytes
 				};
 
 				struct _PanelInstanceData {
 					F32x2 position;
 					F32x2 scale;
 					Color backgroundColor;
-					float _fill0, _fill1;
+					float borderSizePx; // 32 bytes
+					Color borderColor; // 44 bytes
+					float _fill0;
 				};
 
 				struct Resource {
@@ -60,6 +62,7 @@ namespace Vivium {
 						Ref<Pipeline> pipeline;
 					} panel;
 
+					GUIElement* defaultParent;
 					Storage::Static::Pool elementStorage;
 				};
 
@@ -77,6 +80,14 @@ namespace Vivium {
 				PromisedHandle submit(StorageType* allocator, ResourceManager::Static::Handle manager, Engine::Handle engine, Window::Handle window) {
 					Handle handle = Storage::allocateResource<Resource>(allocator);
 
+					// Generate the font if it doesn't exist
+					if (!std::filesystem::exists("res/fonts/consola.sdf"))
+					{
+						Font::compileSignedDistanceField("res/fonts/consola.ttf", 512, "res/fonts/consola.sdf", 48, 1.0f);
+					}
+
+					handle->defaultParent = _allocateGUIElement(handle);
+
 					_submitGenericContext(handle, manager, engine, window);
 					_submitButtonContext(handle, manager, engine, window);
 					_submitTextContext(handle, manager, engine, window);
@@ -86,6 +97,8 @@ namespace Vivium {
 				}
 				
 				void setup(Handle handle, ResourceManager::Static::Handle manager, Commands::Context::Handle context, Engine::Handle engine);
+
+				void updateContext(Handle handle, F32x2 windowDimensions);
 
 				template <Storage::StorageType StorageType>
 				void drop(StorageType* allocator, Handle handle, Engine::Handle engine) {
@@ -104,8 +117,6 @@ namespace Vivium {
 
 					dropBuffer(handle->rectVertexBuffer.resource, engine);
 					dropBuffer(handle->rectIndexBuffer.resource, engine);
-
-					// TODO: drop panel resources
 
 					Storage::dropResource(allocator, handle);
 				}
