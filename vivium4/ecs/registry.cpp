@@ -2,6 +2,7 @@
 
 namespace Vivium {
 	Registry::Registry()
+		: signatures(Signature{})
 	{
 		for (uint64_t i = 0; i < componentPools.size(); i++) {
 			componentPools[i] = nullptr;
@@ -28,8 +29,14 @@ namespace Vivium {
 		++availableEntities;
 		// Build implicit list
 		Entity& destroyedEntity = entities[getIdentifier(entity)];
-		// TODO: add 1 to version number
+		// Increment version number
+		destroyedEntity += (1 << 20);
 		std::swap(destroyedEntity, nextEntity);
+	}
+
+	void Registry::clear()
+	{
+		// TODO
 	}
 
 	Entity Registry::create()

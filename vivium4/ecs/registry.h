@@ -15,7 +15,7 @@ namespace Vivium {
 		// Next to be recycled
 		Entity nextEntity = ECS_ENTITY_MAX;
 		// Next new available
-		Entity nextLargestEntity = ECS_ENTITY_MAX;
+		Entity nextLargestEntity = 0;
 		uint32_t availableEntities = 0;
 
 		// All alive/dead entities
@@ -25,6 +25,7 @@ namespace Vivium {
 		~Registry();
 
 		void free(Entity entity);
+		void clear();
 		Entity create();
 
 		template <ValidComponent T>
