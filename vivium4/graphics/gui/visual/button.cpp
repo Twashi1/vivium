@@ -3,7 +3,7 @@
 namespace Vivium {
 	void dropButton(Button& button, Engine::Handle engine)
 	{
-		dropText(button.text, engine);
+		dropTextBatch(button.textBatch, engine);
 	}
 
 	Button submitButton(ResourceManager::Static::Handle manager, GUI::Visual::Context::Handle guiContext, Engine::Handle engine, Window::Handle window, ButtonSpecification specification)
@@ -20,11 +20,14 @@ namespace Vivium {
 		button.textColor = specification.textColor;
 
 		// TODO: maximum text length should be parameter
-		button.text = submitText(manager, engine, guiContext, TextSpecification{ 64, Font::Font::fromDistanceFieldFile("res/fonts/consola.sdf") });
+		button.textBatch = submitTextBatch(manager, engine, guiContext, TextBatchSpecification{ 64, Font::Font::fromDistanceFieldFile("vivium4/res/fonts/consola.sdf") });
+		button.text = createText(TextSpecification{ button.base, "", specification.textColor, calculateTextMetrics("", button.textBatch.font), TextAlignment::CENTER }, guiContext);
+		properties(button.text)->dimensions = F32x2(0.9f);
+
 		addChild(button.base, button.text.base);
 		
 		GUIProperties& textProperties = _properties(button.text.base);
-		textProperties.dimensions = F32x2(0.9f);
+		textProperties.dimensions = F32x2(0.95f);
 		textProperties.position = F32x2(0.0f);
 		textProperties.scaleType = GUIScaleType::RELATIVE;
 		textProperties.positionType = GUIPositionType::RELATIVE;
@@ -38,7 +41,7 @@ namespace Vivium {
 
 	void setupButton(Button& button, ResourceManager::Static::Handle manager)
 	{
-		setupText(button.text, manager);
+		setupTextBatch(button.textBatch, manager);
 	}
 
 	void setButtonText(Button& button, Engine::Handle engine, Window::Handle window, Commands::Context::Handle context, const std::string_view& text)
@@ -46,11 +49,10 @@ namespace Vivium {
 		// Early exit if no text
 		if (text.size() == 0) return;
 
-		button.metrics = calculateTextMetrics(text, button.text.font);
-
-		// NOTE: used to be an update to GUI position component here
-
-		setText(button.text, engine, button.metrics, context, text, TextAlignment::CENTER);
+		setText(button.text, calculateTextMetrics(text, button.textBatch.font), text, button.textColor, button.text.alignment);
+		
+		Text* textObjects[] = { &button.text };
+		calculateTextBatch(button.textBatch, textObjects, context, engine);
 	}
 
 	void renderButtons(const std::span<Button*> buttons, Commands::Context::Handle context, GUI::Visual::Context::Handle guiContext, Window::Handle window)
@@ -83,18 +85,7 @@ namespace Vivium {
 		for (Button* buttonPtr : buttons) {
 			Button& button = *buttonPtr;
 			
-			F32x2 axisScale = 0.9f * (button.base->properties.trueDimensions / F32x2(button.metrics.maxLineWidth, button.metrics.totalHeight));
-
-			// TODO: pass in text color, or have solution for white text on black
-			renderText(
-				button.text,
-				button.metrics,
-				context,
-				guiContext,
-				button.textColor,
-				F32x2(std::min(axisScale.x, axisScale.y)),
-				perspective
-			);
+			renderTextBatch(button.textBatch, context, guiContext, perspective);
 		}
 	}
 }

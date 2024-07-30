@@ -4,6 +4,14 @@
 
 using namespace Vivium;
 
+struct ComponentName {
+	std::string name;
+};
+
+struct ComponentPosition {
+	F32x2 position;
+};
+
 struct State {
 	Engine::Handle engine;
 	Window::Handle window;
@@ -14,6 +22,8 @@ struct State {
 	Storage::Static::Pool storage;
 
 	Math::Perspective perspective;
+
+	Registry registry;
 
 	struct {
 		Panel background;

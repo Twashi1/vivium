@@ -62,8 +62,13 @@ void _dropEntityView(State& state)
 
 void _update(State& state)
 {
+	setButtonText(state.editor.entityView.createButton, state.engine, state.window, state.context, "Entity create");
+
 	if (pointInElement(Input::getCursor(), *properties(state.editor.entityView.createButton)) && Input::get(Input::BTN_LEFT).state == Input::PRESS) {
-		VIVIUM_LOG(Log::DEBUG, "In button!");
+		Entity newEntity = state.registry.create();
+		state.registry.addComponent<ComponentName>(newEntity, ComponentName{ std::format("Entity {}", newEntity & ECS_ENTITY_MASK) });
+
+		state.editor.entityView.entities.push_back(newEntity);
 	}
 }
 

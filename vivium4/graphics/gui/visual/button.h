@@ -7,7 +7,7 @@ namespace Vivium {
 		GUIElement* base;
 
 		Text text;
-		TextMetrics metrics;
+		TextBatch textBatch;
 
 		Color color;
 		Color textColor;

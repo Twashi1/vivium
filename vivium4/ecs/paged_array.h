@@ -18,7 +18,7 @@ namespace Vivium {
 			}
 		}
 
-		PagedArray(T const& defaultValue) : defaultValue(defaultValue), PagedArray() {}
+		PagedArray(T const& defaultValue) : PagedArray() { this->defaultValue = defaultValue; }
 		
 		~PagedArray() {
 			for (T* page : pages) {

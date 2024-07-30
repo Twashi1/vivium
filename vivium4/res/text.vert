@@ -24,6 +24,6 @@ void main() {
 	// Add back in origin and translation
 	vec2 transformed = scaledVector + scaleOrigin + translation;
 
-	gl_Position = matrices.proj * matrices.view * vec4(transformed, 0.0, 1.0);
+	gl_Position = matrices.proj * matrices.view * vec4(inPosition, 0.0, 1.0);
 	vTextureCoordinates = inTextureCoordinates;
 }

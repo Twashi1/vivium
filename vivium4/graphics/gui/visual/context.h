@@ -35,6 +35,10 @@ namespace Vivium {
 						Ref<DescriptorLayout> descriptorLayout;
 						Ref<Shader> fragmentShader;
 						Ref<Shader> vertexShader;
+
+						// TODO: do we even need this stored?
+						// Batch buffer layout
+						BufferLayout bufferLayout;
 					} text;
 
 					struct {
@@ -82,9 +86,9 @@ namespace Vivium {
 					Handle handle = Storage::allocateResource<Resource>(allocator);
 
 					// Generate the font if it doesn't exist
-					if (!std::filesystem::exists("res/fonts/consola.sdf"))
+					if (!std::filesystem::exists("vivium4/res/fonts/consola.sdf"))
 					{
-						Font::compileSignedDistanceField("res/fonts/consola.ttf", 512, "res/fonts/consola.sdf", 48, 1.0f);
+						Font::compileSignedDistanceField("vivium4/res/fonts/consola.ttf", 512, "vivium4/res/fonts/consola.sdf", 48, 1.0f);
 					}
 
 					handle->defaultParent = _allocateGUIElement(handle);

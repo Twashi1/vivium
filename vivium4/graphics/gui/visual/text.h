@@ -43,35 +43,54 @@ namespace Vivium {
 	std::vector<PerGlyphData> generateTextRenderData(TextMetrics const& metrics, const std::string_view& text, const Font::Font& font, F32x2 scale, TextAlignment alignment);
 
 	struct TextSpecification {
+		GUIElement* parent;
+
+		std::string characters;
+		Color color;
+		TextMetrics metrics;
+		TextAlignment alignment;
+	};
+
+	struct Text {
+		GUIElement* base;
+
+		std::string characters;
+		Color color;
+		TextMetrics metrics;
+		TextAlignment alignment;
+	};
+
+	struct TextBatchSpecification {
 		uint64_t maxCharacterCount;
 		Font::Font font;
 	};
 
-	// TODO: todo outdated?
-	// TODO: actually use base property
-	struct Text {
+	struct TextBatch {
 		GUIElement* base;
 
 		Batch batch;
-		BufferLayout bufferLayout;
-
-		Font::Font font;
 
 		Ref<Buffer> fragmentUniform;
 		Ref<Buffer> vertexUniform;
-		Ref<Texture> textAtlasTexture;
 
+		Font::Font font;
+		Ref<Texture> fontTexture;
 		Ref<DescriptorSet> descriptorSet;
-
-		TextAlignment alignment;
 	};
 
-	void renderText(Text& text, TextMetrics const& metrics, Commands::Context::Handle context, GUI::Visual::Context::Handle guiContext, Color color, F32x2 scale, Math::Perspective perspective);
-	void setText(Text& text, Engine::Handle engine, TextMetrics const& metrics, Commands::Context::Handle context, const std::string_view& textData, TextAlignment alignment);
+	// Create text object, each only has base property, metrics, alignment, color
+	// SetText of each text object, places into one single batch
+	// Everything done in one draw call (with one font)
+	// Can continually update text of each text object, then recalculate all on separate command
+	void renderTextBatch(TextBatch& text, Commands::Context::Handle context, GUI::Visual::Context::Handle guiContext, Math::Perspective const& perspective);
+	void calculateTextBatch(TextBatch& text, std::span<Text*> textObjects, Commands::Context::Handle context, Engine::Handle engine);
 
-	Text submitText(ResourceManager::Static::Handle manager, Engine::Handle engine, GUI::Visual::Context::Handle textContext, TextSpecification const& specification);
+	TextBatch submitTextBatch(ResourceManager::Static::Handle manager, Engine::Handle engine, GUI::Visual::Context::Handle guiContext, TextBatchSpecification const& specification);
+	void setupTextBatch(TextBatch& text, ResourceManager::Static::Handle manager);
 
-	void setupText(Text& text, ResourceManager::Static::Handle manager);
+	void setText(Text& text, TextMetrics const& metrics, const std::string_view& textData, Color color, TextAlignment alignment);
 
-	void dropText(Text& text, Engine::Handle engine);
+	Text createText(TextSpecification const& specification, GUI::Visual::Context::Handle guiContext);
+
+	void dropTextBatch(TextBatch& text, Engine::Handle engine);
 }

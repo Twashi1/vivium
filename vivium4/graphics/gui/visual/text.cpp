@@ -108,22 +108,77 @@ namespace Vivium {
 		return renderData;
 	}
 
-	Text submitText(ResourceManager::Static::Handle manager, Engine::Handle engine, GUI::Visual::Context::Handle guiContext, TextSpecification const& specification) {
-		Text text;
+	void renderTextBatch(TextBatch& text, Commands::Context::Handle context, GUI::Visual::Context::Handle guiContext, Math::Perspective const& perspective)
+	{
+		TextTransformData transform;
+		transform.translation = text.base->properties.truePosition;
+		// TODO: parameters redundant? not in use at least
+		transform.scale = F32x2(1.0f);
+		transform.scaleOrigin = F32x2(0.0f);
+
+		// TODO: actually read color from vertex
+		setBuffer(text.fragmentUniform.resource, 0, &Color::White, sizeof(Color));
+		setBuffer(text.vertexUniform.resource, 0, &transform, sizeof(TextTransformData));
+
+		Commands::pushConstants(context, &perspective, sizeof(Math::Perspective), 0, ShaderStage::VERTEX, guiContext->text.pipeline.resource);
+
+		Commands::bindPipeline(context, guiContext->text.pipeline.resource);
+		Commands::bindDescriptorSet(context, text.descriptorSet.resource, guiContext->text.pipeline.resource);
+		Commands::bindVertexBuffer(context, vertexBufferBatch(text.batch));
+		Commands::bindIndexBuffer(context, indexBufferBatch(text.batch));
+
+		Commands::drawIndexed(context, indexCountBatch(text.batch), 1);
+	}
+
+	void calculateTextBatch(TextBatch& textBatch, std::span<Text*> textObjects, Commands::Context::Handle context, Engine::Handle engine)
+	{
+		uint16_t indices[6] = { 0, 1, 2, 2, 3, 0 };
+
+		// TODO: consider dimensions of text batch for some sort of scaling, 
+		//	or remove text batch positioning entirely
+
+		for (Text* text : textObjects) {
+			// Calculate required scaling and offsets
+			// Calculate origin point about which to scale
+			// Calculate scale to fit to dimensions
+			GUIProperties props = *properties(*text);
+			F32x2 translation = props.truePosition;
+			F32x2 axisScale = props.trueDimensions / F32x2(text->metrics.maxLineWidth, text->metrics.totalHeight);
+			float scale = std::min(axisScale.x, axisScale.y);
+			F32x2 scaleOrigin;
+
+			switch (text->alignment) {
+			case TextAlignment::LEFT: scaleOrigin = F32x2(0.0f, text->metrics.firstLineHeight) * scale; break;
+			case TextAlignment::CENTER: scaleOrigin = F32x2(0.0f); break;
+			case TextAlignment::RIGHT: VIVIUM_LOG(Log::FATAL, "Right alignment not implemented"); break;
+			default: VIVIUM_LOG(Log::FATAL, "Invalid alignment"); break;
+			}
+
+			std::vector<PerGlyphData> renderData = generateTextRenderData(text->metrics, text->characters, textBatch.font, F32x2(1.0f), text->alignment);
+
+			for (PerGlyphData const& glyph : renderData) {
+				F32x2 bottomLeft = (glyph.bottomLeft - scaleOrigin) * scale + scaleOrigin + translation;
+				F32x2 topRight = (glyph.topRight - scaleOrigin) * scale + scaleOrigin + translation;
+
+				submitRectangleBatch(textBatch.batch, 0, bottomLeft.x, bottomLeft.y, topRight.x, topRight.y);
+				submitRectangleBatch(textBatch.batch, 1, glyph.texBottomLeft.x, glyph.texBottomLeft.y, glyph.texTopRight.x, glyph.texTopRight.y);
+				endShapeBatch(textBatch.batch, 4, indices);
+			}
+		}
+		
+		endSubmissionBatch(textBatch.batch, context, engine);
+	}
+
+	TextBatch submitTextBatch(ResourceManager::Static::Handle manager, Engine::Handle engine, GUI::Visual::Context::Handle guiContext, TextBatchSpecification const& specification)
+	{
+		TextBatch text;
 
 		text.base = GUI::Visual::Context::_allocateGUIElement(guiContext);
-		// TODO: pass from specification
-		text.alignment = TextAlignment::CENTER;
-
-		text.bufferLayout = BufferLayout::fromTypes(std::vector<ShaderDataType>({
-			ShaderDataType::VEC2,
-			ShaderDataType::VEC2
-			}));
 
 		text.batch = submitBatch(engine, manager, BatchSpecification(
 			specification.maxCharacterCount * 4,
 			specification.maxCharacterCount * 6,
-			text.bufferLayout
+			guiContext->text.bufferLayout
 		));
 
 		std::array<BufferReference, 2> hostBuffers;
@@ -138,85 +193,62 @@ namespace Vivium {
 
 		text.font = specification.font;
 
-		ResourceManager::Static::submit(manager, &text.textAtlasTexture.reference, std::vector<TextureSpecification>({
+		ResourceManager::Static::submit(manager, &text.fontTexture.reference, std::vector<TextureSpecification>({
 			TextureSpecification::fromFont(specification.font, TextureFormat::MONOCHROME, TextureFilter::NEAREST)
 			}));
 
 		ResourceManager::Static::submit(manager, &text.descriptorSet.reference, std::vector<DescriptorSetSpecification>({
 			DescriptorSetSpecification(guiContext->text.descriptorLayout.reference, std::vector<UniformData>({
-				UniformData::fromTexture(text.textAtlasTexture.reference),
+				UniformData::fromTexture(text.fontTexture.reference),
 				UniformData::fromBuffer(text.fragmentUniform.reference, sizeof(Color), 0),
-				UniformData::fromBuffer(text.vertexUniform.reference, sizeof(F32x2), 0)
+				UniformData::fromBuffer(text.vertexUniform.reference, sizeof(TextTransformData), 0)
 				}))
 			}));
 
 		return text;
 	}
 
-	void renderText(Text& text, TextMetrics const& metrics, Commands::Context::Handle context, GUI::Visual::Context::Handle guiContext, Color color, F32x2 scale, Math::Perspective perspective)
+	void setupTextBatch(TextBatch& text, ResourceManager::Static::Handle manager)
 	{
-		TextTransformData transform;
-		transform.translation = text.base->properties.truePosition;
-		transform.scale = scale;
-					
-		// TODO: test new alignment
-		switch (text.alignment) {
-		case TextAlignment::LEFT:
-			transform.scaleOrigin = F32x2(0.0f, metrics.firstLineHeight);
-			break;
-		case TextAlignment::CENTER:
-			transform.scaleOrigin = F32x2(0.0f);
-			break;
-		// TODO: right not implemented
-		case TextAlignment::RIGHT: break;
-		VIVIUM_DEBUG_ONLY(default: VIVIUM_LOG(Log::FATAL, "Invalid alignment passed"); break);
-		}
-
-		setBuffer(text.fragmentUniform.resource, 0, &color, sizeof(Color));
-		setBuffer(text.vertexUniform.resource, 0, &transform, sizeof(TextTransformData));
-
-		Commands::pushConstants(context, &perspective, sizeof(Math::Perspective), 0, ShaderStage::VERTEX, guiContext->text.pipeline.resource);
-
-		Commands::bindPipeline(context, guiContext->text.pipeline.resource);
-		Commands::bindDescriptorSet(context, text.descriptorSet.resource, guiContext->text.pipeline.resource);
-		Commands::bindVertexBuffer(context, vertexBufferBatch(text.batch));
-		Commands::bindIndexBuffer(context, indexBufferBatch(text.batch));
-
-		Commands::drawIndexed(context, indexCountBatch(text.batch), 1);
-	}
-
-	void setText(Text& text, Engine::Handle engine, TextMetrics const& metrics, Commands::Context::Handle context, const std::string_view& textData, TextAlignment alignment)
-	{
-		// TODO: scale parameter now redundant
-		std::vector<PerGlyphData> renderData = generateTextRenderData(metrics, textData, text.font, F32x2(1.0f), alignment);
-
-		uint16_t indices[6] = { 0, 1, 2, 2, 3, 0 };
-
-		for (const PerGlyphData& glyph : renderData) {
-			submitRectangleBatch(text.batch, 0, glyph.bottomLeft.x, glyph.bottomLeft.y, glyph.topRight.x, glyph.topRight.y);
-			submitRectangleBatch(text.batch, 1, glyph.texBottomLeft.x, glyph.texBottomLeft.y, glyph.texTopRight.x, glyph.texTopRight.y);
-			endShapeBatch(text.batch, 4, indices);
-		}
-
-		endSubmissionBatch(text.batch, context, engine);
-	}
-
-	void dropText(Text& text, Engine::Handle engine) {
-		dropBatch(text.batch, engine);
-
-		dropBuffer(text.fragmentUniform.resource, engine);
-		dropBuffer(text.vertexUniform.resource, engine);
-		dropTexture(text.textAtlasTexture.resource, engine);
-	}
-				
-	void setupText(Text& text, ResourceManager::Static::Handle manager)
-	{
-		// ugly but fine
 		setupBatch(text.batch, manager);
 
 		ResourceManager::Static::convertReference(manager, text.fragmentUniform);
 		ResourceManager::Static::convertReference(manager, text.vertexUniform);
-		ResourceManager::Static::convertReference(manager, text.textAtlasTexture);
+		ResourceManager::Static::convertReference(manager, text.fontTexture);
 		ResourceManager::Static::convertReference(manager, text.descriptorSet);
+	}
+
+	void setText(Text& text, TextMetrics const& metrics, const std::string_view& textData, Color color, TextAlignment alignment)
+	{
+		text.metrics = metrics;
+		text.characters = textData;
+		text.color = color;
+		text.alignment = alignment;
+	}
+
+	Text createText(TextSpecification const& specification, GUI::Visual::Context::Handle guiContext)
+	{
+		GUIElement* parentPtr;
+
+		if (specification.parent == nullptr) {
+			parentPtr = guiContext->defaultParent;
+		}
+		else {
+			parentPtr = specification.parent;
+		}
+
+		GUIElement* basePtr = GUI::Visual::Context::_allocateGUIElement(guiContext);
+		addChild(parentPtr, basePtr);
+
+		return Text{ basePtr, specification.characters, specification.color, specification.metrics, specification.alignment };
+	}
+
+	void dropTextBatch(TextBatch& text, Engine::Handle engine)
+	{
+		dropBatch(text.batch, engine);
+
+		dropBuffer(text.fragmentUniform.resource, engine);
+		dropBuffer(text.vertexUniform.resource, engine);
+		dropTexture(text.fontTexture.resource, engine);
 	}
 }

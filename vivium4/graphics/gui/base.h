@@ -43,7 +43,9 @@ namespace Vivium {
 		GUIAnchor centerX = GUIAnchor::CENTER;
 		GUIAnchor centerY = GUIAnchor::CENTER;
 
+		// Bottom left corner in px
 		F32x2 truePosition = F32x2(0.0f);
+		// Dimensions of each axis in px
 		F32x2 trueDimensions = F32x2(0.0f);
 	};
 

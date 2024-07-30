@@ -20,6 +20,11 @@ namespace Vivium {
 
 				void _submitTextContext(Handle handle, ResourceManager::Static::Handle manager, Engine::Handle engine, Window::Handle window)
 				{
+					handle->text.bufferLayout = BufferLayout::fromTypes(std::vector<ShaderDataType>({
+						ShaderDataType::VEC2,
+						ShaderDataType::VEC2
+					}));
+
 					ResourceManager::Static::submit(manager, &handle->text.descriptorLayout.reference, std::vector<DescriptorLayoutSpecification>({
 						DescriptorLayoutSpecification(std::vector<UniformBinding>({
 							UniformBinding(ShaderStage::FRAGMENT, 0, UniformType::TEXTURE),
@@ -41,10 +46,7 @@ namespace Vivium {
 						std::vector<PipelineSpecification>({
 						PipelineSpecification::fromWindow(
 							std::vector<ShaderReference>({ handle->text.fragmentShader.reference, handle->text.vertexShader.reference }),
-							BufferLayout::fromTypes(std::vector<ShaderDataType>({
-								ShaderDataType::VEC2,
-								ShaderDataType::VEC2
-							})),
+							handle->text.bufferLayout,
 							std::vector<DescriptorLayoutReference>({ handle->text.descriptorLayout.reference }),
 							std::vector<PushConstant>({ PushConstant(ShaderStage::VERTEX, 0, sizeof(Math::Perspective))}),
 							engine,

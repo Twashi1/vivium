@@ -4,6 +4,8 @@
 - Update `GUI` to new system (and test)
 ## Core
 
+- Reflection data on shader files
+	- Use to validate alignment requirements
 - Offset before size on `PushConstant`, not ideal
 - Can free `DescriptorLayout` at same stage we free `Shader`?
 - Static allocator being re-useable is an anti-pattern
@@ -48,17 +50,18 @@
 
 ## GUI
 
+- Test left-aligned `Text` rendering
+- Rename `ScaleType` to `Units`
 - Batch together multiple `Text` objects at different coordinates
+- Per character `Text` colouring
 - Reduce parameters on GUI visual, customisability not the point of the system
 - `AddChild` public method
 - `Scene` rendering for instanced/batching
 - `Sprite` class
 - `Button` functionality (hover/click events, colour changes on hover/click)
-	- Pass `Specification` to submission
 	- Add ability for `Sprite` to display
+	- Should have `TextBatch` in `GUIContext` so we don't need a draw call for each button
 - `Slider` class
-- `Panel` class
-	- Border is not same in `y` and `x`
 - `Anchor` renamed since also used in `Center` parameters (also move to `Vec2`?)
 - Not considering the total y-extent of characters that go below the origin (like `p`, `q`, `y`, etc.), although whether it should be considered or not is to be determined
 - Better values of `spreadFactor` for signed distance field font rendering
@@ -75,7 +78,7 @@
 - Determine whether or not bindings of resources are per shader stage, or shared
 - Significantly better debug checks (on things like `Batch` for example)
 - Lots of methods missing validation of pointers
-- Lots of missing resetting handles to `nullptr`
+- Lots of missing resetting handles to `nullptr` on debug mode
 - Lots of methods call to implementation in `Resource`
 - Lots of things that should be `uint32_t` instead of `float` (in particular with respect to dimensions)
 - Work on cleaning up some warnings whenever bored
@@ -85,6 +88,7 @@
 - Use `VIVIUM_DEBUG_LOG` instead of `VIVIUM_LOG` when we only want to log in `DEBUG` mode
 	- should still have customisable warning level
 - `T const&` a lot of things
+- Get rid of static `Color` values
 
 ## Possible
 
