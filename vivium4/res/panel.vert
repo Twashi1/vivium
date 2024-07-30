@@ -5,7 +5,7 @@ layout(location = 0) in vec2 inPosition;
 layout(location = 0) out vec3 vColor;
 layout(location = 1) out vec2 vUVCoords;
 layout(location = 2) out vec3 vBorderColor;
-layout(location = 3) out float vBorderSize;
+layout(location = 3) out vec2 vBorderSize;
 
 layout(push_constant) uniform Matrices {
 	mat4 view;
@@ -35,5 +35,5 @@ void main() {
 	vColor = panel.backgroundColor;
 	vUVCoords = inPosition;
 	vBorderColor = panel.borderColor;
-	vBorderSize = panel.borderSize;
+	vBorderSize = vec2(panel.borderSize, panel.borderSize * panel.scale.x / panel.scale.y);
 }
