@@ -21,6 +21,7 @@ namespace Vivium {
 		ComponentManager manager;
 
 		ComponentArray();
+		~ComponentArray();
 
 		void _allocateForIndex(uint64_t index);
 
@@ -28,6 +29,7 @@ namespace Vivium {
 		bool contains(Entity entity);
 		void swap(Entity a, Entity b);
 		void free(Entity entity);
+		void clear();
 
 		template <ValidComponent T>
 		void push(Entity entity, T&& component) {

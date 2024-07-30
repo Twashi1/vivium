@@ -5,6 +5,14 @@ namespace Vivium {
 		: sparse(ECS_ENTITY_DEAD), dense(nullptr), entities(nullptr), size(0), capacity(0)
 	{}
 
+	ComponentArray::~ComponentArray()
+	{
+		clear();
+
+		delete[] dense;
+		delete[] entities;
+	}
+
 	void ComponentArray::_allocateForIndex(uint64_t index) {
 		if (capacity <= index) {
 			resize(std::max(index + 1, capacity * 2));
@@ -67,5 +75,12 @@ namespace Vivium {
 		index = ECS_ENTITY_DEAD;
 
 		--size;
+	}
+	
+	void ComponentArray::clear()
+	{
+		manager.destroyFunction(dense, size);
+
+		size = 0;
 	}
 }

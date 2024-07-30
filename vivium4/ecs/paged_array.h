@@ -11,11 +11,18 @@ namespace Vivium {
 		T defaultValue;
 		std::array<T*, pageCount> pages;
 
-		PagedArray() = default;
-		PagedArray(T const& defaultValue) : defaultValue(defaultValue)
+		PagedArray()
 		{
 			for (uint64_t i = 0; i < pageCount; i++) {
 				pages[i] = nullptr;
+			}
+		}
+
+		PagedArray(T const& defaultValue) : defaultValue(defaultValue), PagedArray() {}
+		
+		~PagedArray() {
+			for (T* page : pages) {
+				delete page;
 			}
 		}
 

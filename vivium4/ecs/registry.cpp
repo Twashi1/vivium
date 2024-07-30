@@ -36,7 +36,7 @@ namespace Vivium {
 
 	void Registry::clear()
 	{
-		// TODO
+		// TODO: how to implement?
 	}
 
 	Entity Registry::create()
