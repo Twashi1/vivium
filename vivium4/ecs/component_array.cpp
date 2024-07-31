@@ -69,6 +69,7 @@ namespace Vivium {
 	void ComponentArray::free(Entity entity) {
 		uint32_t& index = sparse.index(getIdentifier(entity));
 
+		VIVIUM_LOG(Log::DEBUG, "Destroying component at {}", (void*)&dense[index * manager.typeSize]);
 		manager.destroyFunction(&dense[index * manager.typeSize], 1);
 
 		swap(index, size - 1);
@@ -79,6 +80,7 @@ namespace Vivium {
 	
 	void ComponentArray::clear()
 	{
+		VIVIUM_LOG(Log::DEBUG, "Destroying component on range starting {}", (void*)dense);
 		manager.destroyFunction(dense, size);
 
 		size = 0;

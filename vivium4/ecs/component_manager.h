@@ -3,6 +3,7 @@
 #include <concepts>
 
 #include "defines.h"
+#include "../error/log.h"
 
 namespace Vivium {
 	template <typename T>
@@ -11,6 +12,7 @@ namespace Vivium {
 	template <ValidComponent T>
 	void defaultMoveComponent(void* source, void* dest) {
 		if constexpr (std::is_trivial_v<T> || std::is_copy_constructible_v<T>) {
+			VIVIUM_LOG(Log::DEBUG, "Constructing object at {}", dest);
 			new (dest) T(*reinterpret_cast<T*>(source));
 		}
 		else if constexpr (std::is_move_constructible_v<T>) {
@@ -28,7 +30,7 @@ namespace Vivium {
 	template <ValidComponent T>
 	void defaultDestroyComponent(void* data, uint64_t count) {
 		for (uint64_t i = 0; i < count; i++) {
-			delete (reinterpret_cast<T*>(data) + i);
+			(reinterpret_cast<T*>(data) + i)->~T();
 		}
 	}
 
