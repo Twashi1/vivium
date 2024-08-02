@@ -1,7 +1,17 @@
 
 ## High priority
 
-- Update `GUI` to new system (and test)
+- Names of `GUI::Visual::Context` not updated
+- Dynamic allocation storage (at least a wrapper for `new`/`delete` temporarily)
+
+## ECS
+- Create view of group
+- Iterators for group
+- Iterators for single component view
+- Non-ownership group relationship optimisations?
+- Add/remove from group automatically
+- Emplace/replace component
+- Permanent `T**` (if wanted)
 ## Core
 
 - Reflection data on shader files
@@ -50,6 +60,9 @@
 
 ## GUI
 
+- Reverse argument order of `Text`
+- Cannot have multiple `renderPanel` or `renderButton` calls in the same draw call, data gets overwritten
+- Case for availability of a null `GUIElement`
 - Test left-aligned `Text` rendering
 - Rename `ScaleType` to `Units`
 - Batch together multiple `Text` objects at different coordinates

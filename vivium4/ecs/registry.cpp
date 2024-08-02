@@ -36,7 +36,28 @@ namespace Vivium {
 
 	void Registry::clear()
 	{
-		// TODO: how to implement?
+		// TODO: current implementation doesn't take into account version numbers
+		// Clear all component pools
+		for (ComponentArray* pool : componentPools) {
+			if (pool == nullptr) continue;
+
+			pool->clear();
+		}
+		// Clear all entities and signatures
+		availableEntities = 0;
+		nextEntity = ECS_ENTITY_MAX;
+
+		entities = {};
+
+		signatures = { ECS_ENTITY_MAX };
+
+		for (GroupMetadata* group : groups) {
+			delete group;
+		}
+
+		groups = {};
+
+		nextLargestEntity = 0;
 	}
 
 	Entity Registry::create()
@@ -51,5 +72,37 @@ namespace Vivium {
 
 		entities.push_back(nextLargestEntity);
 		return nextLargestEntity++;
+	}
+	
+	void Registry::moveEntityIntoOwningGroup(Entity entity, Signature const& signature)
+	{
+		std::vector<GroupMetadata*> affectedGroups;
+
+		bool movedEntity = false;
+
+		for (ComponentArray* pool : componentPools) {
+			if (pool == nullptr) continue;
+			if (!pool->isOwned()) continue;
+			if (!pool->owner->containsSignature(signature)) continue;
+
+			GroupMetadata* relevantGroup = pool->owner;
+
+			// Not already in our affected groups
+			if (std::find(affectedGroups.begin(), affectedGroups.end(), relevantGroup) == affectedGroups.end()) {
+				affectedGroups.push_back(relevantGroup);
+			}
+
+			Entity const& replacementEntity = pool->entities[pool->owner->groupSize];
+			pool->swap(entity, replacementEntity);
+
+			movedEntity = true;
+		}
+
+		// Increment group sizes
+		if (movedEntity) {
+			for (GroupMetadata* group : affectedGroups) {
+				++group->groupSize;
+			}
+		}
 	}
 }

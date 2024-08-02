@@ -4,6 +4,7 @@
 #include "defines.h"
 #include "paged_array.h"
 #include "../error/log.h"
+#include "group.h"
 
 #include <vector>
 
@@ -19,6 +20,7 @@ namespace Vivium {
 		uint64_t capacity;
 
 		ComponentManager manager;
+		GroupMetadata* owner;
 
 		ComponentArray();
 		~ComponentArray();
@@ -30,6 +32,8 @@ namespace Vivium {
 		void swap(Entity a, Entity b);
 		void free(Entity entity);
 		void clear();
+
+		bool isOwned() const;
 
 		template <ValidComponent T>
 		void push(Entity entity, T&& component) {

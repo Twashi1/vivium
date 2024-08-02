@@ -21,12 +21,16 @@ namespace Vivium {
 		// All alive/dead entities
 		std::vector<Entity> entities;
 
+		std::vector<GroupMetadata*> groups;
+
 		Registry();
 		~Registry();
 
 		void free(Entity entity);
 		void clear();
 		Entity create();
+
+		void moveEntityIntoOwningGroup(Entity entity, Signature const& signature);
 
 		template <ValidComponent T>
 		ComponentArray*& _getPoolOrCreate() {

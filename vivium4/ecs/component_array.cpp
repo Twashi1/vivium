@@ -84,5 +84,11 @@ namespace Vivium {
 		manager.destroyFunction(dense, size);
 
 		size = 0;
+		owner = nullptr;
+	}
+	
+	bool ComponentArray::isOwned() const
+	{
+		return owner != nullptr;
 	}
 }
