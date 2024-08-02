@@ -47,7 +47,7 @@ set(VIVIUM_SOURCES
   "vivium4/ecs/defines.cpp"
   "vivium4/ecs/component_array.cpp"
   "vivium4/ecs/registry.cpp"
-)
+ "vivium4/ecs/group.cpp")
 set(VIVIUM_HEADERS
   "vivium4/error/result.h"
   "vivium4/graphics/primitives/buffer.h"
@@ -95,7 +95,7 @@ set(VIVIUM_HEADERS
   "vivium4/ecs/component_manager.h"
   "vivium4/ecs/defines.h"
   "vivium4/ecs/paged_array.h"
-)
+ "vivium4/ecs/group.h")
 
 add_subdirectory("${CMAKE_SOURCE_DIR}/external/glfw")
 
