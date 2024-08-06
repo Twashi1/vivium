@@ -7,6 +7,80 @@
 #include "../error/log.h"
 
 namespace Vivium {
+	// https://internalpointers.com/post/writing-custom-iterators-modern-cpp
+	template <OwnershipTag... Components>
+	struct ViewElement {
+		uint64_t index;
+		Entity entity;
+
+		Registry* registry;
+
+		template <typename T>
+		constexpr bool _isOwnedType() {
+			bool isOwned = false;
+
+			([&isOwned] {
+				if constexpr (std::is_same_v<T, Components::type>) {
+					isOwned = true;
+				}
+			} (), ...);
+
+			return isOwned;
+		}
+
+		template <typename T>
+		T& get() {
+			if constexpr (_isOwnedType<T>) {
+				return registry->componentPools[TypeGenerator::getIdentifier<T>()]->_getIndex<T>(index);
+			}
+			else {
+				return registry->getComponent<T>(entity);
+			}
+		}
+	};
+
+	template <OwnershipTag... WrappedTypes>
+	struct View {
+		Registry* registry;
+		Entity* ownedEntityArray;
+		GroupMetadata* groupMetadata;
+
+		struct ViewIterator {
+			using iterator_category = std::forward_iterator_tag;
+			using difference_type = void;
+			using value_type = ViewElement<WrappedTypes::type...>;
+			using pointer = value_type*;
+			using reference = value_type&;
+
+			Registry* registry;
+			Entity* ownedEntityArray;
+
+			value_type current;
+
+			reference operator*() const { return current; }
+			pointer operator->() { return &current; }
+
+			ViewIterator& operator++() {
+				current.entity = ownedEntityArray[current.index++];
+
+				// All partially owned
+				// TODO: determine at compile-time
+				if (!groupMetadata->ownedComponents.any()) {
+					while (groupMetadata->containsSignature(registry->signature.get(getIdentifier(current.entity))) && current.index < groupMetadata->groupSize) {
+						current.entity = ownedEntityArray[current.index++];
+					}
+				}
+			}
+			ViewIterator operator++(int) { ViewIterator tmp = *this; ++(*this); return tmp; }
+
+			bool operator==(ViewIterator const& other) { return current.index == other.current.index; }
+			bool operator!=(ViewIterator const& other) { return current.index != other.current.index; }
+		};
+
+		ViewIterator begin() { return ViewIterator{ registry, ownedEntityArray, ViewElement{ 0, ownedEntityArray[0], registry }}; }
+		ViewIterator end() { return ViewIterator{ registry, ownedEntityArray, ViewElement{ groupMetadata->groupSize, ECS_ENTITY_DEAD, registry } }; }
+	};
+
 	struct Registry {
 		PagedArray<Signature, ECS_PAGE_SIZE, ECS_ENTITY_MAX> signatures;
 		// TODO: test allocating 64 components
@@ -81,7 +155,9 @@ namespace Vivium {
 			Signature& signature = signatures.index(getIdentifier(entity));
 			signature.set(componentID);
 
-			// TODO: perform group operations
+			if (arr->owner != nullptr && arr->owner->ownsSignature(signature)) {
+				moveEntityIntoOwningGroup(entity, signature);
+			}
 		}
 
 		template <ValidComponent T>
@@ -89,17 +165,98 @@ namespace Vivium {
 			uint8_t componentID = TypeGenerator::getIdentifier<T>();
 			ComponentArray* arr = _getPoolOrCreate<T>();
 
-			// TODO: perform group operations
+			Signature& signature = signatures.index(getIdentifier(entity));
+
+			GroupMetadata* relevantGroup = nullptr;
+
+			for (ComponentArray* pool : componentPools) {
+				if (pool == nullptr) continue;
+				if (pool->owner == nullptr) continue;
+				if (!pool->owner->ownsSignature(signature)) continue;
+
+				relevantGroup = pool->owner;
+
+				Entity& lastEntity = pool->entities[pool->owner->groupSize - 1];
+				pool->swap(lastEntity, entity);
+			}
 
 			arr->free(entity);
-
-			Signature& signature = signatures.index(getIdentifier(entity));
 			signature.set(componentID, 0);
+			
+			if (relevantGroup) relevantGroup->groupSize--;
 		}
 
 		template <ValidComponent T>
 		T& getComponent(Entity entity) {
 			return _getPoolOrCreate<T>()->get<T>(entity);
+		}
+
+		template <OwnershipTag... Components>
+		View<Components...> createView() {
+			GroupMetadata* metadata = new GroupMetadata;
+			groups.push_back(metadata);
+
+			metadata->create<Components...>();
+
+			ComponentArray* iteratingArray = nullptr;
+			uint64_t iteratingSize = std::numeric_limits<uint64_t>::max();
+
+			bool ownedGroup = false;
+
+			([&ownedGroup, &iteratingArray, &iteratingSize] {
+				if constexpr (IsOwnedTag<Components>) {
+					ownedGroup = true;
+
+					uint32_t id = TypeGenerator::getIdentifier<Components::type>();
+					ComponentArray* pool = componentPools[id];
+
+					if (pool == nullptr) return;
+
+					if (pool->size < iteratingSize) {
+						iteratingSize = pool->size;
+						iteratingArray = pool;
+					}
+
+					if (pool->isOwned()) {
+						VIVIUM_LOG(Log::FATAL, "Couldn't create group, already owned by group");
+					}
+
+					pool->owner = metadata;
+				}
+			} (), ...);
+
+			if (!ownedGroup) {
+				([&iteratingArray, &iteratingSize] {
+					uint32_t id = TypeGenerator::getIdentifier<Components::type>();
+					ComponentArray* pool = componentPools[id];
+
+					if (pool == nullptr) return;
+
+					if (pool->size < iteratingSize) {
+						iteratingSize = pool->size;
+						iteratingArray = pool;
+					}
+				} (), ...);
+
+				metadata->groupSize = pool->size;
+			}
+
+			for (uint64_t i = 0; i < iteratingSize; i++) {
+				Entity& entity = iteratingArray->entities[i];
+				Signature& signature = signatures.get(getIdentifier(entity));
+
+				if (metadata->ownsSignature(signature)) {
+					moveEntityIntoOwningGroup(entity, signature);
+				}
+			}
+
+			return View<Components...> { this, iteratingArray->entities, metadata };
+		}
+
+		// Release ownership for affected pools
+		template <OwnershipTag... Components>
+		void destroyView(View<Components...> const& view) {
+			// TODO
 		}
 	};
 }

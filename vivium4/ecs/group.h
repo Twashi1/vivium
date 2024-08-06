@@ -27,6 +27,10 @@ namespace Vivium {
 
 	template <typename T>
 	concept OwnershipTag = IsValidOwnershipTag<T>::value;
+	template <typename T>
+	concept PartialTag = IsPartialTag<T>::value;
+	template <typename T>
+	concept OwnedTag = IsOwnedTag<T>::value;
 
 	struct GroupMetadata {
 		uint64_t groupSize;

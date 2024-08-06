@@ -65,5 +65,10 @@ namespace Vivium {
 
 			return *reinterpret_cast<T*>(&dense[index * manager.typeSize]);
 		}
+
+		template <ValidComponent T>
+		T& _getIndex(uint32_t index) {
+			return *reinterpret_cast<T*>(&dense[index * manager.typeSize]);
+		}
 	};
 }
