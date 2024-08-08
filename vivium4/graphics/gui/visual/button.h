@@ -20,7 +20,7 @@ namespace Vivium {
 		Color textColor;
 	};
 
-	void dropButton(Button& button, Engine::Handle engine);
+	void dropButton(Button& button, Engine::Handle engine, GUI::Visual::Context::Handle guiContext);
 	// TODO: generic render target
 	Button submitButton(ResourceManager::Static::Handle manager, GUI::Visual::Context::Handle guiContext, Engine::Handle engine, Window::Handle window, ButtonSpecification specification);
 	void setupButton(Button& button, ResourceManager::Static::Handle manager);

@@ -1,8 +1,10 @@
 #include "button.h"
 
 namespace Vivium {
-	void dropButton(Button& button, Engine::Handle engine)
+	void dropButton(Button& button, Engine::Handle engine, GUI::Visual::Context::Handle guiContext)
 	{
+		GUI::Visual::Context::_dropGUIElement(button.base, guiContext);
+		dropText(button.text, guiContext);
 		dropTextBatch(button.textBatch, engine);
 	}
 
@@ -22,11 +24,10 @@ namespace Vivium {
 		// TODO: maximum text length should be parameter
 		button.textBatch = submitTextBatch(manager, engine, guiContext, TextBatchSpecification{ 64, Font::Font::fromDistanceFieldFile("vivium4/res/fonts/consola.sdf") });
 		button.text = createText(TextSpecification{ button.base, "", specification.textColor, calculateTextMetrics("", button.textBatch.font), TextAlignment::CENTER }, guiContext);
-		properties(button.text)->dimensions = F32x2(0.9f);
 
-		addChild(button.base, button.text.base);
+		addChild(button, button.text);
 		
-		GUIProperties& textProperties = _properties(button.text.base);
+		GUIProperties& textProperties = *properties(button.text);
 		textProperties.dimensions = F32x2(0.95f);
 		textProperties.position = F32x2(0.0f);
 		textProperties.scaleType = GUIScaleType::RELATIVE;

@@ -9,8 +9,10 @@ namespace Vivium {
 		metrics.totalHeight = 0.0f;
 		metrics.firstLineHeight = 0.0f;
 		metrics.maxLineWidth = 0.0f;
+		metrics.totalHeightAndBottom = 0.0f;
 
 		float currentLineWidth = 0.0f;
+		float belowLineSize = 0.0f;
 
 		for (uint64_t i = 0; i < text.size(); i++) {
 			char character = text.data()[i];
@@ -21,8 +23,12 @@ namespace Vivium {
 				if (currentLineWidth > metrics.maxLineWidth)
 					metrics.maxLineWidth = currentLineWidth;
 
+				if (belowLineSize > metrics.totalHeightAndBottom)
+					metrics.totalHeightAndBottom = belowLineSize;
+				
 				metrics.lineWidths.push_back(currentLineWidth);
 				currentLineWidth = 0.0f;
+				belowLineSize = 0.0f;
 
 				continue;
 			}
@@ -30,6 +36,11 @@ namespace Vivium {
 			Font::Character fontCharacter = font.characters[character];
 
 			currentLineWidth += fontCharacter.advance;
+			
+			float currentBelowLine = fontCharacter.size.y - fontCharacter.bearing.y;
+
+			if (currentBelowLine > belowLineSize)
+				belowLineSize = currentBelowLine;
 
 			if (!isspace(character)) ++metrics.drawableCharacterCount;
 
@@ -40,6 +51,7 @@ namespace Vivium {
 
 		metrics.lineWidths.push_back(currentLineWidth);
 		metrics.totalHeight = font.fontSize * metrics.newLineCount + metrics.firstLineHeight;
+		metrics.totalHeightAndBottom = metrics.totalHeight + belowLineSize;
 
 		if (currentLineWidth > metrics.maxLineWidth)
 			metrics.maxLineWidth = currentLineWidth;
@@ -58,7 +70,7 @@ namespace Vivium {
 
 		if (alignment == TextAlignment::CENTER) {
 			position.y -= metrics.firstLineHeight * scale.y;
-			position.y += metrics.totalHeight * 0.5f * scale.y;
+			position.y += metrics.totalHeightAndBottom * 0.5f * scale.y;
 		}
 
 		// TODO: right side alignment
@@ -110,15 +122,10 @@ namespace Vivium {
 
 	void renderTextBatch(TextBatch& text, Commands::Context::Handle context, GUI::Visual::Context::Handle guiContext, Math::Perspective const& perspective)
 	{
-		TextTransformData transform;
-		transform.translation = text.base->properties.truePosition;
-		// TODO: parameters redundant? not in use at least
-		transform.scale = F32x2(1.0f);
-		transform.scaleOrigin = F32x2(0.0f);
+		if (indexCountBatch(text.batch) == 0) { return; }
 
 		// TODO: actually read color from vertex
 		setBuffer(text.fragmentUniform.resource, 0, &Color::White, sizeof(Color));
-		setBuffer(text.vertexUniform.resource, 0, &transform, sizeof(TextTransformData));
 
 		Commands::pushConstants(context, &perspective, sizeof(Math::Perspective), 0, ShaderStage::VERTEX, guiContext->text.pipeline.resource);
 
@@ -132,10 +139,11 @@ namespace Vivium {
 
 	void calculateTextBatch(TextBatch& textBatch, std::span<Text*> textObjects, Commands::Context::Handle context, Engine::Handle engine)
 	{
-		uint16_t indices[6] = { 0, 1, 2, 2, 3, 0 };
+		if (textObjects.size() == 0) { return; }
 
-		// TODO: consider dimensions of text batch for some sort of scaling, 
-		//	or remove text batch positioning entirely
+		VIVIUM_LOG(Log::DEBUG, "Got at least one text object with {}", textObjects[0]->characters);
+
+		uint16_t indices[6] = { 0, 1, 2, 2, 3, 0 };
 
 		for (Text* text : textObjects) {
 			// Calculate required scaling and offsets
@@ -143,14 +151,19 @@ namespace Vivium {
 			// Calculate scale to fit to dimensions
 			GUIProperties props = *properties(*text);
 			F32x2 translation = props.truePosition;
-			F32x2 axisScale = props.trueDimensions / F32x2(text->metrics.maxLineWidth, text->metrics.totalHeight);
+			F32x2 axisScale = props.trueDimensions / F32x2(text->metrics.maxLineWidth, text->metrics.totalHeightAndBottom);
+			// TODO: entity names displaying way too small, and off alignment
 			float scale = std::min(axisScale.x, axisScale.y);
 			F32x2 scaleOrigin;
 
 			switch (text->alignment) {
-			case TextAlignment::LEFT: scaleOrigin = F32x2(0.0f, text->metrics.firstLineHeight) * scale; break;
-			case TextAlignment::CENTER: scaleOrigin = F32x2(0.0f); break;
-			case TextAlignment::RIGHT: VIVIUM_LOG(Log::FATAL, "Right alignment not implemented"); break;
+			case TextAlignment::LEFT:
+				scaleOrigin = F32x2(0.0f, text->metrics.firstLineHeight) * scale;
+				break;
+			case TextAlignment::CENTER:
+				scaleOrigin = F32x2(0.0f); break;
+			case TextAlignment::RIGHT:
+				VIVIUM_LOG(Log::FATAL, "Right alignment not implemented"); break;
 			default: VIVIUM_LOG(Log::FATAL, "Invalid alignment"); break;
 			}
 
@@ -173,8 +186,6 @@ namespace Vivium {
 	{
 		TextBatch text;
 
-		text.base = GUI::Visual::Context::_allocateGUIElement(guiContext);
-
 		text.batch = submitBatch(engine, manager, BatchSpecification(
 			specification.maxCharacterCount * 4,
 			specification.maxCharacterCount * 6,
@@ -184,12 +195,10 @@ namespace Vivium {
 		std::array<BufferReference, 2> hostBuffers;
 
 		ResourceManager::Static::submit(manager, hostBuffers.data(), MemoryType::UNIFORM, std::vector<BufferSpecification>({
-			BufferSpecification(sizeof(Color), BufferUsage::UNIFORM),
-			BufferSpecification(sizeof(TextTransformData), BufferUsage::UNIFORM),
-			}));
+			BufferSpecification(sizeof(Color), BufferUsage::UNIFORM)
+		}));
 
 		text.fragmentUniform.reference = hostBuffers[0];
-		text.vertexUniform.reference = hostBuffers[1];
 
 		text.font = specification.font;
 
@@ -200,8 +209,7 @@ namespace Vivium {
 		ResourceManager::Static::submit(manager, &text.descriptorSet.reference, std::vector<DescriptorSetSpecification>({
 			DescriptorSetSpecification(guiContext->text.descriptorLayout.reference, std::vector<UniformData>({
 				UniformData::fromTexture(text.fontTexture.reference),
-				UniformData::fromBuffer(text.fragmentUniform.reference, sizeof(Color), 0),
-				UniformData::fromBuffer(text.vertexUniform.reference, sizeof(TextTransformData), 0)
+				UniformData::fromBuffer(text.fragmentUniform.reference, sizeof(Color), 0)
 				}))
 			}));
 
@@ -213,7 +221,6 @@ namespace Vivium {
 		setupBatch(text.batch, manager);
 
 		ResourceManager::Static::convertReference(manager, text.fragmentUniform);
-		ResourceManager::Static::convertReference(manager, text.vertexUniform);
 		ResourceManager::Static::convertReference(manager, text.fontTexture);
 		ResourceManager::Static::convertReference(manager, text.descriptorSet);
 	}
@@ -243,12 +250,16 @@ namespace Vivium {
 		return Text{ basePtr, specification.characters, specification.color, specification.metrics, specification.alignment };
 	}
 
+	void dropText(Text& text, GUI::Visual::Context::Handle guiContext)
+	{
+		GUI::Visual::Context::_dropGUIElement(text.base, guiContext);
+	}
+
 	void dropTextBatch(TextBatch& text, Engine::Handle engine)
 	{
 		dropBatch(text.batch, engine);
 
 		dropBuffer(text.fragmentUniform.resource, engine);
-		dropBuffer(text.vertexUniform.resource, engine);
 		dropTexture(text.fontTexture.resource, engine);
 	}
 }

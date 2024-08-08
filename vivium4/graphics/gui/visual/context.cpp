@@ -133,7 +133,15 @@ namespace Vivium {
 
 				GUIElement* _allocateGUIElement(Context::Handle context)
 				{
-					return Storage::allocateResource<GUIElement>(&context->elementStorage);
+					// TODO: use some sort of dynamic allocator once implemented
+					// return Storage::allocateResource<GUIElement>(&context->elementStorage);
+					return new GUIElement;
+				}
+
+				void _dropGUIElement(GUIElement* guiElement, Context::Handle context)
+				{
+					// TODO: some sort of dynamic allocator
+					delete guiElement;
 				}
 
 				void setup(Handle handle, ResourceManager::Static::Handle manager, Commands::Context::Handle context, Engine::Handle engine)

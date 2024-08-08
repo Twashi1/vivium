@@ -19,6 +19,11 @@ namespace Vivium {
 		return panel;
 	}
 
+	void dropPanel(Panel& panel, GUI::Visual::Context::Handle guiContext)
+	{
+		GUI::Visual::Context::_dropGUIElement(panel.base, guiContext);
+	}
+
 	void renderPanels(const std::span<Panel*> panels, Commands::Context::Handle context, GUI::Visual::Context::Handle guiContext, Window::Handle window)
 	{
 		std::vector<GUI::Visual::Context::_PanelInstanceData> panelData(panels.size());

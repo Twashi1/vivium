@@ -36,6 +36,8 @@ namespace Vivium {
 
 		float firstLineHeight;
 		float totalHeight;
+		// Including characters that dip below the last line
+		float totalHeightAndBottom;
 		float maxLineWidth;
 	};
 
@@ -66,12 +68,9 @@ namespace Vivium {
 	};
 
 	struct TextBatch {
-		GUIElement* base;
-
 		Batch batch;
 
 		Ref<Buffer> fragmentUniform;
-		Ref<Buffer> vertexUniform;
 
 		Font::Font font;
 		Ref<Texture> fontTexture;
@@ -92,5 +91,6 @@ namespace Vivium {
 
 	Text createText(TextSpecification const& specification, GUI::Visual::Context::Handle guiContext);
 
+	void dropText(Text& text, GUI::Visual::Context::Handle guiContext);
 	void dropTextBatch(TextBatch& text, Engine::Handle engine);
 }

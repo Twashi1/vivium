@@ -12,6 +12,8 @@ struct ComponentPosition {
 	F32x2 position;
 };
 
+inline constexpr int MAX_CONCURRENT_ENTITY_PANELS = 32;
+
 struct State {
 	Engine::Handle engine;
 	Window::Handle window;
@@ -31,8 +33,13 @@ struct State {
 		struct {
 			Panel background;
 			Button createButton;
+			TextBatch entityTextBatch;
+
+			GUIElement* entityObjectsElement;
 
 			std::vector<Entity> entities;
+			std::vector<Text> textObjects;
+			std::vector<Panel> entityPanels;
 		} entityView;
 	} editor;
 };

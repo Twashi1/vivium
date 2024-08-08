@@ -75,6 +75,7 @@ namespace Vivium {
 				typedef Resource* PromisedHandle;
 
 				GUIElement* _allocateGUIElement(Context::Handle context);
+				void _dropGUIElement(GUIElement* guiElement, Context::Handle context);
 
 				void _submitGenericContext(Handle handle, ResourceManager::Static::Handle manager, Engine::Handle engine, Window::Handle window);
 				void _submitTextContext(Handle handle, ResourceManager::Static::Handle manager, Engine::Handle engine, Window::Handle window);
