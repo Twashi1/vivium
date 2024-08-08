@@ -7,6 +7,8 @@
 #include "../error/log.h"
 
 namespace Vivium {
+	struct Registry;
+
 	// https://internalpointers.com/post/writing-custom-iterators-modern-cpp
 	template <OwnershipTag... Components>
 	struct ViewElement {
@@ -48,7 +50,7 @@ namespace Vivium {
 		struct ViewIterator {
 			using iterator_category = std::forward_iterator_tag;
 			using difference_type = void;
-			using value_type = ViewElement<WrappedTypes::type...>;
+			using value_type = ViewElement<WrappedTypes...>;
 			using pointer = value_type*;
 			using reference = value_type&;
 
@@ -238,7 +240,7 @@ namespace Vivium {
 					}
 				} (), ...);
 
-				metadata->groupSize = pool->size;
+				metadata->groupSize = iteratingArray->size;
 			}
 
 			for (uint64_t i = 0; i < iteratingSize; i++) {

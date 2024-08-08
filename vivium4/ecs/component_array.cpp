@@ -2,7 +2,7 @@
 
 namespace Vivium {
 	ComponentArray::ComponentArray()
-		: sparse(ECS_ENTITY_DEAD), dense(nullptr), entities(nullptr), size(0), capacity(0)
+		: sparse(ECS_ENTITY_DEAD), dense(nullptr), entities(nullptr), size(0), capacity(0), owner(nullptr)
 	{}
 
 	ComponentArray::~ComponentArray()
