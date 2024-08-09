@@ -141,8 +141,6 @@ namespace Vivium {
 	{
 		if (textObjects.size() == 0) { return; }
 
-		VIVIUM_LOG(Log::DEBUG, "Got at least one text object with {}", textObjects[0]->characters);
-
 		uint16_t indices[6] = { 0, 1, 2, 2, 3, 0 };
 
 		for (Text* text : textObjects) {
