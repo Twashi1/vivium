@@ -9,6 +9,9 @@
 namespace Vivium {
 	struct Registry;
 
+	template <typename T, OwnershipTag... Components>
+	constexpr inline bool _isOwnedType = (std::is_same_v<T, typename Components::type> || ...);
+
 	// https://internalpointers.com/post/writing-custom-iterators-modern-cpp
 	template <OwnershipTag... Components>
 	struct ViewElement {
@@ -18,21 +21,8 @@ namespace Vivium {
 		Registry* registry;
 
 		template <typename T>
-		constexpr bool _isOwnedType() {
-			bool isOwned = false;
-
-			([&isOwned] {
-				if constexpr (std::is_same_v<T, Components::type>) {
-					isOwned = true;
-				}
-			} (), ...);
-
-			return isOwned;
-		}
-
-		template <typename T>
 		T& get() {
-			if constexpr (_isOwnedType<T>) {
+			if constexpr (_isOwnedType<T, Components...>) {
 				return registry->componentPools[TypeGenerator::getIdentifier<T>()]->_getIndex<T>(index);
 			}
 			else {
@@ -56,10 +46,19 @@ namespace Vivium {
 
 			Registry* registry;
 			Entity* ownedEntityArray;
+			GroupMetadata* groupMetadata;
 
 			value_type current;
 
-			reference operator*() const { return current; }
+			ViewIterator(Registry* registry, Entity* ownedEntityArray, GroupMetadata* groupMetadata, uint64_t startIndex, Entity entity)
+				: registry(registry), ownedEntityArray(ownedEntityArray), groupMetadata(groupMetadata)
+			{
+				current.index = startIndex;
+				current.entity = entity;
+				current.registry = registry;
+			}
+
+			reference operator*() { return current; }
 			pointer operator->() { return &current; }
 
 			ViewIterator& operator++() {
@@ -68,10 +67,12 @@ namespace Vivium {
 				// All partially owned
 				// TODO: determine at compile-time
 				if (!groupMetadata->ownedComponents.any()) {
-					while (groupMetadata->containsSignature(registry->signature.get(getIdentifier(current.entity))) && current.index < groupMetadata->groupSize) {
+					while (groupMetadata->containsSignature(registry->signatures.get(getIdentifier(current.entity))) && current.index < groupMetadata->groupSize) {
 						current.entity = ownedEntityArray[current.index++];
 					}
 				}
+
+				return *this;
 			}
 			ViewIterator operator++(int) { ViewIterator tmp = *this; ++(*this); return tmp; }
 
@@ -79,8 +80,8 @@ namespace Vivium {
 			bool operator!=(ViewIterator const& other) { return current.index != other.current.index; }
 		};
 
-		ViewIterator begin() { return ViewIterator{ registry, ownedEntityArray, ViewElement{ 0, ownedEntityArray[0], registry }}; }
-		ViewIterator end() { return ViewIterator{ registry, ownedEntityArray, ViewElement{ groupMetadata->groupSize, ECS_ENTITY_DEAD, registry } }; }
+		ViewIterator begin() { return ViewIterator(registry, ownedEntityArray, groupMetadata, 0, ownedEntityArray[0]); }
+		ViewIterator end() { return ViewIterator(registry, ownedEntityArray, groupMetadata, groupMetadata->groupSize, ECS_ENTITY_DEAD); }
 	};
 
 	struct Registry {
@@ -205,12 +206,12 @@ namespace Vivium {
 
 			bool ownedGroup = false;
 
-			([&ownedGroup, &iteratingArray, &iteratingSize] {
-				if constexpr (IsOwnedTag<Components>) {
+			([&ownedGroup, &iteratingArray, &iteratingSize, metadata, this] {
+				if constexpr (IsOwnedTag<Components>::value) {
 					ownedGroup = true;
 
 					uint32_t id = TypeGenerator::getIdentifier<Components::type>();
-					ComponentArray* pool = componentPools[id];
+					ComponentArray* pool = this->componentPools[id];
 
 					if (pool == nullptr) return;
 
@@ -228,9 +229,9 @@ namespace Vivium {
 			} (), ...);
 
 			if (!ownedGroup) {
-				([&iteratingArray, &iteratingSize] {
+				([&iteratingArray, &iteratingSize, this] {
 					uint32_t id = TypeGenerator::getIdentifier<Components::type>();
-					ComponentArray* pool = componentPools[id];
+					ComponentArray* pool = this->componentPools[id];
 
 					if (pool == nullptr) return;
 
@@ -245,7 +246,7 @@ namespace Vivium {
 
 			for (uint64_t i = 0; i < iteratingSize; i++) {
 				Entity& entity = iteratingArray->entities[i];
-				Signature& signature = signatures.get(getIdentifier(entity));
+				Signature& signature = signatures.index(getIdentifier(entity));
 
 				if (metadata->ownsSignature(signature)) {
 					moveEntityIntoOwningGroup(entity, signature);

@@ -40,9 +40,11 @@ namespace Vivium {
 
 		template <OwnershipTag... WrappedTypes>
 		void create() {
+			groupSize = 0;
+
 			// Setup signatures
-			([] {
-				uint8_t id = TypeGenerator<WrappedTypes::type>::getIdentifier();
+			([this] {
+				uint8_t id = TypeGenerator::getIdentifier<typename WrappedTypes::type>();
 				
 				affectedComponents.set(id);
 

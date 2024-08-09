@@ -12,7 +12,6 @@ namespace Vivium {
 	template <ValidComponent T>
 	void defaultMoveComponent(void* source, void* dest) {
 		if constexpr (std::is_trivial_v<T> || std::is_copy_constructible_v<T>) {
-			VIVIUM_LOG(Log::DEBUG, "Constructing object at {}", dest);
 			new (dest) T(*reinterpret_cast<T*>(source));
 		}
 		else if constexpr (std::is_move_constructible_v<T>) {
