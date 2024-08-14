@@ -2,15 +2,14 @@
 ## High priority
 
 - Names of `GUI::Visual::Context` not updated
-- Dynamic allocation storage (at least a wrapper for `new`/`delete` temporarily)
+- Dynamic allocation storage (at least a wrapper for `new`/`delete`  temporarily)
+- `support` is still a member function, same with a lot of `Polygon` functions
 
 ## ECS
-- Create view of group
-- Iterators for group
 - Iterators for single component view
 - Non-ownership group relationship optimisations?
-- Add/remove from group automatically
 - Emplace/replace component
+- Add copy of component
 - Permanent `T**` (if wanted)
 ## Core
 
@@ -82,6 +81,8 @@
 ## Physics
 
 - Sub-steps
+- K-D Trees
+- Minimise transformations on bodies
 ## Minor
 
 - `VIVIUM_LOG_PERIODIC(interval, severity, message, ...)`

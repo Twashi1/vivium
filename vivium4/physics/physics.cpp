@@ -8,16 +8,29 @@ namespace Vivium {
 		
 		EdgeManifold axisOfLeastPenetration(const Math::Polygon& a, const Math::Polygon& b, const Math::Transform& aTransform, const Math::Transform& bTransform)
 		{
+			// For each face, find the support point in the direction of the negation of the normal to that face
+			// i.e. the vertex furthest in a certain normal direction
+			// The distance from each support point to the current face gives us the signed penetration
+			// We select axis of largest signed distance -> least penetration (furthest away)
+			// This algorithm will likely break if the shapes are deeply intersecting (about more than half?), but this isn't of much concern
+
 			float maximumDistance = std::numeric_limits<float>::lowest();
 			uint64_t maximumIndex = 0;
 
 			for (uint64_t i = 0; i < a.vertices.size(); i++) {
 				F32x2 normalA = a.normals[i];
+				// Move normal into B model space
 				F32x2 rotatedNormalA = aTransform.rotation * normalA;
 				F32x2 bSpaceNormalA = bTransform.rotationInverse * rotatedNormalA;
+				// Get B's support in the direction of the negation of this face of A's normal
 				F32x2 support = b.support(-bSpaceNormalA);
+				// Transform vertex from A's model space into B's model space
+				// A -> World -> B
 				F32x2 vertex = Math::unapplyTransform(Math::applyTransform(a.vertices[i], aTransform), bTransform);
 
+				// Calculate penetration distance in B's model space
+				//	by projecting distance between support and one of the vertices of face
+				//	onto the normal
 				float penetrationDistance = F32x2::dot(bSpaceNormalA, support - vertex);
 
 				if (penetrationDistance > maximumDistance) {
@@ -58,8 +71,6 @@ namespace Vivium {
 		
 		uint64_t clip(F32x2 edgeVector, float side, std::array<F32x2, MAX_CONTACT_COUNT>& face)
 		{
-			// TODO: cleanup, better outIndex
-
 			uint32_t outIndex = 0;
 			F32x2 out[2] = {
 				face[0],
@@ -75,7 +86,9 @@ namespace Vivium {
 			if (distanceFace1 <= 0.0f) out[outIndex++] = face[1];
 
 			// If they have opposite sign/different side of plane
-			if (distanceFace0 * distanceFace1 < 0.0f) {
+			// outIndex < 2 is just sanity check, not mathematically possible for
+			//	distance faces to have different signs and outIndex >= 2
+			if (outIndex < 2 && distanceFace0 * distanceFace1 < 0.0f) {
 				float alpha = distanceFace0 / (distanceFace0 - distanceFace1);
 				out[outIndex] = face[0] + alpha * (face[1] - face[0]);
 				++outIndex;
@@ -83,10 +96,6 @@ namespace Vivium {
 
 			face[0] = out[0];
 			face[1] = out[1];
-
-			// TODO: better error message
-			if (outIndex == 3)
-				VIVIUM_LOG(Log::FATAL, "Out index was 3");
 
 			return outIndex;
 		}
@@ -216,22 +225,24 @@ namespace Vivium {
 				return;
 			}
 
-			// Otherwise, resolve collision
+			// Compute some constants
+			// Bouncy * not bouncy = not bouncy, bouncy * bouncy = very bouncy, not bouncy * not bouncy = not bouncy
+			float restitution = a.material.restitution * b.material.restitution;
+			// Approximations, bias towards both values being high
+			float staticFriction = std::sqrt(a.material.staticFriction * b.material.staticFriction);
+			float dynamicFriction = std::sqrt(a.material.dynamicFriction * b.material.dynamicFriction);
+			float contactCount = manifold.contactCount;
+			float inverseContactCount = 1.0f / contactCount;
+
+			// Resolve
 			for (uint64_t i = 0; i < manifold.contactCount; i++) {
 				F32x2 contact = manifold.contacts[i];
-
-				// TODO: these are constant between contacts
-				float restitution = std::min(a.material.restitution, a.material.restitution);
-				float staticFriction = std::sqrt(a.material.staticFriction * a.material.staticFriction);
-				float dynamicFriction = std::sqrt(a.material.dynamicFriction * a.material.dynamicFriction);
-				float contactCount = manifold.contactCount;
-				float inverseContactCount = 1.0f / contactCount;
 
 				// Vectors from bodies to points of contact
 				F32x2 contactA = contact - a.position;
 				F32x2 contactB = contact - b.position;
 
-				// Relative velocity between bodies
+				// Relative velocity between bodies projected along normals to contact
 				F32x2 relativeVelocity = b.velocity + b.angularVelocity * F32x2::right(contactB)
 					- a.velocity - a.angularVelocity * F32x2::right(contactA);
 
@@ -244,6 +255,7 @@ namespace Vivium {
 				float velocityLengthA = F32x2::cross(contactA, manifold.vector);
 				float velocityLengthB = F32x2::cross(contactB, manifold.vector);
 
+				// TODO: introduced inertia, better name?
 				float inverseMassSum = a.inverseMass + b.inverseMass
 					+ velocityLengthA * velocityLengthA * a.inverseInertia
 					+ velocityLengthB * velocityLengthB * b.inverseInertia;
@@ -251,7 +263,6 @@ namespace Vivium {
 				float massSum = 1.0f / inverseMassSum;
 
 				// Magnitude of reaction impulse
-				// TODO: correct might be (-1.0f + restitution)
 				float reactionLength = -(1.0f + restitution)
 					* velocityLength
 					* massSum
@@ -266,10 +277,14 @@ namespace Vivium {
 				relativeVelocity = b.velocity + F32x2::right(contactB) * b.angularVelocity
 					- a.velocity - F32x2::right(contactA) * a.angularVelocity;
 
+				// Project collision normal onto velocity (length), and multiply collision normal by length, then
+				//	take the tangent as the norm of the scaled collision normal to the relative velocity from A to B
+				//	This tangent is perpendicular to the normal closest to the relative velocity (so is further from relative velocity)
 				F32x2 contactTangent = F32x2::normalise(relativeVelocity - (manifold.vector
 					* F32x2::dot(relativeVelocity, manifold.vector)));
 
 				// Magnitude of friction impulse in direction of tangent
+				// Friction is applied opposite to the tangent vector, hence negation
 				float frictionLength = -F32x2::dot(relativeVelocity, contactTangent) * massSum
 					* inverseContactCount;
 
@@ -278,10 +293,13 @@ namespace Vivium {
 				if (std::abs(frictionLength) < 0.0001f) return;
 
 				F32x2 frictionImpulse;
-				// If F < mu * R
+				// Coulomb's law
+				// Clamp magnitude below some threshold, "if slow moving, do static, if fast moving, do dynamic"
+				// If F < mu * R, resolve static friction
 				if (std::abs(frictionLength) < reactionLength * staticFriction) {
 					frictionImpulse = contactTangent * frictionLength;
 				}
+				// Resolve dynamic friction
 				else {
 					frictionImpulse = contactTangent * -reactionLength * dynamicFriction;
 				}
@@ -290,9 +308,12 @@ namespace Vivium {
 				b.addImpulse(frictionImpulse, contactB);
 			}
 
-			// Sinking correction
+			// Sinking correction (Linear projection to resolve)
+			// Just move each object (position) along the collision normal by a small amount
+			//	Correction is (inversely) proportional to mass of each object
 			const float strength = 0.4f; // Strength of sinking correction
-			const float slop = 0.05f;	 // So bodies don't jitter with low penetrations
+			// Only consider objects with adequately small penetration depth
+			const float slop = 0.05f;
 
 			F32x2 correction = (std::max(manifold.depth - slop, 0.0f) /
 				(a.inverseMass + b.inverseMass))

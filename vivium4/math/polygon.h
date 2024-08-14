@@ -18,6 +18,8 @@ namespace Vivium {
 			F32x2 min, max;
 
 			F32x2 centroid() const;
+			// Find the vertex farthest along in some direction
+			// (the vertex with the largest projection)
 			F32x2 support(F32x2 direction) const;
 
 			float inertia() const;

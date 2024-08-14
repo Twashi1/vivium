@@ -52,6 +52,8 @@ namespace Vivium {
 		static Vec2 right(Vec2 v) { return Vec2(-v.y, v.x); }
 		static Vec2 left(Vec2 v) { return Vec2(v.y, -v.x); }
 		static T dot(Vec2 a, Vec2 b) { return a.x * b.x + a.y * b.y; }
+		// https://stackoverflow.com/questions/243945/calculating-a-2d-vectors-cross-product
+		// Determinant of 2x2 matrix
 		static T cross(Vec2 a, Vec2 b) { return a.x * b.y - a.y * b.x; }
 		static T length(Vec2 v) { return std::sqrt(dot(v, v)); }
 
