@@ -1,16 +1,18 @@
 
 ## High priority
 
-- Names of `GUI::Visual::Context` not updated
 - Dynamic allocation storage (at least a wrapper for `new`/`delete`  temporarily)
 - `support` is still a member function, same with a lot of `Polygon` functions
 
 ## ECS
+
 - Iterators for single component view
+- Drop function for group view
 - Non-ownership group relationship optimisations?
 - Emplace/replace component
 - Add copy of component
 - Permanent `T**` (if wanted)
+- Investigate ability to change size of group (not during iteration) and still correctly see all entities
 ## Core
 
 - Reflection data on shader files
@@ -61,13 +63,9 @@
 
 - Reverse argument order of `Text`
 - Cannot have multiple `renderPanel` or `renderButton` calls in the same draw call, data gets overwritten
-- Case for availability of a null `GUIElement`
 - Test left-aligned `Text` rendering
-- Rename `ScaleType` to `Units`
-- Batch together multiple `Text` objects at different coordinates
 - Per character `Text` colouring
 - Reduce parameters on GUI visual, customisability not the point of the system
-- `AddChild` public method
 - `Scene` rendering for instanced/batching
 - `Sprite` class
 - `Button` functionality (hover/click events, colour changes on hover/click)
@@ -75,7 +73,7 @@
 	- Should have `TextBatch` in `GUIContext` so we don't need a draw call for each button
 - `Slider` class
 - `Anchor` renamed since also used in `Center` parameters (also move to `Vec2`?)
-- Not considering the total y-extent of characters that go below the origin (like `p`, `q`, `y`, etc.), although whether it should be considered or not is to be determined
+- Not considering the total y-extent of characters that go below the origin (like `p`, `q`, `y`, etc.), although whether it should be considered or not is to be determined - consider a line spacing parameter
 - Better values of `spreadFactor` for signed distance field font rendering
 
 ## Physics

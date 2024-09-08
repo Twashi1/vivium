@@ -5,20 +5,20 @@
 
 namespace Vivium {
 	struct Panel {
-		GUIElement* base;
+		GUIElementReference base;
 		Color backgroundColor;
 		Color borderColor;
 		float borderSize;
 	};
 
 	struct PanelSpecification {
-		GUIElement* parent;
+		GUIElementReference parent;
 		Color backgroundColor;
 		Color borderColor;
 		float borderSize; // Border size as percentage
 	};
 
-	Panel createPanel(GUI::Visual::Context::Handle guiContext, PanelSpecification specification);
-	void dropPanel(Panel& panel, GUI::Visual::Context::Handle guiContext);
-	void renderPanels(const std::span<Panel*> panels, Commands::Context::Handle context, GUI::Visual::Context::Handle guiContext, Window::Handle window);
+	Panel createPanel(GUIContext& guiContext, PanelSpecification specification);
+	void dropPanel(Panel& panel, GUIContext& guiContext);
+	void renderPanels(const std::span<Panel*> panels, Commands::Context::Handle context, GUIContext& guiContext, Window::Handle window);
 }

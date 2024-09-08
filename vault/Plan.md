@@ -70,9 +70,6 @@ Time::stop(command);
 ### Shader
 
 `VkShaderModule shader`
-`VkShaderStageFlagBits flags`
-	-> given by user
-	: required in pipeline creation (can subvert)
 ## Examples
 
 Exemplar program

@@ -120,24 +120,24 @@ namespace Vivium {
 		return renderData;
 	}
 
-	void renderTextBatch(TextBatch& text, Commands::Context::Handle context, GUI::Visual::Context::Handle guiContext, Math::Perspective const& perspective)
+	void renderTextBatch(TextBatch& text, Commands::Context::Handle context, GUIContext& guiContext, Math::Perspective const& perspective)
 	{
 		if (indexCountBatch(text.batch) == 0) { return; }
 
 		// TODO: actually read color from vertex
 		setBuffer(text.fragmentUniform.resource, 0, &Color::White, sizeof(Color));
 
-		Commands::pushConstants(context, &perspective, sizeof(Math::Perspective), 0, ShaderStage::VERTEX, guiContext->text.pipeline.resource);
+		Commands::pushConstants(context, &perspective, sizeof(Math::Perspective), 0, ShaderStage::VERTEX, guiContext.text.pipeline.resource);
 
-		Commands::bindPipeline(context, guiContext->text.pipeline.resource);
-		Commands::bindDescriptorSet(context, text.descriptorSet.resource, guiContext->text.pipeline.resource);
+		Commands::bindPipeline(context, guiContext.text.pipeline.resource);
+		Commands::bindDescriptorSet(context, text.descriptorSet.resource, guiContext.text.pipeline.resource);
 		Commands::bindVertexBuffer(context, vertexBufferBatch(text.batch));
 		Commands::bindIndexBuffer(context, indexBufferBatch(text.batch));
 
 		Commands::drawIndexed(context, indexCountBatch(text.batch), 1);
 	}
 
-	void calculateTextBatch(TextBatch& textBatch, std::span<Text*> textObjects, Commands::Context::Handle context, Engine::Handle engine)
+	void calculateTextBatch(TextBatch& textBatch, std::span<Text*> textObjects, Commands::Context::Handle context, GUIContext& guiContext, Engine::Handle engine)
 	{
 		if (textObjects.size() == 0) { return; }
 
@@ -147,7 +147,7 @@ namespace Vivium {
 			// Calculate required scaling and offsets
 			// Calculate origin point about which to scale
 			// Calculate scale to fit to dimensions
-			GUIProperties props = *properties(*text);
+			GUIProperties const& props = properties(text->base, guiContext);
 			F32x2 translation = props.truePosition;
 			F32x2 axisScale = props.trueDimensions / F32x2(text->metrics.maxLineWidth, text->metrics.totalHeightAndBottom);
 			// TODO: entity names displaying way too small, and off alignment
@@ -180,14 +180,14 @@ namespace Vivium {
 		endSubmissionBatch(textBatch.batch, context, engine);
 	}
 
-	TextBatch submitTextBatch(ResourceManager::Static::Handle manager, Engine::Handle engine, GUI::Visual::Context::Handle guiContext, TextBatchSpecification const& specification)
+	TextBatch submitTextBatch(ResourceManager::Static::Handle manager, Engine::Handle engine, GUIContext& guiContext, TextBatchSpecification const& specification)
 	{
 		TextBatch text;
 
 		text.batch = submitBatch(engine, manager, BatchSpecification(
 			specification.maxCharacterCount * 4,
 			specification.maxCharacterCount * 6,
-			guiContext->text.bufferLayout
+			guiContext.text.bufferLayout
 		));
 
 		std::array<BufferReference, 2> hostBuffers;
@@ -205,7 +205,7 @@ namespace Vivium {
 			}));
 
 		ResourceManager::Static::submit(manager, &text.descriptorSet.reference, std::vector<DescriptorSetSpecification>({
-			DescriptorSetSpecification(guiContext->text.descriptorLayout.reference, std::vector<UniformData>({
+			DescriptorSetSpecification(guiContext.text.descriptorLayout.reference, std::vector<UniformData>({
 				UniformData::fromTexture(text.fontTexture.reference),
 				UniformData::fromBuffer(text.fragmentUniform.reference, sizeof(Color), 0)
 				}))
@@ -231,27 +231,15 @@ namespace Vivium {
 		text.alignment = alignment;
 	}
 
-	Text createText(TextSpecification const& specification, GUI::Visual::Context::Handle guiContext)
+	Text createText(TextSpecification const& specification, GUIContext& guiContext)
 	{
-		GUIElement* parentPtr;
+		GUIElementReference base = createGUIElement(guiContext);
+		addChild(specification.parent, { &base, 1 }, guiContext);
 
-		if (specification.parent == nullptr) {
-			parentPtr = guiContext->defaultParent;
-		}
-		else {
-			parentPtr = specification.parent;
-		}
-
-		GUIElement* basePtr = GUI::Visual::Context::_allocateGUIElement(guiContext);
-		addChild(parentPtr, basePtr);
-
-		return Text{ basePtr, specification.characters, specification.color, specification.metrics, specification.alignment };
+		return Text{ base, specification.characters, specification.color, specification.metrics, specification.alignment };
 	}
 
-	void dropText(Text& text, GUI::Visual::Context::Handle guiContext)
-	{
-		GUI::Visual::Context::_dropGUIElement(text.base, guiContext);
-	}
+	void dropText(Text& text, GUIContext& guiContext) {}
 
 	void dropTextBatch(TextBatch& text, Engine::Handle engine)
 	{

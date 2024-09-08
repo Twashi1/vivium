@@ -4,7 +4,7 @@
 
 namespace Vivium {
 	struct Button {
-		GUIElement* base;
+		GUIElementReference base;
 
 		Text text;
 		TextBatch textBatch;
@@ -14,17 +14,17 @@ namespace Vivium {
 	};
 
 	struct ButtonSpecification {
-		GUIElement* parent;
+		GUIElementReference parent;
 
 		Color color;
 		Color textColor;
 	};
 
-	void dropButton(Button& button, Engine::Handle engine, GUI::Visual::Context::Handle guiContext);
+	void dropButton(Button& button, Engine::Handle engine, GUIContext& guiContext);
 	// TODO: generic render target
-	Button submitButton(ResourceManager::Static::Handle manager, GUI::Visual::Context::Handle guiContext, Engine::Handle engine, Window::Handle window, ButtonSpecification specification);
+	Button submitButton(ResourceManager::Static::Handle manager, GUIContext& guiContext, Engine::Handle engine, Window::Handle window, ButtonSpecification specification);
 	void setupButton(Button& button, ResourceManager::Static::Handle manager);
-	void setButtonText(Button& button, Engine::Handle engine, Window::Handle window, Commands::Context::Handle context, std::string_view const& text);
+	void setButtonText(Button& button, Engine::Handle engine, Window::Handle window, Commands::Context::Handle context, GUIContext& guiContext, std::string_view const& text);
 
-	void renderButtons(const std::span<Button*> buttons, Commands::Context::Handle context, GUI::Visual::Context::Handle guiContext, Window::Handle window);
+	void renderButtons(const std::span<Button*> buttons, Commands::Context::Handle context, GUIContext& guiContext, Window::Handle window);
 }

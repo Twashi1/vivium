@@ -1,92 +1,93 @@
 #include "base.h"
+#include "visual/context.h"
 
 namespace Vivium {
 	bool pointInElement(F32x2 point, GUIProperties const& properties) {
 		return Math::pointInAABB(point, properties.truePosition, properties.truePosition + properties.trueDimensions);
 	}
 
-	void _updateGUIElement(GUIElement* const handle, GUIElement const* const parent, F32x2 windowDimensions) {
-		VIVIUM_CHECK_HANDLE_EXISTS(handle);
-
+	void updateGUIElement(GUIElementReference const element, GUIElementReference const parent, F32x2 windowDimensions, GUIContext& context) {
 		// If we have no parent, resort to using window as a pseudo-parent
-		F32x2 parentDimensions = parent == VIVIUM_NULL_HANDLE ? windowDimensions : parent->properties.trueDimensions;
-		F32x2 parentPosition = parent == VIVIUM_NULL_HANDLE ? F32x2(0.0f) : parent->properties.truePosition;
+		F32x2 parentDimensions = parent.index == NULL ? windowDimensions : context.guiElements[parent.index - 1].properties.trueDimensions;
+		F32x2 parentPosition = parent.index == NULL ? F32x2(0.0f) : context.guiElements[parent.index - 1].properties.truePosition;
 
 		F32x2 multiplier = F32x2(0.0f);
 
-		switch (handle->properties.scaleType) {
-		case GUIScaleType::FIXED:		multiplier = F32x2(1.0f); break;
-		case GUIScaleType::VIEWPORT:	multiplier = windowDimensions; break;
-		case GUIScaleType::RELATIVE:	multiplier = parentDimensions; break;
+		GUIElement& object = context.guiElements[element.index - 1];
+
+		switch (object.properties.unitsType) {
+		case GUIUnits::PIXELS:		multiplier = F32x2(1.0f); break;
+		case GUIUnits::VIEWPORT:	multiplier = windowDimensions; break;
+		case GUIUnits::RELATIVE:	multiplier = parentDimensions; break;
 		default: VIVIUM_LOG(Log::FATAL, "Invalid scale type"); break;
 		}
 
-		handle->properties.trueDimensions = handle->properties.dimensions * multiplier;
-		handle->properties.truePosition = handle->properties.position * multiplier;
+		object.properties.trueDimensions = object.properties.dimensions * multiplier;
+		object.properties.truePosition = object.properties.position * multiplier;
 
-		if (handle->properties.positionType == GUIPositionType::RELATIVE) {
-			handle->properties.truePosition += parentPosition;
+		if (object.properties.positionType == GUIPositionType::RELATIVE) {
+			object.properties.truePosition += parentPosition;
 
-			switch (handle->properties.anchorX) {
+			switch (object.properties.anchorX) {
 			case GUIAnchor::LEFT: break;
 			case GUIAnchor::RIGHT:
-				handle->properties.truePosition.x += parentDimensions.x; break;
+				object.properties.truePosition.x += parentDimensions.x; break;
 			case GUIAnchor::CENTER:
-				handle->properties.truePosition.x += 0.5f * parentDimensions.x; break;
+				object.properties.truePosition.x += 0.5f * parentDimensions.x; break;
 			default:
 				VIVIUM_LOG(Log::FATAL, "Invalid anchor for horizontal direction"); break;
 			}
 
-			switch (handle->properties.anchorY) {
+			switch (object.properties.anchorY) {
 			case GUIAnchor::BOTTOM: break;
 			case GUIAnchor::TOP:
-				handle->properties.truePosition.y += parentDimensions.y; break;
+				object.properties.truePosition.y += parentDimensions.y; break;
 			case GUIAnchor::CENTER:
-				handle->properties.truePosition.y += 0.5f * parentDimensions.y; break;
+				object.properties.truePosition.y += 0.5f * parentDimensions.y; break;
 			default:
 				VIVIUM_LOG(Log::FATAL, "Invalid anchor for vertical direction"); break;
 			}
 
-			switch (handle->properties.centerX) {
+			switch (object.properties.centerX) {
 			case GUIAnchor::LEFT: break;
 			case GUIAnchor::RIGHT:
-				handle->properties.truePosition.x -= handle->properties.trueDimensions.x;
+				object.properties.truePosition.x -= object.properties.trueDimensions.x;
 				break;
 			case GUIAnchor::CENTER:
-				handle->properties.truePosition.x -= handle->properties.trueDimensions.x * 0.5f;
+				object.properties.truePosition.x -= object.properties.trueDimensions.x * 0.5f;
 				break;
 			default:
 				VIVIUM_LOG(Log::FATAL, "Invalid anchor for horizontal direction"); break;
 			}
 
-			switch (handle->properties.centerY) {
+			switch (object.properties.centerY) {
 			case GUIAnchor::BOTTOM: break;
 			case GUIAnchor::TOP:
-				handle->properties.truePosition.y -= handle->properties.trueDimensions.y;
+				object.properties.truePosition.y -= object.properties.trueDimensions.y;
 				break;
 			case GUIAnchor::CENTER:
-				handle->properties.truePosition.y -= handle->properties.trueDimensions.y * 0.5f;
+				object.properties.truePosition.y -= object.properties.trueDimensions.y * 0.5f;
 				break;
 			default:
 				VIVIUM_LOG(Log::FATAL, "Invalid anchor for vertical direction"); break;
 			}
 		}
 
-		for (GUIElement* const child : handle->children)
-			_updateGUIElement(child, handle, windowDimensions);
-	}
-			
-	GUIProperties& _properties(GUIElement* const object)
-	{
-		VIVIUM_CHECK_HANDLE_EXISTS(object);
-
-		return object->properties;
-	}
-			
-	void _addChild(GUIElement* const parent, std::span<GUIElement*> children)
-	{
-		for (GUIElement* child : children) {
-			parent->children.push_back(child);
+		for (GUIElementReference child : object.children)
+		{
+			updateGUIElement(child, element, windowDimensions, context);
 		}
+	}
+			
+	GUIProperties& properties(GUIElementReference const objectHandle, GUIContext& guiContext)
+	{
+		return guiContext.guiElements[objectHandle.index].properties;
+	}
+
+	void addChild(GUIElementReference const parent, std::span<GUIElementReference const> children, GUIContext& guiContext)
+	{
+		GUIElement& parentObject = guiContext.guiElements[parent.index];
+
+		parentObject.children.insert(parentObject.children.end(), children.begin(), children.end());
 	}
 }
