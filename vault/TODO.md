@@ -2,6 +2,8 @@
 ## High priority
 
 - Dynamic allocation storage (at least a wrapper for `new`/`delete`  temporarily)
+- Button text colour doesn't change text colour
+- Should be able to submit a text colour per text object
 
 ## ECS
 
@@ -26,8 +28,7 @@
 - Re-implementation of dynamic buffers
 - Minimal overrides
 - No static member functions (even for specifications): just define a method
-- `Math::orthogonalPerspective2D` should not be taking `Window::Handle`, but a dimension
-- Renaming `ResourceManager` to `Allocator`
+- Renaming `ResourceManager` to `ResourceAllocator`
 - RAII storage objects are appealing (delete copy, define move) (`Storage::Static` and `Storage::Dynamic`)
 	- Alternative is to just `malloc` and `free` these, they're already only used as pointers anyway
 - `Commands::Context` should be multi-thread compatible
@@ -39,9 +40,10 @@
 - `inl` files for all templates
 - Error system
 - Clear separation render/GUI/computation threads. Ability to submit from multiple threads
-- Using filesystem or better file referencing (not just passing file data, but truly passing file path in a way that guarantees the existence of that path)
-	- Resource management system
-- Dynamic tree allocator
+- Resource management system
+	- Custom file path syntax for loading resources (OS agnostic ideally)
+- Dynamic resource allocation
+	- Dynamic tree allocator
 - Methods for `Input` to be more concise
 - All allocated resources should be tracked in debug mode (regardless of static/dynamic or even type of allocator, need some intermediary registry)
 - `Buffer::Slice(buffer)` - ability to allocate multiple slices within a buffer as a more aspirational goal
@@ -84,22 +86,16 @@
 
 - `VIVIUM_LOG_PERIODIC(interval, severity, message, ...)`
 - 8-bit index buffers
-- In-place allocation where possible (use `Resource` internally more often)
-	- Ability to `Inplace` statically allocated resources (involves passing allocator type to `ResourceManager::Static` functions)
 - Determine whether or not bindings of resources are per shader stage, or shared
 - Significantly better debug checks (on things like `Batch` for example)
-- Lots of methods missing validation of pointers
-- Lots of missing resetting handles to `nullptr` on debug mode
 - Lots of methods call to implementation in `Resource`
 - Lots of things that should be `uint32_t` instead of `float` (in particular with respect to dimensions)
 - Work on cleaning up some warnings whenever bored
 - Use `maxLineWidth` of `Text::Metrics` where referenced
 - Use `std::string_view` where applicable
 - Rename private functions with underscore prefix
-- Use `VIVIUM_DEBUG_LOG` instead of `VIVIUM_LOG` when we only want to log in `DEBUG` mode
-	- should still have customisable warning level
+- `math.h` and `math.cpp` contain wide variety of functions, mixing of texture indexing maths and camera maths
 - `T const&` a lot of things
-- Get rid of static `Color` values
 
 ## Possible
 

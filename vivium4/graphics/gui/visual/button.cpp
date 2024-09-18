@@ -66,7 +66,7 @@ namespace Vivium {
 			buttonData[i] = instance;
 		}
 
-		Math::Perspective perspective = Math::orthogonalPerspective2D(window, F32x2(0.0f), 0.0f, 1.0f);
+		Math::Perspective perspective = Math::orthogonalPerspective2D(Window::dimensions(window), F32x2(0.0f), 0.0f, 1.0f);
 
 		setBuffer(guiContext.button.storageBuffer.resource, 0, buttonData.data(), buttonData.size() * sizeof(_GUIButtonInstanceData));
 		Commands::bindPipeline(context, guiContext.button.pipeline.resource);

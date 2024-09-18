@@ -15,10 +15,6 @@ namespace Vivium {
 		{}
 		constexpr Color(float r, float g, float b) : r(r), g(g), b(b) {}
 
-		static Color White;
-		static Color Black;
-		static Color Gray;
-
 		static Color multiply(Color color, float scalar);
 	};
 }

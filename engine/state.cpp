@@ -7,7 +7,7 @@ void _submit(State& state)
 
 void _submitEditor(State& state)
 {
-	state.editor.background = createPanel(state.guiContext, PanelSpecification{ defaultGUIParent(state.guiContext), Color::Gray, Color::White, 0.0f});
+	state.editor.background = createPanel(state.guiContext, PanelSpecification{ defaultGUIParent(state.guiContext), colorDarkGray, colorBlack, 0.0f});
 
 	_submitEntityView(state);
 }
@@ -17,7 +17,7 @@ void _submitEntityView(State& state)
 	state.editor.entityView.entityObjectsElement = createGUIElement(state.guiContext);
 
 	state.editor.entityView.background = createPanel(state.guiContext, PanelSpecification{ state.editor.background.base, colorDarkGray, colorBlack, 0.01f });
-	state.editor.entityView.createButton = submitButton(state.manager, state.guiContext, state.engine, state.window, ButtonSpecification{ state.editor.entityView.background.base, Color::Gray, Color::Black });
+	state.editor.entityView.createButton = submitButton(state.manager, state.guiContext, state.engine, state.window, ButtonSpecification{ state.editor.entityView.background.base, colorDarkGray, colorBlack });
 	state.editor.entityView.entityTextBatch = submitTextBatch(state.manager, state.engine, state.guiContext, TextBatchSpecification{ 256, state.editor.entityView.createButton.textBatch.font });
 
 	for (uint32_t i = 0; i < MAX_CONCURRENT_ENTITY_PANELS; i++) {
@@ -150,7 +150,7 @@ void _draw(State& state)
 	Button* buttons[] = { &state.editor.entityView.createButton };
 	renderButtons(buttons, state.context, state.guiContext, state.window);
 
-	renderTextBatch(state.editor.entityView.entityTextBatch, state.context, state.guiContext, Math::orthogonalPerspective2D(state.window, F32x2(0.0f), 0.0f, 1.0f));
+	renderTextBatch(state.editor.entityView.entityTextBatch, state.context, state.guiContext, Math::orthogonalPerspective2D(Window::dimensions(state.window), F32x2(0.0f), 0.0f, 1.0f));
 }
 
 void initialise(State& state) {

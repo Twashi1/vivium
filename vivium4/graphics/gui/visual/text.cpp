@@ -125,7 +125,8 @@ namespace Vivium {
 		if (indexCountBatch(text.batch) == 0) { return; }
 
 		// TODO: actually read color from vertex
-		setBuffer(text.fragmentUniform.resource, 0, &Color::White, sizeof(Color));
+		Color temporaryColor = Color{ 1.0f, 1.0f, 1.0f };
+		setBuffer(text.fragmentUniform.resource, 0, &temporaryColor, sizeof(Color));
 
 		Commands::pushConstants(context, &perspective, sizeof(Math::Perspective), 0, ShaderStage::VERTEX, guiContext.text.pipeline.resource);
 

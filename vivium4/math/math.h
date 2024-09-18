@@ -16,7 +16,7 @@ namespace Vivium {
 			glm::mat4 projection;
 		};
 
-		Perspective orthogonalPerspective2D(Window::Handle window, F32x2 position, float rotation, float scale);
+		Perspective orthogonalPerspective2D(F32x2 frameDimensions, F32x2 position, float rotation, float scale);
 
 		template <typename T>
 		T nearestMultiple(T number, T multiple) {

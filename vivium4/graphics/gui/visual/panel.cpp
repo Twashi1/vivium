@@ -34,7 +34,7 @@ namespace Vivium {
 			panelData[i] = instance;
 		}
 
-		Math::Perspective perspective = Math::orthogonalPerspective2D(window, F32x2(0.0f), 0.0f, 1.0f);
+		Math::Perspective perspective = Math::orthogonalPerspective2D(Window::dimensions(window), F32x2(0.0f), 0.0f, 1.0f);
 
 		setBuffer(guiContext.panel.storageBuffer.resource, 0, panelData.data(), panelData.size() * sizeof(_GUIPanelInstanceData));
 		Commands::bindPipeline(context, guiContext.panel.pipeline.resource);
