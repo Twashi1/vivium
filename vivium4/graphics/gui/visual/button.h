@@ -24,7 +24,7 @@ namespace Vivium {
 	// TODO: generic render target
 	Button submitButton(ResourceManager::Static::Handle manager, GUIContext& guiContext, Engine::Handle engine, Window::Handle window, ButtonSpecification specification);
 	void setupButton(Button& button, ResourceManager::Static::Handle manager);
-	void setButtonText(Button& button, Engine::Handle engine, Window::Handle window, Commands::Context::Handle context, GUIContext& guiContext, std::string_view const& text);
+	void setButtonText(Button& button, Engine::Handle engine, Window::Handle window, Commands::Context::Handle context, GUIContext& guiContext, std::string_view text);
 
 	void renderButtons(const std::span<Button*> buttons, Commands::Context::Handle context, GUIContext& guiContext, Window::Handle window);
 }

@@ -64,10 +64,12 @@ namespace Vivium {
 			Ref<Pipeline> pipeline;
 		} panel;
 
+		GUIElementReference defaultParent;
 		std::vector<GUIElement> guiElements;
 	};
 
 	GUIElementReference createGUIElement(GUIContext& context);
+	GUIElementReference defaultGUIParent(GUIContext& context);
 
 	void _submitGenericGUIContext(GUIContext& context, ResourceManager::Static::Handle manager, Engine::Handle engine, Window::Handle window);
 	void _submitTextGUIContext(GUIContext& context, ResourceManager::Static::Handle manager, Engine::Handle engine, Window::Handle window);

@@ -7,15 +7,14 @@ void _submit(State& state)
 
 void _submitEditor(State& state)
 {
-	state.editor.background = createPanel(state.guiContext, PanelSpecification{ nullptr, Color::Gray, Color::White, 0.0f });
+	state.editor.background = createPanel(state.guiContext, PanelSpecification{ defaultGUIParent(state.guiContext), Color::Gray, Color::White, 0.0f});
 
 	_submitEntityView(state);
 }
 
 void _submitEntityView(State& state)
 {
-	// TODO: VERY TEMPORARY
-	state.editor.entityView.entityObjectsElement = new GUIElement;
+	state.editor.entityView.entityObjectsElement = createGUIElement(state.guiContext);
 
 	state.editor.entityView.background = createPanel(state.guiContext, PanelSpecification{ state.editor.background.base, colorDarkGray, colorBlack, 0.01f });
 	state.editor.entityView.createButton = submitButton(state.manager, state.guiContext, state.engine, state.window, ButtonSpecification{ state.editor.entityView.background.base, Color::Gray, Color::Black });
@@ -42,39 +41,39 @@ void _setupEditor(State& state)
 {
 	_setupEntityView(state);
 
-	properties(state.editor.background)->dimensions = F32x2(1.0f);
+	properties(state.editor.background.base, state.guiContext).dimensions = F32x2(1.0f);
 }
 
 void _setupEntityView(State& state)
 {
 	setupButton(state.editor.entityView.createButton, state.manager);
-	setButtonText(state.editor.entityView.createButton, state.engine, state.window, state.context, "Create entity");
+	setButtonText(state.editor.entityView.createButton, state.engine, state.window, state.context, state.guiContext, "Create entity");
 
 	setupTextBatch(state.editor.entityView.entityTextBatch, state.manager);
 
-	addChild(state.editor.entityView.background, state.editor.entityView.entityObjectsElement);
+	addChild(state.editor.entityView.background, state.editor.entityView.entityObjectsElement, state.guiContext);
 
-	properties(state.editor.entityView.createButton)->dimensions = F32x2(0.9f, 0.1f);
-	properties(state.editor.entityView.createButton)->position = F32x2(0.0f, -0.01f);
-	properties(state.editor.entityView.createButton)->centerY = GUIAnchor::TOP;
-	properties(state.editor.entityView.createButton)->anchorY = GUIAnchor::TOP;
-	properties(state.editor.entityView.background)->dimensions = F32x2(0.2f, 0.9f);
-	properties(state.editor.entityView.background)->position = F32x2(0.05f, 0.0f);
-	properties(state.editor.entityView.background)->centerX = GUIAnchor::LEFT;
-	properties(state.editor.entityView.background)->anchorX = GUIAnchor::LEFT;
-	properties(state.editor.entityView.entityObjectsElement)->centerY = GUIAnchor::TOP;
-	properties(state.editor.entityView.entityObjectsElement)->anchorY = GUIAnchor::TOP;
-	properties(state.editor.entityView.entityObjectsElement)->position = F32x2(0.0f, -0.115f);
+	properties(state.editor.entityView.createButton, state.guiContext).dimensions = F32x2(0.9f, 0.1f);
+	properties(state.editor.entityView.createButton, state.guiContext).position = F32x2(0.0f, -0.01f);
+	properties(state.editor.entityView.createButton, state.guiContext).centerY = GUIAnchor::TOP;
+	properties(state.editor.entityView.createButton, state.guiContext).anchorY = GUIAnchor::TOP;
+	properties(state.editor.entityView.background, state.guiContext).dimensions = F32x2(0.2f, 0.9f);
+	properties(state.editor.entityView.background, state.guiContext).position = F32x2(0.05f, 0.0f);
+	properties(state.editor.entityView.background, state.guiContext).centerX = GUIAnchor::LEFT;
+	properties(state.editor.entityView.background, state.guiContext).anchorX = GUIAnchor::LEFT;
+	properties(state.editor.entityView.entityObjectsElement, state.guiContext).centerY = GUIAnchor::TOP;
+	properties(state.editor.entityView.entityObjectsElement, state.guiContext).anchorY = GUIAnchor::TOP;
+	properties(state.editor.entityView.entityObjectsElement, state.guiContext).position = F32x2(0.0f, -0.115f);
 
 	for (uint32_t i = 0; i < MAX_CONCURRENT_ENTITY_PANELS; i++) {
-		GUIProperties& props = *properties(state.editor.entityView.entityPanels[i]);
+		GUIProperties& props = properties(state.editor.entityView.entityPanels[i], state.guiContext);
 		
 		props.dimensions = F32x2(0.9f, 0.05f);
 		props.position = F32x2(0.0f, -0.015f + -0.075f * i);
 		props.centerY = GUIAnchor::TOP;
 		props.anchorY = GUIAnchor::TOP;
 
-		GUIProperties& textProps = *properties(state.editor.entityView.textObjects[i]);
+		GUIProperties& textProps = properties(state.editor.entityView.textObjects[i], state.guiContext);
 		textProps.dimensions = F32x2(0.95f);
 		textProps.centerX = GUIAnchor::LEFT;
 		textProps.centerY = GUIAnchor::BOTTOM;
@@ -97,9 +96,6 @@ void _dropEditor(State& state)
 
 void _dropEntityView(State& state)
 {
-	// TODO: VERY TEMPORARY
-	delete state.editor.entityView.entityObjectsElement;
-
 	dropButton(state.editor.entityView.createButton, state.engine, state.guiContext);
 	dropPanel(state.editor.entityView.background, state.guiContext);
 	dropTextBatch(state.editor.entityView.entityTextBatch, state.engine);
@@ -115,9 +111,9 @@ void _dropEntityView(State& state)
 
 void _update(State& state)
 {
-	setButtonText(state.editor.entityView.createButton, state.engine, state.window, state.context, "Entity create");
+	setButtonText(state.editor.entityView.createButton, state.engine, state.window, state.context, state.guiContext, "Entity create");
 
-	if (pointInElement(Input::getCursor(), *properties(state.editor.entityView.createButton)) && Input::get(Input::BTN_LEFT).state == Input::PRESS) {
+	if (pointInElement(Input::getCursor(), properties(state.editor.entityView.createButton, state.guiContext)) && Input::get(Input::BTN_LEFT).state == Input::PRESS) {
 		Entity newEntity = state.registry.create();
 		state.registry.addComponent<ComponentName>(newEntity, ComponentName{ std::format("Entity {}", newEntity & ECS_ENTITY_MASK) });
 
@@ -136,7 +132,7 @@ void _update(State& state)
 		state.editor.entityView.textObjects[i++].characters = name.name;
 	}
 
-	calculateTextBatch(state.editor.entityView.entityTextBatch, textObjectsPtr, state.context, state.engine);
+	calculateTextBatch(state.editor.entityView.entityTextBatch, textObjectsPtr, state.context, state.guiContext, state.engine);
 }
 
 void _draw(State& state)
@@ -169,13 +165,13 @@ void initialise(State& state) {
 
 	state.manager = ResourceManager::Static::create(&state.storage);
 
-	state.guiContext = GUI::Visual::Context::submit(&state.storage, state.manager, state.engine, state.window);
+	state.guiContext = createGUIContext(state.manager, state.engine, state.window);
 
 	_submit(state);
 
 	ResourceManager::Static::allocate(state.manager, state.engine);
 
-	GUI::Visual::Context::setup(state.guiContext, state.manager, state.context, state.engine);
+	setupGUIContext(state.guiContext, state.manager, state.context, state.engine);
 	_setup(state);
 
 	ResourceManager::Static::clearReferences(state.manager);
@@ -188,7 +184,7 @@ void gameloop(State& state) {
 
 		Input::update(state.window);
 
-		GUI::Visual::Context::updateContext(state.guiContext, Window::dimensions(state.window));
+		updateGUI(Window::dimensions(state.window), state.guiContext);
 		_update(state);
 
 		Engine::beginRender(state.engine, state.window);
@@ -204,7 +200,7 @@ void gameloop(State& state) {
 void terminate(State& state) {
 	ResourceManager::Static::drop(&state.storage, state.manager, state.engine);
 	Commands::Context::drop(&state.storage, state.context, state.engine);
-	GUI::Visual::Context::drop(&state.storage, state.guiContext, state.engine);
+	dropGUIContext(state.guiContext, state.engine);
 
 	_drop(state);
 

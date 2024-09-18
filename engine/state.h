@@ -18,7 +18,7 @@ struct State {
 	Engine::Handle engine;
 	Window::Handle window;
 	Commands::Context::Handle context;
-	GUI::Visual::Context::Handle guiContext;
+	GUIContext guiContext;
 	ResourceManager::Static::Handle manager;
 
 	Storage::Static::Pool storage;
@@ -35,7 +35,7 @@ struct State {
 			Button createButton;
 			TextBatch entityTextBatch;
 
-			GUIElement* entityObjectsElement;
+			GUIElementReference entityObjectsElement;
 
 			std::vector<Entity> entities;
 			std::vector<Text> textObjects;

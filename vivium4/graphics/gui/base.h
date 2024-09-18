@@ -67,4 +67,30 @@ namespace Vivium {
 	void updateGUIElement(GUIElementReference const objectHandle, GUIElementReference const parent, F32x2 windowDimensions, GUIContext& guiContext);
 	GUIProperties& properties(GUIElementReference const objectHandle, GUIContext& guiContext);
 	void addChild(GUIElementReference const parent, std::span<GUIElementReference const> children, GUIContext& guiContext);
+
+	template <typename T>
+	concept GUIGeneric = requires (T object) {
+		{object.base} -> std::same_as<GUIElementReference&>;
+	} || std::is_same_v<T, GUIElementReference>;
+
+	// Should only realistically be updating head of tree
+	void updateGUI(F32x2 windowDimensions, GUIContext& guiContext);
+
+	template <GUIGeneric T>
+	GUIElementReference _extractGUIReference(T const& object) {
+		if constexpr (std::is_same_v<T, GUIElementReference>) { return object; }
+		else { return object.base; }
+	}
+
+	template <GUIGeneric T>
+	GUIProperties& properties(T const& object, GUIContext& guiContext) {
+		return properties(_extractGUIReference(object), guiContext);
+	}
+
+	template <GUIGeneric U, GUIGeneric V>
+	void addChild(U const& object, V const& child, GUIContext& guiContext) {
+		// TODO: maybe don't need this copy to get around const
+		GUIElementReference copy = _extractGUIReference(child);
+		addChild(_extractGUIReference(object), {&copy, 1}, guiContext);
+	}
 }

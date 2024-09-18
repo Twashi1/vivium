@@ -18,7 +18,7 @@ namespace Vivium {
 	void _submitTextGUIContext(GUIContext& guiContext, ResourceManager::Static::Handle manager, Engine::Handle engine, Window::Handle window)
 	{
 		// Create null element
-		createGUIElement(guiContext);
+		guiContext.defaultParent = createGUIElement(guiContext);
 
 		guiContext.text.bufferLayout = BufferLayout::fromTypes(std::vector<ShaderDataType>({
 			ShaderDataType::VEC2,
@@ -135,10 +135,15 @@ namespace Vivium {
 	{
 		guiContext.guiElements.push_back(GUIElement());
 
-		// We use NULL as the default GUI element
 		return GUIElementReference(guiContext.guiElements.size() - 1);
 	}
 
+	GUIElementReference defaultGUIParent(GUIContext& context)
+	{
+		return context.defaultParent;
+	}
+
+	// TODO: create doesn't match the pattern, elements that require a setup, should also be `submit`
 	GUIContext createGUIContext(ResourceManager::Static::Handle manager, Engine::Handle engine, Window::Handle window) {
 		// TODO: move the code, should be done in some initialisation function
 		// Generate the font if it doesn't exist

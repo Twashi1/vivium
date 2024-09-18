@@ -8,12 +8,12 @@ namespace Vivium {
 
 	void updateGUIElement(GUIElementReference const element, GUIElementReference const parent, F32x2 windowDimensions, GUIContext& context) {
 		// If we have no parent, resort to using window as a pseudo-parent
-		F32x2 parentDimensions = parent.index == NULL ? windowDimensions : context.guiElements[parent.index - 1].properties.trueDimensions;
-		F32x2 parentPosition = parent.index == NULL ? F32x2(0.0f) : context.guiElements[parent.index - 1].properties.truePosition;
+		F32x2 parentDimensions = parent.index == NULL ? windowDimensions : context.guiElements[parent.index].properties.trueDimensions;
+		F32x2 parentPosition = parent.index == NULL ? F32x2(0.0f) : context.guiElements[parent.index].properties.truePosition;
 
 		F32x2 multiplier = F32x2(0.0f);
 
-		GUIElement& object = context.guiElements[element.index - 1];
+		GUIElement& object = context.guiElements[element.index];
 
 		switch (object.properties.unitsType) {
 		case GUIUnits::PIXELS:		multiplier = F32x2(1.0f); break;
@@ -89,5 +89,10 @@ namespace Vivium {
 		GUIElement& parentObject = guiContext.guiElements[parent.index];
 
 		parentObject.children.insert(parentObject.children.end(), children.begin(), children.end());
+	}
+	
+	void updateGUI(F32x2 windowDimensions, GUIContext& guiContext)
+	{
+		updateGUIElement(guiContext.defaultParent, guiContext.defaultParent, windowDimensions, guiContext);
 	}
 }

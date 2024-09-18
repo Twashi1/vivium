@@ -40,7 +40,7 @@ namespace Vivium {
 		setupTextBatch(button.textBatch, manager);
 	}
 
-	void setButtonText(Button& button, Engine::Handle engine, Window::Handle window, Commands::Context::Handle context, GUIContext& guiContext, const std::string_view& text)
+	void setButtonText(Button& button, Engine::Handle engine, Window::Handle window, Commands::Context::Handle context, GUIContext& guiContext, std::string_view text)
 	{
 		// Early exit if no text
 		if (text.size() == 0) return;
