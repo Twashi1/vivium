@@ -23,7 +23,7 @@ namespace Vivium {
 				F32x2 rotatedNormalA = aTransform.rotation * normalA;
 				F32x2 bSpaceNormalA = bTransform.rotationInverse * rotatedNormalA;
 				// Get B's support in the direction of the negation of this face of A's normal
-				F32x2 support = b.support(-bSpaceNormalA);
+				F32x2 support = supportPolygon(b, -bSpaceNormalA);
 				// Transform vertex from A's model space into B's model space
 				// A -> World -> B
 				F32x2 vertex = Math::unapplyTransform(Math::applyTransform(a.vertices[i], aTransform), bTransform);

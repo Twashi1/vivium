@@ -15,23 +15,19 @@ namespace Vivium {
 			std::vector<F32x2> vertices;
 			std::vector<F32x2> normals;
 
-			F32x2 min, max;
-
-			F32x2 centroid() const;
-			// Find the vertex farthest along in some direction
-			// (the vertex with the largest projection)
-			F32x2 support(F32x2 direction) const;
-
-			float inertia() const;
-			float area() const;
-
-			bool contains(F32x2 point, Math::Transform transform);
-
-			Polygon() = default;
-			
-			static Polygon fromVertices(const std::span<const F32x2> vertices);
-			static Polygon fromRegular(float radius, uint64_t vertexCount);
-			static Polygon fromBox(F32x2 dimensions);
+			F32x2 min;
+			F32x2 max;
 		};
+
+		F32x2 centroidPolygon(Polygon const& polygon);
+		F32x2 supportPolygon(Polygon const& polygon, F32x2 direction);
+		float inertiaPolygon(Polygon const& polygon);
+		float areaPolygon(Polygon const& polygon);
+	
+		bool containsPolygon(Polygon const& polygon, F32x2 point, Math::Transform transform);
+
+		Polygon createPolygonVertices(const std::span<const F32x2> vertices);
+		Polygon createPolygonRegular(float radius, uint64_t vertexCount);
+		Polygon createPolygonBox(F32x2 dimensions);
 	}
 }

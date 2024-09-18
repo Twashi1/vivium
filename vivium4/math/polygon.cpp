@@ -3,16 +3,16 @@
 
 namespace Vivium {
 	namespace Math {
-		F32x2 Polygon::centroid() const
+		F32x2 centroidPolygon(Polygon const& polygon)
 		{
 			constexpr float third = 1.0f / 3.0f;
 
 			F32x2 center = F32x2(0.0f);
 			float area = 0.0f;
 
-			for (uint64_t i = 0; i < vertices.size(); i++) {
-				F32x2 current = vertices[i];
-				F32x2 next = vertices[i == vertices.size() - 1 ? 0 : i + 1];
+			for (uint64_t i = 0; i < polygon.vertices.size(); i++) {
+				F32x2 current = polygon.vertices[i];
+				F32x2 next = polygon.vertices[i == polygon.vertices.size() - 1 ? 0 : i + 1];
 
 				// Triangle with current, next, and origin, assuming origin within triangle
 				float triangleArea = std::abs(F32x2::cross(current, next) * 0.5f);
@@ -23,13 +23,13 @@ namespace Vivium {
 			return center / area;
 		}
 
-		F32x2 Polygon::support(F32x2 direction) const
+		F32x2 supportPolygon(Polygon const& polygon, F32x2 direction)
 		{
 			float maxDotProduct = std::numeric_limits<float>::lowest();
-			F32x2 bestPoint = vertices[0];
+			F32x2 bestPoint = polygon.vertices[0];
 
-			for (uint64_t i = 1; i < vertices.size(); i++) {
-				F32x2 point = vertices[i];
+			for (uint64_t i = 1; i < polygon.vertices.size(); i++) {
+				F32x2 point = polygon.vertices[i];
 
 				float dot = F32x2::dot(point, direction);
 
@@ -42,33 +42,33 @@ namespace Vivium {
 			return bestPoint;
 		}
 
-		float Polygon::inertia() const
+		float inertiaPolygon(Polygon const& polygon)
 		{
 			constexpr float twelth = 1.0f / 12.0f;
 
 			float inertia = 0.0f;
 
-			for (uint64_t i = 0; i < vertices.size(); i++) {
-				F32x2 current = vertices[i];
-				F32x2 next = vertices[i == vertices.size() - 1 ? 0 : i + 1];
+			for (uint64_t i = 0; i < polygon.vertices.size(); i++) {
+				F32x2 current = polygon.vertices[i];
+				F32x2 next = polygon.vertices[i == polygon.vertices.size() - 1 ? 0 : i + 1];
 
 				// TODO: check this is actually correct
 				// https://physics.stackexchange.com/questions/708936/how-to-calculate-the-moment-of-inertia-of-convex-polygon-two-dimensions
 				inertia += twelth * F32x2::cross(current, next) * (
 					F32x2::dot(current, current) + F32x2::dot(next, next) + F32x2::dot(current, next)
-				);
+					);
 			}
 
 			return inertia;
 		}
 
-		float Polygon::area() const
+		float areaPolygon(Polygon const& polygon)
 		{
 			float area = 0.0f;
 
-			for (uint64_t i = 0; i < vertices.size(); i++) {
-				F32x2 current = vertices[i];
-				F32x2 next = vertices[i == vertices.size() - 1 ? 0 : i + 1];
+			for (uint64_t i = 0; i < polygon.vertices.size(); i++) {
+				F32x2 current = polygon.vertices[i];
+				F32x2 next = polygon.vertices[i == polygon.vertices.size() - 1 ? 0 : i + 1];
 
 				float triangleArea = std::abs(F32x2::cross(current, next) * 0.5f);
 
@@ -78,18 +78,18 @@ namespace Vivium {
 			return area;
 		}
 
-		bool Polygon::contains(F32x2 point, Math::Transform transform)
+		bool containsPolygon(Polygon const& polygon, F32x2 point, Math::Transform transform)
 		{
 			F32x2 testPoint = Math::unapplyTransform(point, transform);
 
 			// If not within AABB, early exit
-			if (!Math::pointInAABB(point, min, max)) return false;
+			if (!Math::pointInAABB(point, polygon.min, polygon.max)) return false;
 
 			int previousSideOrientation = 2;
 
-			for (uint64_t i = 0; i < vertices.size(); i++) {
-				F32x2 current = vertices[i];
-				F32x2 next = vertices[i == vertices.size() - 1 ? 0 : i + 1];
+			for (uint64_t i = 0; i < polygon.vertices.size(); i++) {
+				F32x2 current = polygon.vertices[i];
+				F32x2 next = polygon.vertices[i == polygon.vertices.size() - 1 ? 0 : i + 1];
 
 				float orientation = F32x2::orient(current, next, point);
 				// > 0 -> 1
@@ -107,32 +107,32 @@ namespace Vivium {
 			return true;
 		}
 
-		Polygon Polygon::fromVertices(const std::span<const F32x2> vertices)
+		Polygon createPolygonVertices(const std::span<const F32x2> vertices)
 		{
 			VIVIUM_ASSERT(vertices.size() >= 3, "Not enough vertices for valid polygon");
 
 			Polygon polygon;
 
 			polygon.vertices.resize(vertices.size());
-			
+
 			for (uint64_t i = 0; i < vertices.size(); i++)
 				polygon.vertices[i] = vertices[i];
 
-			// TODO: ensure vertices contain origin
+			// TODO: ensure vertices contain origin, requires more of polygon to be constructed to work?
 			// VIVIUM_ASSERT(polygon.contains(F32x2(0.0f), Transform::zero()), "Vertices must contain origin");
 
 			polygon.normals.resize(vertices.size());
 			polygon.min = polygon.vertices.front();
 			polygon.max = polygon.vertices.back();
 
-			F32x2 center = polygon.centroid();
+			F32x2 center = centroidPolygon(polygon);
 
 			for (F32x2& vertex : polygon.vertices)
 				vertex -= center;
 
 			for (uint64_t i = 0; i < polygon.vertices.size(); i++) {
 				F32x2 current = polygon.vertices[i];
-				
+
 				// Update bounds
 				if (current.x < polygon.min.x)
 					polygon.min.x = current.x;
@@ -152,7 +152,7 @@ namespace Vivium {
 			return polygon;
 		}
 
-		Polygon Polygon::fromRegular(float radius, uint64_t vertexCount)
+		Polygon createPolygonRegular(float radius, uint64_t vertexCount)
 		{
 			std::vector<F32x2> vertices(vertexCount);
 
@@ -171,23 +171,23 @@ namespace Vivium {
 				angle += turn;
 			}
 
-			return Polygon::fromVertices(vertices);
+			return createPolygonVertices(vertices);
 		}
 
-		Polygon Polygon::fromBox(F32x2 dimensions)
+		Polygon createPolygonBox(F32x2 dimensions)
 		{
 			F32x2 halfdim = dimensions * 0.5f;
-			float left   = -halfdim.x;
-			float right  =  halfdim.x;
+			float left = -halfdim.x;
+			float right = halfdim.x;
 			float bottom = -halfdim.y;
-			float top    =  halfdim.y;
+			float top = halfdim.y;
 
-			return Polygon::fromVertices(std::vector<F32x2>({
+			return createPolygonVertices(std::vector<F32x2>({
 				F32x2(left, bottom),
 				F32x2(right, bottom),
 				F32x2(right, top),
 				F32x2(left, top)
-			}));
+				}));
 		}
 	}
 }

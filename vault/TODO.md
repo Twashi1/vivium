@@ -2,7 +2,6 @@
 ## High priority
 
 - Dynamic allocation storage (at least a wrapper for `new`/`delete`  temporarily)
-- `support` is still a member function, same with a lot of `Polygon` functions
 
 ## ECS
 
