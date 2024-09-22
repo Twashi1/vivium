@@ -33,7 +33,6 @@ namespace Vivium {
 			Ref<Shader> fragmentShader;
 			Ref<Shader> vertexShader;
 
-			// TODO: do we even need this stored?
 			// Batch buffer layout
 			BufferLayout bufferLayout;
 		} text;

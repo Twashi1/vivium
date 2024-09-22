@@ -3,7 +3,6 @@
 namespace Vivium {
 	void dropButton(Button& button, Engine::Handle engine, GUIContext& guiContext)
 	{
-		dropText(button.text, guiContext);
 		dropTextBatch(button.textBatch, engine);
 	}
 
@@ -23,7 +22,7 @@ namespace Vivium {
 		addChild(button.base, { &button.text.base, 1 }, guiContext);
 		
 		GUIProperties& textProperties = properties(button.text.base, guiContext);
-		textProperties.dimensions = F32x2(0.95f);
+		textProperties.dimensions = F32x2(0.90f);
 		textProperties.position = F32x2(0.0f);
 		textProperties.unitsType = GUIUnits::RELATIVE;
 		textProperties.positionType = GUIPositionType::RELATIVE;

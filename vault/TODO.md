@@ -1,10 +1,8 @@
 
 ## High priority
 
-- Dynamic allocation storage (at least a wrapper for `new`/`delete`  temporarily)
 - Button text colour doesn't change text colour
-- Should be able to submit a text colour per text object
-
+- All allocated resources should be tracked in debug mode and reported on
 ## ECS
 
 - Iterators for single component view
@@ -16,6 +14,7 @@
 - Investigate ability to change size of group (not during iteration) and still correctly see all entities
 ## Core
 
+- Dynamic allocation storage (at least a wrapper for `new`/`delete`  temporarily)
 - Reflection data on shader files
 	- Use to validate alignment requirements
 - Offset before size on `PushConstant`, not ideal
@@ -45,7 +44,6 @@
 - Dynamic resource allocation
 	- Dynamic tree allocator
 - Methods for `Input` to be more concise
-- All allocated resources should be tracked in debug mode (regardless of static/dynamic or even type of allocator, need some intermediary registry)
 - `Buffer::Slice(buffer)` - ability to allocate multiple slices within a buffer as a more aspirational goal
 	- Update `transferBuffer` to use slices
 	- Should be very quick to create from a buffer (almost seamless)

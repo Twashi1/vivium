@@ -3,6 +3,9 @@
 namespace Vivium {
 	void _submitGenericGUIContext(GUIContext& guiContext, ResourceManager::Static::Handle manager, Engine::Handle engine, Window::Handle window)
 	{
+		// Create null element
+		guiContext.defaultParent = createGUIElement(guiContext);
+
 		std::array<BufferReference, 2> deviceBuffers;
 
 		ResourceManager::Static::submit(manager, deviceBuffers.data(), MemoryType::DEVICE,
@@ -17,19 +20,15 @@ namespace Vivium {
 
 	void _submitTextGUIContext(GUIContext& guiContext, ResourceManager::Static::Handle manager, Engine::Handle engine, Window::Handle window)
 	{
-		// Create null element
-		guiContext.defaultParent = createGUIElement(guiContext);
-
 		guiContext.text.bufferLayout = BufferLayout::fromTypes(std::vector<ShaderDataType>({
 			ShaderDataType::VEC2,
-			ShaderDataType::VEC2
+			ShaderDataType::VEC2,
+			ShaderDataType::VEC3
 		}));
 
 		ResourceManager::Static::submit(manager, &guiContext.text.descriptorLayout.reference, std::vector<DescriptorLayoutSpecification>({
 			DescriptorLayoutSpecification(std::vector<UniformBinding>({
-				UniformBinding(ShaderStage::FRAGMENT, 0, UniformType::TEXTURE),
-				UniformBinding(ShaderStage::FRAGMENT, 1, UniformType::UNIFORM_BUFFER),
-				UniformBinding(ShaderStage::VERTEX, 2, UniformType::UNIFORM_BUFFER)
+				UniformBinding(ShaderStage::FRAGMENT, 0, UniformType::TEXTURE)
 			}))
 			}));
 

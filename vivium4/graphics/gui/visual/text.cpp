@@ -124,10 +124,6 @@ namespace Vivium {
 	{
 		if (indexCountBatch(text.batch) == 0) { return; }
 
-		// TODO: actually read color from vertex
-		Color temporaryColor = Color{ 1.0f, 1.0f, 1.0f };
-		setBuffer(text.fragmentUniform.resource, 0, &temporaryColor, sizeof(Color));
-
 		Commands::pushConstants(context, &perspective, sizeof(Math::Perspective), 0, ShaderStage::VERTEX, guiContext.text.pipeline.resource);
 
 		Commands::bindPipeline(context, guiContext.text.pipeline.resource);
@@ -146,13 +142,13 @@ namespace Vivium {
 
 		for (Text* text : textObjects) {
 			// Calculate required scaling and offsets
-			// Calculate origin point about which to scale
-			// Calculate scale to fit to dimensions
 			GUIProperties const& props = properties(text->base, guiContext);
 			F32x2 translation = props.truePosition;
+			// Calculate scale to fit to dimensions
 			F32x2 axisScale = props.trueDimensions / F32x2(text->metrics.maxLineWidth, text->metrics.totalHeightAndBottom);
-			// TODO: entity names displaying way too small, and off alignment
 			float scale = std::min(axisScale.x, axisScale.y);
+			
+			// Calculate origin point about which to scale
 			F32x2 scaleOrigin;
 
 			switch (text->alignment) {
@@ -168,12 +164,20 @@ namespace Vivium {
 
 			std::vector<PerGlyphData> renderData = generateTextRenderData(text->metrics, text->characters, textBatch.font, F32x2(1.0f), text->alignment);
 
+			// Duplicated for each vertex
+			Color textColorData[4];
+			textColorData[0] = text->color;
+			textColorData[1] = text->color;
+			textColorData[2] = text->color;
+			textColorData[3] = text->color;
+
 			for (PerGlyphData const& glyph : renderData) {
 				F32x2 bottomLeft = (glyph.bottomLeft - scaleOrigin) * scale + scaleOrigin + translation;
 				F32x2 topRight = (glyph.topRight - scaleOrigin) * scale + scaleOrigin + translation;
 
 				submitRectangleBatch(textBatch.batch, 0, bottomLeft.x, bottomLeft.y, topRight.x, topRight.y);
 				submitRectangleBatch(textBatch.batch, 1, glyph.texBottomLeft.x, glyph.texBottomLeft.y, glyph.texTopRight.x, glyph.texTopRight.y);
+				submitElementBatch(textBatch.batch, 2, { reinterpret_cast<uint8_t*>(textColorData), sizeof(Color) * 4});
 				endShapeBatch(textBatch.batch, 4, indices);
 			}
 		}
@@ -191,14 +195,6 @@ namespace Vivium {
 			guiContext.text.bufferLayout
 		));
 
-		std::array<BufferReference, 2> hostBuffers;
-
-		ResourceManager::Static::submit(manager, hostBuffers.data(), MemoryType::UNIFORM, std::vector<BufferSpecification>({
-			BufferSpecification(sizeof(Color), BufferUsage::UNIFORM)
-		}));
-
-		text.fragmentUniform.reference = hostBuffers[0];
-
 		text.font = specification.font;
 
 		ResourceManager::Static::submit(manager, &text.fontTexture.reference, std::vector<TextureSpecification>({
@@ -207,8 +203,7 @@ namespace Vivium {
 
 		ResourceManager::Static::submit(manager, &text.descriptorSet.reference, std::vector<DescriptorSetSpecification>({
 			DescriptorSetSpecification(guiContext.text.descriptorLayout.reference, std::vector<UniformData>({
-				UniformData::fromTexture(text.fontTexture.reference),
-				UniformData::fromBuffer(text.fragmentUniform.reference, sizeof(Color), 0)
+				UniformData::fromTexture(text.fontTexture.reference)
 				}))
 			}));
 
@@ -219,7 +214,6 @@ namespace Vivium {
 	{
 		setupBatch(text.batch, manager);
 
-		ResourceManager::Static::convertReference(manager, text.fragmentUniform);
 		ResourceManager::Static::convertReference(manager, text.fontTexture);
 		ResourceManager::Static::convertReference(manager, text.descriptorSet);
 	}
@@ -240,13 +234,9 @@ namespace Vivium {
 		return Text{ base, specification.characters, specification.color, specification.metrics, specification.alignment };
 	}
 
-	void dropText(Text& text, GUIContext& guiContext) {}
-
 	void dropTextBatch(TextBatch& text, Engine::Handle engine)
 	{
 		dropBatch(text.batch, engine);
-
-		dropBuffer(text.fragmentUniform.resource, engine);
 		dropTexture(text.fontTexture.resource, engine);
 	}
 }

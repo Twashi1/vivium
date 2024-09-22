@@ -90,23 +90,12 @@ void _drop(State& state)
 void _dropEditor(State& state)
 {
 	_dropEntityView(state);
-
-	dropPanel(state.editor.background, state.guiContext);
 }
 
 void _dropEntityView(State& state)
 {
 	dropButton(state.editor.entityView.createButton, state.engine, state.guiContext);
-	dropPanel(state.editor.entityView.background, state.guiContext);
 	dropTextBatch(state.editor.entityView.entityTextBatch, state.engine);
-
-	for (Text& text : state.editor.entityView.textObjects) {
-		dropText(text, state.guiContext);
-	}
-
-	for (Panel& panel : state.editor.entityView.entityPanels) {
-		dropPanel(panel, state.guiContext);
-	}
 }
 
 void _update(State& state)

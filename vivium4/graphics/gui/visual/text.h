@@ -70,8 +70,6 @@ namespace Vivium {
 	struct TextBatch {
 		Batch batch;
 
-		Ref<Buffer> fragmentUniform;
-
 		Font::Font font;
 		Ref<Texture> fontTexture;
 		Ref<DescriptorSet> descriptorSet;
@@ -91,6 +89,5 @@ namespace Vivium {
 
 	Text createText(TextSpecification const& specification, GUIContext& guiContext);
 
-	void dropText(Text& text, GUIContext& guiContext);
 	void dropTextBatch(TextBatch& text, Engine::Handle engine);
 }
