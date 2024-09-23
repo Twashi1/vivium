@@ -1,8 +1,10 @@
 
 ## High priority
 
-- Button text colour doesn't change text colour
 - All allocated resources should be tracked in debug mode and reported on
+	- 0 compromise on release build performance
+	- Minimal `DEBUG_ONLY` instructions
+	- On resource creation - ideally call some general function for each resource, with debug only
 ## ECS
 
 - Iterators for single component view
@@ -94,6 +96,8 @@
 - Rename private functions with underscore prefix
 - `math.h` and `math.cpp` contain wide variety of functions, mixing of texture indexing maths and camera maths
 - `T const&` a lot of things
+- `BufferReference::memoryIndex` should be an enum
+- Vulkan still prints sometimes
 
 ## Possible
 

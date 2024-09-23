@@ -50,6 +50,7 @@ namespace Vivium {
 
 	struct BufferReference {
 		uint64_t referenceIndex;
+		// TODO: Convert to an enum
 		uint8_t memoryIndex;
 	};
 

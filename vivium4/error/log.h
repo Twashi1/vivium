@@ -70,12 +70,13 @@ namespace Vivium {
 	}
 }
 
-#define VIVIUM_CONTEXT(severity, message) \
-	Vivium::Log::Context{severity, message, __LINE__, __FUNCSIG__, __FILE__, std::chrono::system_clock::now()}
-#define VIVIUM_LOG(severity, message, ...) \
-	Vivium::Log::m_state.logCallback(VIVIUM_CONTEXT(severity, std::format(message, __VA_ARGS__)))
 #ifdef NDEBUG
-#define VIVIUM_DEBUG_LOG(message, ...) ((void)0);
+#define VIVIUM_LOG(severity, message, ...) ((void)0)
 #else
-#define VIVIUM_DEBUG_LOG(message, ...) VIVIUM_LOG(Log::DEBUG, message, __VA_ARGS__)
+#define VIVIUM_LOG(severity, message, ...) \
+	Vivium::Log::m_state.logCallback( \
+		Vivium::Log::Context{ \
+			severity, std::format(message, __VA_ARGS__), __LINE__, __FUNCSIG__, __FILE__, std::chrono::system_clock::now() \
+		} \
+	)
 #endif

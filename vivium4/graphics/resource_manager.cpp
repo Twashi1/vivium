@@ -932,7 +932,7 @@ namespace Vivium {
 				switch (memoryType) {
 				case MemoryType::STAGING:
 					_addToResourceField(handle->hostBuffers, memory, specifications);
-					
+
 					for (uint64_t i = 0; i < specifications.size(); i++) {
 						memory[i].memoryIndex = 0;
 					}
@@ -940,17 +940,15 @@ namespace Vivium {
 					break;
 				case MemoryType::DEVICE:
 					_addToResourceField(handle->deviceBuffers, memory, specifications);
-					
+
 					for (uint64_t i = 0; i < specifications.size(); i++) {
 						memory[i].memoryIndex = 1;
 					}
 
 					break;
-				VIVIUM_DEBUG_ONLY(
 				default:
-					VIVIUM_DEBUG_LOG("Invalid memory type: {}", (uint64_t)memoryType);
-					break
-				);
+					VIVIUM_LOG(Log::FATAL, "Invalid memory type: {}", (uint64_t)memoryType);
+					break;
 				}
 			}
 

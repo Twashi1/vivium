@@ -28,11 +28,7 @@ namespace Vivium {
 			default:												severity = Log::INVALID; break;
 			}
 
-			if (severity == Log::ERROR) {
-				int x = 3;
-			}
-
-			VIVIUM_LOG(severity, "[VULKAN] {}", callbackData->pMessage);
+			VIVIUM_LOG(severity, "[VULKAN LOG] {}", callbackData->pMessage);
 
 			return VK_FALSE;
 		}
