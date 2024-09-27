@@ -26,7 +26,7 @@ namespace Vivium {
 	void submitElementBatch(Batch& batch, uint64_t elementIndex, const std::span<const uint8_t> data);
 	void submitRectangleBatch(Batch& batch, uint64_t elementIndex, float left, float bottom, float right, float top);
 	void endShapeBatch(Batch& batch, uint64_t vertexCount, const std::span<const uint16_t> indices);
-	void endSubmissionBatch(Batch& batch, Commands::Context::Handle context, Engine::Handle engine);
+	void endSubmissionBatch(Batch& batch, CommandContext& context, Engine::Handle engine);
 
 	Buffer const& vertexBufferBatch(Batch const& batch);
 	Buffer const& indexBufferBatch(Batch const& batch);

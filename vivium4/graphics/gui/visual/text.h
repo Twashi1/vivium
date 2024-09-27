@@ -79,8 +79,8 @@ namespace Vivium {
 	// SetText of each text object, places into one single batch
 	// Everything done in one draw call (with one font)
 	// Can continually update text of each text object, then recalculate all on separate command
-	void renderTextBatch(TextBatch& text, Commands::Context::Handle context, GUIContext& guiContext, Math::Perspective const& perspective);
-	void calculateTextBatch(TextBatch& text, std::span<Text*> textObjects, Commands::Context::Handle context, GUIContext& guiContext, Engine::Handle engine);
+	void renderTextBatch(TextBatch& text, CommandContext& context, GUIContext& guiContext, Math::Perspective const& perspective);
+	void calculateTextBatch(TextBatch& text, std::span<Text*> textObjects, CommandContext& context, GUIContext& guiContext, Engine::Handle engine);
 
 	TextBatch submitTextBatch(ResourceManager& manager, Engine::Handle engine, GUIContext& guiContext, TextBatchSpecification const& specification);
 	void setupTextBatch(TextBatch& text, ResourceManager& manager);

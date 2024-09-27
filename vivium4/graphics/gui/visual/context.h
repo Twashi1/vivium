@@ -77,7 +77,7 @@ namespace Vivium {
 
 	GUIContext createGUIContext(ResourceManager& manager, Engine::Handle engine, Window::Handle window);
 				
-	void setupGUIContext(GUIContext& guiContext, ResourceManager& manager, Commands::Context::Handle context, Engine::Handle engine);
+	void setupGUIContext(GUIContext& guiContext, ResourceManager& manager, CommandContext& context, Engine::Handle engine);
 	void updateGUIContext(GUIContext& guiContext, F32x2 windowDimensions);
 	void dropGUIContext(GUIContext& guiContext, Engine::Handle engine);
 }

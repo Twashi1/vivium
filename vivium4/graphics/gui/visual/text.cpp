@@ -120,21 +120,21 @@ namespace Vivium {
 		return renderData;
 	}
 
-	void renderTextBatch(TextBatch& text, Commands::Context::Handle context, GUIContext& guiContext, Math::Perspective const& perspective)
+	void renderTextBatch(TextBatch& text, CommandContext& context, GUIContext& guiContext, Math::Perspective const& perspective)
 	{
 		if (indexCountBatch(text.batch) == 0) { return; }
 
-		Commands::pushConstants(context, &perspective, sizeof(Math::Perspective), 0, ShaderStage::VERTEX, guiContext.text.pipeline.resource);
+		cmdWritePushConstants(context, &perspective, sizeof(Math::Perspective), 0, ShaderStage::VERTEX, guiContext.text.pipeline.resource);
 
-		Commands::bindPipeline(context, guiContext.text.pipeline.resource);
-		Commands::bindDescriptorSet(context, text.descriptorSet.resource, guiContext.text.pipeline.resource);
-		Commands::bindVertexBuffer(context, vertexBufferBatch(text.batch));
-		Commands::bindIndexBuffer(context, indexBufferBatch(text.batch));
+		cmdBindPipeline(context, guiContext.text.pipeline.resource);
+		cmdBindDescriptorSet(context, text.descriptorSet.resource, guiContext.text.pipeline.resource);
+		cmdBindVertexBuffer(context, vertexBufferBatch(text.batch));
+		cmdBindIndexBuffer(context, indexBufferBatch(text.batch));
 
-		Commands::drawIndexed(context, indexCountBatch(text.batch), 1);
+		cmdDrawIndexed(context, indexCountBatch(text.batch), 1);
 	}
 
-	void calculateTextBatch(TextBatch& textBatch, std::span<Text*> textObjects, Commands::Context::Handle context, GUIContext& guiContext, Engine::Handle engine)
+	void calculateTextBatch(TextBatch& textBatch, std::span<Text*> textObjects, CommandContext& context, GUIContext& guiContext, Engine::Handle engine)
 	{
 		if (textObjects.size() == 0) { return; }
 

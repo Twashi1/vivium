@@ -150,7 +150,7 @@ void initialise(State& state) {
 
 	Input::init(state.window);
 
-	state.context = Commands::Context::create(&state.storage, state.engine);
+	state.context = createCommandContext(state.engine);
 
 	state.manager = createManager();
 
@@ -169,7 +169,7 @@ void initialise(State& state) {
 void gameloop(State& state) {
 	while (Window::isOpen(state.window, state.engine)) {
 		Engine::beginFrame(state.engine, state.window);
-		Commands::Context::flush(state.context, state.engine);
+		_contextFlush(state.context, state.engine);
 
 		Input::update(state.window);
 
@@ -188,7 +188,7 @@ void gameloop(State& state) {
 
 void terminate(State& state) {
 	dropManager(state.manager, state.engine);
-	Commands::Context::drop(&state.storage, state.context, state.engine);
+	dropCommandContext(state.context, state.engine);
 	dropGUIContext(state.guiContext, state.engine);
 
 	_drop(state);

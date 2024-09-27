@@ -17,7 +17,7 @@ inline constexpr int MAX_CONCURRENT_ENTITY_PANELS = 32;
 struct State {
 	Engine::Handle engine;
 	Window::Handle window;
-	Commands::Context::Handle context;
+	CommandContext context;
 	GUIContext guiContext;
 	ResourceManager manager;
 

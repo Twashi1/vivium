@@ -39,7 +39,7 @@ namespace Vivium {
 		setupTextBatch(button.textBatch, manager);
 	}
 
-	void setButtonText(Button& button, Engine::Handle engine, Window::Handle window, Commands::Context::Handle context, GUIContext& guiContext, std::string_view text)
+	void setButtonText(Button& button, Engine::Handle engine, Window::Handle window, CommandContext& context, GUIContext& guiContext, std::string_view text)
 	{
 		// Early exit if no text
 		if (text.size() == 0) return;
@@ -50,7 +50,7 @@ namespace Vivium {
 		calculateTextBatch(button.textBatch, textObjects, context, guiContext, engine);
 	}
 
-	void renderButtons(const std::span<Button*> buttons, Commands::Context::Handle context, GUIContext& guiContext, Window::Handle window)
+	void renderButtons(const std::span<Button*> buttons, CommandContext& context, GUIContext& guiContext, Window::Handle window)
 	{
 		std::vector<_GUIButtonInstanceData> buttonData(buttons.size());
 
@@ -68,12 +68,12 @@ namespace Vivium {
 		Math::Perspective perspective = Math::orthogonalPerspective2D(Window::dimensions(window), F32x2(0.0f), 0.0f, 1.0f);
 
 		setBuffer(guiContext.button.storageBuffer.resource, 0, buttonData.data(), buttonData.size() * sizeof(_GUIButtonInstanceData));
-		Commands::bindPipeline(context, guiContext.button.pipeline.resource);
-		Commands::bindVertexBuffer(context, guiContext.rectVertexBuffer.resource);
-		Commands::bindIndexBuffer(context, guiContext.rectIndexBuffer.resource);
-		Commands::bindDescriptorSet(context, guiContext.button.descriptorSet.resource, guiContext.button.pipeline.resource);
-		Commands::pushConstants(context, &perspective, sizeof(Math::Perspective), 0, ShaderStage::VERTEX, guiContext.button.pipeline.resource);
-		Commands::drawIndexed(context, 6, buttons.size());
+		cmdBindPipeline(context, guiContext.button.pipeline.resource);
+		cmdBindVertexBuffer(context, guiContext.rectVertexBuffer.resource);
+		cmdBindIndexBuffer(context, guiContext.rectIndexBuffer.resource);
+		cmdBindDescriptorSet(context, guiContext.button.descriptorSet.resource, guiContext.button.pipeline.resource);
+		cmdWritePushConstants(context, &perspective, sizeof(Math::Perspective), 0, ShaderStage::VERTEX, guiContext.button.pipeline.resource);
+		cmdDrawIndexed(context, 6, buttons.size());
 
 		for (Button* buttonPtr : buttons) {
 			Button& button = *buttonPtr;

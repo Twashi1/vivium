@@ -109,12 +109,12 @@ namespace Vivium {
 		return batch;
 	}
 
-	void endSubmissionBatch(Batch& batch, Commands::Context::Handle context, Engine::Handle engine)
+	void endSubmissionBatch(Batch& batch, CommandContext& context, Engine::Handle engine)
 	{
-		Commands::Context::beginTransfer(context);
-		Commands::transferBuffer(context, batch.vertexStaging.resource, batch.verticesSubmitted * batch.bufferLayout.stride, 0, batch.vertexDevice.resource);
-		Commands::transferBuffer(context, batch.indexStaging.resource, batch.indexBufferIndex * sizeof(uint16_t), 0, batch.indexDevice.resource);
-		Commands::Context::endTransfer(context, engine);
+		contextBeginTransfer(context);
+		cmdTransferBuffer(context, batch.vertexStaging.resource, batch.verticesSubmitted * batch.bufferLayout.stride, 0, batch.vertexDevice.resource);
+		cmdTransferBuffer(context, batch.indexStaging.resource, batch.indexBufferIndex * sizeof(uint16_t), 0, batch.indexDevice.resource);
+		contextEndTransfer(context, engine);
 
 		batch.lastSubmissionIndexCount = batch.indexBufferIndex;
 		batch.indexBufferIndex = 0;

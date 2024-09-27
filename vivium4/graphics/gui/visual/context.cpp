@@ -161,7 +161,7 @@ namespace Vivium {
 		return context;
 	}
 
-	void setupGUIContext(GUIContext& guiContext, ResourceManager& manager, Commands::Context::Handle context, Engine::Handle engine)
+	void setupGUIContext(GUIContext& guiContext, ResourceManager& manager, CommandContext& context, Engine::Handle engine)
 	{
 		convertResourceReference(manager, guiContext.text.pipeline);
 		convertResourceReference(manager, guiContext.text.descriptorLayout);
@@ -200,24 +200,24 @@ namespace Vivium {
 		VkDeviceMemory temporaryMemory;
 		VkBuffer stagingBuffer;
 		void* stagingMapping;
-		Commands::createOneTimeStagingBuffer(engine, &stagingBuffer, &temporaryMemory,
+		_cmdCreateTransientStagingBuffer(engine, &stagingBuffer, &temporaryMemory,
 			8 * sizeof(float) + 6 * sizeof(uint16_t), &stagingMapping);
 
 		Buffer resource;
 		resource.buffer = stagingBuffer;
 		resource.mapping = stagingMapping;
 
-		Commands::Context::beginTransfer(context);
+		contextBeginTransfer(context);
 
 		std::memcpy(stagingMapping, vertexData, 8 * sizeof(float));
-		Commands::transferBuffer(context, resource, 8 * sizeof(float), 0, guiContext.rectVertexBuffer.resource);
+		cmdTransferBuffer(context, resource, 8 * sizeof(float), 0, guiContext.rectVertexBuffer.resource);
 
 		std::memcpy(reinterpret_cast<uint8_t*>(stagingMapping) + 8 * sizeof(float), indexData, 6 * sizeof(uint16_t));
-		Commands::transferBuffer(context, resource, 6 * sizeof(uint16_t), 8 * sizeof(float), guiContext.rectIndexBuffer.resource);
+		cmdTransferBuffer(context, resource, 6 * sizeof(uint16_t), 8 * sizeof(float), guiContext.rectIndexBuffer.resource);
 
-		Commands::Context::endTransfer(context, engine);
+		contextEndTransfer(context, engine);
 
-		Commands::freeOneTimeStagingBuffer(engine, stagingBuffer, temporaryMemory);
+		_cmdFreeTransientStagingBuffer(engine, stagingBuffer, temporaryMemory);
 
 		dropShader(guiContext.text.fragmentShader.resource, engine);
 		dropShader(guiContext.text.vertexShader.resource, engine);

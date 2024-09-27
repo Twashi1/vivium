@@ -4,13 +4,7 @@
 #include "texture.h"
 
 namespace Vivium {
-	namespace Commands {
-		namespace Context {
-			struct Resource;
-
-			typedef Resource* Handle;
-		}
-	}
+	struct CommandContext;
 
 	struct Framebuffer {
 		VkImage image;
@@ -39,9 +33,9 @@ namespace Vivium {
 
 	// TODO: how to organise these, so we can also render to window
 	// TODO: beginFrame/endFrame don't even require framebuffer at any point!!
-	void beginFramebufferFrame(Framebuffer& framebuffer, Commands::Context::Handle context, Engine::Handle engine);
-	void beginFramebufferRender(Framebuffer& framebuffer, Commands::Context::Handle context);
+	void beginFramebufferFrame(Framebuffer& framebuffer, CommandContext& context, Engine::Handle engine);
+	void beginFramebufferRender(Framebuffer& framebuffer, CommandContext& context);
 	// TODO: doesn't even take fraembuffer?
-	void endFramebufferRender(Framebuffer& framebuffer, Commands::Context::Handle context);
-	void endFramebufferFrame(Framebuffer& framebuffer, Commands::Context::Handle context, Engine::Handle engine);
+	void endFramebufferRender(Framebuffer& framebuffer, CommandContext& context);
+	void endFramebufferFrame(Framebuffer& framebuffer, CommandContext& context, Engine::Handle engine);
 }

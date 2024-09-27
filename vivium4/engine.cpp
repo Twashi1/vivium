@@ -268,7 +268,7 @@ namespace Vivium {
 				"Failed to create command pool");
 		}
 
-		void Resource::createCommandBuffers()
+		void Resource::cmdCreateCommandBuffers()
 		{
 			commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 
@@ -473,7 +473,7 @@ namespace Vivium {
 			window->initVulkan(this);
 
 			createCommandPool(window);
-			createCommandBuffers();
+			cmdCreateCommandBuffers();
 
 			createSyncObjects();
 		}

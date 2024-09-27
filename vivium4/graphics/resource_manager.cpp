@@ -84,7 +84,7 @@ namespace Vivium {
 			VkMemoryRequirements memoryRequirements;
 
 			// Create the VkBuffer and get the memory requirements
-			Commands::createBuffer(engine, &resource.buffer, specification.size, specification.usage, &memoryRequirements, nullptr);
+			_cmdCreateBuffer(engine, &resource.buffer, specification.size, specification.usage, &memoryRequirements, nullptr);
 			// Calculate offset this buffer should be at in the device memory
 			uint64_t resourceOffset = Math::nearestMultiple(totalSize, memoryRequirements.alignment);
 			bufferOffsets[i] = resourceOffset;
@@ -241,9 +241,9 @@ namespace Vivium {
 		VkCommandPool commandPool;
 
 		// Create command pool
-		Commands::createCommandPool(engine, &commandPool, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
+		_cmdCreateCommandPool(engine, &commandPool, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
 		// Create command buffers
-		Commands::createCommandBuffers(engine, commandPool, commandBuffers.data(), commandBuffers.size());
+		_cmdCreateCommandBuffers(engine, commandPool, commandBuffers.data(), commandBuffers.size());
 
 		// For storing temporary buffers, buffer image copy, pipeline barriers
 		std::vector<VkBuffer> textureBuffers;
@@ -267,7 +267,7 @@ namespace Vivium {
 			Texture& texture = manager.textures.resources[i];
 			TextureSpecification const& specification = manager.textures.specifications[i];
 
-			Commands::createImage(
+			_cmdCreateImage(
 				engine,
 				&texture.image,
 				specification.width,
@@ -299,7 +299,7 @@ namespace Vivium {
 
 		// Begin command buffers
 		for (uint64_t i = 0; i < commandBuffers.size(); i++) {
-			Commands::beginCommandBuffer(
+			_cmdBeginCommandBuffer(
 				commandBuffers[i],
 				VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
 			);
@@ -325,7 +325,7 @@ namespace Vivium {
 
 			textureBarriers.push_back({});
 
-			Commands::transitionImageLayout(
+			_cmdTransitionImageLayout(
 				texture.image,
 				commandBuffers[0],
 				VK_IMAGE_LAYOUT_UNDEFINED,
@@ -341,7 +341,7 @@ namespace Vivium {
 			VkBuffer stagingBuffer;
 			void* stagingMapping;
 
-			Commands::createOneTimeStagingBuffer(
+			_cmdCreateTransientStagingBuffer(
 				engine,
 				&stagingBuffer,
 				&stagingMemory,
@@ -356,7 +356,7 @@ namespace Vivium {
 
 			textureRegions.push_back({});
 
-			Commands::moveBufferToImage(
+			_cmdCopyBufferToImage(
 				stagingBuffer,
 				texture.image,
 				commandBuffers[1],
@@ -367,7 +367,7 @@ namespace Vivium {
 
 			textureBarriers.push_back({});
 
-			Commands::transitionImageLayout(
+			_cmdTransitionImageLayout(
 				texture.image,
 				commandBuffers[2],
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -381,7 +381,7 @@ namespace Vivium {
 		}
 
 		// TODO: put on transfer queue once confirmed working
-		Commands::endCommandBuffer(
+		_cmdEndCommandBuffer(
 			commandBuffers.data(),
 			commandBuffers.size(),
 			engine->graphicsQueue
@@ -394,8 +394,8 @@ namespace Vivium {
 			Texture& texture = manager.textures.resources[i];
 			TextureSpecification const& specification = manager.textures.specifications[i];
 
-			Commands::createView(engine, &texture.view, specification.imageFormat, texture.image, nullptr);
-			Commands::createSampler(engine, &texture.sampler, specification.imageFilter, nullptr);
+			_cmdCreateView(engine, &texture.view, specification.imageFormat, texture.image, nullptr);
+			_cmdCreateSampler(engine, &texture.sampler, specification.imageFilter, nullptr);
 		}
 
 		// Wait until idle since we will free unnecessary resources now
@@ -408,7 +408,7 @@ namespace Vivium {
 		}
 
 		for (uint64_t i = 0; i < textureBuffers.size(); i++) {
-			Commands::freeOneTimeStagingBuffer(
+			_cmdFreeTransientStagingBuffer(
 				engine,
 				textureBuffers[i],
 				textureBufferMemories[i]
@@ -437,7 +437,7 @@ namespace Vivium {
 			FramebufferSpecification const& specification = manager.framebuffers.specifications[i];
 			Framebuffer& resource = manager.framebuffers.resources[i];
 
-			Commands::createImage(
+			_cmdCreateImage(
 				engine,
 				&resource.image,
 				static_cast<uint32_t>(resource.dimensions.x), static_cast<uint32_t>(resource.dimensions.y),
@@ -471,9 +471,9 @@ namespace Vivium {
 				imageMemoryLocations[i]
 			), "Failed to bind image memory");
 
-			Commands::createView(engine, &resource.view, specification.format, resource.image, nullptr);
+			_cmdCreateView(engine, &resource.view, specification.format, resource.image, nullptr);
 			// TODO: customiseable filter
-			Commands::createSampler(engine, &resource.sampler, TextureFilter::LINEAR, nullptr);
+			_cmdCreateSampler(engine, &resource.sampler, TextureFilter::LINEAR, nullptr);
 
 			// Creating render pass
 			VkAttachmentDescription colorAttachment{};

@@ -42,7 +42,7 @@ namespace Vivium {
 		return multisampleCount;
 	}
 
-	void beginFramebufferFrame(Framebuffer& framebuffer, Commands::Context::Handle context, Engine::Handle engine)
+	void beginFramebufferFrame(Framebuffer& framebuffer, CommandContext& context, Engine::Handle engine)
 	{
 		// TODO: probably shouldn't be done here?
 		glfwPollEvents();
@@ -59,7 +59,7 @@ namespace Vivium {
 			"Failed to begin recording command buffer");
 	}
 
-	void beginFramebufferRender(Framebuffer& framebuffer, Commands::Context::Handle context)
+	void beginFramebufferRender(Framebuffer& framebuffer, CommandContext& context)
 	{
 		// https://github.com/SaschaWillems/Vulkan/blob/master/examples/offscreen/offscreen.cpp
 		VkClearValue clearValue;
@@ -75,7 +75,7 @@ namespace Vivium {
 		renderPassBeginInfo.clearValueCount = 1;
 		renderPassBeginInfo.pClearValues = &clearValue;
 
-		vkCmdBeginRenderPass(context->currentCommandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBeginRenderPass(context.currentCommandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 		VkViewport viewport{};
 		viewport.x = 0.0f;
@@ -84,23 +84,23 @@ namespace Vivium {
 		viewport.height = framebuffer.dimensions.y;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
-		vkCmdSetViewport(context->currentCommandBuffer, 0, 1, &viewport);
+		vkCmdSetViewport(context.currentCommandBuffer, 0, 1, &viewport);
 
 		VkRect2D scissor{};
 		scissor.extent.width = static_cast<uint32_t>(framebuffer.dimensions.x);
 		scissor.extent.height = static_cast<uint32_t>(framebuffer.dimensions.y);
 		scissor.offset = { 0, 0 };
-		vkCmdSetScissor(context->currentCommandBuffer, 0, 1, &scissor);
+		vkCmdSetScissor(context.currentCommandBuffer, 0, 1, &scissor);
 	}
 
-	void endFramebufferRender(Framebuffer& framebuffer, Commands::Context::Handle context)
+	void endFramebufferRender(Framebuffer& framebuffer, CommandContext& context)
 	{
-		vkCmdEndRenderPass(context->currentCommandBuffer);
+		vkCmdEndRenderPass(context.currentCommandBuffer);
 	}
 
-	void endFramebufferFrame(Framebuffer& framebuffer, Commands::Context::Handle context, Engine::Handle engine)
+	void endFramebufferFrame(Framebuffer& framebuffer, CommandContext& context, Engine::Handle engine)
 	{
-		vkEndCommandBuffer(context->currentCommandBuffer);
+		vkEndCommandBuffer(context.currentCommandBuffer);
 
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

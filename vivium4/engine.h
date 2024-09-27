@@ -88,7 +88,7 @@ namespace Vivium {
 			void createLogicalDevice(Window::Handle window, const std::span<const char* const> extensions, const std::span<const char* const> validationLayers);
 
 			void createCommandPool(Window::Handle window);
-			void createCommandBuffers();
+			void cmdCreateCommandBuffers();
 
 			void createSyncObjects();
 
