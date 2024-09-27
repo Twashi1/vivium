@@ -4,12 +4,6 @@
 #include "../core.h"
 
 namespace Vivium {
-	namespace Window {
-		struct Resource;
-
-		typedef Resource* Handle;
-	}
-
 	namespace Math {
 		struct Perspective {
 			glm::mat4 view;
