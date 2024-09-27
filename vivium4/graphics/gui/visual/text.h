@@ -82,8 +82,8 @@ namespace Vivium {
 	void renderTextBatch(TextBatch& text, Commands::Context::Handle context, GUIContext& guiContext, Math::Perspective const& perspective);
 	void calculateTextBatch(TextBatch& text, std::span<Text*> textObjects, Commands::Context::Handle context, GUIContext& guiContext, Engine::Handle engine);
 
-	TextBatch submitTextBatch(ResourceManager::Static::Handle manager, Engine::Handle engine, GUIContext& guiContext, TextBatchSpecification const& specification);
-	void setupTextBatch(TextBatch& text, ResourceManager::Static::Handle manager);
+	TextBatch submitTextBatch(ResourceManager& manager, Engine::Handle engine, GUIContext& guiContext, TextBatchSpecification const& specification);
+	void setupTextBatch(TextBatch& text, ResourceManager& manager);
 
 	void setText(Text& text, TextMetrics const& metrics, const std::string_view& textData, Color color, TextAlignment alignment);
 

@@ -152,18 +152,18 @@ void initialise(State& state) {
 
 	state.context = Commands::Context::create(&state.storage, state.engine);
 
-	state.manager = ResourceManager::Static::create(&state.storage);
+	state.manager = createManager();
 
 	state.guiContext = createGUIContext(state.manager, state.engine, state.window);
 
 	_submit(state);
 
-	ResourceManager::Static::allocate(state.manager, state.engine);
+	allocateManager(state.manager, state.engine);
 
 	setupGUIContext(state.guiContext, state.manager, state.context, state.engine);
 	_setup(state);
 
-	ResourceManager::Static::clearReferences(state.manager);
+	clearManagerReferences(state.manager);
 }
 
 void gameloop(State& state) {
@@ -187,7 +187,7 @@ void gameloop(State& state) {
 }
 
 void terminate(State& state) {
-	ResourceManager::Static::drop(&state.storage, state.manager, state.engine);
+	dropManager(state.manager, state.engine);
 	Commands::Context::drop(&state.storage, state.context, state.engine);
 	dropGUIContext(state.guiContext, state.engine);
 

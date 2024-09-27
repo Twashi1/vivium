@@ -369,13 +369,14 @@ namespace Vivium {
 			), "Failed to create texture sampler");
 		}
 
-		void createPipeline(Engine::Handle engine, ResourceManager::Static::Handle manager, VkPipeline* pipeline, VkPipelineLayout* layout, VkRenderPass renderPass, const std::span<const ShaderReference> shaders, const std::span<const DescriptorLayoutReference> descriptorLayouts, const std::span<const PushConstant> pushConstants, const BufferLayout& bufferLayout, VkSampleCountFlagBits sampleCount, const VkAllocationCallbacks* layoutAllocationCallback, const VkAllocationCallbacks* pipelineAllocationCallback) {
+		void createPipeline(Engine::Handle engine, ResourceManager& manager, VkPipeline* pipeline, VkPipelineLayout* layout, VkRenderPass renderPass, const std::span<const ShaderReference> shaders, const std::span<const DescriptorLayoutReference> descriptorLayouts, const std::span<const PushConstant> pushConstants, const BufferLayout& bufferLayout, VkSampleCountFlagBits sampleCount, const VkAllocationCallbacks* layoutAllocationCallback, const VkAllocationCallbacks* pipelineAllocationCallback) {
 			std::vector<VkPipelineShaderStageCreateInfo> shaderStages(shaders.size());
 
 			for (uint32_t i = 0; i < shaders.size(); i++) {
 				ShaderReference const& shaderReference = shaders[i];
-				ShaderSpecification const& shaderSpecification = manager->shaders.specifications[shaderReference.referenceIndex];
-				Shader const& shader = ResourceManager::Static::_getReference(manager, shaderReference);
+				// TODO: bad usage of manager
+				ShaderSpecification const& shaderSpecification = manager.shaders.specifications[shaderReference.referenceIndex];
+				Shader const& shader = _getReference(manager, shaderReference);
 
 				VkPipelineShaderStageCreateInfo shaderStageInfo{};
 				shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -453,7 +454,7 @@ namespace Vivium {
 			std::vector<VkDescriptorSetLayout> vulkanDescriptorLayouts(descriptorLayouts.size());
 
 			for (uint32_t i = 0; i < descriptorLayouts.size(); i++) {
-				vulkanDescriptorLayouts[i] = ResourceManager::Static::_getReference(manager, descriptorLayouts[i]).layout;
+				vulkanDescriptorLayouts[i] = _getReference(manager, descriptorLayouts[i]).layout;
 			}
 
 			VkPipelineLayoutCreateInfo pipelineLayoutInfo{};

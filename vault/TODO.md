@@ -2,9 +2,7 @@
 ## High priority
 
 - All allocated resources should be tracked in debug mode and reported on
-	- 0 compromise on release build performance
-	- Minimal `DEBUG_ONLY` instructions
-	- On resource creation - ideally call some general function for each resource, with debug only
+	- Need to pass resource manager to drop functions to track (pain)
 ## ECS
 
 - Iterators for single component view

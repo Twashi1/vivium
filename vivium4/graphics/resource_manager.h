@@ -12,6 +12,7 @@
 #include "../math/math.h"
 
 #include <atomic>
+#include <unordered_set>
 
 namespace Vivium {
 	template <typename Resource>
@@ -59,130 +60,105 @@ namespace Vivium {
 		TextureReference reference;
 	};
 
-	namespace ResourceManager {
-		struct SharedTrackerData {
-			std::atomic_uint32_t deviceMemoryAllocations;
+	struct SharedTrackerData {
+		std::atomic_uint32_t deviceMemoryAllocations;
 
-			SharedTrackerData();
+		SharedTrackerData();
+	};
+
+	inline SharedTrackerData sharedTrackerData;
+
+	struct ResourceManager {
+		struct DeviceMemoryHandle {
+			VkDeviceMemory memory;
+			void* mapping;
+
+			DeviceMemoryHandle();
 		};
 
-		inline SharedTrackerData sharedTrackerData;
+		template <typename Specification, typename Resource>
+		struct ResourceField {
+			std::vector<Specification> specifications;
+			std::vector<Resource> resources;
+		};
 
-		namespace Static {
-			struct Resource {
-				struct DeviceMemoryHandle {
-					VkDeviceMemory memory;
-					void* mapping;
+		ResourceField<BufferSpecification, Buffer> hostBuffers;
+		ResourceField<BufferSpecification, Buffer> deviceBuffers;
+		ResourceField<TextureSpecification, Texture> textures;
+		ResourceField<ShaderSpecification, Shader> shaders;
+		ResourceField<FramebufferSpecification, Framebuffer> framebuffers;
+		ResourceField<DescriptorLayoutSpecification, DescriptorLayout> descriptorLayouts;
 
-					DeviceMemoryHandle();
-				};
+		ResourceField<DescriptorSetSpecification, DescriptorSet> descriptorSets;
 
-				template <typename Specification, typename Resource>
-				struct ResourceField {
-					std::vector<Specification> specifications;
-					std::vector<Resource> resources;
-				};
+		ResourceField<PipelineSpecification, Pipeline> pipelines;
 
-				ResourceField<BufferSpecification, Buffer> hostBuffers;
-				ResourceField<BufferSpecification, Buffer> deviceBuffers;
-				ResourceField<TextureSpecification, Texture> textures;
-				ResourceField<ShaderSpecification, Shader> shaders;
-				ResourceField<FramebufferSpecification, Framebuffer> framebuffers;
-				ResourceField<DescriptorLayoutSpecification, DescriptorLayout> descriptorLayouts;
+		std::vector<DeviceMemoryHandle> deviceMemoryHandles;
+		std::vector<VkDescriptorPool> descriptorPools;
+	};
 
-				ResourceField<DescriptorSetSpecification, DescriptorSet> descriptorSets;
+	ResourceManager::DeviceMemoryHandle _allocateDeviceMemory(ResourceManager& manager, Engine::Handle engine, uint32_t memoryTypeBits, MemoryType memoryType, uint64_t size);
 
-				ResourceField<PipelineSpecification, Pipeline> pipelines;
+	// 1.
+	void _allocateBuffers(ResourceManager& manager, Engine::Handle engine, MemoryType memoryType);
+	void _allocateTextures(ResourceManager& manager, Engine::Handle engine);
+	void _allocateFramebuffers(ResourceManager& manager, Engine::Handle engine);
+	void _allocateDescriptorLayouts(ResourceManager& manager, Engine::Handle engine);
+	void _allocateShaders(ResourceManager& manager, Engine::Handle engine);
 
-				std::vector<DeviceMemoryHandle> deviceMemoryHandles;
-				std::vector<VkDescriptorPool> descriptorPools;
-			};
+	// 2.
+	void _allocateDescriptorSets(ResourceManager& manager, Engine::Handle engine);
 
-			typedef Resource* Handle;
+	// 3.
+	void _allocatePipelines(ResourceManager& manager, Engine::Handle engine);
 
-			template <Storage::StorageType StorageType>
-			Handle create(StorageType* allocator) {
-				return Storage::allocateResource<Resource>(allocator);
-			}
+	void allocateManager(ResourceManager& manager, Engine::Handle engine);
+	void clearManagerReferences(ResourceManager& manager);
 
-			Resource::DeviceMemoryHandle _allocateDeviceMemory(Handle handle, Engine::Handle engine, uint32_t memoryTypeBits, MemoryType memoryType, uint64_t size);
+	ResourceManager createManager();
+	void dropManager(ResourceManager& manager, Engine::Handle engine);
 
-			// 1.
-			void _allocateBuffers(Handle handle, Engine::Handle engine, MemoryType memoryType);
-			void _allocateTextures(Handle handle, Engine::Handle engine);
-			void _allocateFramebuffers(Handle handle, Engine::Handle engine);
-			void _allocateDescriptorLayouts(Handle handle, Engine::Handle engine);
-			void _allocateShaders(Handle handle, Engine::Handle engine);
+	template <typename Reference, typename Specification, typename VResource>
+	void _addToResourceField(ResourceManager::ResourceField<Specification, VResource>& resourceField, Reference* memory, std::span<Specification const> const specifications) {
+		uint64_t requiredSize = specifications.size() + resourceField.specifications.size();
+		uint64_t nextGrowth = (resourceField.specifications.size() >> 1) + resourceField.specifications.size();
+		resourceField.specifications.reserve(std::max(nextGrowth, requiredSize));
 
-			// 2.
-			void _allocateDescriptorSets(Handle handle, Engine::Handle engine);
+		uint64_t currentSize = resourceField.resources.size();
 
-			// 3.
-			void _allocatePipelines(Handle handle, Engine::Handle engine);
-
-			void allocate(Handle handle, Engine::Handle engine);
-			void clearReferences(Handle handle);
-
-			template <Storage::StorageType StorageType>
-			void drop(StorageType* allocator, Handle handle, Engine::Handle engine) {
-				// Free vulkan memory
-				for (Resource::DeviceMemoryHandle deviceMemoryHandle : handle->deviceMemoryHandles) {
-					if (deviceMemoryHandle.mapping != nullptr)
-						vkUnmapMemory(engine->device, deviceMemoryHandle.memory);
-
-					vkFreeMemory(engine->device, deviceMemoryHandle.memory, nullptr);
-				}
-
-				sharedTrackerData.deviceMemoryAllocations -= static_cast<uint32_t>(handle->deviceMemoryHandles.size());
-
-				// Free descriptor pool
-				for (VkDescriptorPool descriptorPool : handle->descriptorPools)
-					vkDestroyDescriptorPool(engine->device, descriptorPool, nullptr);
-
-				Storage::dropResource(allocator, handle);
-			}
-
-			template <typename Reference, typename Specification, typename VResource>
-			void _addToResourceField(Resource::ResourceField<Specification, VResource>& resourceField, Reference* memory, std::span<Specification const> const specifications) {
-				uint64_t requiredSize = specifications.size() + resourceField.specifications.size();
-				uint64_t nextGrowth = (resourceField.specifications.size() >> 1) + resourceField.specifications.size();
-				resourceField.specifications.reserve(std::max(nextGrowth, requiredSize));
-
-				uint64_t currentSize = resourceField.resources.size();
-
-				for (uint64_t i = 0; i < specifications.size(); i++) {
-					// TODO: Assuming existence of a parameter
-					memory[i].referenceIndex = i + currentSize;
-				}
-
-				// TODO: a bit messy
-				resourceField.resources.reserve(std::max(nextGrowth, requiredSize));
-				resourceField.resources.resize(requiredSize);
-
-				resourceField.specifications.insert(resourceField.specifications.end(), specifications.begin(), specifications.end());
-			}
-
-			void submit(Handle handle, BufferReference* memory, MemoryType memoryType, const std::span<const BufferSpecification> specifications);
-			void submit(Handle handle, TextureReference* memory, const std::span<const TextureSpecification> specifications);
-			void submit(Handle handle, FramebufferReference* memory, const std::span<const FramebufferSpecification> specifications);
-			void submit(Handle handle, DescriptorLayoutReference* memory, const std::span<const DescriptorLayoutSpecification> specifications);
-			void submit(Handle handle, ShaderReference* memory, const std::span<const ShaderSpecification> specifications);
-			void submit(Handle handle, DescriptorSetReference* memory, const std::span<const DescriptorSetSpecification> specifications);
-			void submit(Handle handle, PipelineReference* memory, const std::span<const PipelineSpecification> specifications);
-
-			Buffer& _getReference(Handle handle, BufferReference reference);
-			Texture& _getReference(Handle handle, TextureReference reference);
-			Framebuffer& _getReference(Handle handle, FramebufferReference reference);
-			Shader& _getReference(Handle handle, ShaderReference reference);
-			DescriptorLayout& _getReference(Handle handle, DescriptorLayoutReference reference);
-			DescriptorSet& _getReference(Handle handle, DescriptorSetReference reference);
-			Pipeline& _getReference(Handle handle, PipelineReference reference);
-
-			template <typename Resource>
-			void convertReference(Handle handle, Ref<Resource>& resourceReference)
-			{
-				resourceReference.resource = _getReference(handle, resourceReference.reference);
-			}
+		for (uint64_t i = 0; i < specifications.size(); i++) {
+			// TODO: Assuming existence of a parameter, use a concept on the reference? not really necessary since we only expose this
+			//	through a specialisation guarded method (i think)
+			memory[i].referenceIndex = i + currentSize;
 		}
+
+		// TODO: a bit messy
+		// TODO: does resize force a certain sized allocation? hopefully not?
+		resourceField.resources.reserve(std::max(nextGrowth, requiredSize));
+		resourceField.resources.resize(requiredSize);
+
+		resourceField.specifications.insert(resourceField.specifications.end(), specifications.begin(), specifications.end());
+	}
+
+	void submitResource(ResourceManager& manager, BufferReference* memory, MemoryType memoryType, const std::span<const BufferSpecification> specifications);
+	void submitResource(ResourceManager& manager, TextureReference* memory, const std::span<const TextureSpecification> specifications);
+	void submitResource(ResourceManager& manager, FramebufferReference* memory, const std::span<const FramebufferSpecification> specifications);
+	void submitResource(ResourceManager& manager, DescriptorLayoutReference* memory, const std::span<const DescriptorLayoutSpecification> specifications);
+	void submitResource(ResourceManager& manager, ShaderReference* memory, const std::span<const ShaderSpecification> specifications);
+	void submitResource(ResourceManager& manager, DescriptorSetReference* memory, const std::span<const DescriptorSetSpecification> specifications);
+	void submitResource(ResourceManager& manager, PipelineReference* memory, const std::span<const PipelineSpecification> specifications);
+
+	Buffer& _getReference(ResourceManager& manager, BufferReference reference);
+	Texture& _getReference(ResourceManager& manager, TextureReference reference);
+	Framebuffer& _getReference(ResourceManager& manager, FramebufferReference reference);
+	Shader& _getReference(ResourceManager& manager, ShaderReference reference);
+	DescriptorLayout& _getReference(ResourceManager& manager, DescriptorLayoutReference reference);
+	DescriptorSet& _getReference(ResourceManager& manager, DescriptorSetReference reference);
+	Pipeline& _getReference(ResourceManager& manager, PipelineReference reference);
+
+	template <typename Resource>
+	void convertResourceReference(ResourceManager& manager, Ref<Resource>& resourceReference)
+	{
+		resourceReference.resource = _getReference(manager, resourceReference.reference);
 	}
 }

@@ -70,14 +70,14 @@ namespace Vivium {
 	GUIElementReference createGUIElement(GUIContext& context);
 	GUIElementReference defaultGUIParent(GUIContext& context);
 
-	void _submitGenericGUIContext(GUIContext& context, ResourceManager::Static::Handle manager, Engine::Handle engine, Window::Handle window);
-	void _submitTextGUIContext(GUIContext& context, ResourceManager::Static::Handle manager, Engine::Handle engine, Window::Handle window);
-	void _submitButtonGUIContext(GUIContext& context, ResourceManager::Static::Handle manager, Engine::Handle engine, Window::Handle window);
-	void _submitPanelGUIContext(GUIContext& context, ResourceManager::Static::Handle manager, Engine::Handle engine, Window::Handle window);
+	void _submitGenericGUIContext(GUIContext& context, ResourceManager& manager, Engine::Handle engine, Window::Handle window);
+	void _submitTextGUIContext(GUIContext& context, ResourceManager& manager, Engine::Handle engine, Window::Handle window);
+	void _submitButtonGUIContext(GUIContext& context, ResourceManager& manager, Engine::Handle engine, Window::Handle window);
+	void _submitPanelGUIContext(GUIContext& context, ResourceManager& manager, Engine::Handle engine, Window::Handle window);
 
-	GUIContext createGUIContext(ResourceManager::Static::Handle manager, Engine::Handle engine, Window::Handle window);
+	GUIContext createGUIContext(ResourceManager& manager, Engine::Handle engine, Window::Handle window);
 				
-	void setupGUIContext(GUIContext& guiContext, ResourceManager::Static::Handle manager, Commands::Context::Handle context, Engine::Handle engine);
+	void setupGUIContext(GUIContext& guiContext, ResourceManager& manager, Commands::Context::Handle context, Engine::Handle engine);
 	void updateGUIContext(GUIContext& guiContext, F32x2 windowDimensions);
 	void dropGUIContext(GUIContext& guiContext, Engine::Handle engine);
 }

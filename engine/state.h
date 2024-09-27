@@ -19,7 +19,7 @@ struct State {
 	Window::Handle window;
 	Commands::Context::Handle context;
 	GUIContext guiContext;
-	ResourceManager::Static::Handle manager;
+	ResourceManager manager;
 
 	Storage::Static::Pool storage;
 

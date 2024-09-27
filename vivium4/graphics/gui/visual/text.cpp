@@ -185,7 +185,7 @@ namespace Vivium {
 		endSubmissionBatch(textBatch.batch, context, engine);
 	}
 
-	TextBatch submitTextBatch(ResourceManager::Static::Handle manager, Engine::Handle engine, GUIContext& guiContext, TextBatchSpecification const& specification)
+	TextBatch submitTextBatch(ResourceManager& manager, Engine::Handle engine, GUIContext& guiContext, TextBatchSpecification const& specification)
 	{
 		TextBatch text;
 
@@ -197,11 +197,11 @@ namespace Vivium {
 
 		text.font = specification.font;
 
-		ResourceManager::Static::submit(manager, &text.fontTexture.reference, std::vector<TextureSpecification>({
+		submitResource(manager, &text.fontTexture.reference, std::vector<TextureSpecification>({
 			TextureSpecification::fromFont(specification.font, TextureFormat::MONOCHROME, TextureFilter::NEAREST)
 			}));
 
-		ResourceManager::Static::submit(manager, &text.descriptorSet.reference, std::vector<DescriptorSetSpecification>({
+		submitResource(manager, &text.descriptorSet.reference, std::vector<DescriptorSetSpecification>({
 			DescriptorSetSpecification(guiContext.text.descriptorLayout.reference, std::vector<UniformData>({
 				UniformData::fromTexture(text.fontTexture.reference)
 				}))
@@ -210,12 +210,12 @@ namespace Vivium {
 		return text;
 	}
 
-	void setupTextBatch(TextBatch& text, ResourceManager::Static::Handle manager)
+	void setupTextBatch(TextBatch& text, ResourceManager& manager)
 	{
 		setupBatch(text.batch, manager);
 
-		ResourceManager::Static::convertReference(manager, text.fontTexture);
-		ResourceManager::Static::convertReference(manager, text.descriptorSet);
+		convertResourceReference(manager, text.fontTexture);
+		convertResourceReference(manager, text.descriptorSet);
 	}
 
 	void setText(Text& text, TextMetrics const& metrics, const std::string_view& textData, Color color, TextAlignment alignment)

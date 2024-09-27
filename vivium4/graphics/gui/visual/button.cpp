@@ -6,7 +6,7 @@ namespace Vivium {
 		dropTextBatch(button.textBatch, engine);
 	}
 
-	Button submitButton(ResourceManager::Static::Handle manager, GUIContext& guiContext, Engine::Handle engine, Window::Handle window, ButtonSpecification specification)
+	Button submitButton(ResourceManager& manager, GUIContext& guiContext, Engine::Handle engine, Window::Handle window, ButtonSpecification specification)
 	{
 		Button button;
 
@@ -34,7 +34,7 @@ namespace Vivium {
 		return button;
 	}
 
-	void setupButton(Button& button, ResourceManager::Static::Handle manager)
+	void setupButton(Button& button, ResourceManager& manager)
 	{
 		setupTextBatch(button.textBatch, manager);
 	}

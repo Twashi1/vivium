@@ -35,6 +35,6 @@ namespace Vivium {
 
 	void dropBatch(Batch& batch, Engine::Handle engine);
 
-	Batch submitBatch(Engine::Handle engine, ResourceManager::Static::Handle manager, BatchSpecification specification);
-	void setupBatch(Batch& handle, ResourceManager::Static::Handle manager);
+	Batch submitBatch(Engine::Handle engine, ResourceManager& manager, BatchSpecification specification);
+	void setupBatch(Batch& handle, ResourceManager& manager);
 }

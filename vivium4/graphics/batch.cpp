@@ -75,20 +75,20 @@ namespace Vivium {
 		dropBuffer(batch.indexDevice.resource, engine);
 	}
 
-	Batch submitBatch(Engine::Handle engine, ResourceManager::Static::Handle manager, BatchSpecification specification)
+	Batch submitBatch(Engine::Handle engine, ResourceManager& manager, BatchSpecification specification)
 	{
 		Batch batch;
 
 		std::array<BufferReference, 2> staging;
 
-		ResourceManager::Static::submit(manager, staging.data(), MemoryType::STAGING, std::vector<BufferSpecification>({
+		submitResource(manager, staging.data(), MemoryType::STAGING, std::vector<BufferSpecification>({
 			BufferSpecification(specification.vertexCount * specification.bufferLayout.stride, BufferUsage::STAGING),
 			BufferSpecification(specification.indexCount * sizeof(uint16_t), BufferUsage::STAGING)
 			}));
 
 		std::array<BufferReference, 2> device;
 
-		ResourceManager::Static::submit(manager, device.data(), MemoryType::DEVICE, std::vector<BufferSpecification>({
+		submitResource(manager, device.data(), MemoryType::DEVICE, std::vector<BufferSpecification>({
 			BufferSpecification(specification.vertexCount * specification.bufferLayout.stride, BufferUsage::VERTEX),
 			BufferSpecification(specification.indexCount * sizeof(uint16_t), BufferUsage::INDEX)
 			}));
@@ -122,11 +122,11 @@ namespace Vivium {
 		batch.verticesSubmitted = 0;
 	}
 		
-	void setupBatch(Batch& batch, ResourceManager::Static::Handle manager)
+	void setupBatch(Batch& batch, ResourceManager& manager)
 	{
-		ResourceManager::Static::convertReference(manager, batch.vertexStaging);
-		ResourceManager::Static::convertReference(manager, batch.vertexDevice);
-		ResourceManager::Static::convertReference(manager, batch.indexStaging);
-		ResourceManager::Static::convertReference(manager, batch.indexDevice);
+		convertResourceReference(manager, batch.vertexStaging);
+		convertResourceReference(manager, batch.vertexDevice);
+		convertResourceReference(manager, batch.indexStaging);
+		convertResourceReference(manager, batch.indexDevice);
 	}
 }

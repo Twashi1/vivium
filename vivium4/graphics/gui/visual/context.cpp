@@ -1,14 +1,14 @@
 #include "context.h"
 
 namespace Vivium {
-	void _submitGenericGUIContext(GUIContext& guiContext, ResourceManager::Static::Handle manager, Engine::Handle engine, Window::Handle window)
+	void _submitGenericGUIContext(GUIContext& guiContext, ResourceManager& manager, Engine::Handle engine, Window::Handle window)
 	{
 		// Create null element
 		guiContext.defaultParent = createGUIElement(guiContext);
 
 		std::array<BufferReference, 2> deviceBuffers;
 
-		ResourceManager::Static::submit(manager, deviceBuffers.data(), MemoryType::DEVICE,
+		submitResource(manager, deviceBuffers.data(), MemoryType::DEVICE,
 			std::vector<BufferSpecification>({
 				BufferSpecification(4 * sizeof(F32x2), BufferUsage::VERTEX),
 				BufferSpecification(6 * sizeof(uint16_t), BufferUsage::INDEX)
@@ -18,7 +18,7 @@ namespace Vivium {
 		guiContext.rectIndexBuffer.reference = deviceBuffers[1];
 	}
 
-	void _submitTextGUIContext(GUIContext& guiContext, ResourceManager::Static::Handle manager, Engine::Handle engine, Window::Handle window)
+	void _submitTextGUIContext(GUIContext& guiContext, ResourceManager& manager, Engine::Handle engine, Window::Handle window)
 	{
 		guiContext.text.bufferLayout = BufferLayout::fromTypes(std::vector<ShaderDataType>({
 			ShaderDataType::VEC2,
@@ -26,21 +26,21 @@ namespace Vivium {
 			ShaderDataType::VEC3
 		}));
 
-		ResourceManager::Static::submit(manager, &guiContext.text.descriptorLayout.reference, std::vector<DescriptorLayoutSpecification>({
+		submitResource(manager, &guiContext.text.descriptorLayout.reference, std::vector<DescriptorLayoutSpecification>({
 			DescriptorLayoutSpecification(std::vector<UniformBinding>({
 				UniformBinding(ShaderStage::FRAGMENT, 0, UniformType::TEXTURE)
 			}))
 			}));
 
-		ResourceManager::Static::submit(manager, &guiContext.text.fragmentShader.reference, std::vector<ShaderSpecification>({
+		submitResource(manager, &guiContext.text.fragmentShader.reference, std::vector<ShaderSpecification>({
 			compileShader(ShaderStage::FRAGMENT, "vivium4/res/text.frag", "vivium4/res/text_frag.spv")
 			}));
 
-		ResourceManager::Static::submit(manager, &guiContext.text.vertexShader.reference, std::vector<ShaderSpecification>({
+		submitResource(manager, &guiContext.text.vertexShader.reference, std::vector<ShaderSpecification>({
 			compileShader(ShaderStage::VERTEX, "vivium4/res/text.vert", "vivium4/res/text_vert.spv")
 			}));
 
-		ResourceManager::Static::submit(manager,
+		submitResource(manager,
 			&guiContext.text.pipeline.reference,
 			std::vector<PipelineSpecification>({
 			PipelineSpecification::fromWindow(
@@ -54,32 +54,32 @@ namespace Vivium {
 		}));
 	}
 
-	void _submitButtonGUIContext(GUIContext& guiContext, ResourceManager::Static::Handle manager, Engine::Handle engine, Window::Handle window)
+	void _submitButtonGUIContext(GUIContext& guiContext, ResourceManager& manager, Engine::Handle engine, Window::Handle window)
 	{
-		ResourceManager::Static::submit(manager, &guiContext.button.storageBuffer.reference, MemoryType::UNIFORM,
+		submitResource(manager, &guiContext.button.storageBuffer.reference, MemoryType::UNIFORM,
 			std::vector<BufferSpecification>({ BufferSpecification(guiContext.button.MAX_BUTTONS * sizeof(_GUIButtonInstanceData), BufferUsage::STORAGE) }));
 
-		ResourceManager::Static::submit(manager, &guiContext.button.descriptorLayout.reference, std::vector<DescriptorLayoutSpecification>({
+		submitResource(manager, &guiContext.button.descriptorLayout.reference, std::vector<DescriptorLayoutSpecification>({
 			DescriptorLayoutSpecification(std::vector<UniformBinding>({
 					UniformBinding(ShaderStage::VERTEX, 0, UniformType::STORAGE_BUFFER)
 				}))
 			}));
 
-		ResourceManager::Static::submit(manager, &guiContext.button.descriptorSet.reference, std::vector<DescriptorSetSpecification>({
+		submitResource(manager, &guiContext.button.descriptorSet.reference, std::vector<DescriptorSetSpecification>({
 			DescriptorSetSpecification(guiContext.button.descriptorLayout.reference, std::vector<UniformData>({
 				UniformData::fromBuffer(guiContext.button.storageBuffer.reference, guiContext.button.MAX_BUTTONS * sizeof(_GUIButtonInstanceData), 0)
 			}))
 			}));
 
-		ResourceManager::Static::submit(manager, &guiContext.button.fragmentShader.reference, std::vector<ShaderSpecification>({
+		submitResource(manager, &guiContext.button.fragmentShader.reference, std::vector<ShaderSpecification>({
 			compileShader(ShaderStage::FRAGMENT, "vivium4/res/button.frag", "vivium4/res/button_frag.spv")
 			}));
 
-		ResourceManager::Static::submit(manager, &guiContext.button.vertexShader.reference, std::vector<ShaderSpecification>({
+		submitResource(manager, &guiContext.button.vertexShader.reference, std::vector<ShaderSpecification>({
 			compileShader(ShaderStage::VERTEX, "vivium4/res/button.vert", "vivium4/res/button_vert.spv")
 			}));
 
-		ResourceManager::Static::submit(manager,
+		submitResource(manager,
 			&guiContext.button.pipeline.reference,
 			std::vector<PipelineSpecification>({
 			PipelineSpecification::fromWindow(
@@ -92,32 +92,32 @@ namespace Vivium {
 			) }));
 	}
 
-	void _submitPanelGUIContext(GUIContext& guiContext, ResourceManager::Static::Handle manager, Engine::Handle engine, Window::Handle window)
+	void _submitPanelGUIContext(GUIContext& guiContext, ResourceManager& manager, Engine::Handle engine, Window::Handle window)
 	{
-		ResourceManager::Static::submit(manager, &guiContext.panel.storageBuffer.reference, MemoryType::UNIFORM,
+		submitResource(manager, &guiContext.panel.storageBuffer.reference, MemoryType::UNIFORM,
 			std::vector<BufferSpecification>({ BufferSpecification(guiContext.panel.MAX_PANELS * sizeof(_GUIPanelInstanceData), BufferUsage::STORAGE) }));
 
-		ResourceManager::Static::submit(manager, &guiContext.panel.descriptorLayout.reference, std::vector<DescriptorLayoutSpecification>({
+		submitResource(manager, &guiContext.panel.descriptorLayout.reference, std::vector<DescriptorLayoutSpecification>({
 			DescriptorLayoutSpecification(std::vector<UniformBinding>({
 					UniformBinding(ShaderStage::VERTEX, 0, UniformType::STORAGE_BUFFER)
 				}))
 			}));
 
-		ResourceManager::Static::submit(manager, &guiContext.panel.descriptorSet.reference, std::vector<DescriptorSetSpecification>({
+		submitResource(manager, &guiContext.panel.descriptorSet.reference, std::vector<DescriptorSetSpecification>({
 			DescriptorSetSpecification(guiContext.panel.descriptorLayout.reference, std::vector<UniformData>({
 				UniformData::fromBuffer(guiContext.panel.storageBuffer.reference, guiContext.panel.MAX_PANELS * sizeof(_GUIPanelInstanceData), 0)
 			}))
 			}));
 
-		ResourceManager::Static::submit(manager, &guiContext.panel.fragmentShader.reference, std::vector<ShaderSpecification>({
+		submitResource(manager, &guiContext.panel.fragmentShader.reference, std::vector<ShaderSpecification>({
 			compileShader(ShaderStage::FRAGMENT, "vivium4/res/panel.frag", "vivium4/res/panel_frag.spv")
 			}));
 
-		ResourceManager::Static::submit(manager, &guiContext.panel.vertexShader.reference, std::vector<ShaderSpecification>({
+		submitResource(manager, &guiContext.panel.vertexShader.reference, std::vector<ShaderSpecification>({
 			compileShader(ShaderStage::VERTEX, "vivium4/res/panel.vert", "vivium4/res/panel_vert.spv")
 			}));
 
-		ResourceManager::Static::submit(manager,
+		submitResource(manager,
 			&guiContext.panel.pipeline.reference,
 			std::vector<PipelineSpecification>({
 			PipelineSpecification::fromWindow(
@@ -143,7 +143,7 @@ namespace Vivium {
 	}
 
 	// TODO: create doesn't match the pattern, elements that require a setup, should also be `submit`
-	GUIContext createGUIContext(ResourceManager::Static::Handle manager, Engine::Handle engine, Window::Handle window) {
+	GUIContext createGUIContext(ResourceManager& manager, Engine::Handle engine, Window::Handle window) {
 		// TODO: move the code, should be done in some initialisation function
 		// Generate the font if it doesn't exist
 		if (!std::filesystem::exists("vivium4/res/fonts/consola.sdf"))
@@ -161,29 +161,29 @@ namespace Vivium {
 		return context;
 	}
 
-	void setupGUIContext(GUIContext& guiContext, ResourceManager::Static::Handle manager, Commands::Context::Handle context, Engine::Handle engine)
+	void setupGUIContext(GUIContext& guiContext, ResourceManager& manager, Commands::Context::Handle context, Engine::Handle engine)
 	{
-		ResourceManager::Static::convertReference(manager, guiContext.text.pipeline);
-		ResourceManager::Static::convertReference(manager, guiContext.text.descriptorLayout);
-		ResourceManager::Static::convertReference(manager, guiContext.text.fragmentShader);
-		ResourceManager::Static::convertReference(manager, guiContext.text.vertexShader);
+		convertResourceReference(manager, guiContext.text.pipeline);
+		convertResourceReference(manager, guiContext.text.descriptorLayout);
+		convertResourceReference(manager, guiContext.text.fragmentShader);
+		convertResourceReference(manager, guiContext.text.vertexShader);
 
-		ResourceManager::Static::convertReference(manager, guiContext.button.pipeline);
-		ResourceManager::Static::convertReference(manager, guiContext.button.descriptorLayout);
-		ResourceManager::Static::convertReference(manager, guiContext.button.fragmentShader);
-		ResourceManager::Static::convertReference(manager, guiContext.button.vertexShader);
-		ResourceManager::Static::convertReference(manager, guiContext.button.storageBuffer);
-		ResourceManager::Static::convertReference(manager, guiContext.button.descriptorSet);
+		convertResourceReference(manager, guiContext.button.pipeline);
+		convertResourceReference(manager, guiContext.button.descriptorLayout);
+		convertResourceReference(manager, guiContext.button.fragmentShader);
+		convertResourceReference(manager, guiContext.button.vertexShader);
+		convertResourceReference(manager, guiContext.button.storageBuffer);
+		convertResourceReference(manager, guiContext.button.descriptorSet);
 
-		ResourceManager::Static::convertReference(manager, guiContext.panel.pipeline);
-		ResourceManager::Static::convertReference(manager, guiContext.panel.descriptorLayout);
-		ResourceManager::Static::convertReference(manager, guiContext.panel.fragmentShader);
-		ResourceManager::Static::convertReference(manager, guiContext.panel.vertexShader);
-		ResourceManager::Static::convertReference(manager, guiContext.panel.storageBuffer);
-		ResourceManager::Static::convertReference(manager, guiContext.panel.descriptorSet);
+		convertResourceReference(manager, guiContext.panel.pipeline);
+		convertResourceReference(manager, guiContext.panel.descriptorLayout);
+		convertResourceReference(manager, guiContext.panel.fragmentShader);
+		convertResourceReference(manager, guiContext.panel.vertexShader);
+		convertResourceReference(manager, guiContext.panel.storageBuffer);
+		convertResourceReference(manager, guiContext.panel.descriptorSet);
 
-		ResourceManager::Static::convertReference(manager, guiContext.rectVertexBuffer);
-		ResourceManager::Static::convertReference(manager, guiContext.rectIndexBuffer);
+		convertResourceReference(manager, guiContext.rectVertexBuffer);
+		convertResourceReference(manager, guiContext.rectIndexBuffer);
 
 		float vertexData[] = {
 			0.0f, 0.0f,
