@@ -7,94 +7,59 @@
 #include "storage.h"
 
 namespace Vivium {
-	namespace Engine {
-		struct Resource;
+	struct Engine;
 
-		typedef Resource* Handle;
-	}
+	struct WindowOptions {
+		I32x2 dimensions = I32x2(600, 400);
+		const char* title = "Vivium4";
+		int multisampleCount = VK_SAMPLE_COUNT_4_BIT;
+	};
 
-	namespace Window {
-		struct Options {
-			I32x2 dimensions;
-			const char* title;
-			int multisampleCount;
+	void _framebufferResizeCallback(GLFWwindow* window, int width, int height);
 
-			Options();
-		};
+	// TODO: probably best to make vulkan window resource separate from main window?
+	struct Window {
+		// GLFW window
+		GLFWwindow* glfwWindow;
 
-		// TODO: probably best to make vulkan window resource separate from main window?
-		struct Resource {
-			// GLFW window
-			GLFWwindow* glfwWindow;
+		// Vulkan window
+		VkSurfaceKHR surface;
+		VkSwapchainKHR swapChain;
+		std::vector<VkImage> swapChainImages;
+		std::vector<VkImageView> swapChainImageViews;
+		VkFormat swapChainImageFormat;
+		VkExtent2D swapChainExtent;
+		std::vector<VkFramebuffer> swapChainFramebuffers;
 
-			// Vulkan window
-			VkSurfaceKHR surface;
-			VkSwapchainKHR swapChain;
-			std::vector<VkImage> swapChainImages;
-			std::vector<VkImageView> swapChainImageViews;
-			VkFormat swapChainImageFormat;
-			VkExtent2D swapChainExtent;
-			std::vector<VkFramebuffer> swapChainFramebuffers;
+		VkImage multisampleColorImage;
+		VkImageView multisampleColorImageView;
+		VkDeviceMemory multisampleColorMemory;
+		VkSampleCountFlagBits multisampleCount;
 
-			VkImage multisampleColorImage;
-			VkImageView multisampleColorImageView;
-			VkDeviceMemory multisampleColorMemory;
-			VkSampleCountFlagBits multisampleCount;
+		bool wasFramebufferResized;
+	};
 
-			bool wasFramebufferResized;
+	void _createSwapChain(Window& window, Engine& engine);
+	void _createImageViews(Window& window, Engine& engine);
+	void _createMultisampleColorImages(Window& window, Engine& engine);
+	void _createRenderPass(Window& window, Engine& engine);
+	void _createFramebuffers(Window& window, Engine& engine);
 
-			I32x2 dimensions;
+	void _deleteSwapChain(Window& window, Engine& engine);
+	void _recreateSwapChain(Window& window, Engine& engine);
 
-			static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
+	static VkSurfaceFormatKHR _chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+	static VkPresentModeKHR _chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+	VkExtent2D _chooseSwapExtent(Window& window, const VkSurfaceCapabilitiesKHR& capabilities);
 
-			void createSwapChain(Engine::Handle engine);
-			void createImageViews(Engine::Handle engine);
-			void createMultisampleColorImages(Engine::Handle engine);
-			void createRenderPass(Engine::Handle engine);
-			void createFramebuffers(Engine::Handle engine);
+	void _setWindowOptions(Window& window, WindowOptions const& options);
 
-			void deleteSwapChain(Engine::Handle engine);
-			void recreateSwapChain(Engine::Handle engine);
+	void _createSurface(Window& window, Engine& engine);
+	void _initVulkan(Window& window, Engine& engine);
 
-			static VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
-			static VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
-			VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+	Window createWindow(WindowOptions const& options);
+	void dropWindow(Window& window, Engine& engine);
 
-			void setOptions(const Options& options);
-
-			void createSurface(Engine::Handle engine);
-			void initVulkan(Engine::Handle engine);
-
-			bool isOpen(Engine::Handle engine) const;
-
-			void create(const Options& options);
-
-			Resource();
-		};
-
-		typedef Resource* Handle;
-
-		bool isNull(const Handle handle);
-
-		template <Storage::StorageType StorageType>
-		Handle create(StorageType* allocator, Options options)
-		{
-			Handle window = Storage::allocateResource<Resource>(allocator);
-
-			window->create(options);
-
-			return window;
-		}
-
-		template <Storage::StorageType StorageType>
-		void drop(StorageType* allocator, Handle handle, Engine::Handle engine)
-		{
-			handle->deleteSwapChain(engine);
-
-			Storage::dropResource(allocator, handle);
-		}
-
-		I32x2 dimensions(Window::Handle window);
-		bool isOpen(Window::Handle window, Engine::Handle engine);
-	}
+	I32x2 windowDimensions(Window& window);
+	bool isWindowOpen(Window& window, Engine& engine);
 }

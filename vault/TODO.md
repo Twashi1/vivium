@@ -1,8 +1,8 @@
 
 ## High priority
 
-- All allocated resources should be tracked in debug mode and reported on
-	- Need to pass resource manager to drop functions to track (pain)
+- Window framebuffer resize callback depends on having the window itself in some way, but we can't do this without some guaranteed reference
+- Check non-multisampled rendering is still working
 ## ECS
 
 - Iterators for single component view

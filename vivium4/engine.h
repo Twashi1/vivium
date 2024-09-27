@@ -10,134 +10,106 @@
 #include "window.h"
 
 namespace Vivium {
-	namespace Engine {
-		struct Options {
-			uint32_t fps = 60;
-			float pollPeriod = 3.0f;
+	struct EngineOptions {
+		uint32_t fps = 60;
+		// Performance poll period
+		float pollPeriod = 3.0f;
+	};
+
+	struct Engine {
+		// TODO: move out of class?
+		static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
+		static constexpr bool enableValidationLayers = VIVIUM_IS_DEBUG;
+
+		struct SwapChainSupportDetails {
+			VkSurfaceCapabilitiesKHR capabilities;
+			std::vector<VkSurfaceFormatKHR> formats;
+			std::vector<VkPresentModeKHR> presentModes;
 		};
 
-		struct Resource {
-			static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
-			static constexpr bool enableValidationLayers = VIVIUM_IS_DEBUG;
+		struct QueueFamilyIndices {
+			uint32_t graphicsFamily, presentFamily, transferFamily;
 
-			struct SwapChainSupportDetails {
-				VkSurfaceCapabilitiesKHR capabilities;
-				std::vector<VkSurfaceFormatKHR> formats;
-				std::vector<VkPresentModeKHR> presentModes;
-			};
-
-			struct QueueFamilyIndices {
-				uint32_t graphicsFamily, presentFamily, transferFamily;
-
-				bool isComplete() const { return graphicsFamily != UINT32_MAX && presentFamily != UINT32_MAX && transferFamily != UINT32_MAX; }
-			};
-
-			VkInstance instance;
-			VkDebugUtilsMessengerEXT debugMessenger;
-
-			VkPhysicalDevice physicalDevice;
-			VkDevice device;
-
-			VkRenderPass renderPass; // TODO: created by window, not engine
-			VkCommandPool commandPool;
-
-			VkQueue graphicsQueue;
-			VkQueue presentQueue;
-			VkQueue transferQueue;
-
-			std::vector<VkCommandBuffer> commandBuffers;
-
-			std::vector<VkSemaphore> imageAvailableSemaphores;
-			std::vector<VkSemaphore> renderFinishedSemaphores;
-			std::vector<VkFence> inFlightFences;
-
-			uint32_t currentFrameIndex;
-			uint32_t currentImageIndex;
-
-			float targetTimePerFrame;
-			float pollPeriod;
-			float pollFramesElapsedTime;
-			float pollUpdatesElapsedTime;
-			uint32_t pollFramesCounted;
-
-			Time::Timer frameTimer;
-			Time::Timer updateTimer;
-
-			void populateDebugMessengerInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-
-			static VKAPI_ATTR VkBool32 VKAPI_CALL vulkanDebugCallback(
-				VkDebugUtilsMessageSeverityFlagBitsEXT vkSeverity,
-				VkDebugUtilsMessageTypeFlagsEXT messageType,
-				const VkDebugUtilsMessengerCallbackDataEXT* callbackData,
-				void* userData
-			);
-
-			// TODO: consider moving to window?
-			QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, Window::Handle window);
-
-			bool checkValidationLayerSupport(const std::span<const char* const>& validationLayers);
-			bool isSuitableDevice(VkPhysicalDevice device, const std::vector<const char*>& requiredExtensions, Window::Handle window);
-			bool checkDeviceExtensionSupport(const std::vector<const char*>& requiredExtensions, VkPhysicalDevice device);
-			
-			// TODO: consider moving to window
-			SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, Window::Handle window);
-
-			void setOptions(const Options& options);
-
-			void pickPhysicalDevice(const std::vector<const char*>& extensions, Window::Handle window);
-			void createLogicalDevice(Window::Handle window, const std::span<const char* const> extensions, const std::span<const char* const> validationLayers);
-
-			void createCommandPool(Window::Handle window);
-			void cmdCreateCommandBuffers();
-
-			void createSyncObjects();
-
-			std::vector<const char*> createInstance(const std::span<const char* const> validationLayers, const std::span<const char* const> defaultExtensions);
-			void setupDebugMessenger();
-
-			uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-			
-			void checkPerformance();
-			void limitFramerate();
-
-			// Public methods
-			void create(Options options, Window::Handle window);
-			void drop(Window::Handle window);
-
-			void beginFrame(Window::Handle window);
-			void endFrame(Window::Handle window);
-			
-			void beginRender(Window::Handle window);
-			void endRender();
-
-			Resource();
+			bool isComplete() const { return graphicsFamily != UINT32_MAX && presentFamily != UINT32_MAX && transferFamily != UINT32_MAX; }
 		};
 
-		typedef Resource* Handle;
+		VkInstance instance;
+		VkDebugUtilsMessengerEXT debugMessenger;
 
-		bool isNull(const Engine::Handle handle);
+		VkPhysicalDevice physicalDevice;
+		VkDevice device;
 
-		template <Storage::StorageType StorageType>
-		Handle create(StorageType* allocator, Options options, Window::Handle window)
-		{
-			Handle engine = Storage::allocateResource<Resource>(allocator);
-			
-			engine->create(options, window);
+		VkRenderPass renderPass; // TODO: created by window, not engine
+		VkCommandPool commandPool;
 
-			return engine;
-		}
+		VkQueue graphicsQueue;
+		VkQueue presentQueue;
+		VkQueue transferQueue;
 
-		template <Storage::StorageType StorageType>
-		void drop(StorageType* allocator, Handle handle, Window::Handle window)
-		{
-			handle->drop(window);
-			Storage::dropResource(allocator, handle);
-		}
+		std::vector<VkCommandBuffer> commandBuffers;
 
-		void beginFrame(Engine::Handle engine, Window::Handle window);
-		void endFrame(Engine::Handle engine, Window::Handle window);
+		std::vector<VkSemaphore> imageAvailableSemaphores;
+		std::vector<VkSemaphore> renderFinishedSemaphores;
+		std::vector<VkFence> inFlightFences;
 
-		void beginRender(Engine::Handle engine, Window::Handle window);
-		void endRender(Engine::Handle engine);
-	}
+		uint32_t currentFrameIndex;
+		uint32_t currentImageIndex;
+
+		float targetTimePerFrame;
+		float pollPeriod;
+		float pollFramesElapsedTime;
+		float pollUpdatesElapsedTime;
+		uint32_t pollFramesCounted;
+
+		Time::Timer frameTimer;
+		Time::Timer updateTimer;
+	};
+
+	void _populateDebugMessengerInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
+
+	static VKAPI_ATTR VkBool32 VKAPI_CALL _vulkanDebugCallback(
+		VkDebugUtilsMessageSeverityFlagBitsEXT vkSeverity,
+		VkDebugUtilsMessageTypeFlagsEXT messageType,
+		const VkDebugUtilsMessengerCallbackDataEXT* callbackData,
+		void* userData
+	);
+
+	// TODO: consider moving to window?
+	Engine::QueueFamilyIndices _findQueueFamilies(Engine& engine, VkPhysicalDevice device, Window& window);
+
+	bool _checkValidationLayerSupport(const std::span<const char* const>& validationLayers);
+	bool _isSuitableDevice(Engine& engine, VkPhysicalDevice device, const std::vector<const char*>& requiredExtensions, Window& window);
+	bool _checkDeviceExtensionSupport(const std::vector<const char*>& requiredExtensions, VkPhysicalDevice device);
+
+	// TODO: consider moving to window
+	Engine::SwapChainSupportDetails _querySwapChainSupport(VkPhysicalDevice device, Window& window);
+
+	void _setOptions(Engine& engine, EngineOptions const& options);
+
+	void _pickPhysicalDevice(Engine& engine, const std::vector<const char*>& extensions, Window& window);
+	void _createLogicalDevice(Engine& engine, Window& window, const std::span<const char* const> extensions, const std::span<const char* const> validationLayers);
+
+	void _createEngineCommandPool(Engine& engine, Window& window);
+	void _createEngineCommandBuffers(Engine& engine);
+
+	void _createSyncObjects(Engine& engine);
+
+	void _createInstance(Engine& engine, const std::span<const char* const> validationLayers, const std::span<const char* const> defaultExtensions);
+	void _setupDebugMessenger(Engine& engine);
+
+	// TODO: isn't this somewhere else?
+	uint32_t _findMemoryType(Engine& engine, uint32_t typeFilter, VkMemoryPropertyFlags properties);
+
+	void _checkPerformance(Engine& engine);
+	void _limitFramerate(Engine& engine);
+
+	// Public methods
+	Engine createEngine(EngineOptions const& options, Window& window);
+	void dropEngine(Engine& engine, Window& window);
+
+	void engineBeginFrame(Engine& engine, Window& window);
+	void engineEndFrame(Engine& engine, Window& window);
+
+	void engineBeginRender(Engine& engine, Window& window);
+	void engineEndRender(Engine& engine);
 }
