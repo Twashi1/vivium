@@ -8,7 +8,7 @@ namespace Vivium {
 	ResourceManager::DeviceMemoryHandle::DeviceMemoryHandle()
 		: memory(VK_NULL_HANDLE), mapping(nullptr) {}
 
-	ResourceManager::DeviceMemoryHandle _allocateDeviceMemory(ResourceManager& manager, Engine::Handle engine, uint32_t memoryTypeBits, MemoryType memoryType, uint64_t size) {
+	ResourceManager::DeviceMemoryHandle _allocateDeviceMemory(ResourceManager& manager, Engine& engine, uint32_t memoryTypeBits, MemoryType memoryType, uint64_t size) {
 		ResourceManager::DeviceMemoryHandle deviceMemoryHandle;
 
 		VkMemoryAllocateInfo memoryAllocationInfo{};
@@ -21,7 +21,7 @@ namespace Vivium {
 		);
 
 		VIVIUM_VK_CHECK(vkAllocateMemory(
-			engine->device,
+			engine.device,
 			&memoryAllocationInfo,
 			nullptr,
 			&deviceMemoryHandle.memory
@@ -33,7 +33,7 @@ namespace Vivium {
 		if (isMappable(memoryType)) {
 			VIVIUM_VK_CHECK(
 				vkMapMemory(
-					engine->device,
+					engine.device,
 					deviceMemoryHandle.memory,
 					0,
 					size,
@@ -51,7 +51,7 @@ namespace Vivium {
 		return deviceMemoryHandle;
 	}
 
-	void _allocateBuffers(ResourceManager& manager, Engine::Handle engine, MemoryType memoryType)
+	void _allocateBuffers(ResourceManager& manager, Engine& engine, MemoryType memoryType)
 	{
 		std::vector<BufferSpecification>* bufferSpecificationsPtr;
 		std::vector<Buffer>* bufferMemoryPtr;
@@ -107,7 +107,7 @@ namespace Vivium {
 		for (uint64_t i = 0; i < bufferSpecifications.size(); i++) {
 			Buffer& resource = bufferMemory[i];
 
-			vkBindBufferMemory(engine->device, resource.buffer, deviceMemoryHandle.memory, bufferOffsets[i]);
+			vkBindBufferMemory(engine.device, resource.buffer, deviceMemoryHandle.memory, bufferOffsets[i]);
 
 			if (deviceMemoryHandle.mapping != nullptr) {
 				resource.mapping = reinterpret_cast<uint8_t*>(deviceMemoryHandle.mapping) + bufferOffsets[i];
@@ -115,7 +115,7 @@ namespace Vivium {
 		}
 	}
 
-	void _allocateShaders(ResourceManager& manager, Engine::Handle engine)
+	void _allocateShaders(ResourceManager& manager, Engine& engine)
 	{
 		for (uint64_t i = 0; i < manager.shaders.specifications.size(); i++) {
 			ShaderSpecification const& specification = manager.shaders.specifications[i];
@@ -126,12 +126,12 @@ namespace Vivium {
 			shaderCreateInfo.codeSize = specification.length;
 			shaderCreateInfo.pCode = reinterpret_cast<const uint32_t*>(specification.code.c_str());
 
-			VIVIUM_VK_CHECK(vkCreateShaderModule(engine->device, &shaderCreateInfo, nullptr, &resource.shader),
+			VIVIUM_VK_CHECK(vkCreateShaderModule(engine.device, &shaderCreateInfo, nullptr, &resource.shader),
 				"Failed to create shader module");
 		}
 	}
 
-	void _allocateDescriptorLayouts(ResourceManager& manager, Engine::Handle engine)
+	void _allocateDescriptorLayouts(ResourceManager& manager, Engine& engine)
 	{
 		for (uint64_t i = 0; i < manager.descriptorLayouts.specifications.size(); i++) {
 			DescriptorLayoutSpecification const& specification = manager.descriptorLayouts.specifications[i];
@@ -155,12 +155,12 @@ namespace Vivium {
 			createInfo.bindingCount = static_cast<uint32_t>(vulkanBindings.size());
 			createInfo.pBindings = vulkanBindings.data();
 
-			VIVIUM_VK_CHECK(vkCreateDescriptorSetLayout(engine->device, &createInfo, nullptr, &resource.layout),
+			VIVIUM_VK_CHECK(vkCreateDescriptorSetLayout(engine.device, &createInfo, nullptr, &resource.layout),
 				"Failed to create descriptor set layout");
 		}
 	}
 
-	//void _allocateDynamicBuffers(Engine::Handle engine)
+	//void _allocateDynamicBuffers(Engine& engine)
 	//{
 	//	uint64_t specificationIndex = 0;
 	//	uint64_t totalSize = 0;
@@ -178,7 +178,7 @@ namespace Vivium {
 
 	//			// Calculate suballocation alignment
 	//			VkPhysicalDeviceProperties deviceProperties;
-	//			vkGetPhysicalDeviceProperties(engine->physicalDevice, &deviceProperties);
+	//			vkGetPhysicalDeviceProperties(engine.physicalDevice, &deviceProperties);
 
 	//			uint64_t suballocationAlignment = deviceProperties.limits.minUniformBufferOffsetAlignment;
 
@@ -220,7 +220,7 @@ namespace Vivium {
 		//	for (uint64_t i = 0; i < resource_span.size(); i++) {
 		//		Buffer::Dynamic::Resource& resource = resource_span[i];
 
-		//		vkBindBufferMemory(engine->device, resource.buffer, deviceMemoryHandle.memory, bufferOffsets[specificationIndex]);
+		//		vkBindBufferMemory(engine.device, resource.buffer, deviceMemoryHandle.memory, bufferOffsets[specificationIndex]);
 
 		//		if (deviceMemoryHandle.mapping != nullptr)
 		//			resource.mapping = reinterpret_cast<uint8_t*>(deviceMemoryHandle.mapping) + bufferOffsets[specificationIndex];
@@ -230,7 +230,7 @@ namespace Vivium {
 		//}
 	// }
 
-	void _allocateTextures(ResourceManager& manager, Engine::Handle engine)
+	void _allocateTextures(ResourceManager& manager, Engine& engine)
 	{
 		// TODO: assert number of specifications passed is less than the number
 		// of device memory blocks we can allocate,
@@ -285,7 +285,7 @@ namespace Vivium {
 			VkMemoryRequirements memoryRequirements;
 
 			vkGetImageMemoryRequirements(
-				engine->device,
+				engine.device,
 				texture.image,
 				&memoryRequirements
 			);
@@ -317,7 +317,7 @@ namespace Vivium {
 					
 			// Bind image to memory
 			VIVIUM_VK_CHECK(vkBindImageMemory(
-				engine->device,
+				engine.device,
 				texture.image,
 				deviceMemoryHandle.memory,
 				offsets[i]
@@ -384,10 +384,10 @@ namespace Vivium {
 		_cmdEndCommandBuffer(
 			commandBuffers.data(),
 			commandBuffers.size(),
-			engine->graphicsQueue
+			engine.graphicsQueue
 		);
 		// TODO: experiment with putting this wait until after creating view and sampler?
-		vkQueueWaitIdle(engine->graphicsQueue);
+		vkQueueWaitIdle(engine.graphicsQueue);
 
 		// TODO: maybe these don't need the image to be completely filled out beforehand?
 		for (uint64_t i = 0; i < manager.textures.specifications.size(); i++) {
@@ -399,12 +399,12 @@ namespace Vivium {
 		}
 
 		// Wait until idle since we will free unnecessary resources now
-		vkDeviceWaitIdle(engine->device);
+		vkDeviceWaitIdle(engine.device);
 
 		for (uint32_t i = 0; i < oneTimeStagingBuffers.size(); i++) {
-			vkDestroyBuffer(engine->device, oneTimeStagingBuffers[i], nullptr);
-			vkUnmapMemory(engine->device, oneTimeStagingMemories[i]);
-			vkFreeMemory(engine->device, oneTimeStagingMemories[i], nullptr);
+			vkDestroyBuffer(engine.device, oneTimeStagingBuffers[i], nullptr);
+			vkUnmapMemory(engine.device, oneTimeStagingMemories[i]);
+			vkFreeMemory(engine.device, oneTimeStagingMemories[i], nullptr);
 		}
 
 		for (uint64_t i = 0; i < textureBuffers.size(); i++) {
@@ -416,16 +416,16 @@ namespace Vivium {
 		}
 
 		vkFreeCommandBuffers(
-			engine->device,
+			engine.device,
 			commandPool,
 			static_cast<uint32_t>(commandBuffers.size()),
 			commandBuffers.data()
 		);
 
-		vkDestroyCommandPool(engine->device, commandPool, nullptr);
+		vkDestroyCommandPool(engine.device, commandPool, nullptr);
 	}
 
-	void _allocateFramebuffers(ResourceManager& manager, Engine::Handle engine)
+	void _allocateFramebuffers(ResourceManager& manager, Engine& engine)
 	{
 		uint64_t totalMemoryRequired = 0;
 		uint32_t memoryTypeBits = NULL;
@@ -449,7 +449,7 @@ namespace Vivium {
 			);
 
 			VkMemoryRequirements requirements;
-			vkGetImageMemoryRequirements(engine->device, resource.image, &requirements);
+			vkGetImageMemoryRequirements(engine.device, resource.image, &requirements);
 
 			uint64_t resourceOffset = Math::nearestMultiple(totalMemoryRequired, requirements.alignment);
 			imageMemoryLocations[i] = resourceOffset;
@@ -465,7 +465,7 @@ namespace Vivium {
 			Framebuffer& resource = manager.framebuffers.resources[i];
 
 			VIVIUM_VK_CHECK(vkBindImageMemory(
-				engine->device,
+				engine.device,
 				resource.image,
 				memory.memory,
 				imageMemoryLocations[i]
@@ -524,7 +524,7 @@ namespace Vivium {
 			renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
 			renderPassInfo.pDependencies = dependencies.data();
 
-			VIVIUM_VK_CHECK(vkCreateRenderPass(engine->device, &renderPassInfo, nullptr, &resource.renderPass), "Failed render pass");
+			VIVIUM_VK_CHECK(vkCreateRenderPass(engine.device, &renderPassInfo, nullptr, &resource.renderPass), "Failed render pass");
 
 			VkFramebufferCreateInfo framebufferInfo{};
 			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -535,11 +535,11 @@ namespace Vivium {
 			framebufferInfo.height = static_cast<uint32_t>(resource.dimensions.y);
 			framebufferInfo.layers = 1;
 
-			VIVIUM_VK_CHECK(vkCreateFramebuffer(engine->device, &framebufferInfo, nullptr, &resource.framebuffer), "Failed create fb");
+			VIVIUM_VK_CHECK(vkCreateFramebuffer(engine.device, &framebufferInfo, nullptr, &resource.framebuffer), "Failed create fb");
 		}
 	}
 
-	void _allocateDescriptorSets(ResourceManager& manager, Engine::Handle engine)
+	void _allocateDescriptorSets(ResourceManager& manager, Engine& engine)
 	{
 		// Create descriptor pool
 		// Count descriptor pools
@@ -616,7 +616,7 @@ namespace Vivium {
 
 		manager.descriptorPools.push_back(VK_NULL_HANDLE);
 
-		VIVIUM_VK_CHECK(vkCreateDescriptorPool(engine->device,
+		VIVIUM_VK_CHECK(vkCreateDescriptorPool(engine.device,
 			&poolInfo, nullptr, &manager.descriptorPools.back()), "Failed to create descriptor pool");
 
 		// Begin populating descriptor set layouts and descriptor sets
@@ -637,7 +637,7 @@ namespace Vivium {
 		setAllocateInfo.descriptorSetCount = static_cast<uint32_t>(manager.descriptorSets.specifications.size());
 		setAllocateInfo.pSetLayouts = layouts.data();
 
-		VIVIUM_VK_CHECK(vkAllocateDescriptorSets(engine->device,
+		VIVIUM_VK_CHECK(vkAllocateDescriptorSets(engine.device,
 			&setAllocateInfo, sets.data()), "Failed to allocate descriptor sets");
 
 		// Copy from allocated sets to the descriptor resource
@@ -733,11 +733,11 @@ namespace Vivium {
 			}
 		}
 
-		vkUpdateDescriptorSets(engine->device,
+		vkUpdateDescriptorSets(engine.device,
 			static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 	}
 
-	void _allocatePipelines(ResourceManager& manager, Engine::Handle engine)
+	void _allocatePipelines(ResourceManager& manager, Engine& engine)
 	{
 		for (uint64_t i = 0; i < manager.pipelines.specifications.size(); i++) {
 			PipelineSpecification const& specification = manager.pipelines.specifications[i];
@@ -846,7 +846,7 @@ namespace Vivium {
 			pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(specification.pushConstants.size());
 
 			VIVIUM_VK_CHECK(vkCreatePipelineLayout(
-				engine->device,
+				engine.device,
 				&pipelineLayoutInfo,
 				nullptr,
 				&resource.layout),
@@ -872,7 +872,7 @@ namespace Vivium {
 			pipelineInfo.basePipelineIndex = -1;
 
 			VIVIUM_VK_CHECK(vkCreateGraphicsPipelines(
-				engine->device,
+				engine.device,
 				VK_NULL_HANDLE,
 				1,
 				&pipelineInfo,
@@ -882,7 +882,7 @@ namespace Vivium {
 		}
 	}
 
-	void allocateManager(ResourceManager& manager, Engine::Handle engine)
+	void allocateManager(ResourceManager& manager, Engine& engine)
 	{
 		if (!manager.hostBuffers.specifications.empty())
 			_allocateBuffers(manager, engine, MemoryType::STAGING);
@@ -955,19 +955,19 @@ namespace Vivium {
 		return ResourceManager{};
 	}
 
-	void dropManager(ResourceManager& manager, Engine::Handle engine) {
+	void dropManager(ResourceManager& manager, Engine& engine) {
 		// Free vulkan memory
 		for (ResourceManager::DeviceMemoryHandle deviceMemoryHandle : manager.deviceMemoryHandles) {
 			if (deviceMemoryHandle.mapping != nullptr)
-				vkUnmapMemory(engine->device, deviceMemoryHandle.memory);
+				vkUnmapMemory(engine.device, deviceMemoryHandle.memory);
 
-			vkFreeMemory(engine->device, deviceMemoryHandle.memory, nullptr);
+			vkFreeMemory(engine.device, deviceMemoryHandle.memory, nullptr);
 		}
 
 		sharedTrackerData.deviceMemoryAllocations -= static_cast<uint32_t>(manager.deviceMemoryHandles.size());
 
 		for (VkDescriptorPool descriptorPool : manager.descriptorPools) {
-			vkDestroyDescriptorPool(engine->device, descriptorPool, nullptr);
+			vkDestroyDescriptorPool(engine.device, descriptorPool, nullptr);
 		}
 	}
 

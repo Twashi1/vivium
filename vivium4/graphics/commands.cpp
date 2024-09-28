@@ -2,7 +2,7 @@
 #include "resource_manager.h"
 
 namespace Vivium {
-	CommandContext createCommandContext(Engine::Handle engine) {
+	CommandContext createCommandContext(Engine& engine) {
 		CommandContext context;
 
 		context.frameIndex = 0;
@@ -16,7 +16,7 @@ namespace Vivium {
 		return context;
 	}
 
-	void dropCommandContext(CommandContext& context, Engine::Handle engine)
+	void dropCommandContext(CommandContext& context, Engine& engine)
 	{
 		for (CommandContext::FunctionArray cleanupArray : context.perFrameCleanupArrays) {
 			for (std::function<void(void)> function : cleanupArray) {
@@ -24,8 +24,8 @@ namespace Vivium {
 			}
 		}
 
-		vkFreeCommandBuffers(engine->device, context.transferPool, 1, &context.transferCommandBuffer);
-		vkDestroyCommandPool(engine->device, context.transferPool, nullptr);
+		vkFreeCommandBuffers(engine.device, context.transferPool, 1, &context.transferCommandBuffer);
+		vkDestroyCommandPool(engine.device, context.transferPool, nullptr);
 	}
 
 	void _contextAddFunction(CommandContext& context, std::function<void(void)> function)
@@ -40,20 +40,20 @@ namespace Vivium {
 		context.inTransfer = true;
 	}
 			
-	void contextEndTransfer(CommandContext& context, Engine::Handle engine)
+	void contextEndTransfer(CommandContext& context, Engine& engine)
 	{
-		_cmdEndCommandBuffer(&context.transferCommandBuffer, 1, engine->transferQueue);
+		_cmdEndCommandBuffer(&context.transferCommandBuffer, 1, engine.transferQueue);
 				
 		// TODO: bad
-		vkQueueWaitIdle(engine->transferQueue);
+		vkQueueWaitIdle(engine.transferQueue);
 				
 		context.inTransfer = false;
 	}
 			
-	void _contextFlush(CommandContext& context, Engine::Handle engine)
+	void _contextFlush(CommandContext& context, Engine& engine)
 	{
 		context.frameIndex = (context.frameIndex + 1) % 2;
-		context.currentCommandBuffer = engine->commandBuffers[engine->currentFrameIndex];
+		context.currentCommandBuffer = engine.commandBuffers[engine.currentFrameIndex];
 
 		for (std::function<void(void)> function : context.perFrameCleanupArrays[context.frameIndex]) {
 			function();
@@ -62,7 +62,7 @@ namespace Vivium {
 		context.perFrameCleanupArrays[context.frameIndex].clear();
 	}
 			
-	void _cmdCreateRenderPass(Engine::Handle engine, VkRenderPass* renderPass, VkFormat imageFormat, VkSampleCountFlagBits sampleCount) {
+	void _cmdCreateRenderPass(Engine& engine, VkRenderPass* renderPass, VkFormat imageFormat, VkSampleCountFlagBits sampleCount) {
 		// TODO: lots of code required for making this work when not multisampling
 		VkAttachmentDescription colorAttachment{};
 		colorAttachment.format = imageFormat;
@@ -124,33 +124,33 @@ namespace Vivium {
 		renderPassInfo.dependencyCount = 1;
 		renderPassInfo.pDependencies = &dependency;
 
-		VIVIUM_VK_CHECK(vkCreateRenderPass(engine->device, &renderPassInfo, nullptr, renderPass),
+		VIVIUM_VK_CHECK(vkCreateRenderPass(engine.device, &renderPassInfo, nullptr, renderPass),
 			"Failed to create render pass");
 	}
 
-	void _cmdCreateBuffer(Engine::Handle engine, VkBuffer* buffer, uint64_t size, BufferUsage usage, VkMemoryRequirements* memoryRequirements, const VkAllocationCallbacks* allocationCallbacks) {
+	void _cmdCreateBuffer(Engine& engine, VkBuffer* buffer, uint64_t size, BufferUsage usage, VkMemoryRequirements* memoryRequirements, const VkAllocationCallbacks* allocationCallbacks) {
 		VkBufferCreateInfo bufferCreateInfo{};
 		bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		bufferCreateInfo.size = size;
 		bufferCreateInfo.usage = static_cast<VkBufferUsageFlags>(usage);
 		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-		VIVIUM_VK_CHECK(vkCreateBuffer(engine->device, &bufferCreateInfo, allocationCallbacks, buffer), "Failed to create buffer");
-		vkGetBufferMemoryRequirements(engine->device, *buffer, memoryRequirements);
+		VIVIUM_VK_CHECK(vkCreateBuffer(engine.device, &bufferCreateInfo, allocationCallbacks, buffer), "Failed to create buffer");
+		vkGetBufferMemoryRequirements(engine.device, *buffer, memoryRequirements);
 	}
 
-	void _cmdCreateCommandPool(Engine::Handle engine, VkCommandPool* pool, VkCommandPoolCreateFlags flags) {
+	void _cmdCreateCommandPool(Engine& engine, VkCommandPool* pool, VkCommandPoolCreateFlags flags) {
 		VkCommandPoolCreateInfo poolCreateInfo{};
 		poolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		poolCreateInfo.flags = flags;
 
 		VIVIUM_VK_CHECK(
-			vkCreateCommandPool(engine->device, &poolCreateInfo, nullptr, pool),
+			vkCreateCommandPool(engine.device, &poolCreateInfo, nullptr, pool),
 			"Failed to create command pool"
 		);
 	}
 
-	void _cmdCreateCommandBuffers(Engine::Handle engine, VkCommandPool pool, VkCommandBuffer* commandBuffers, uint64_t count)
+	void _cmdCreateCommandBuffers(Engine& engine, VkCommandPool pool, VkCommandBuffer* commandBuffers, uint64_t count)
 	{
 		VkCommandBufferAllocateInfo allocateCreateInfo{};
 		allocateCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -159,7 +159,7 @@ namespace Vivium {
 		allocateCreateInfo.commandBufferCount = static_cast<uint32_t>(count);
 
 		VIVIUM_VK_CHECK(vkAllocateCommandBuffers(
-			engine->device,
+			engine.device,
 			&allocateCreateInfo,
 			commandBuffers
 		), "Failed to allocate command buffers");
@@ -195,7 +195,7 @@ namespace Vivium {
 		vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
 	}
 
-	void _cmdCreateTransientStagingBuffer(Engine::Handle engine, VkBuffer* buffer, VkDeviceMemory* memory, uint64_t size, void** mapping)
+	void _cmdCreateTransientStagingBuffer(Engine& engine, VkBuffer* buffer, VkDeviceMemory* memory, uint64_t size, void** mapping)
 	{
 		VkMemoryRequirements memoryRequirements;
 		_cmdCreateBuffer(engine, buffer, size, BufferUsage::STAGING, &memoryRequirements, nullptr);
@@ -210,14 +210,14 @@ namespace Vivium {
 		);
 
 		VIVIUM_VK_CHECK(vkAllocateMemory(
-			engine->device,
+			engine.device,
 			&allocateInfo,
 			nullptr,
 			memory
 		), "Failed to allocate memory");
 
 		VIVIUM_VK_CHECK(vkMapMemory(
-			engine->device,
+			engine.device,
 			*memory,
 			0,
 			size,
@@ -226,18 +226,18 @@ namespace Vivium {
 		), "Failed to map memory");
 
 		VIVIUM_VK_CHECK(vkBindBufferMemory(
-			engine->device,
+			engine.device,
 			*buffer,
 			*memory,
 			0
 		), "Failed to bind buffer to memory");
 	}
 
-	void _cmdFreeTransientStagingBuffer(Engine::Handle engine, VkBuffer buffer, VkDeviceMemory memory)
+	void _cmdFreeTransientStagingBuffer(Engine& engine, VkBuffer buffer, VkDeviceMemory memory)
 	{
-		vkDestroyBuffer(engine->device, buffer, nullptr);
-		vkUnmapMemory(engine->device, memory);
-		vkFreeMemory(engine->device, memory, nullptr);
+		vkDestroyBuffer(engine.device, buffer, nullptr);
+		vkUnmapMemory(engine.device, memory);
+		vkFreeMemory(engine.device, memory, nullptr);
 	}
 
 	void _cmdTransitionImageLayout(VkImage image, VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout, VkPipelineStageFlags sourceStage, VkPipelineStageFlags destinationStage, VkAccessFlags sourceAccess, VkAccessFlags destinationAccess, VkImageMemoryBarrier* barrier)
@@ -267,7 +267,7 @@ namespace Vivium {
 		);
 	}
 
-	void _cmdCreateImage(Engine::Handle engine, VkImage* image, uint32_t width, uint32_t height, TextureFormat format, VkSampleCountFlagBits sampleCount, VkImageLayout initialLayout, VkImageUsageFlags usage, const VkAllocationCallbacks* allocationCallbacks)
+	void _cmdCreateImage(Engine& engine, VkImage* image, uint32_t width, uint32_t height, TextureFormat format, VkSampleCountFlagBits sampleCount, VkImageLayout initialLayout, VkImageUsageFlags usage, const VkAllocationCallbacks* allocationCallbacks)
 	{
 		VkImageCreateInfo imageCreateInfo{};
 		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -286,7 +286,7 @@ namespace Vivium {
 		imageCreateInfo.flags = 0;
 
 		VIVIUM_VK_CHECK(vkCreateImage(
-			engine->device,
+			engine.device,
 			&imageCreateInfo,
 			allocationCallbacks,
 			image),
@@ -294,7 +294,7 @@ namespace Vivium {
 		);
 	}
 
-	void _cmdCreateView(Engine::Handle engine, VkImageView* view, TextureFormat format, VkImage image, const VkAllocationCallbacks* allocationCallbacks)
+	void _cmdCreateView(Engine& engine, VkImageView* view, TextureFormat format, VkImage image, const VkAllocationCallbacks* allocationCallbacks)
 	{
 		VkImageViewCreateInfo viewCreateInfo{};
 		viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -308,7 +308,7 @@ namespace Vivium {
 		viewCreateInfo.subresourceRange.layerCount = 1;
 
 		VIVIUM_VK_CHECK(vkCreateImageView(
-			engine->device,
+			engine.device,
 			&viewCreateInfo,
 			allocationCallbacks,
 			view),
@@ -316,7 +316,7 @@ namespace Vivium {
 		);
 	}
 
-	void _cmdCreateSampler(Engine::Handle engine, VkSampler* sampler, TextureFilter filter, const VkAllocationCallbacks* allocationCallbacks)
+	void _cmdCreateSampler(Engine& engine, VkSampler* sampler, TextureFilter filter, const VkAllocationCallbacks* allocationCallbacks)
 	{
 		VkSamplerCreateInfo samplerCreateInfo{};
 		samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -340,14 +340,14 @@ namespace Vivium {
 		samplerCreateInfo.maxLod = 0.0f;
 
 		VIVIUM_VK_CHECK(vkCreateSampler(
-			engine->device,
+			engine.device,
 			&samplerCreateInfo,
 			allocationCallbacks,
 			sampler
 		), "Failed to create texture sampler");
 	}
 
-	void _cmdCreatePipeline(Engine::Handle engine, ResourceManager& manager, VkPipeline* pipeline, VkPipelineLayout* layout, VkRenderPass renderPass, const std::span<const ShaderReference> shaders, const std::span<const DescriptorLayoutReference> descriptorLayouts, const std::span<const PushConstant> pushConstants, const BufferLayout& bufferLayout, VkSampleCountFlagBits sampleCount, const VkAllocationCallbacks* layoutAllocationCallback, const VkAllocationCallbacks* pipelineAllocationCallback) {
+	void _cmdCreatePipeline(Engine& engine, ResourceManager& manager, VkPipeline* pipeline, VkPipelineLayout* layout, VkRenderPass renderPass, const std::span<const ShaderReference> shaders, const std::span<const DescriptorLayoutReference> descriptorLayouts, const std::span<const PushConstant> pushConstants, const BufferLayout& bufferLayout, VkSampleCountFlagBits sampleCount, const VkAllocationCallbacks* layoutAllocationCallback, const VkAllocationCallbacks* pipelineAllocationCallback) {
 		std::vector<VkPipelineShaderStageCreateInfo> shaderStages(shaders.size());
 
 		for (uint32_t i = 0; i < shaders.size(); i++) {
@@ -444,7 +444,7 @@ namespace Vivium {
 		pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstants.size());
 
 		VIVIUM_VK_CHECK(vkCreatePipelineLayout(
-			engine->device,
+			engine.device,
 			&pipelineLayoutInfo,
 			layoutAllocationCallback,
 			layout),
@@ -470,7 +470,7 @@ namespace Vivium {
 		pipelineInfo.basePipelineIndex = -1;
 
 		VIVIUM_VK_CHECK(vkCreateGraphicsPipelines(
-			engine->device,
+			engine.device,
 			VK_NULL_HANDLE,
 			1,
 			&pipelineInfo,

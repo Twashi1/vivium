@@ -2,13 +2,13 @@
 #include "../resource_manager.h"
 
 namespace Vivium {
-	void dropPipeline(Pipeline& pipeline, Engine::Handle engine)
+	void dropPipeline(Pipeline& pipeline, Engine& engine)
 	{
-		vkDestroyPipelineLayout(engine->device, pipeline.layout, nullptr);
-		vkDestroyPipeline(engine->device, pipeline.pipeline, nullptr);
+		vkDestroyPipelineLayout(engine.device, pipeline.layout, nullptr);
+		vkDestroyPipeline(engine.device, pipeline.pipeline, nullptr);
 	}
 
-	PipelineSpecification PipelineSpecification::fromWindow(const std::span<const ShaderReference> shaders, const BufferLayout& bufferLayout, const std::span<const DescriptorLayoutReference> descriptorLayouts, const std::span<const PushConstant> pushConstants, Engine::Handle engine, Window::Handle window)
+	PipelineSpecification PipelineSpecification::fromWindow(const std::span<const ShaderReference> shaders, const BufferLayout& bufferLayout, const std::span<const DescriptorLayoutReference> descriptorLayouts, const std::span<const PushConstant> pushConstants, Engine* engine, Window& window)
 	{
 		PipelineSpecification specification;
 
@@ -18,7 +18,7 @@ namespace Vivium {
 		specification.pushConstants = std::vector<PushConstant>(pushConstants.begin(), pushConstants.end());
 		specification.engine = engine;
 		specification.target = _RenderTarget::WINDOW;
-		specification.sampleCount = window->multisampleCount;
+		specification.sampleCount = window.multisampleCount;
 
 		return specification;
 	}

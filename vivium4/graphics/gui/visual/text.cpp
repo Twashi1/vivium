@@ -134,7 +134,7 @@ namespace Vivium {
 		cmdDrawIndexed(context, indexCountBatch(text.batch), 1);
 	}
 
-	void calculateTextBatch(TextBatch& textBatch, std::span<Text*> textObjects, CommandContext& context, GUIContext& guiContext, Engine::Handle engine)
+	void calculateTextBatch(TextBatch& textBatch, std::span<Text*> textObjects, CommandContext& context, GUIContext& guiContext, Engine& engine)
 	{
 		if (textObjects.size() == 0) { return; }
 
@@ -185,7 +185,7 @@ namespace Vivium {
 		endSubmissionBatch(textBatch.batch, context, engine);
 	}
 
-	TextBatch submitTextBatch(ResourceManager& manager, Engine::Handle engine, GUIContext& guiContext, TextBatchSpecification const& specification)
+	TextBatch submitTextBatch(ResourceManager& manager, Engine& engine, GUIContext& guiContext, TextBatchSpecification const& specification)
 	{
 		TextBatch text;
 
@@ -234,7 +234,7 @@ namespace Vivium {
 		return Text{ base, specification.characters, specification.color, specification.metrics, specification.alignment };
 	}
 
-	void dropTextBatch(TextBatch& text, Engine::Handle engine)
+	void dropTextBatch(TextBatch& text, Engine& engine)
 	{
 		dropBatch(text.batch, engine);
 		dropTexture(text.fontTexture.resource, engine);

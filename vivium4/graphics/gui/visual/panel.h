@@ -19,5 +19,5 @@ namespace Vivium {
 	};
 
 	Panel createPanel(GUIContext& guiContext, PanelSpecification specification);
-	void renderPanels(const std::span<Panel*> panels, CommandContext& context, GUIContext& guiContext, Window::Handle window);
+	void renderPanels(const std::span<Panel*> panels, CommandContext& context, GUIContext& guiContext, Window& window);
 }

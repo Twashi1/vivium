@@ -559,26 +559,24 @@ namespace Vivium {
 		
 	void engineEndFrame(Engine& engine, Window& window)
 	{
-		// TODO: fix variable naming style conventions
-
 		VIVIUM_VK_CHECK(vkEndCommandBuffer(engine.commandBuffers[engine.currentFrameIndex]),
 			"Failed to record command buffer");
 
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-		VkSemaphore wait_semaphores[] = { engine.imageAvailableSemaphores[engine.currentFrameIndex] };
-		VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		VkSemaphore waitSemaphores[] = { engine.imageAvailableSemaphores[engine.currentFrameIndex] };
+		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pWaitSemaphores = wait_semaphores;
-		submitInfo.pWaitDstStageMask = wait_stages;
+		submitInfo.pWaitSemaphores = waitSemaphores;
+		submitInfo.pWaitDstStageMask = waitStages;
 
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pCommandBuffers = &engine.commandBuffers[engine.currentFrameIndex];
 
-		VkSemaphore signal_sempahores[] = { engine.renderFinishedSemaphores[engine.currentFrameIndex] };
+		VkSemaphore signalSemaphores[] = { engine.renderFinishedSemaphores[engine.currentFrameIndex] };
 		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = signal_sempahores;
+		submitInfo.pSignalSemaphores = signalSemaphores;
 
 		VIVIUM_VK_CHECK(vkQueueSubmit(engine.graphicsQueue, 1, &submitInfo, engine.inFlightFences[engine.currentFrameIndex]),
 			"Failed to submit draw command to buffer");
@@ -587,7 +585,7 @@ namespace Vivium {
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
 		presentInfo.waitSemaphoreCount = 1;
-		presentInfo.pWaitSemaphores = signal_sempahores;
+		presentInfo.pWaitSemaphores = signalSemaphores;
 
 		VkSwapchainKHR swapChains[] = { window.swapChain };
 		presentInfo.swapchainCount = 1;
@@ -595,16 +593,13 @@ namespace Vivium {
 
 		presentInfo.pImageIndices = &engine.currentImageIndex;
 
-		VkResult queue_present_result = vkQueuePresentKHR(engine.presentQueue, &presentInfo);
+		VkResult queuePresentResult = vkQueuePresentKHR(engine.presentQueue, &presentInfo);
 
-		if (queue_present_result == VK_ERROR_OUT_OF_DATE_KHR
-			|| queue_present_result == VK_SUBOPTIMAL_KHR
-			|| window.wasFramebufferResized) {
-
-			window.wasFramebufferResized = false;
+		if (queuePresentResult == VK_ERROR_OUT_OF_DATE_KHR
+			|| queuePresentResult == VK_SUBOPTIMAL_KHR) {
 			_recreateSwapChain(window, engine);
 		}
-		else if (queue_present_result != VK_SUCCESS) {
+		else if (queuePresentResult != VK_SUCCESS) {
 			VIVIUM_LOG(Log::FATAL, "Failed to present swap chain image");
 		}
 

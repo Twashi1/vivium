@@ -139,14 +139,14 @@ void _draw(State& state)
 	Button* buttons[] = { &state.editor.entityView.createButton };
 	renderButtons(buttons, state.context, state.guiContext, state.window);
 
-	renderTextBatch(state.editor.entityView.entityTextBatch, state.context, state.guiContext, Math::orthogonalPerspective2D(Window::dimensions(state.window), F32x2(0.0f), 0.0f, 1.0f));
+	renderTextBatch(state.editor.entityView.entityTextBatch, state.context, state.guiContext, Math::orthogonalPerspective2D(windowDimensions(state.window), F32x2(0.0f), 0.0f, 1.0f));
 }
 
 void initialise(State& state) {
 	Font::init();
 
-	state.window = Window::create(&state.storage, Window::Options{});
-	state.engine = Engine::create(&state.storage, Engine::Options{}, state.window);
+	state.window = createWindow(WindowOptions{});
+	state.engine = createEngine(EngineOptions{}, state.window);
 
 	Input::init(state.window);
 
@@ -167,22 +167,22 @@ void initialise(State& state) {
 }
 
 void gameloop(State& state) {
-	while (Window::isOpen(state.window, state.engine)) {
-		Engine::beginFrame(state.engine, state.window);
+	while (isWindowOpen(state.window, state.engine)) {
+		engineBeginFrame(state.engine, state.window);
 		_contextFlush(state.context, state.engine);
 
 		Input::update(state.window);
 
-		updateGUI(Window::dimensions(state.window), state.guiContext);
+		updateGUI(windowDimensions(state.window), state.guiContext);
 		_update(state);
 
-		Engine::beginRender(state.engine, state.window);
+		engineBeginRender(state.engine, state.window);
 
 		_draw(state);
 
-		Engine::endRender(state.engine);
+		engineEndRender(state.engine);
 
-		Engine::endFrame(state.engine, state.window);
+		engineEndFrame(state.engine, state.window);
 	}
 }
 
@@ -193,8 +193,8 @@ void terminate(State& state) {
 
 	_drop(state);
 
-	Window::drop(&state.storage, state.window, state.engine);
-	Engine::drop(&state.storage, state.engine, state.window);
+	dropWindow(state.window, state.engine);
+	dropEngine(state.engine, state.window);
 
 	Font::terminate();
 }

@@ -49,22 +49,22 @@ namespace Vivium {
 		return m_buttonListeners[button];
 	}
 
-	void Input::update(Window::Handle window)
+	void Input::update(Window& window)
 	{
 		float deltaTime = m_holdTimer.reset();
 
 		double cursorX, cursorY;
-		glfwGetCursorPos(window->glfwWindow, &cursorX, &cursorY);
+		glfwGetCursorPos(window.glfwWindow, &cursorX, &cursorY);
 
 		// Flip y
-		m_cursorPosition = F32x2(cursorX, window->dimensions.y - cursorY);
-
+		m_cursorPosition = F32x2(cursorX, windowDimensions(window).y - cursorY);
+		
 		for (int i = _KEY_MIN; i < _KEY_MAX; i++) {
-			m_updateListener(m_keyListeners[i], glfwGetKey(window->glfwWindow, i), deltaTime);
+			m_updateListener(m_keyListeners[i], glfwGetKey(window.glfwWindow, i), deltaTime);
 		}
 
 		for (int i = _BTN_MIN; i < _BTN_MAX; i++) {
-			m_updateListener(m_buttonListeners[i], glfwGetMouseButton(window->glfwWindow, i), deltaTime);
+			m_updateListener(m_buttonListeners[i], glfwGetMouseButton(window.glfwWindow, i), deltaTime);
 		}
 
 		// Swap front and back character input
@@ -104,9 +104,9 @@ namespace Vivium {
 		}
 	}
 
-	void Input::init(Window::Handle window)
+	void Input::init(Window& window)
 	{
-		glfwSetCharCallback(window->glfwWindow, m_characterInputCallback);
+		glfwSetCharCallback(window.glfwWindow, m_characterInputCallback);
 	
 		m_holdTimer.reset();
 	}

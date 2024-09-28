@@ -16,5 +16,5 @@ namespace Vivium {
 		uint64_t referenceIndex;
 	};
 		
-	void dropDescriptorLayout(DescriptorLayout& layout, Engine::Handle engine);
+	void dropDescriptorLayout(DescriptorLayout& layout, Engine& engine);
 }

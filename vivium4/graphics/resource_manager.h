@@ -97,26 +97,26 @@ namespace Vivium {
 		std::vector<VkDescriptorPool> descriptorPools;
 	};
 
-	ResourceManager::DeviceMemoryHandle _allocateDeviceMemory(ResourceManager& manager, Engine::Handle engine, uint32_t memoryTypeBits, MemoryType memoryType, uint64_t size);
+	ResourceManager::DeviceMemoryHandle _allocateDeviceMemory(ResourceManager& manager, Engine& engine, uint32_t memoryTypeBits, MemoryType memoryType, uint64_t size);
 
 	// 1.
-	void _allocateBuffers(ResourceManager& manager, Engine::Handle engine, MemoryType memoryType);
-	void _allocateTextures(ResourceManager& manager, Engine::Handle engine);
-	void _allocateFramebuffers(ResourceManager& manager, Engine::Handle engine);
-	void _allocateDescriptorLayouts(ResourceManager& manager, Engine::Handle engine);
-	void _allocateShaders(ResourceManager& manager, Engine::Handle engine);
+	void _allocateBuffers(ResourceManager& manager, Engine& engine, MemoryType memoryType);
+	void _allocateTextures(ResourceManager& manager, Engine& engine);
+	void _allocateFramebuffers(ResourceManager& manager, Engine& engine);
+	void _allocateDescriptorLayouts(ResourceManager& manager, Engine& engine);
+	void _allocateShaders(ResourceManager& manager, Engine& engine);
 
 	// 2.
-	void _allocateDescriptorSets(ResourceManager& manager, Engine::Handle engine);
+	void _allocateDescriptorSets(ResourceManager& manager, Engine& engine);
 
 	// 3.
-	void _allocatePipelines(ResourceManager& manager, Engine::Handle engine);
+	void _allocatePipelines(ResourceManager& manager, Engine& engine);
 
-	void allocateManager(ResourceManager& manager, Engine::Handle engine);
+	void allocateManager(ResourceManager& manager, Engine& engine);
 	void clearManagerReferences(ResourceManager& manager);
 
 	ResourceManager createManager();
-	void dropManager(ResourceManager& manager, Engine::Handle engine);
+	void dropManager(ResourceManager& manager, Engine& engine);
 
 	template <typename Reference, typename Specification, typename VResource>
 	void _addToResourceField(ResourceManager::ResourceField<Specification, VResource>& resourceField, Reference* memory, std::span<Specification const> const specifications) {

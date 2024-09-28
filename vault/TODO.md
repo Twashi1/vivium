@@ -1,8 +1,12 @@
 
 ## High priority
 
-- Window framebuffer resize callback depends on having the window itself in some way, but we can't do this without some guaranteed reference
+- Input class refactor
+- Math class namespaces
 - Check non-multisampled rendering is still working
+- Serialiser is super old
+- Multi-window rendering
+- Pipeline takes `Engine*`, ambiguous as to how long this pointer must stay alive for
 ## ECS
 
 - Iterators for single component view
@@ -100,9 +104,7 @@
 ## Possible
 
 - Consider a less literal usage of `const`, where `const` does apply to objects whose GPU/host memory is being modified
-- Minimal namespaces (only `Vivium`), instead just write everything out
-	- `Storage::Static` and `Storage::Dynamic` no longer have a clear separation, would have to integrate it in the name somehow
-
+- Consider a model where we don't return any values or rarely return values, instead opting for a result code for functions that could error
 ## Aspirational
 
 - 3D workflow (camera + controller math)

@@ -20,7 +20,7 @@ namespace Vivium {
 		_RenderTarget target;
 
 		union {
-			Engine::Handle engine;
+			Engine* engine;
 			FramebufferReference framebuffer;
 		};
 
@@ -33,8 +33,8 @@ namespace Vivium {
 			const BufferLayout& bufferLayout,
 			const std::span<const DescriptorLayoutReference> descriptorLayouts,
 			const std::span<const PushConstant> pushConstants,
-			Engine::Handle engine,
-			Window::Handle window
+			Engine* engine,
+			Window& window
 		);
 
 		static PipelineSpecification fromFramebuffer(
@@ -57,5 +57,5 @@ namespace Vivium {
 		uint64_t referenceIndex;
 	};
 
-	void dropPipeline(Pipeline& pipeline, Engine::Handle engine);
+	void dropPipeline(Pipeline& pipeline, Engine& engine);
 }

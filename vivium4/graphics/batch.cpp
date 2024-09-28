@@ -67,7 +67,7 @@ namespace Vivium {
 		return batch.lastSubmissionIndexCount;
 	}
 
-	void dropBatch(Batch& batch, Engine::Handle engine)
+	void dropBatch(Batch& batch, Engine& engine)
 	{
 		dropBuffer(batch.vertexStaging.resource, engine);
 		dropBuffer(batch.vertexDevice.resource, engine);
@@ -75,7 +75,7 @@ namespace Vivium {
 		dropBuffer(batch.indexDevice.resource, engine);
 	}
 
-	Batch submitBatch(Engine::Handle engine, ResourceManager& manager, BatchSpecification specification)
+	Batch submitBatch(Engine& engine, ResourceManager& manager, BatchSpecification specification)
 	{
 		Batch batch;
 
@@ -109,7 +109,7 @@ namespace Vivium {
 		return batch;
 	}
 
-	void endSubmissionBatch(Batch& batch, CommandContext& context, Engine::Handle engine)
+	void endSubmissionBatch(Batch& batch, CommandContext& context, Engine& engine)
 	{
 		contextBeginTransfer(context);
 		cmdTransferBuffer(context, batch.vertexStaging.resource, batch.verticesSubmitted * batch.bufferLayout.stride, 0, batch.vertexDevice.resource);

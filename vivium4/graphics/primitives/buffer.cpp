@@ -63,8 +63,8 @@ namespace Vivium {
 		return layout;
 	}
 
-	void dropBuffer(Buffer& buffer, Engine::Handle engine)
+	void dropBuffer(Buffer& buffer, Engine& engine)
 	{
-		vkDestroyBuffer(engine->device, buffer.buffer, nullptr);
+		vkDestroyBuffer(engine.device, buffer.buffer, nullptr);
 	}
 }

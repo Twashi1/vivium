@@ -38,5 +38,5 @@ namespace Vivium {
 		uint64_t referenceIndex;
 	};
 
-	void dropTexture(Texture& texture, Engine::Handle engine);
+	void dropTexture(Texture& texture, Engine& engine);
 }

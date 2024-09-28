@@ -5,11 +5,11 @@ namespace Vivium {
 		return static_cast<VkMemoryPropertyFlags>(type) & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
 	}
 	
-	uint32_t findMemoryType(Engine::Handle engine, uint32_t typeFilter, VkMemoryPropertyFlags memoryProperties)
+	uint32_t findMemoryType(Engine& engine, uint32_t typeFilter, VkMemoryPropertyFlags memoryProperties)
 	{
 		VkPhysicalDeviceMemoryProperties deviceMemoryProperties;
 		vkGetPhysicalDeviceMemoryProperties(
-			engine->physicalDevice,
+			engine.physicalDevice,
 			&deviceMemoryProperties
 		);
 

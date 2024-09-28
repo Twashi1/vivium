@@ -27,15 +27,15 @@ namespace Vivium {
 		uint64_t referenceIndex;
 	};
 
-	int getRequestedMultisamples(Engine::Handle engine, int multisampleCount);
+	int getRequestedMultisamples(Engine& engine, int multisampleCount);
 		
-	void dropFramebuffer(Framebuffer& framebuffer, Engine::Handle engine);
+	void dropFramebuffer(Framebuffer& framebuffer, Engine& engine);
 
 	// TODO: how to organise these, so we can also render to window
 	// TODO: beginFrame/endFrame don't even require framebuffer at any point!!
-	void beginFramebufferFrame(Framebuffer& framebuffer, CommandContext& context, Engine::Handle engine);
+	void beginFramebufferFrame(Framebuffer& framebuffer, CommandContext& context, Engine& engine);
 	void beginFramebufferRender(Framebuffer& framebuffer, CommandContext& context);
 	// TODO: doesn't even take fraembuffer?
 	void endFramebufferRender(Framebuffer& framebuffer, CommandContext& context);
-	void endFramebufferFrame(Framebuffer& framebuffer, CommandContext& context, Engine::Handle engine);
+	void endFramebufferFrame(Framebuffer& framebuffer, CommandContext& context, Engine& engine);
 }

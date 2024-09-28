@@ -15,7 +15,7 @@ namespace Vivium {
 		return panel;
 	}
 
-	void renderPanels(const std::span<Panel*> panels, CommandContext& context, GUIContext& guiContext, Window::Handle window)
+	void renderPanels(const std::span<Panel*> panels, CommandContext& context, GUIContext& guiContext, Window& window)
 	{
 		std::vector<_GUIPanelInstanceData> panelData(panels.size());
 
@@ -32,7 +32,7 @@ namespace Vivium {
 			panelData[i] = instance;
 		}
 
-		Math::Perspective perspective = Math::orthogonalPerspective2D(Window::dimensions(window), F32x2(0.0f), 0.0f, 1.0f);
+		Math::Perspective perspective = Math::orthogonalPerspective2D(windowDimensions(window), F32x2(0.0f), 0.0f, 1.0f);
 
 		setBuffer(guiContext.panel.storageBuffer.resource, 0, panelData.data(), panelData.size() * sizeof(_GUIPanelInstanceData));
 		cmdBindPipeline(context, guiContext.panel.pipeline.resource);

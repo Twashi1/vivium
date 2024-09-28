@@ -19,5 +19,5 @@ namespace Vivium {
 	};
 
 	bool isMappable(MemoryType type);
-	uint32_t findMemoryType(Engine::Handle engine, uint32_t typeFilter, VkMemoryPropertyFlags memoryProperties);
+	uint32_t findMemoryType(Engine& engine, uint32_t typeFilter, VkMemoryPropertyFlags memoryProperties);
 }

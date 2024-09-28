@@ -212,9 +212,9 @@ namespace Vivium {
 		static Listener get(Key key);
 		static Listener get(Button button);
 
-		static void update(Window::Handle window);
+		static void update(Window& window);
 
-		static void init(Window::Handle window);
+		static void init(Window& window);
 
 		static Modifier getModifiers();
 		static F32x2 getCursor();

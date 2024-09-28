@@ -15,8 +15,6 @@ namespace Vivium {
 		int multisampleCount = VK_SAMPLE_COUNT_4_BIT;
 	};
 
-	void _framebufferResizeCallback(GLFWwindow* window, int width, int height);
-
 	// TODO: probably best to make vulkan window resource separate from main window?
 	struct Window {
 		// GLFW window
@@ -35,8 +33,6 @@ namespace Vivium {
 		VkImageView multisampleColorImageView;
 		VkDeviceMemory multisampleColorMemory;
 		VkSampleCountFlagBits multisampleCount;
-
-		bool wasFramebufferResized;
 	};
 
 	void _createSwapChain(Window& window, Engine& engine);

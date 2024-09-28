@@ -59,7 +59,7 @@ namespace Vivium {
 		uint64_t referenceIndex;
 	};
 
-	void dropShader(Shader& shader, Engine::Handle engine);
+	void dropShader(Shader& shader, Engine& engine);
 
 	// TODO: returning the specification is convenient, but promotes bad practice
 	ShaderSpecification compileShader(ShaderStage stage, const char* sourceFilename, const char* destFilename);

@@ -1,7 +1,7 @@
 #include "context.h"
 
 namespace Vivium {
-	void _submitGenericGUIContext(GUIContext& guiContext, ResourceManager& manager, Engine::Handle engine, Window::Handle window)
+	void _submitGenericGUIContext(GUIContext& guiContext, ResourceManager& manager, Engine& engine, Window& window)
 	{
 		// Create null element
 		guiContext.defaultParent = createGUIElement(guiContext);
@@ -18,7 +18,7 @@ namespace Vivium {
 		guiContext.rectIndexBuffer.reference = deviceBuffers[1];
 	}
 
-	void _submitTextGUIContext(GUIContext& guiContext, ResourceManager& manager, Engine::Handle engine, Window::Handle window)
+	void _submitTextGUIContext(GUIContext& guiContext, ResourceManager& manager, Engine& engine, Window& window)
 	{
 		guiContext.text.bufferLayout = BufferLayout::fromTypes(std::vector<ShaderDataType>({
 			ShaderDataType::VEC2,
@@ -48,13 +48,13 @@ namespace Vivium {
 				guiContext.text.bufferLayout,
 				std::vector<DescriptorLayoutReference>({ guiContext.text.descriptorLayout.reference }),
 				std::vector<PushConstant>({ PushConstant(ShaderStage::VERTEX, 0, sizeof(Math::Perspective))}),
-				engine,
+				&engine,
 				window
 			)
 		}));
 	}
 
-	void _submitButtonGUIContext(GUIContext& guiContext, ResourceManager& manager, Engine::Handle engine, Window::Handle window)
+	void _submitButtonGUIContext(GUIContext& guiContext, ResourceManager& manager, Engine& engine, Window& window)
 	{
 		submitResource(manager, &guiContext.button.storageBuffer.reference, MemoryType::UNIFORM,
 			std::vector<BufferSpecification>({ BufferSpecification(guiContext.button.MAX_BUTTONS * sizeof(_GUIButtonInstanceData), BufferUsage::STORAGE) }));
@@ -87,12 +87,12 @@ namespace Vivium {
 				BufferLayout::fromTypes(std::vector<ShaderDataType>({ ShaderDataType::VEC2 })),
 				std::vector<DescriptorLayoutReference>({ guiContext.button.descriptorLayout.reference }),
 				std::vector<PushConstant>({ PushConstant(ShaderStage::VERTEX, 0, sizeof(Math::Perspective))}),
-				engine,
+				&engine,
 				window
 			) }));
 	}
 
-	void _submitPanelGUIContext(GUIContext& guiContext, ResourceManager& manager, Engine::Handle engine, Window::Handle window)
+	void _submitPanelGUIContext(GUIContext& guiContext, ResourceManager& manager, Engine& engine, Window& window)
 	{
 		submitResource(manager, &guiContext.panel.storageBuffer.reference, MemoryType::UNIFORM,
 			std::vector<BufferSpecification>({ BufferSpecification(guiContext.panel.MAX_PANELS * sizeof(_GUIPanelInstanceData), BufferUsage::STORAGE) }));
@@ -125,7 +125,7 @@ namespace Vivium {
 				BufferLayout::fromTypes(std::vector<ShaderDataType>({ ShaderDataType::VEC2 })),
 				std::vector<DescriptorLayoutReference>({ guiContext.panel.descriptorLayout.reference }),
 				std::vector<PushConstant>({ PushConstant(ShaderStage::VERTEX, 0, sizeof(Math::Perspective))}),
-				engine,
+				&engine,
 				window
 			) }));
 	}
@@ -143,7 +143,7 @@ namespace Vivium {
 	}
 
 	// TODO: create doesn't match the pattern, elements that require a setup, should also be `submit`
-	GUIContext createGUIContext(ResourceManager& manager, Engine::Handle engine, Window::Handle window) {
+	GUIContext createGUIContext(ResourceManager& manager, Engine& engine, Window& window) {
 		// TODO: move the code, should be done in some initialisation function
 		// Generate the font if it doesn't exist
 		if (!std::filesystem::exists("vivium4/res/fonts/consola.sdf"))
@@ -161,7 +161,7 @@ namespace Vivium {
 		return context;
 	}
 
-	void setupGUIContext(GUIContext& guiContext, ResourceManager& manager, CommandContext& context, Engine::Handle engine)
+	void setupGUIContext(GUIContext& guiContext, ResourceManager& manager, CommandContext& context, Engine& engine)
 	{
 		convertResourceReference(manager, guiContext.text.pipeline);
 		convertResourceReference(manager, guiContext.text.descriptorLayout);
@@ -237,7 +237,7 @@ namespace Vivium {
 		updateGUIElement(GUIElementReference(NULL), GUIElementReference(NULL), windowDimensions, guiContext);
 	}
 
-	void dropGUIContext(GUIContext& guiContext, Engine::Handle engine) {
+	void dropGUIContext(GUIContext& guiContext, Engine& engine) {
 		guiContext.guiElements = {};
 
 		dropDescriptorLayout(guiContext.text.descriptorLayout.resource, engine);

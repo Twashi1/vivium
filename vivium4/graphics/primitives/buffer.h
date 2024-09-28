@@ -57,5 +57,5 @@ namespace Vivium {
 	void setBuffer(Buffer& buffer, uint64_t bufferOffset, const void* data, uint64_t size);
 	void* getBufferMapping(Buffer& buffer);
 	
-	void dropBuffer(Buffer& buffer, Engine::Handle engine);
+	void dropBuffer(Buffer& buffer, Engine& engine);
 }

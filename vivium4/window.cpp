@@ -3,13 +3,6 @@
 #include "graphics/primitives/framebuffer.h"
 
 namespace Vivium {
-	void _framebufferResizeCallback(GLFWwindow* glfwWindow, int width, int height)
-	{
-		Window& window = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(glfwWindow));
-
-		window.wasFramebufferResized = true;
-	}
-
 	void dropWindow(Window& window, Engine& engine)
 	{
 		_deleteSwapChain(window, engine);
@@ -394,25 +387,21 @@ namespace Vivium {
 	Window createWindow(WindowOptions const& options)
 	{
 		Window window;
+		window.glfwWindow = nullptr;
+		window.surface = VK_NULL_HANDLE;
+		window.swapChain = VK_NULL_HANDLE;
+		window.swapChainImageFormat = VK_FORMAT_UNDEFINED;
+		window.multisampleColorImage = VK_NULL_HANDLE;
+		window.multisampleColorImageView = VK_NULL_HANDLE;
+		window.multisampleColorMemory = VK_NULL_HANDLE;
+		window.multisampleCount = VK_SAMPLE_COUNT_FLAG_BITS_MAX_ENUM;
 
-		// TODO: initialise
-		/*
-		glfwWindow(nullptr),
-		surface(VK_NULL_HANDLE),
-		swapChain(VK_NULL_HANDLE),
-		swapChainImageFormat(VkFormat::VK_FORMAT_UNDEFINED),
-		multisampleColorImage(VK_NULL_HANDLE),
-		multisampleColorImageView(VK_NULL_HANDLE),
-		multisampleColorMemory(VK_NULL_HANDLE),
-		multisampleCount(VkSampleCountFlagBits::VK_SAMPLE_COUNT_FLAG_BITS_MAX_ENUM),
-		wasFramebufferResized(false),
-		dimensions(I32x2(0, 0))
-		*/
-
+		// TODO: multi-window
 		if (!glfwInit()) {
 			VIVIUM_LOG(Log::FATAL, "GLFW failed to initialise");
 		}
 
+		// TODO: better error callback for glfw?
 		glfwSetErrorCallback([](int code, const char* desc) {
 			VIVIUM_LOG(Log::ERROR, "[GLFW {}] {}", code, desc);
 			});
@@ -425,7 +414,6 @@ namespace Vivium {
 		_setWindowOptions(window, options);
 
 		glfwSetWindowUserPointer(window.glfwWindow, &window);
-		glfwSetFramebufferSizeCallback(window.glfwWindow, _framebufferResizeCallback);
 
 		return window;
 	}

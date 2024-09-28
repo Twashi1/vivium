@@ -1,12 +1,12 @@
 #include "button.h"
 
 namespace Vivium {
-	void dropButton(Button& button, Engine::Handle engine, GUIContext& guiContext)
+	void dropButton(Button& button, Engine& engine, GUIContext& guiContext)
 	{
 		dropTextBatch(button.textBatch, engine);
 	}
 
-	Button submitButton(ResourceManager& manager, GUIContext& guiContext, Engine::Handle engine, Window::Handle window, ButtonSpecification specification)
+	Button submitButton(ResourceManager& manager, GUIContext& guiContext, Engine& engine, Window& window, ButtonSpecification specification)
 	{
 		Button button;
 
@@ -39,7 +39,7 @@ namespace Vivium {
 		setupTextBatch(button.textBatch, manager);
 	}
 
-	void setButtonText(Button& button, Engine::Handle engine, Window::Handle window, CommandContext& context, GUIContext& guiContext, std::string_view text)
+	void setButtonText(Button& button, Engine& engine, Window& window, CommandContext& context, GUIContext& guiContext, std::string_view text)
 	{
 		// Early exit if no text
 		if (text.size() == 0) return;
@@ -50,7 +50,7 @@ namespace Vivium {
 		calculateTextBatch(button.textBatch, textObjects, context, guiContext, engine);
 	}
 
-	void renderButtons(const std::span<Button*> buttons, CommandContext& context, GUIContext& guiContext, Window::Handle window)
+	void renderButtons(const std::span<Button*> buttons, CommandContext& context, GUIContext& guiContext, Window& window)
 	{
 		std::vector<_GUIButtonInstanceData> buttonData(buttons.size());
 
@@ -65,7 +65,7 @@ namespace Vivium {
 			buttonData[i] = instance;
 		}
 
-		Math::Perspective perspective = Math::orthogonalPerspective2D(Window::dimensions(window), F32x2(0.0f), 0.0f, 1.0f);
+		Math::Perspective perspective = Math::orthogonalPerspective2D(windowDimensions(window), F32x2(0.0f), 0.0f, 1.0f);
 
 		setBuffer(guiContext.button.storageBuffer.resource, 0, buttonData.data(), buttonData.size() * sizeof(_GUIButtonInstanceData));
 		cmdBindPipeline(context, guiContext.button.pipeline.resource);
