@@ -1,10 +1,6 @@
 #include "resource_manager.h"
 
 namespace Vivium {
-	SharedTrackerData::SharedTrackerData()
-		: deviceMemoryAllocations(0)
-	{}
-
 	ResourceManager::DeviceMemoryHandle::DeviceMemoryHandle()
 		: memory(VK_NULL_HANDLE), mapping(nullptr) {}
 
@@ -43,8 +39,6 @@ namespace Vivium {
 				"Failed to map memory"
 			);
 		}
-
-		sharedTrackerData.deviceMemoryAllocations++;
 
 		manager.deviceMemoryHandles.push_back(deviceMemoryHandle);
 
@@ -159,76 +153,6 @@ namespace Vivium {
 				"Failed to create descriptor set layout");
 		}
 	}
-
-	//void _allocateDynamicBuffers(Engine& engine)
-	//{
-	//	uint64_t specificationIndex = 0;
-	//	uint64_t totalSize = 0;
-
-	//	std::vector<uint64_t> bufferOffsets(dynamicHostBufferSpecifications.size());
-	//	uint32_t memoryTypeBits = 0;
-
-	//	for (std::span<Buffer::Dynamic::Resource>& resourceSpan : dynamicHostBufferMemory) {
-	//		for (uint64_t i = 0; i < resourceSpan.size(); i++) {
-	//			Buffer::Dynamic::Resource& resource = resourceSpan[i];
-	//			Buffer::Dynamic::Specification& specification = dynamicHostBufferSpecifications[specificationIndex];
-	//			VkMemoryRequirements memoryRequirements;
-
-	//			uint64_t totalBufferSize = 0;
-
-	//			// Calculate suballocation alignment
-	//			VkPhysicalDeviceProperties deviceProperties;
-	//			vkGetPhysicalDeviceProperties(engine.physicalDevice, &deviceProperties);
-
-	//			uint64_t suballocationAlignment = deviceProperties.limits.minUniformBufferOffsetAlignment;
-
-	//			resource.suballocationSizes.resize(specification.suballocationSizes.size());
-	//			resource.suballocationOffsets.resize(specification.suballocationSizes.size());
-
-	//			for (uint64_t j = 0; j < specification.suballocationSizes.size(); j++) {
-	//				resource.suballocationSizes[j] = specification.suballocationSizes[j];
-	//				uint32_t suballocationOffset = Math::nearestMultiple(totalBufferSize, suballocationAlignment);
-	//				resource.suballocationOffsets[j] = suballocationOffset;
-	//				totalBufferSize = suballocationOffset + resource.suballocationSizes[j];
-	//			}
-
-	//			// Create the VkBuffer and get the memory requirements
-	//			Commands::createBuffer(engine, &resource.buffer, totalBufferSize, specification.usage, &memoryRequirements, nullptr);
-	//			// Calculate offset this buffer should be at in the device memory
-	//			uint64_t bufferOffset = Math::nearestMultiple(totalSize, memoryRequirements.alignment);
-	//			bufferOffsets[specificationIndex] = bufferOffset;
-	//			totalSize = bufferOffset + memoryRequirements.size;
-	//			// Include memory type bits
-	//			memoryTypeBits |= memoryRequirements.memoryTypeBits;
-
-	//			++specificationIndex;
-	//		}
-	//	}
-
-		//// Get some device memory for these buffers
-		//DeviceMemoryHandle deviceMemoryHandle = allocateDeviceMemory(
-		//	engine,
-		//	memoryTypeBits,
-		//	MemoryType::DYNAMIC_UNIFORM,
-		//	totalSize
-		//);
-
-		//// Bind buffers to memory
-		//specificationIndex = 0;
-
-		//for (std::span<Buffer::Dynamic::Resource>& resource_span : dynamicHostBufferMemory) {
-		//	for (uint64_t i = 0; i < resource_span.size(); i++) {
-		//		Buffer::Dynamic::Resource& resource = resource_span[i];
-
-		//		vkBindBufferMemory(engine.device, resource.buffer, deviceMemoryHandle.memory, bufferOffsets[specificationIndex]);
-
-		//		if (deviceMemoryHandle.mapping != nullptr)
-		//			resource.mapping = reinterpret_cast<uint8_t*>(deviceMemoryHandle.mapping) + bufferOffsets[specificationIndex];
-
-		//		++specificationIndex;
-		//	}
-		//}
-	// }
 
 	void _allocateTextures(ResourceManager& manager, Engine& engine)
 	{
@@ -745,7 +669,7 @@ namespace Vivium {
 
 			switch (specification.target) {
 			case _RenderTarget::WINDOW:
-				resource.renderPass = specification.engine->renderPass; break;
+				resource.renderPass = specification.windowPass; break;
 			case _RenderTarget::FRAMEBUFFER:
 				resource.renderPass = _getReference(manager, specification.framebuffer).renderPass; break;
 			default:
@@ -963,8 +887,6 @@ namespace Vivium {
 
 			vkFreeMemory(engine.device, deviceMemoryHandle.memory, nullptr);
 		}
-
-		sharedTrackerData.deviceMemoryAllocations -= static_cast<uint32_t>(manager.deviceMemoryHandles.size());
 
 		for (VkDescriptorPool descriptorPool : manager.descriptorPools) {
 			vkDestroyDescriptorPool(engine.device, descriptorPool, nullptr);

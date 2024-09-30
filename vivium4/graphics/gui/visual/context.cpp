@@ -48,7 +48,6 @@ namespace Vivium {
 				guiContext.text.bufferLayout,
 				std::vector<DescriptorLayoutReference>({ guiContext.text.descriptorLayout.reference }),
 				std::vector<PushConstant>({ PushConstant(ShaderStage::VERTEX, 0, sizeof(Math::Perspective))}),
-				&engine,
 				window
 			)
 		}));
@@ -87,7 +86,6 @@ namespace Vivium {
 				BufferLayout::fromTypes(std::vector<ShaderDataType>({ ShaderDataType::VEC2 })),
 				std::vector<DescriptorLayoutReference>({ guiContext.button.descriptorLayout.reference }),
 				std::vector<PushConstant>({ PushConstant(ShaderStage::VERTEX, 0, sizeof(Math::Perspective))}),
-				&engine,
 				window
 			) }));
 	}
@@ -125,7 +123,6 @@ namespace Vivium {
 				BufferLayout::fromTypes(std::vector<ShaderDataType>({ ShaderDataType::VEC2 })),
 				std::vector<DescriptorLayoutReference>({ guiContext.panel.descriptorLayout.reference }),
 				std::vector<PushConstant>({ PushConstant(ShaderStage::VERTEX, 0, sizeof(Math::Perspective))}),
-				&engine,
 				window
 			) }));
 	}

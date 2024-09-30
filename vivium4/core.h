@@ -45,4 +45,6 @@
 #define VIVIUM_IS_DEBUG 1
 #endif
 
+#define VIVIUM_FRAMES_IN_FLIGHT 2
+
 #define VIVIUM_GLSLC_PATH "external/vulkan/Bin/glslc.exe"

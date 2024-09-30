@@ -145,8 +145,8 @@ void _draw(State& state)
 void initialise(State& state) {
 	Font::init();
 
-	state.window = createWindow(WindowOptions{});
-	state.engine = createEngine(EngineOptions{}, state.window);
+	state.engine = createEngine(EngineOptions{});
+	state.window = createWindow(WindowOptions{}, state.engine);
 
 	Input::init(state.window);
 
@@ -167,22 +167,23 @@ void initialise(State& state) {
 }
 
 void gameloop(State& state) {
-	while (isWindowOpen(state.window, state.engine)) {
-		engineBeginFrame(state.engine, state.window);
-		_contextFlush(state.context, state.engine);
+	while (windowIsOpen(state.window, state.engine)) {
+		engineBeginFrame(state.engine, state.context);
 
 		Input::update(state.window);
 
 		updateGUI(windowDimensions(state.window), state.guiContext);
 		_update(state);
 
-		engineBeginRender(state.engine, state.window);
+		windowBeginFrame(state.window, state.context, state.engine);
+		windowBeginRender(state.window);
 
 		_draw(state);
+		
+		windowEndRender(state.window);
+		windowEndFrame(state.window, state.engine);
 
-		engineEndRender(state.engine);
-
-		engineEndFrame(state.engine, state.window);
+		engineEndFrame(state.engine);
 	}
 }
 
@@ -194,7 +195,7 @@ void terminate(State& state) {
 	_drop(state);
 
 	dropWindow(state.window, state.engine);
-	dropEngine(state.engine, state.window);
+	dropEngine(state.engine);
 
 	Font::terminate();
 }

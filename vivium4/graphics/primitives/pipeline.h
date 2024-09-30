@@ -20,7 +20,7 @@ namespace Vivium {
 		_RenderTarget target;
 
 		union {
-			Engine* engine;
+			VkRenderPass windowPass;
 			FramebufferReference framebuffer;
 		};
 
@@ -33,7 +33,6 @@ namespace Vivium {
 			const BufferLayout& bufferLayout,
 			const std::span<const DescriptorLayoutReference> descriptorLayouts,
 			const std::span<const PushConstant> pushConstants,
-			Engine* engine,
 			Window& window
 		);
 

@@ -60,14 +60,6 @@ namespace Vivium {
 		TextureReference reference;
 	};
 
-	struct SharedTrackerData {
-		std::atomic_uint32_t deviceMemoryAllocations;
-
-		SharedTrackerData();
-	};
-
-	inline SharedTrackerData sharedTrackerData;
-
 	struct ResourceManager {
 		struct DeviceMemoryHandle {
 			VkDeviceMemory memory;

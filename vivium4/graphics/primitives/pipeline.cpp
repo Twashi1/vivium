@@ -8,7 +8,7 @@ namespace Vivium {
 		vkDestroyPipeline(engine.device, pipeline.pipeline, nullptr);
 	}
 
-	PipelineSpecification PipelineSpecification::fromWindow(const std::span<const ShaderReference> shaders, const BufferLayout& bufferLayout, const std::span<const DescriptorLayoutReference> descriptorLayouts, const std::span<const PushConstant> pushConstants, Engine* engine, Window& window)
+	PipelineSpecification PipelineSpecification::fromWindow(const std::span<const ShaderReference> shaders, const BufferLayout& bufferLayout, const std::span<const DescriptorLayoutReference> descriptorLayouts, const std::span<const PushConstant> pushConstants, Window& window)
 	{
 		PipelineSpecification specification;
 
@@ -16,7 +16,7 @@ namespace Vivium {
 		specification.bufferLayout = bufferLayout;
 		specification.descriptorLayouts = std::vector<DescriptorLayoutReference>(descriptorLayouts.begin(), descriptorLayouts.end());
 		specification.pushConstants = std::vector<PushConstant>(pushConstants.begin(), pushConstants.end());
-		specification.engine = engine;
+		specification.windowPass = window.renderPass;
 		specification.target = _RenderTarget::WINDOW;
 		specification.sampleCount = window.multisampleCount;
 

@@ -53,7 +53,6 @@ namespace Vivium {
 	void _contextFlush(CommandContext& context, Engine& engine)
 	{
 		context.frameIndex = (context.frameIndex + 1) % 2;
-		context.currentCommandBuffer = engine.commandBuffers[engine.currentFrameIndex];
 
 		for (std::function<void(void)> function : context.perFrameCleanupArrays[context.frameIndex]) {
 			function();

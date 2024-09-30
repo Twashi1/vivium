@@ -1,11 +1,23 @@
 #include "window.h"
 #include "engine.h"
 #include "graphics/primitives/framebuffer.h"
+#include "graphics/commands.h"
 
 namespace Vivium {
 	void dropWindow(Window& window, Engine& engine)
 	{
 		_deleteSwapChain(window, engine);
+
+		vkDestroyCommandPool(engine.device, window.commandPool, nullptr);
+
+		for (uint32_t i = 0; i < VIVIUM_FRAMES_IN_FLIGHT; i++) {
+			vkDestroySemaphore(engine.device, window.renderFinishedSemaphores[i], nullptr);
+			vkDestroySemaphore(engine.device, window.imageAvailableSemaphores[i], nullptr);
+			vkDestroyFence(engine.device, window.inFlightFences[i], nullptr);
+		}
+
+		vkDestroyRenderPass(engine.device, window.renderPass, nullptr);
+		vkDestroySurfaceKHR(engine.instance, window.surface, nullptr);
 	}
 
 	void _createSwapChain(Window& window, Engine& engine)
@@ -32,7 +44,7 @@ namespace Vivium {
 		createInfo.imageArrayLayers = 1;
 		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-		Engine::QueueFamilyIndices indices = _findQueueFamilies(engine, engine.physicalDevice, window);
+		Engine::QueueFamilyIndices indices = _findQueueFamilies(engine, engine.physicalDevice);
 		uint32_t queueFamilyIndices[] = { indices.graphicsFamily, indices.presentFamily };
 
 		if (indices.graphicsFamily != indices.presentFamily) {
@@ -242,7 +254,7 @@ namespace Vivium {
 		renderPassInfo.dependencyCount = 1;
 		renderPassInfo.pDependencies = &dependency;
 
-		VIVIUM_VK_CHECK(vkCreateRenderPass(engine.device, &renderPassInfo, nullptr, &engine.renderPass),
+		VIVIUM_VK_CHECK(vkCreateRenderPass(engine.device, &renderPassInfo, nullptr, &window.renderPass),
 			"Failed to create render pass");
 	}
 
@@ -261,7 +273,7 @@ namespace Vivium {
 
 			VkFramebufferCreateInfo framebufferInfo{};
 			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			framebufferInfo.renderPass = engine.renderPass;
+			framebufferInfo.renderPass = window.renderPass;
 			framebufferInfo.attachmentCount = attachments.size();
 			framebufferInfo.pAttachments = attachments.data();
 			framebufferInfo.width = window.swapChainExtent.width;
@@ -372,19 +384,71 @@ namespace Vivium {
 			"Failed to create window surface");
 	}
 
-	void _initVulkan(Window& window, Engine& engine)
+	void _createVulkanObjects(Window& window, Engine& engine)
 	{
+		_createSurface(window, engine);
+
 		window.multisampleCount = static_cast<VkSampleCountFlagBits>(getRequestedMultisamples(engine, window.multisampleCount));
 
 		_createSwapChain(window, engine);
 		_createImageViews(window, engine);
+
 		if (!(window.multisampleCount & VK_SAMPLE_COUNT_1_BIT))
 			_createMultisampleColorImages(window, engine);
+
 		_createRenderPass(window, engine);
 		_createFramebuffers(window, engine);
+
+		_createWindowCommandPool(window, engine);
+		_createWindowCommandBuffers(window, engine);
+		_createSyncObjects(window, engine);
 	}
 
-	Window createWindow(WindowOptions const& options)
+	void _createWindowCommandPool(Window& window, Engine& engine)
+	{
+		Engine::QueueFamilyIndices queueFamilyIndices = _findQueueFamilies(engine, engine.physicalDevice);
+
+		VkCommandPoolCreateInfo poolInfo{};
+		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+		poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily;
+
+		VIVIUM_VK_CHECK(vkCreateCommandPool(engine.device, &poolInfo, nullptr, &window.commandPool),
+			"Failed to create command pool");
+	}
+
+	void _createWindowCommandBuffers(Window& window, Engine& engine)
+	{
+		VkCommandBufferAllocateInfo allocateInfo{};
+		allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocateInfo.commandPool = window.commandPool;
+		allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocateInfo.commandBufferCount = static_cast<uint32_t>(window.commandBuffers.size());
+
+		VIVIUM_VK_CHECK(vkAllocateCommandBuffers(engine.device, &allocateInfo, window.commandBuffers.data()),
+			"Failed to allocate command buffers");
+	}
+
+	void _createSyncObjects(Window& window, Engine& engine)
+	{
+		VkSemaphoreCreateInfo semaphoreInfo{};
+		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+		VkFenceCreateInfo fenceInfo{};
+		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+		for (uint32_t i = 0; i < VIVIUM_FRAMES_IN_FLIGHT; i++) {
+			// TODO: VkCheck this
+			if (vkCreateSemaphore(engine.device, &semaphoreInfo, nullptr, &window.imageAvailableSemaphores[i]) != VK_SUCCESS ||
+				vkCreateSemaphore(engine.device, &semaphoreInfo, nullptr, &window.renderFinishedSemaphores[i]) != VK_SUCCESS ||
+				vkCreateFence(engine.device, &fenceInfo, nullptr, &window.inFlightFences[i]) != VK_SUCCESS) {
+				VIVIUM_LOG(Log::FATAL, "Failed to create sync objects for a frame");
+			}
+		}
+	}
+
+	Window createWindow(WindowOptions const& options, Engine& engine)
 	{
 		Window window;
 		window.glfwWindow = nullptr;
@@ -395,25 +459,16 @@ namespace Vivium {
 		window.multisampleColorImageView = VK_NULL_HANDLE;
 		window.multisampleColorMemory = VK_NULL_HANDLE;
 		window.multisampleCount = VK_SAMPLE_COUNT_FLAG_BITS_MAX_ENUM;
-
-		// TODO: multi-window
-		if (!glfwInit()) {
-			VIVIUM_LOG(Log::FATAL, "GLFW failed to initialise");
-		}
-
-		// TODO: better error callback for glfw?
-		glfwSetErrorCallback([](int code, const char* desc) {
-			VIVIUM_LOG(Log::ERROR, "[GLFW {}] {}", code, desc);
-			});
-
-		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+		window.currentFrameIndex = 0;
+		window.currentImageIndex = UINT32_MAX;
 
 		window.glfwWindow = glfwCreateWindow(options.dimensions.x, options.dimensions.y, options.title, NULL, NULL);
 
 		_setWindowOptions(window, options);
 
 		glfwSetWindowUserPointer(window.glfwWindow, &window);
+
+		_createVulkanObjects(window, engine);
 
 		return window;
 	}
@@ -426,7 +481,7 @@ namespace Vivium {
 		return dimensions;
 	}
 
-	bool isWindowOpen(Window& window, Engine& engine)
+	bool windowIsOpen(Window& window, Engine& engine)
 	{
 		bool shouldClose = glfwWindowShouldClose(window.glfwWindow);
 
@@ -436,5 +491,127 @@ namespace Vivium {
 			vkDeviceWaitIdle(engine.device);
 
 		return !shouldClose;
+	}
+
+	void windowBeginRender(Window& window)
+	{
+		VkRenderPassBeginInfo renderPassInfo{};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		renderPassInfo.renderPass = window.renderPass;
+		renderPassInfo.framebuffer = window.swapChainFramebuffers[window.currentImageIndex];
+		renderPassInfo.renderArea.offset = { 0, 0 };
+		renderPassInfo.renderArea.extent = window.swapChainExtent;
+
+		VkClearValue clearColor = { {{0.0f, 0.0f, 0.0f, 1.0f}} };
+		renderPassInfo.clearValueCount = 1;
+		renderPassInfo.pClearValues = &clearColor;
+
+		VkCommandBuffer& commandBuffer = window.commandBuffers[window.currentFrameIndex];
+
+		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		VkViewport viewport{};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = static_cast<float>(window.swapChainExtent.width);
+		viewport.height = static_cast<float>(window.swapChainExtent.height);
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+		VkRect2D scissor{};
+		scissor.offset = { 0, 0 };
+		scissor.extent = window.swapChainExtent;
+		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+	}
+
+	void windowEndRender(Window& window)
+	{
+		vkCmdEndRenderPass(window.commandBuffers[window.currentFrameIndex]);
+	}
+
+	void windowBeginFrame(Window& window, CommandContext& context, Engine& engine)
+	{
+		vkWaitForFences(engine.device, 1, &window.inFlightFences[window.currentFrameIndex], VK_TRUE, UINT64_MAX);
+
+		VkResult acquireImageResult = vkAcquireNextImageKHR(
+			engine.device,
+			window.swapChain,
+			UINT64_MAX,
+			window.imageAvailableSemaphores[window.currentFrameIndex],
+			VK_NULL_HANDLE,
+			&window.currentImageIndex
+		);
+
+		if (acquireImageResult == VK_ERROR_OUT_OF_DATE_KHR) {
+			_recreateSwapChain(window, engine);
+
+			return;
+		}
+		else if (acquireImageResult != VK_SUCCESS && acquireImageResult != VK_SUBOPTIMAL_KHR) {
+			VIVIUM_LOG(Log::FATAL, "Failed to acquire swapchain image");
+		}
+
+		vkResetFences(engine.device, 1, &window.inFlightFences[window.currentFrameIndex]);
+
+		vkResetCommandBuffer(window.commandBuffers[window.currentFrameIndex], 0);
+
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+		VIVIUM_VK_CHECK(vkBeginCommandBuffer(window.commandBuffers[window.currentFrameIndex], &beginInfo),
+			"Failed to begin recording command buffer");
+
+		// Switch context to start recording this command buffer
+		context.currentCommandBuffer = window.commandBuffers[window.currentFrameIndex];
+	}
+
+	void windowEndFrame(Window& window, Engine& engine)
+	{
+		VIVIUM_VK_CHECK(vkEndCommandBuffer(window.commandBuffers[window.currentFrameIndex]),
+			"Failed to record command buffer");
+
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+		VkSemaphore waitSemaphores[] = { window.imageAvailableSemaphores[window.currentFrameIndex] };
+		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		submitInfo.waitSemaphoreCount = 1;
+		submitInfo.pWaitSemaphores = waitSemaphores;
+		submitInfo.pWaitDstStageMask = waitStages;
+
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &window.commandBuffers[window.currentFrameIndex];
+
+		VkSemaphore signalSemaphores[] = { window.renderFinishedSemaphores[window.currentFrameIndex] };
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = signalSemaphores;
+
+		VIVIUM_VK_CHECK(vkQueueSubmit(engine.graphicsQueue, 1, &submitInfo, window.inFlightFences[window.currentFrameIndex]),
+			"Failed to submit draw command to buffer");
+
+		VkPresentInfoKHR presentInfo{};
+		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+		presentInfo.waitSemaphoreCount = 1;
+		presentInfo.pWaitSemaphores = signalSemaphores;
+
+		VkSwapchainKHR swapChains[] = { window.swapChain };
+		presentInfo.swapchainCount = 1;
+		presentInfo.pSwapchains = swapChains;
+
+		presentInfo.pImageIndices = &window.currentImageIndex;
+
+		VkResult queuePresentResult = vkQueuePresentKHR(engine.presentQueue, &presentInfo);
+
+		if (queuePresentResult == VK_ERROR_OUT_OF_DATE_KHR
+			|| queuePresentResult == VK_SUBOPTIMAL_KHR) {
+			_recreateSwapChain(window, engine);
+		}
+		else if (queuePresentResult != VK_SUCCESS) {
+			VIVIUM_LOG(Log::FATAL, "Failed to present swap chain image");
+		}
+
+		window.currentFrameIndex = (window.currentFrameIndex + 1) % VIVIUM_FRAMES_IN_FLIGHT;
 	}
 }

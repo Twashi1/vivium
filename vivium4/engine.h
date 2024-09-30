@@ -16,9 +16,10 @@ namespace Vivium {
 		float pollPeriod = 3.0f;
 	};
 
+	struct CommandContext;
+
 	struct Engine {
 		// TODO: move out of class?
-		static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 		static constexpr bool enableValidationLayers = VIVIUM_IS_DEBUG;
 
 		struct SwapChainSupportDetails {
@@ -39,21 +40,9 @@ namespace Vivium {
 		VkPhysicalDevice physicalDevice;
 		VkDevice device;
 
-		VkRenderPass renderPass; // TODO: created by window, not engine
-		VkCommandPool commandPool;
-
 		VkQueue graphicsQueue;
 		VkQueue presentQueue;
 		VkQueue transferQueue;
-
-		std::vector<VkCommandBuffer> commandBuffers;
-
-		std::vector<VkSemaphore> imageAvailableSemaphores;
-		std::vector<VkSemaphore> renderFinishedSemaphores;
-		std::vector<VkFence> inFlightFences;
-
-		uint32_t currentFrameIndex;
-		uint32_t currentImageIndex;
 
 		float targetTimePerFrame;
 		float pollPeriod;
@@ -75,7 +64,7 @@ namespace Vivium {
 	);
 
 	// TODO: consider moving to window?
-	Engine::QueueFamilyIndices _findQueueFamilies(Engine& engine, VkPhysicalDevice device, Window& window);
+	Engine::QueueFamilyIndices _findQueueFamilies(Engine& engine, VkPhysicalDevice device);
 
 	bool _checkValidationLayerSupport(const std::span<const char* const>& validationLayers);
 	bool _isSuitableDevice(Engine& engine, VkPhysicalDevice device, const std::vector<const char*>& requiredExtensions, Window& window);
@@ -86,13 +75,8 @@ namespace Vivium {
 
 	void _setOptions(Engine& engine, EngineOptions const& options);
 
-	void _pickPhysicalDevice(Engine& engine, const std::vector<const char*>& extensions, Window& window);
-	void _createLogicalDevice(Engine& engine, Window& window, const std::span<const char* const> extensions, const std::span<const char* const> validationLayers);
-
-	void _createEngineCommandPool(Engine& engine, Window& window);
-	void _createEngineCommandBuffers(Engine& engine);
-
-	void _createSyncObjects(Engine& engine);
+	void _pickPhysicalDevice(Engine& engine, const std::vector<const char*>& extensions);
+	void _createLogicalDevice(Engine& engine, const std::span<const char* const> extensions, const std::span<const char* const> validationLayers);
 
 	void _createInstance(Engine& engine, const std::span<const char* const> validationLayers, const std::span<const char* const> defaultExtensions);
 	void _setupDebugMessenger(Engine& engine);
@@ -104,12 +88,9 @@ namespace Vivium {
 	void _limitFramerate(Engine& engine);
 
 	// Public methods
-	Engine createEngine(EngineOptions const& options, Window& window);
-	void dropEngine(Engine& engine, Window& window);
+	Engine createEngine(EngineOptions const& options);
+	void dropEngine(Engine& engine);
 
-	void engineBeginFrame(Engine& engine, Window& window);
-	void engineEndFrame(Engine& engine, Window& window);
-
-	void engineBeginRender(Engine& engine, Window& window);
-	void engineEndRender(Engine& engine);
+	void engineBeginFrame(Engine& engine, CommandContext& context);
+	void engineEndFrame(Engine& engine);
 }

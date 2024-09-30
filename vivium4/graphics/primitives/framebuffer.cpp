@@ -42,22 +42,22 @@ namespace Vivium {
 		return multisampleCount;
 	}
 
-	void beginFramebufferFrame(Framebuffer& framebuffer, CommandContext& context, Engine& engine)
-	{
-		// TODO: probably shouldn't be done here?
-		glfwPollEvents();
-		// TODO: fence might be useless?
-		vkWaitForFences(engine.device, 1, &engine.inFlightFences[engine.currentFrameIndex], VK_TRUE, UINT64_MAX);
-		vkResetFences(engine.device, 1, &engine.inFlightFences[engine.currentFrameIndex]);
+	//void beginFramebufferFrame(Framebuffer& framebuffer, CommandContext& context, Engine& engine)
+	//{
+	//	// TODO: probably shouldn't be done here?
+	//	glfwPollEvents();
+	//	// TODO: fence might be useless?
+	//	vkWaitForFences(engine.device, 1, &engine.inFlightFences[engine.currentFrameIndex], VK_TRUE, UINT64_MAX);
+	//	vkResetFences(engine.device, 1, &engine.inFlightFences[engine.currentFrameIndex]);
 
-		vkResetCommandBuffer(engine.commandBuffers[engine.currentFrameIndex], 0);
+	//	vkResetCommandBuffer(engine.commandBuffers[engine.currentFrameIndex], 0);
 
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	//	VkCommandBufferBeginInfo beginInfo{};
+	//	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		VIVIUM_VK_CHECK(vkBeginCommandBuffer(engine.commandBuffers[engine.currentFrameIndex], &beginInfo),
-			"Failed to begin recording command buffer");
-	}
+	//	VIVIUM_VK_CHECK(vkBeginCommandBuffer(engine.commandBuffers[engine.currentFrameIndex], &beginInfo),
+	//		"Failed to begin recording command buffer");
+	//}
 
 	void beginFramebufferRender(Framebuffer& framebuffer, CommandContext& context)
 	{
@@ -98,23 +98,23 @@ namespace Vivium {
 		vkCmdEndRenderPass(context.currentCommandBuffer);
 	}
 
-	void endFramebufferFrame(Framebuffer& framebuffer, CommandContext& context, Engine& engine)
-	{
-		vkEndCommandBuffer(context.currentCommandBuffer);
+	//void endFramebufferFrame(Framebuffer& framebuffer, CommandContext& context, Engine& engine)
+	//{
+	//	vkEndCommandBuffer(context.currentCommandBuffer);
 
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	//	VkSubmitInfo submitInfo{};
+	//	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &engine.commandBuffers[engine.currentFrameIndex];
+	//	submitInfo.commandBufferCount = 1;
+	//	submitInfo.pCommandBuffers = &engine.commandBuffers[engine.currentFrameIndex];
 
-		VIVIUM_VK_CHECK(vkQueueSubmit(engine.graphicsQueue, 1, &submitInfo, engine.inFlightFences[engine.currentFrameIndex]),
-			"Failed to submit draw command to buffer");
+	//	VIVIUM_VK_CHECK(vkQueueSubmit(engine.graphicsQueue, 1, &submitInfo, engine.inFlightFences[engine.currentFrameIndex]),
+	//		"Failed to submit draw command to buffer");
 
-		engine.currentFrameIndex = (engine.currentFrameIndex + 1) % engine.MAX_FRAMES_IN_FLIGHT;
+	//	engine.currentFrameIndex = (engine.currentFrameIndex + 1) % engine.MAX_FRAMES_IN_FLIGHT;
 
-		// TODO: limit framerate maybe shouldn't be done here, since everything should happen in one frame
-	}
+	//	// TODO: limit framerate maybe shouldn't be done here, since everything should happen in one frame
+	//}
 
 	void dropFramebuffer(Framebuffer& framebuffer, Engine& engine) {
 		vkDestroyImage(engine.device, framebuffer.image, nullptr);

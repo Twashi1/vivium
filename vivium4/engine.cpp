@@ -1,4 +1,5 @@
 #include "engine.h"
+#include "graphics/commands.h"
 
 namespace Vivium {
 	void _populateDebugMessengerInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
@@ -32,8 +33,10 @@ namespace Vivium {
 		return VK_FALSE;
 	}
 
-	Engine::QueueFamilyIndices _findQueueFamilies(Engine& engine, VkPhysicalDevice device, Window& window)
+	Engine::QueueFamilyIndices _findQueueFamilies(Engine& engine, VkPhysicalDevice device)
 	{
+		// TODO: look for dedicated transfer queue?
+
 		Engine::QueueFamilyIndices indices{ UINT32_MAX, UINT32_MAX, UINT32_MAX };
 
 		uint32_t queueFamilyCount = 0;
@@ -50,9 +53,10 @@ namespace Vivium {
 			if (properties.queueFlags & VK_QUEUE_TRANSFER_BIT)
 				indices.transferFamily = i;
 				
-			// Checking present
-			VkBool32 hasPresentSupport = false;
-			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, window.surface, &hasPresentSupport);
+			// TODO: Checking present support
+			// For now, we can pretty safely make the assumption that any graphics queue also supports present
+			VkBool32 hasPresentSupport = properties.queueFlags & VK_QUEUE_GRAPHICS_BIT;
+			// vkGetPhysicalDeviceSurfaceSupportKHR(device, i, window.surface, &hasPresentSupport);
 
 			if (hasPresentSupport)
 				indices.presentFamily = i;
@@ -93,7 +97,7 @@ namespace Vivium {
 
 	bool _isSuitableDevice(Engine& engine, VkPhysicalDevice device, const std::vector<const char*>& deviceExtensions, Window& window)
 	{
-		Engine::QueueFamilyIndices queueFamilyIndices = _findQueueFamilies(engine, device, window);
+		Engine::QueueFamilyIndices queueFamilyIndices = _findQueueFamilies(engine, device);
 
 		// TODO: shouldn't be all extensions, just device ones
 		bool extensionSupport = _checkDeviceExtensionSupport(deviceExtensions, device);
@@ -167,45 +171,48 @@ namespace Vivium {
 
 	void _setOptions(Engine& engine, EngineOptions const& options)
 	{
-		VIVIUM_ASSERT(options.fps > 0, "Can't have 0fps");
+		VIVIUM_ASSERT(options.fps > 0, "Can't have 0 FPS");
 
 		engine.targetTimePerFrame = 1.0f / options.fps;
 		engine.pollPeriod = options.pollPeriod;
 	}
 
-	void _pickPhysicalDevice(Engine& engine, const std::vector<const char*>& deviceExtensions, Window& window)
+	void _pickPhysicalDevice(Engine& engine, const std::vector<const char*>& deviceExtensions)
 	{
 		uint32_t deviceCount = 0;
 		vkEnumeratePhysicalDevices(engine.instance, &deviceCount, nullptr);
 
-		if (deviceCount == 0) {
-			VIVIUM_LOG(Log::FATAL, "Couldn't find GPU with vulkan support");
-		}
-			
+		VIVIUM_ASSERT(deviceCount > 0, "Failed to find GPU with Vulakn support");
 		VIVIUM_LOG(Log::DEBUG, "Found {} devices", deviceCount);
 
 		std::vector<VkPhysicalDevice> devices(deviceCount);
 		vkEnumeratePhysicalDevices(engine.instance, &deviceCount, devices.data());
 
-		// TODO: change back
+		// Select first device that has discrete GPU, then integrated GPU
+		bool isIntegrated = false;
+
 		for (uint64_t deviceIndex = 0; deviceIndex < deviceCount; deviceIndex++) {
 			VkPhysicalDevice device = devices[deviceIndex];
 
-			if (_isSuitableDevice(engine, device, deviceExtensions, window)) {
-				engine.physicalDevice = device;
+			VkPhysicalDeviceProperties properties{};
+			vkGetPhysicalDeviceProperties(device, &properties);
 
-				VIVIUM_LOG(Log::DEBUG, "Selected device {}", deviceIndex);
-
-				break;
+			switch (properties.deviceType) {
+			case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
+				engine.physicalDevice = device; return;
+			case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
+				engine.physicalDevice = device; isIntegrated = true; break;
+			default:
+				if (!isIntegrated) engine.physicalDevice = device; break;
 			}
 		}
 
 		VIVIUM_ASSERT(engine.physicalDevice != VK_NULL_HANDLE, "Failed to find suitable GPU");
 	}
 
-	void _createLogicalDevice(Engine& engine, Window& window, const std::span<const char* const> extensions, const std::span<const char* const> validationLayers)
+	void _createLogicalDevice(Engine& engine, const std::span<const char* const> extensions, const std::span<const char* const> validationLayers)
 	{
-		Engine::QueueFamilyIndices indices = _findQueueFamilies(engine, engine.physicalDevice, window);
+		Engine::QueueFamilyIndices indices = _findQueueFamilies(engine, engine.physicalDevice);
 
 		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 		std::set<uint32_t> uniqueQueueFamilies = {
@@ -252,56 +259,6 @@ namespace Vivium {
 		vkGetDeviceQueue(engine.device, indices.graphicsFamily, 0, &engine.graphicsQueue);
 		vkGetDeviceQueue(engine.device, indices.presentFamily, 0, &engine.presentQueue);
 		vkGetDeviceQueue(engine.device, indices.transferFamily, 0, &engine.transferQueue);
-	}
-
-	void _createEngineCommandPool(Engine& engine, Window& window)
-	{
-		Engine::QueueFamilyIndices queueFamilyIndices = _findQueueFamilies(engine, engine.physicalDevice, window);
-
-		VkCommandPoolCreateInfo poolInfo{};
-		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily;
-
-		VIVIUM_VK_CHECK(vkCreateCommandPool(engine.device, &poolInfo, nullptr, &engine.commandPool),
-			"Failed to create command pool");
-	}
-
-	void _createEngineCommandBuffers(Engine& engine)
-	{
-		engine.commandBuffers.resize(Engine::MAX_FRAMES_IN_FLIGHT);
-
-		VkCommandBufferAllocateInfo allocateInfo{};
-		allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocateInfo.commandPool = engine.commandPool;
-		allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocateInfo.commandBufferCount = static_cast<uint32_t>(engine.commandBuffers.size());
-
-		VIVIUM_VK_CHECK(vkAllocateCommandBuffers(engine.device, &allocateInfo, engine.commandBuffers.data()),
-			"Failed to allocate command buffers");
-	}
-
-	void _createSyncObjects(Engine& engine)
-	{
-		engine.imageAvailableSemaphores.resize(Engine::MAX_FRAMES_IN_FLIGHT);
-		engine.renderFinishedSemaphores.resize(Engine::MAX_FRAMES_IN_FLIGHT);
-		engine.inFlightFences.resize(Engine::MAX_FRAMES_IN_FLIGHT);
-
-		VkSemaphoreCreateInfo semaphoreInfo{};
-		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-		VkFenceCreateInfo fenceInfo{};
-		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-		for (uint32_t i = 0; i < Engine::MAX_FRAMES_IN_FLIGHT; i++) {
-			// TODO: VkCheck this
-			if (vkCreateSemaphore(engine.device, &semaphoreInfo, nullptr, &engine.imageAvailableSemaphores[i]) != VK_SUCCESS ||
-				vkCreateSemaphore(engine.device, &semaphoreInfo, nullptr, &engine.renderFinishedSemaphores[i]) != VK_SUCCESS ||
-				vkCreateFence(engine.device, &fenceInfo, nullptr, &engine.inFlightFences[i]) != VK_SUCCESS) {
-				VIVIUM_LOG(Log::FATAL, "Failed to create sync objects for a frame");
-			}
-		}
 	}
 
 	void _createInstance(Engine& engine, const std::span<const char* const> validationLayers, const std::span<const char* const> defaultExtensions)
@@ -438,25 +395,35 @@ namespace Vivium {
 		engine.pollUpdatesElapsedTime += engine.updateTimer.reset();
 	}
 
-	Engine createEngine(EngineOptions const& options, Window& window)
+	Engine createEngine(EngineOptions const& options)
 	{
 		Engine engine;
 		engine.instance = VK_NULL_HANDLE;
 		engine.debugMessenger = VK_NULL_HANDLE;
 		engine.physicalDevice = VK_NULL_HANDLE;
 		engine.device = VK_NULL_HANDLE;
-		engine.renderPass = VK_NULL_HANDLE;
-		engine.commandPool = VK_NULL_HANDLE;
 		engine.graphicsQueue = VK_NULL_HANDLE;
 		engine.presentQueue = VK_NULL_HANDLE;
 		engine.transferQueue = VK_NULL_HANDLE;
-		engine.currentFrameIndex = 0;
-		engine.currentImageIndex = UINT32_MAX;
 		engine.targetTimePerFrame = 0.0f;
 		engine.pollPeriod = 0.0f;
 		engine.pollFramesElapsedTime = 0.0f;
 		engine.pollUpdatesElapsedTime = 0.0f;
 		engine.pollFramesCounted = 0;
+
+		_setOptions(engine, options);
+
+		if (!glfwInit()) {
+			VIVIUM_LOG(Log::FATAL, "GLFW failed to initialise");
+		}
+
+		// TODO: better error callback for glfw?
+		glfwSetErrorCallback([](int code, const char* desc) {
+			VIVIUM_LOG(Log::ERROR, "[GLFW {}] {}", code, desc);
+			});
+
+		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
 		const std::array<const char* const, 2> defaultExtensions = {
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
@@ -476,36 +443,14 @@ namespace Vivium {
 		_createInstance(engine, validationLayers, defaultExtensions);
 		_setupDebugMessenger(engine);
 
-		_createSurface(window, engine);
-
-		_pickPhysicalDevice(engine, deviceExtensions, window);
-
-		_setOptions(engine, options);
-
-		_createLogicalDevice(engine, window, deviceExtensions, validationLayers);
-
-		_initVulkan(window, engine);
-
-		_createEngineCommandPool(engine, window);
-		_createEngineCommandBuffers(engine);
-
-		_createSyncObjects(engine);
+		_pickPhysicalDevice(engine, deviceExtensions);
+		_createLogicalDevice(engine, deviceExtensions, validationLayers);
 
 		return engine;
 	}
 
-	void dropEngine(Engine& engine, Window& window) {
+	void dropEngine(Engine& engine) {
 		vkDeviceWaitIdle(engine.device);
-
-		vkDestroyRenderPass(engine.device, engine.renderPass, nullptr);
-
-		for (uint32_t i = 0; i < Engine::MAX_FRAMES_IN_FLIGHT; i++) {
-			vkDestroySemaphore(engine.device, engine.renderFinishedSemaphores[i], nullptr);
-			vkDestroySemaphore(engine.device, engine.imageAvailableSemaphores[i], nullptr);
-			vkDestroyFence(engine.device, engine.inFlightFences[i], nullptr);
-		}
-
-		vkDestroyCommandPool(engine.device, engine.commandPool, nullptr);
 
 		vkDestroyDevice(engine.device, nullptr);
 
@@ -517,132 +462,21 @@ namespace Vivium {
 			}
 		}
 
-		vkDestroySurfaceKHR(engine.instance, window.surface, nullptr);
 		vkDestroyInstance(engine.instance, nullptr);
 
 		glfwTerminate();
 	}
 		
-	void engineBeginFrame(Engine& engine, Window& window)
+	void engineBeginFrame(Engine& engine, CommandContext& context)
 	{
 		glfwPollEvents();
-		vkWaitForFences(engine.device, 1, &engine.inFlightFences[engine.currentFrameIndex], VK_TRUE, UINT64_MAX);
-
-		VkResult acquireImageResult = vkAcquireNextImageKHR(
-			engine.device,
-			window.swapChain,
-			UINT64_MAX,
-			engine.imageAvailableSemaphores[engine.currentFrameIndex],
-			VK_NULL_HANDLE,
-			&engine.currentImageIndex
-		);
-
-		if (acquireImageResult == VK_ERROR_OUT_OF_DATE_KHR) {
-			_recreateSwapChain(window, engine);
-
-			return;
-		}
-		else if (acquireImageResult != VK_SUCCESS && acquireImageResult != VK_SUBOPTIMAL_KHR) {
-			VIVIUM_LOG(Log::FATAL, "Failed to acquire swapchain image");
-		}
-
-		vkResetFences(engine.device, 1, &engine.inFlightFences[engine.currentFrameIndex]);
-
-		vkResetCommandBuffer(engine.commandBuffers[engine.currentFrameIndex], 0);
-
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-		VIVIUM_VK_CHECK(vkBeginCommandBuffer(engine.commandBuffers[engine.currentFrameIndex], &beginInfo),
-			"Failed to begin recording command buffer");
+		_contextFlush(context, engine);
+		// TODO: update input and GUI?
 	}
 		
-	void engineEndFrame(Engine& engine, Window& window)
+	void engineEndFrame(Engine& engine)
 	{
-		VIVIUM_VK_CHECK(vkEndCommandBuffer(engine.commandBuffers[engine.currentFrameIndex]),
-			"Failed to record command buffer");
-
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-		VkSemaphore waitSemaphores[] = { engine.imageAvailableSemaphores[engine.currentFrameIndex] };
-		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pWaitSemaphores = waitSemaphores;
-		submitInfo.pWaitDstStageMask = waitStages;
-
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &engine.commandBuffers[engine.currentFrameIndex];
-
-		VkSemaphore signalSemaphores[] = { engine.renderFinishedSemaphores[engine.currentFrameIndex] };
-		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = signalSemaphores;
-
-		VIVIUM_VK_CHECK(vkQueueSubmit(engine.graphicsQueue, 1, &submitInfo, engine.inFlightFences[engine.currentFrameIndex]),
-			"Failed to submit draw command to buffer");
-
-		VkPresentInfoKHR presentInfo{};
-		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
-		presentInfo.waitSemaphoreCount = 1;
-		presentInfo.pWaitSemaphores = signalSemaphores;
-
-		VkSwapchainKHR swapChains[] = { window.swapChain };
-		presentInfo.swapchainCount = 1;
-		presentInfo.pSwapchains = swapChains;
-
-		presentInfo.pImageIndices = &engine.currentImageIndex;
-
-		VkResult queuePresentResult = vkQueuePresentKHR(engine.presentQueue, &presentInfo);
-
-		if (queuePresentResult == VK_ERROR_OUT_OF_DATE_KHR
-			|| queuePresentResult == VK_SUBOPTIMAL_KHR) {
-			_recreateSwapChain(window, engine);
-		}
-		else if (queuePresentResult != VK_SUCCESS) {
-			VIVIUM_LOG(Log::FATAL, "Failed to present swap chain image");
-		}
-
-		engine.currentFrameIndex = (engine.currentFrameIndex + 1) % Engine::MAX_FRAMES_IN_FLIGHT;
-
 		_checkPerformance(engine);
 		_limitFramerate(engine);
-	}
-		
-	void engineBeginRender(Engine& engine, Window& window)
-	{
-		VkRenderPassBeginInfo renderPassInfo{};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = engine.renderPass;
-		renderPassInfo.framebuffer = window.swapChainFramebuffers[engine.currentImageIndex];
-		renderPassInfo.renderArea.offset = { 0, 0 };
-		renderPassInfo.renderArea.extent = window.swapChainExtent;
-
-		VkClearValue clearColor = { {{0.0f, 0.0f, 0.0f, 1.0f}} };
-		renderPassInfo.clearValueCount = 1;
-		renderPassInfo.pClearValues = &clearColor;
-
-		VkCommandBuffer& commandBuffer = engine.commandBuffers[engine.currentFrameIndex];
-
-		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-		VkViewport viewport{};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = static_cast<float>(window.swapChainExtent.width);
-		viewport.height = static_cast<float>(window.swapChainExtent.height);
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
-		VkRect2D scissor{};
-		scissor.offset = { 0, 0 };
-		scissor.extent = window.swapChainExtent;
-		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-	}
-		
-	void engineEndRender(Engine& engine)
-	{
-		vkCmdEndRenderPass(engine.commandBuffers[engine.currentFrameIndex]);
 	}
 }
