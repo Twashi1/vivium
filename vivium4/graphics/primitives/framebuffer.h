@@ -14,6 +14,15 @@ namespace Vivium {
 		VkRenderPass renderPass;
 		VkFramebuffer framebuffer;
 
+		VkCommandPool commandPool;
+		std::array<VkCommandBuffer, VIVIUM_FRAMES_IN_FLIGHT> commandBuffers;
+
+		std::array<VkSemaphore, VIVIUM_FRAMES_IN_FLIGHT> imageAvailableSemaphores;
+		std::array<VkSemaphore, VIVIUM_FRAMES_IN_FLIGHT> renderFinishedSemaphores;
+		std::array<VkFence, VIVIUM_FRAMES_IN_FLIGHT> inFlightFences;
+
+		uint32_t currentFrameIndex;
+
 		U32x2 dimensions;
 	};
 
@@ -27,15 +36,14 @@ namespace Vivium {
 		uint64_t referenceIndex;
 	};
 
+	// TODO: better place for this function, also private
 	int getRequestedMultisamples(Engine& engine, int multisampleCount);
 		
 	void dropFramebuffer(Framebuffer& framebuffer, Engine& engine);
 
-	// TODO: how to organise these, so we can also render to window
-	// TODO: beginFrame/endFrame don't even require framebuffer at any point!!
-	//void beginFramebufferFrame(Framebuffer& framebuffer, CommandContext& context, Engine& engine);
+	// TODO: lots of overlap in functionality with window, could abstract
+	void beginFramebufferFrame(Framebuffer& framebuffer, CommandContext& context, Engine& engine);
 	void beginFramebufferRender(Framebuffer& framebuffer, CommandContext& context);
-	// TODO: doesn't even take fraembuffer?
 	void endFramebufferRender(Framebuffer& framebuffer, CommandContext& context);
-	//void endFramebufferFrame(Framebuffer& framebuffer, CommandContext& context, Engine& engine);
+	void endFramebufferFrame(Framebuffer& framebuffer, CommandContext& context, Engine& engine);
 }

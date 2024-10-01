@@ -387,6 +387,8 @@ namespace Vivium {
 		for (uint64_t i = 0; i < manager.framebuffers.specifications.size(); i++) {
 			FramebufferSpecification const& specification = manager.framebuffers.specifications[i];
 			Framebuffer& resource = manager.framebuffers.resources[i];
+			
+			resource.currentFrameIndex = 0;
 
 			VIVIUM_VK_CHECK(vkBindImageMemory(
 				engine.device,
@@ -459,7 +461,43 @@ namespace Vivium {
 			framebufferInfo.height = static_cast<uint32_t>(resource.dimensions.y);
 			framebufferInfo.layers = 1;
 
-			VIVIUM_VK_CHECK(vkCreateFramebuffer(engine.device, &framebufferInfo, nullptr, &resource.framebuffer), "Failed create fb");
+			VIVIUM_VK_CHECK(vkCreateFramebuffer(engine.device, &framebufferInfo, nullptr, &resource.framebuffer), "Failed to create framebuffer");
+
+			// Create sync objects, command pool, and command buffers
+			Engine::QueueFamilyIndices queueFamilyIndices = _findQueueFamilies(engine.physicalDevice);
+
+			VkCommandPoolCreateInfo poolInfo{};
+			poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+			poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+			poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily;
+
+			VIVIUM_VK_CHECK(vkCreateCommandPool(engine.device, &poolInfo, nullptr, &resource.commandPool),
+				"Failed to create command pool");
+
+			VkCommandBufferAllocateInfo allocateInfo{};
+			allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+			allocateInfo.commandPool = resource.commandPool;
+			allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+			allocateInfo.commandBufferCount = static_cast<uint32_t>(resource.commandBuffers.size());
+
+			VIVIUM_VK_CHECK(vkAllocateCommandBuffers(engine.device, &allocateInfo, resource.commandBuffers.data()),
+				"Failed to allocate command buffers");
+
+			VkSemaphoreCreateInfo semaphoreInfo{};
+			semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+			VkFenceCreateInfo fenceInfo{};
+			fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+			fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+			for (uint32_t i = 0; i < VIVIUM_FRAMES_IN_FLIGHT; i++) {
+				// TODO: VkCheck this
+				if (vkCreateSemaphore(engine.device, &semaphoreInfo, nullptr, &resource.imageAvailableSemaphores[i]) != VK_SUCCESS ||
+					vkCreateSemaphore(engine.device, &semaphoreInfo, nullptr, &resource.renderFinishedSemaphores[i]) != VK_SUCCESS ||
+					vkCreateFence(engine.device, &fenceInfo, nullptr, &resource.inFlightFences[i]) != VK_SUCCESS) {
+					VIVIUM_LOG(Log::FATAL, "Failed to create sync objects for a frame");
+				}
+			}
 		}
 	}
 

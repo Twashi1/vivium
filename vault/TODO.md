@@ -1,5 +1,5 @@
 
-## High priority
+## Current tasks
 
 - Input class refactor
 	- Initialisation function and update
@@ -9,7 +9,9 @@
 - Check non-multisampled rendering is still working
 - Serialiser is super old
 - Test multi-window rendering
-- Fix framebuffers
+- Test framebuffers
+- Resize-able framebuffers?
+- Shared command pool for framebuffers?
 ## ECS
 
 - Iterators for single component view
