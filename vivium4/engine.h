@@ -29,9 +29,9 @@ namespace Vivium {
 		};
 
 		struct QueueFamilyIndices {
-			uint32_t graphicsFamily, presentFamily, transferFamily;
-
-			bool isComplete() const { return graphicsFamily != UINT32_MAX && presentFamily != UINT32_MAX && transferFamily != UINT32_MAX; }
+			uint32_t graphicsFamily;
+			uint32_t presentFamily;
+			uint32_t transferFamily;
 		};
 
 		VkInstance instance;
@@ -63,15 +63,13 @@ namespace Vivium {
 		void* userData
 	);
 
-	// TODO: consider moving to window?
-	Engine::QueueFamilyIndices _findQueueFamilies(Engine& engine, VkPhysicalDevice device);
+	Engine::QueueFamilyIndices _findQueueFamilies(VkPhysicalDevice device);
 
 	bool _checkValidationLayerSupport(const std::span<const char* const>& validationLayers);
-	bool _isSuitableDevice(Engine& engine, VkPhysicalDevice device, const std::vector<const char*>& requiredExtensions, Window& window);
+	bool _checkSurfaceSupport(Engine& engine, VkSurfaceKHR surface);
 	bool _checkDeviceExtensionSupport(const std::vector<const char*>& requiredExtensions, VkPhysicalDevice device);
 
-	// TODO: consider moving to window
-	Engine::SwapChainSupportDetails _querySwapChainSupport(VkPhysicalDevice device, Window& window);
+	Engine::SwapChainSupportDetails _querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);
 
 	void _setOptions(Engine& engine, EngineOptions const& options);
 
@@ -80,9 +78,6 @@ namespace Vivium {
 
 	void _createInstance(Engine& engine, const std::span<const char* const> validationLayers, const std::span<const char* const> defaultExtensions);
 	void _setupDebugMessenger(Engine& engine);
-
-	// TODO: isn't this somewhere else?
-	uint32_t _findMemoryType(Engine& engine, uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
 	void _checkPerformance(Engine& engine);
 	void _limitFramerate(Engine& engine);

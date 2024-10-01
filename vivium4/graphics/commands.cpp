@@ -2,6 +2,26 @@
 #include "resource_manager.h"
 
 namespace Vivium {
+	uint32_t _findMemoryType(Engine& engine, uint32_t typeFilter, VkMemoryPropertyFlags properties)
+	{
+		VkPhysicalDeviceMemoryProperties memoryProperties;
+		vkGetPhysicalDeviceMemoryProperties(
+			engine.physicalDevice,
+			&memoryProperties
+		);
+
+		for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
+			if ((typeFilter & (1 << i)) &&
+				(memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+				return i;
+			}
+		}
+
+		VIVIUM_LOG(Log::FATAL, "Failed to find suitable memory type");
+
+		return NULL;
+	}
+
 	CommandContext createCommandContext(Engine& engine) {
 		CommandContext context;
 

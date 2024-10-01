@@ -25,7 +25,7 @@ namespace Vivium {
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:		severity = Log::DEBUG; break;
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:	severity = Log::WARN; break;
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:		severity = Log::ERROR; break;
-		default:												severity = Log::INVALID; break;
+		default: return VK_FALSE;
 		}
 
 		VIVIUM_LOG(severity, "[VULKAN LOG] {}", callbackData->pMessage);
@@ -33,7 +33,7 @@ namespace Vivium {
 		return VK_FALSE;
 	}
 
-	Engine::QueueFamilyIndices _findQueueFamilies(Engine& engine, VkPhysicalDevice device)
+	Engine::QueueFamilyIndices _findQueueFamilies(VkPhysicalDevice device)
 	{
 		// TODO: look for dedicated transfer queue?
 
@@ -49,21 +49,19 @@ namespace Vivium {
 			const VkQueueFamilyProperties& properties = queueFamilyProperties[i];
 
 			if (properties.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+			{
 				indices.graphicsFamily = i;
+				// We can pretty safely make the assumption that any graphics queue also supports present
+				indices.presentFamily = i;
+			}
 			if (properties.queueFlags & VK_QUEUE_TRANSFER_BIT)
 				indices.transferFamily = i;
-				
-			// TODO: Checking present support
-			// For now, we can pretty safely make the assumption that any graphics queue also supports present
-			VkBool32 hasPresentSupport = properties.queueFlags & VK_QUEUE_GRAPHICS_BIT;
-			// vkGetPhysicalDeviceSurfaceSupportKHR(device, i, window.surface, &hasPresentSupport);
 
-			if (hasPresentSupport)
-				indices.presentFamily = i;
-
-			if (indices.isComplete())
+			if (indices.graphicsFamily != UINT32_MAX && indices.presentFamily != UINT32_MAX && indices.transferFamily != UINT32_MAX)
 				break;
 		}
+
+		VIVIUM_ASSERT(indices.graphicsFamily != UINT32_MAX && indices.presentFamily != UINT32_MAX && indices.transferFamily != UINT32_MAX, "Couldn't complete queue indices");
 
 		return indices;
 	}
@@ -95,30 +93,27 @@ namespace Vivium {
 		return true;
 	}
 
-	bool _isSuitableDevice(Engine& engine, VkPhysicalDevice device, const std::vector<const char*>& deviceExtensions, Window& window)
+	bool _checkSurfaceSupport(Engine& engine, VkSurfaceKHR surface)
 	{
-		Engine::QueueFamilyIndices queueFamilyIndices = _findQueueFamilies(engine, device);
+		Engine::QueueFamilyIndices queueFamilyIndices = _findQueueFamilies(engine.physicalDevice);
 
-		// TODO: shouldn't be all extensions, just device ones
-		bool extensionSupport = _checkDeviceExtensionSupport(deviceExtensions, device);
-		bool swapChainAdequate = false;
+		// Validate present support
+		VkBool32 isPresentSupported;
+		VIVIUM_VK_CHECK(vkGetPhysicalDeviceSurfaceSupportKHR(engine.physicalDevice, queueFamilyIndices.presentFamily, surface, &isPresentSupported),
+			"Failed to get physical device surface support details");
+		VIVIUM_ASSERT(isPresentSupported, "Present not supported for selected physical device");
 
 		VkPhysicalDeviceFeatures supportedFeatures;
-		vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
+		vkGetPhysicalDeviceFeatures(engine.physicalDevice, &supportedFeatures);
 
-		if (extensionSupport) {
-			Engine::SwapChainSupportDetails swapChainSupport = _querySwapChainSupport(device, window);
-			swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
-		}
+		Engine::SwapChainSupportDetails swapChainSupport = _querySwapChainSupport(engine.physicalDevice, surface);
+		bool swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
 
-		return queueFamilyIndices.isComplete() && extensionSupport && swapChainAdequate && supportedFeatures.samplerAnisotropy;
+		return swapChainAdequate && supportedFeatures.samplerAnisotropy;
 	}
 		
 	bool _checkDeviceExtensionSupport(const std::vector<const char*>& requiredExtensions, VkPhysicalDevice device)
 	{
-		// TODO: ?
-		// NOTE: different
-
 		uint32_t extensionCount;
 		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
 
@@ -144,26 +139,26 @@ namespace Vivium {
 		return true;
 	}
 
-	Engine::SwapChainSupportDetails _querySwapChainSupport(VkPhysicalDevice device, Window& window)
+	Engine::SwapChainSupportDetails _querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface)
 	{
 		Engine::SwapChainSupportDetails details;
 
-		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, window.surface, &details.capabilities);
+		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
 
 		uint32_t formatCount;
-		vkGetPhysicalDeviceSurfaceFormatsKHR(device, window.surface, &formatCount, nullptr);
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
 
 		if (formatCount != 0) {
 			details.formats.resize(formatCount);
-			vkGetPhysicalDeviceSurfaceFormatsKHR(device, window.surface, &formatCount, details.formats.data());
+			vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
 		}
 
 		uint32_t presentModeCount;
-		vkGetPhysicalDeviceSurfacePresentModesKHR(device, window.surface, &presentModeCount, nullptr);
+		vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
 
 		if (presentModeCount != 0) {
 			details.presentModes.resize(presentModeCount);
-			vkGetPhysicalDeviceSurfacePresentModesKHR(device, window.surface, &presentModeCount, details.presentModes.data());
+			vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.presentModes.data());
 		}
 
 		return details;
@@ -182,7 +177,7 @@ namespace Vivium {
 		uint32_t deviceCount = 0;
 		vkEnumeratePhysicalDevices(engine.instance, &deviceCount, nullptr);
 
-		VIVIUM_ASSERT(deviceCount > 0, "Failed to find GPU with Vulakn support");
+		VIVIUM_ASSERT(deviceCount > 0, "Failed to find GPU with Vulkan support");
 		VIVIUM_LOG(Log::DEBUG, "Found {} devices", deviceCount);
 
 		std::vector<VkPhysicalDevice> devices(deviceCount);
@@ -193,6 +188,9 @@ namespace Vivium {
 
 		for (uint64_t deviceIndex = 0; deviceIndex < deviceCount; deviceIndex++) {
 			VkPhysicalDevice device = devices[deviceIndex];
+
+			// Validate extension support for device
+			if (!_checkDeviceExtensionSupport(deviceExtensions, device)) continue;
 
 			VkPhysicalDeviceProperties properties{};
 			vkGetPhysicalDeviceProperties(device, &properties);
@@ -212,7 +210,7 @@ namespace Vivium {
 
 	void _createLogicalDevice(Engine& engine, const std::span<const char* const> extensions, const std::span<const char* const> validationLayers)
 	{
-		Engine::QueueFamilyIndices indices = _findQueueFamilies(engine, engine.physicalDevice);
+		Engine::QueueFamilyIndices indices = _findQueueFamilies(engine.physicalDevice);
 
 		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 		std::set<uint32_t> uniqueQueueFamilies = {
@@ -329,26 +327,6 @@ namespace Vivium {
 		}
 
 		VIVIUM_VK_CHECK(returnValue, "Failed to create debug messenger");
-	}
-
-	uint32_t _findMemoryType(Engine& engine, uint32_t typeFilter, VkMemoryPropertyFlags properties)
-	{
-		VkPhysicalDeviceMemoryProperties memoryProperties;
-		vkGetPhysicalDeviceMemoryProperties(
-			engine.physicalDevice,
-			&memoryProperties
-		);
-
-		for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
-			if ((typeFilter & (1 << i)) &&
-				(memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-				return i;
-			}
-		}
-
-		VIVIUM_LOG(Log::FATAL, "Failed to find suitable memory type");
-
-		return NULL;
 	}
 
 	void _checkPerformance(Engine& engine)

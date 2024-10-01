@@ -13,6 +13,8 @@
 namespace Vivium {
 	struct ResourceManager;
 
+	uint32_t _findMemoryType(Engine& engine, uint32_t typeFilter, VkMemoryPropertyFlags properties);
+
 	// TODO: these still take allocation callbacks
 	void _cmdCreateBuffer(Engine& engine, VkBuffer* buffer, uint64_t size, BufferUsage usage, VkMemoryRequirements* memoryRequirements, const VkAllocationCallbacks* allocationCallbacks);
 	void _cmdCreateCommandPool(Engine& engine, VkCommandPool* pool, VkCommandPoolCreateFlags flags);

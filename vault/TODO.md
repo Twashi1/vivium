@@ -2,69 +2,14 @@
 ## High priority
 
 - Input class refactor
+	- Initialisation function and update
+- Font namespace
+	- Initialisation function
 - Math class namespaces
 - Check non-multisampled rendering is still working
 - Serialiser is super old
-- Multi-window rendering
-	- https://gamedev.stackexchange.com/questions/124738/how-to-select-the-most-powerful-vkdevice
-	- We need the window surface to safely select the physical device, but full creation of the window requires the physical device, compromise is to verify the physical device is apt for the purpose at the end of window creation, and also verify the selected queue families were valid
-	- Need to adapt context to whatever frame we're drawing to currently, so beginFrame methods take context?
-	- Each window/render target needs their own command buffer, and thus their own fences/sync objects
-	- Likely want some pattern similar to:
-```
-engineBeginFrame();
-
-framebufferBeginFrame();
-framebufferBeginRender();
-framebufferEndRender();
-framebufferEndFrame();
-
-windowBeginFrame();
-# Prep resources maybe
-windowBeginRender();
-windowEndRender();
-windowEndFrame();
-
-engineEndFrame();
-```
-Render commands shouldn't take any context, just render to current target
-- Pipeline takes `Engine*`, ambiguous as to how long this pointer must stay alive for
-
-EngineBeginFrame
-- poll events
-- update input?
-EngineEndFrame
-- check performance
-- limit framerate
-WindowBeginFrame
-- wait for fences
-- acquire image
-- recreate swapchain if needed
-- reset fences
-- reset command buffer nad begin command buffer
-WindowBeginRender
-- same as last time, framebuffer just different, and extent inheritied from window asw
-WindowEndRender
-- same as last time, just end render pass
-WindowEndFrame
-- end command buffer
-- submit to queue
-- present image
-- recreate swapchain if needed
-- increment frames in flgiht
-
-BeginFrame
-	- Wait for fences and reset them
-	- Reset command buffer
-	- Begin command buffer
-BeginRender
-	- Begin render pass/viewport/scissor
-EndRender
-	- End render pass
-EndFrame
-	- End command buffer
-	- Submit command buffer to graphics queue
-	- Increment frames in flight
+- Test multi-window rendering
+- Fix framebuffers
 ## ECS
 
 - Iterators for single component view

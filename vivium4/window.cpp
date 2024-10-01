@@ -22,7 +22,7 @@ namespace Vivium {
 
 	void _createSwapChain(Window& window, Engine& engine)
 	{
-		Engine::SwapChainSupportDetails swapChainSupport = _querySwapChainSupport(engine.physicalDevice, window);
+		Engine::SwapChainSupportDetails swapChainSupport = _querySwapChainSupport(engine.physicalDevice, window.surface);
 
 		VkSurfaceFormatKHR surfaceFormat = _chooseSwapSurfaceFormat(swapChainSupport.formats);
 		VkPresentModeKHR present_mode = _chooseSwapPresentMode(swapChainSupport.presentModes);
@@ -44,7 +44,7 @@ namespace Vivium {
 		createInfo.imageArrayLayers = 1;
 		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-		Engine::QueueFamilyIndices indices = _findQueueFamilies(engine, engine.physicalDevice);
+		Engine::QueueFamilyIndices indices = _findQueueFamilies(engine.physicalDevice);
 		uint32_t queueFamilyIndices[] = { indices.graphicsFamily, indices.presentFamily };
 
 		if (indices.graphicsFamily != indices.presentFamily) {
@@ -388,6 +388,9 @@ namespace Vivium {
 	{
 		_createSurface(window, engine);
 
+		// Validate we have support for presenting with the current physical device and queues
+		VIVIUM_ASSERT(_checkSurfaceSupport(engine, window.surface), "Failed to select physical device and queues");
+
 		window.multisampleCount = static_cast<VkSampleCountFlagBits>(getRequestedMultisamples(engine, window.multisampleCount));
 
 		_createSwapChain(window, engine);
@@ -406,7 +409,7 @@ namespace Vivium {
 
 	void _createWindowCommandPool(Window& window, Engine& engine)
 	{
-		Engine::QueueFamilyIndices queueFamilyIndices = _findQueueFamilies(engine, engine.physicalDevice);
+		Engine::QueueFamilyIndices queueFamilyIndices = _findQueueFamilies(engine.physicalDevice);
 
 		VkCommandPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
