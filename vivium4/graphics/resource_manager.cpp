@@ -889,26 +889,22 @@ namespace Vivium {
 
 	void submitResource(ResourceManager& manager, BufferReference* memory, MemoryType memoryType, const std::span<const BufferSpecification> specifications)
 	{
-		switch (memoryType) {
-		case MemoryType::STAGING:
+		if ((static_cast<VkMemoryPropertyFlagBits>(memoryType) & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) {
 			_addToResourceField(manager.hostBuffers, memory, specifications);
 
 			for (uint64_t i = 0; i < specifications.size(); i++) {
 				memory[i].memoryIndex = 0;
 			}
-
-			break;
-		case MemoryType::DEVICE:
+		}
+		else if ((static_cast<VkMemoryPropertyFlagBits>(memoryType) & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
 			_addToResourceField(manager.deviceBuffers, memory, specifications);
 
 			for (uint64_t i = 0; i < specifications.size(); i++) {
 				memory[i].memoryIndex = 1;
 			}
-
-			break;
-		default:
+		}
+		else {
 			VIVIUM_LOG(Log::FATAL, "Invalid memory type: {}", (uint64_t)memoryType);
-			break;
 		}
 	}
 
