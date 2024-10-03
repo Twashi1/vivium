@@ -95,7 +95,7 @@ set(VIVIUM_HEADERS
   "vivium4/ecs/component_manager.h"
   "vivium4/ecs/defines.h"
   "vivium4/ecs/paged_array.h"
- "vivium4/ecs/group.h")
+ "vivium4/ecs/group.h" "engine/ecstest.h")
 
 add_subdirectory("${CMAKE_SOURCE_DIR}/external/glfw")
 

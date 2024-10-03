@@ -8,7 +8,6 @@
 - Math class namespaces
 - Check non-multisampled rendering is still working
 - Serialiser is super old
-- Test multi-window rendering
 - Test framebuffers
 - Resize-able framebuffers?
 - Shared command pool for framebuffers?
@@ -64,7 +63,6 @@
 - Compute shaders and storage images (alternative to framebuffers?)
 - Dynamic resource manager
 - Vertex input rate: `VK_VERTEX_INPUT_RATE_INSTANCE`
-- Check for `DEVICE_LOCAL`, not whether it is `UNIFORM` or `DEVICE`
 - Shaders should not be created through `compileShader`, at least not internally
 
 ## GUI
