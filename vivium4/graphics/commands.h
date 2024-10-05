@@ -45,7 +45,7 @@ namespace Vivium {
 		// TODO: yuck... look towards some proper temporary memory
 		typedef std::vector<std::function<void(void)>> FunctionArray;
 
-		std::array<FunctionArray, 2> perFrameCleanupArrays;
+		std::array<FunctionArray, VIVIUM_FRAMES_IN_FLIGHT> perFrameCleanupArrays;
 		uint32_t frameIndex;
 		VkCommandBuffer currentCommandBuffer;
 
