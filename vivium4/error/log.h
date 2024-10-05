@@ -9,7 +9,6 @@
 namespace Vivium {
 	namespace Log {
 		enum Severity {
-			INVALID,
 			DEBUG,
 			WARN,
 			ERROR,
@@ -73,10 +72,11 @@ namespace Vivium {
 #ifdef NDEBUG
 #define VIVIUM_LOG(severity, message, ...) ((void)0)
 #else
+// Use VIVIUM_SOURCE_PATH_SIZE to advance the __FILE__ pointer to cut off the source path
 #define VIVIUM_LOG(severity, message, ...) \
 	Vivium::Log::m_state.logCallback( \
 		Vivium::Log::Context{ \
-			severity, std::format(message, __VA_ARGS__), __LINE__, __FUNCSIG__, __FILE__, std::chrono::system_clock::now() \
+			severity, std::format(message, __VA_ARGS__), __LINE__, __FUNCSIG__, __FILE__ + VIVIUM_SOURCE_PATH_SIZE, std::chrono::system_clock::now() \
 		} \
 	)
 #endif

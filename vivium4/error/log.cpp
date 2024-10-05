@@ -10,7 +10,6 @@ namespace Vivium {
 			case WARN: return "WARN";
 			case ERROR: return "ERROR";
 			case FATAL: return "FATAL";
-			case INVALID:
 			default:
 				return "INVALID";
 			}
@@ -23,7 +22,6 @@ namespace Vivium {
 			case FATAL:
 			case ERROR: return Color::RED;
 			case DEBUG: return Color::GREEN;
-			case INVALID: 
 			default: 
 				return Color::NONE;
 			}
@@ -39,6 +37,7 @@ namespace Vivium {
 
 			if (!Windows::GetConsoleMode(handleOutput, &originalOutputMode)) return;
 
+			// TODO: macros should be specially defined
 			Windows::DWORD requestedOutputModes = originalOutputMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING | DISABLE_NEWLINE_AUTO_RETURN;
 
 			if (!Windows::SetConsoleMode(handleOutput, requestedOutputModes)) return;
@@ -59,11 +58,7 @@ namespace Vivium {
 		
 		void m_defaultLogCallback(const Context& context)
 		{
-			if (context.severity == Severity::DEBUG)
-				std::cout << m_formatLog(context);
-
-			if (context.severity >= Severity::WARN)
-				std::cout << m_formatLog(context);
+			std::cout << m_formatLog(context);
 
 			if (context.severity == Severity::FATAL)
 				std::terminate();
