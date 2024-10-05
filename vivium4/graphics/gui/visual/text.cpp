@@ -158,8 +158,8 @@ namespace Vivium {
 			case TextAlignment::CENTER:
 				scaleOrigin = F32x2(0.0f); break;
 			case TextAlignment::RIGHT:
-				VIVIUM_LOG(Log::FATAL, "Right alignment not implemented"); break;
-			default: VIVIUM_LOG(Log::FATAL, "Invalid alignment"); break;
+				VIVIUM_LOG(LogSeverity::FATAL, "Right alignment not implemented"); break;
+			default: VIVIUM_LOG(LogSeverity::FATAL, "Invalid alignment"); break;
 			}
 
 			std::vector<PerGlyphData> renderData = generateTextRenderData(text->metrics, text->characters, textBatch.font, F32x2(1.0f), text->alignment);

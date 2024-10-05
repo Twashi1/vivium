@@ -6,7 +6,7 @@ namespace Vivium {
 		{
 			switch (type) {
 			case Type::POLYGON: return reinterpret_cast<const Math::Polygon*>(shape)->min;
-			default: VIVIUM_LOG(Log::FATAL, "Invalid shape type");
+			default: VIVIUM_LOG(LogSeverity::FATAL, "Invalid shape type");
 			}
 		}
 
@@ -14,7 +14,7 @@ namespace Vivium {
 		{
 			switch (type) {
 			case Type::POLYGON: return reinterpret_cast<const Math::Polygon*>(shape)->max;
-			default: VIVIUM_LOG(Log::FATAL, "Invalid shape type");
+			default: VIVIUM_LOG(LogSeverity::FATAL, "Invalid shape type");
 			}
 		}
 

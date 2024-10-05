@@ -29,7 +29,7 @@
 #define VIVIUM_ASSERT(condition, msg, ...)			\
 	if (!(condition))								\
 		VIVIUM_LOG(									\
-			Vivium::Log::FATAL,						\
+			Vivium::LogSeverity::FATAL,						\
 			"[ASSERT] ({}): {}",					\
 			#condition,								\
 			std::format(msg, __VA_ARGS__)			\
@@ -37,7 +37,7 @@
 #define VIVIUM_VK_CHECK(command, message) \
 	if (VkResult result = command; result != VK_SUCCESS) \
 		VIVIUM_LOG(										 \
-			Vivium::Log::ERROR,							 \
+			Vivium::LogSeverity::ERROR,							 \
 			"[VULKAN:{}] {}",							 \
 			string_VkResult(result),					 \
 			message										 \

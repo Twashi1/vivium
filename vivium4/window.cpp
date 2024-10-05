@@ -446,7 +446,7 @@ namespace Vivium {
 			if (vkCreateSemaphore(engine.device, &semaphoreInfo, nullptr, &window.imageAvailableSemaphores[i]) != VK_SUCCESS ||
 				vkCreateSemaphore(engine.device, &semaphoreInfo, nullptr, &window.renderFinishedSemaphores[i]) != VK_SUCCESS ||
 				vkCreateFence(engine.device, &fenceInfo, nullptr, &window.inFlightFences[i]) != VK_SUCCESS) {
-				VIVIUM_LOG(Log::FATAL, "Failed to create sync objects for a frame");
+				VIVIUM_LOG(LogSeverity::FATAL, "Failed to create sync objects for a frame");
 			}
 		}
 	}
@@ -552,7 +552,7 @@ namespace Vivium {
 			return;
 		}
 		else if (acquireImageResult != VK_SUCCESS && acquireImageResult != VK_SUBOPTIMAL_KHR) {
-			VIVIUM_LOG(Log::FATAL, "Failed to acquire swapchain image");
+			VIVIUM_LOG(LogSeverity::FATAL, "Failed to acquire swapchain image");
 		}
 
 		vkResetFences(engine.device, 1, &window.inFlightFences[window.currentFrameIndex]);
@@ -612,7 +612,7 @@ namespace Vivium {
 			_recreateSwapChain(window, engine);
 		}
 		else if (queuePresentResult != VK_SUCCESS) {
-			VIVIUM_LOG(Log::FATAL, "Failed to present swap chain image");
+			VIVIUM_LOG(LogSeverity::FATAL, "Failed to present swap chain image");
 		}
 
 		window.currentFrameIndex = (window.currentFrameIndex + 1) % VIVIUM_FRAMES_IN_FLIGHT;

@@ -60,7 +60,7 @@ namespace Vivium {
 			bufferSpecificationsPtr = &manager.deviceBuffers.specifications;
 			bufferMemoryPtr = &manager.deviceBuffers.resources;
 			break;
-		default: VIVIUM_LOG(Log::FATAL, "Invalid memory type to allocate buffer to"); break;
+		default: VIVIUM_LOG(LogSeverity::FATAL, "Invalid memory type to allocate buffer to"); break;
 		}
 
 		std::vector<BufferSpecification>& bufferSpecifications = *bufferSpecificationsPtr;
@@ -495,7 +495,7 @@ namespace Vivium {
 				if (vkCreateSemaphore(engine.device, &semaphoreInfo, nullptr, &resource.imageAvailableSemaphores[i]) != VK_SUCCESS ||
 					vkCreateSemaphore(engine.device, &semaphoreInfo, nullptr, &resource.renderFinishedSemaphores[i]) != VK_SUCCESS ||
 					vkCreateFence(engine.device, &fenceInfo, nullptr, &resource.inFlightFences[i]) != VK_SUCCESS) {
-					VIVIUM_LOG(Log::FATAL, "Failed to create sync objects for a frame");
+					VIVIUM_LOG(LogSeverity::FATAL, "Failed to create sync objects for a frame");
 				}
 			}
 		}
@@ -553,7 +553,7 @@ namespace Vivium {
 					case UniformType::DYNAMIC_UNIFORM_BUFFER:
 						poolSizeCounts[3].descriptorCount++; break;
 					default:
-						VIVIUM_LOG(Log::FATAL, "Invalid uniform type"); break;
+						VIVIUM_LOG(LogSeverity::FATAL, "Invalid uniform type"); break;
 					}
 				}
 			}
@@ -681,7 +681,7 @@ namespace Vivium {
 				}
 				default:
 					// TODO: use vk string
-					VIVIUM_LOG(Log::FATAL, "Invalid uniform type {}", (int)binding.type);
+					VIVIUM_LOG(LogSeverity::FATAL, "Invalid uniform type {}", (int)binding.type);
 
 					break;
 				}
@@ -711,7 +711,7 @@ namespace Vivium {
 			case _RenderTarget::FRAMEBUFFER:
 				resource.renderPass = _getReference(manager, specification.framebuffer).renderPass; break;
 			default:
-				VIVIUM_LOG(Log::FATAL, "Invalid pipeline target, can't find render pass"); break;
+				VIVIUM_LOG(LogSeverity::FATAL, "Invalid pipeline target, can't find render pass"); break;
 			}
 
 			std::vector<VkPipelineShaderStageCreateInfo> shaderStages(specification.shaders.size());
@@ -904,7 +904,7 @@ namespace Vivium {
 			}
 		}
 		else {
-			VIVIUM_LOG(Log::FATAL, "Invalid memory type: {}", (uint64_t)memoryType);
+			VIVIUM_LOG(LogSeverity::FATAL, "Invalid memory type: {}", (uint64_t)memoryType);
 		}
 	}
 
@@ -967,7 +967,7 @@ namespace Vivium {
 			return manager.deviceBuffers.resources[reference.referenceIndex];
 		}
 
-		VIVIUM_LOG(Log::FATAL, "Reference malformed");
+		VIVIUM_LOG(LogSeverity::FATAL, "Reference malformed");
 	}
 
 	Texture& _getReference(ResourceManager& manager, TextureReference reference)

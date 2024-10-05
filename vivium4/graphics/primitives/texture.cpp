@@ -16,7 +16,7 @@ namespace Vivium {
 		default:
 			stbi_format = STBI_default;
 
-			VIVIUM_LOG(Log::FATAL, "Invalid image format");
+			VIVIUM_LOG(LogSeverity::FATAL, "Invalid image format");
 
 			break;
 		}
@@ -51,7 +51,7 @@ namespace Vivium {
 		case TextureFormat::MONOCHROME:
 			stbi_format = STBI_grey; break;
 		default:
-			VIVIUM_LOG(Log::FATAL, "Invalid image format");
+			VIVIUM_LOG(LogSeverity::FATAL, "Invalid image format");
 
 			break;
 		}

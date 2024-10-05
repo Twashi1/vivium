@@ -138,7 +138,7 @@ namespace Vivium {
 			ComponentArray*& arr = componentPools[componentID];
 
 			if (arr != nullptr) {
-				VIVIUM_LOG(Log::FATAL, "Already registered component");
+				VIVIUM_LOG(LogSeverity::FATAL, "Already registered component");
 
 				return;
 			}
@@ -221,7 +221,7 @@ namespace Vivium {
 					}
 
 					if (pool->isOwned()) {
-						VIVIUM_LOG(Log::FATAL, "Couldn't create group, already owned by group");
+						VIVIUM_LOG(LogSeverity::FATAL, "Couldn't create group, already owned by group");
 					}
 
 					pool->owner = metadata;

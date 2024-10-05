@@ -17,7 +17,7 @@ namespace Vivium {
 			}
 		}
 
-		VIVIUM_LOG(Log::FATAL, "Failed to find suitable memory type");
+		VIVIUM_LOG(LogSeverity::FATAL, "Failed to find suitable memory type");
 
 		return NULL;
 	}

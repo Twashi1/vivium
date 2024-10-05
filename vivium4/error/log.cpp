@@ -2,76 +2,79 @@
 #include "../system/os.h"
 
 namespace Vivium {
-	namespace Log {
-		const char* getSeverityName(Severity severity)
-		{
-			switch (severity) {
-			case DEBUG: return "DEBUG";
-			case WARN: return "WARN";
-			case ERROR: return "ERROR";
-			case FATAL: return "FATAL";
-			default:
-				return "INVALID";
-			}
+	const char* getSeverityName(LogSeverity severity)
+	{
+		switch (severity) {
+		case LogSeverity::DEBUG: return "DEBUG";
+		case LogSeverity::WARN: return "WARN";
+		case LogSeverity::ERROR: return "ERROR";
+		case LogSeverity::FATAL: return "FATAL";
+		default:
+			return "INVALID";
 		}
+	}
 
-		Color getSeverityColor(Severity severity)
-		{
-			switch (severity) {
-			case WARN: return Color::YELLOW;
-			case FATAL:
-			case ERROR: return Color::RED;
-			case DEBUG: return Color::GREEN;
-			default: 
-				return Color::NONE;
-			}
-		}
+	void _activateVirtualTerminal()
+	{
+		Windows::HANDLE handleOutput = Windows::GetStdHandle(Windows::_STD_OUTPUT_HANDLE);
 
-		void m_activeVirtualTerminal()
-		{
-			Windows::HANDLE handleOutput = Windows::GetStdHandle(Windows::_STD_OUTPUT_HANDLE);
+		if (handleOutput == Windows::_INVALID_HANDLE_VALUE) return;
 
-			if (handleOutput == Windows::_INVALID_HANDLE_VALUE) return;
+		Windows::DWORD originalOutputMode = 0;
 
-			Windows::DWORD originalOutputMode = 0;
+		if (!Windows::GetConsoleMode(handleOutput, &originalOutputMode)) return;
 
-			if (!Windows::GetConsoleMode(handleOutput, &originalOutputMode)) return;
+		// TODO: macros should be specially defined
+		Windows::DWORD requestedOutputModes = originalOutputMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING | DISABLE_NEWLINE_AUTO_RETURN;
 
-			// TODO: macros should be specially defined
-			Windows::DWORD requestedOutputModes = originalOutputMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING | DISABLE_NEWLINE_AUTO_RETURN;
+		if (!Windows::SetConsoleMode(handleOutput, requestedOutputModes)) return;
 
-			if (!Windows::SetConsoleMode(handleOutput, requestedOutputModes)) return;
-
-			m_state.isColorEnabled = true;
-		}
+		_logState.isColorEnabled = true;
+	}
 		
-		void m_init()
-		{
-			// TODO: if windows
-			m_activeVirtualTerminal();
-		}
+	void _logInit()
+	{
+#ifdef VIVIUM_PLATFORM_WINDOWS
+		_activateVirtualTerminal();
+#endif
+		_logState.logCallback = _defaultLogCallback;
+	}
 		
-		std::string m_setColor(const std::string& text, Color color)
-		{
-			return std::format("\033[{}m{}\033[{}m", (int)color + 30, text, (int)Color::NONE + 1);
-		}
+	std::string _setLogTextColor(std::string const& text, LogColor color)
+	{
+		return std::format("\033[{}m{}\033[{}m", (int)color + 30, text, (int)LogColor::NONE + 1);
+	}
 		
-		void m_defaultLogCallback(const Context& context)
-		{
-			std::cout << m_formatLog(context);
+	void _defaultLogCallback(LogContext const& context)
+	{
+		std::cout << _defaultFormatLog(context);
 
-			if (context.severity == Severity::FATAL)
-				std::terminate();
-		}
+		if (context.severity == LogSeverity::FATAL)
+			std::terminate();
+	}
 		
-		std::string m_formatLog(const Context& context)
-		{
-			return m_setColor(std::format("[{}] ({}) {}: {}\n",
-				Time::getTimestampString(context.timestamp),
-				getSeverityName(context.severity),
-				context.functionSignature,
-				context.message
-			), getSeverityColor(context.severity));
+	std::string _defaultFormatLog(LogContext const& context)
+	{
+		LogColor color = LogColor::NONE;
+
+		switch (context.severity) {
+		case LogSeverity::WARN: color = LogColor::YELLOW; break;
+		case LogSeverity::FATAL: // Same as error
+		case LogSeverity::ERROR: color = LogColor::RED; break;
+		case LogSeverity::DEBUG: color = LogColor::GREEN; break;
+		default: break;
 		}
+
+		return _setLogTextColor(std::format("[{}] ({}) {}: {}\n",
+			Time::getTimestampString(context.timestamp),
+			getSeverityName(context.severity),
+			context.functionSignature,
+			context.message
+		), color);
+	}
+
+	void setLogCallback(LogCallback callback)
+	{
+		_logState.logCallback = callback;
 	}
 }

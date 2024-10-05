@@ -18,13 +18,13 @@ namespace Vivium {
 		void* userData
 	)
 	{
-		Log::Severity severity;
+		LogSeverity severity;
 
 		switch (vkSeverity) {
-		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:	severity = Log::DEBUG; break;
-		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:		severity = Log::DEBUG; break;
-		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:	severity = Log::WARN; break;
-		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:		severity = Log::ERROR; break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:	severity = LogSeverity::DEBUG; break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:		severity = LogSeverity::DEBUG; break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:	severity = LogSeverity::WARN; break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:		severity = LogSeverity::ERROR; break;
 		default: return VK_FALSE;
 		}
 
@@ -178,7 +178,7 @@ namespace Vivium {
 		vkEnumeratePhysicalDevices(engine.instance, &deviceCount, nullptr);
 
 		VIVIUM_ASSERT(deviceCount > 0, "Failed to find GPU with Vulkan support");
-		VIVIUM_LOG(Log::DEBUG, "Found {} devices", deviceCount);
+		VIVIUM_LOG(LogSeverity::DEBUG, "Found {} devices", deviceCount);
 
 		std::vector<VkPhysicalDevice> devices(deviceCount);
 		vkEnumeratePhysicalDevices(engine.instance, &deviceCount, devices.data());
@@ -262,7 +262,7 @@ namespace Vivium {
 	void _createInstance(Engine& engine, const std::span<const char* const> validationLayers, const std::span<const char* const> defaultExtensions)
 	{
 		if (Engine::enableValidationLayers && !_checkValidationLayerSupport(validationLayers)) {
-			VIVIUM_LOG(Log::FATAL, "Requested validation layers, but some not available");
+			VIVIUM_LOG(LogSeverity::FATAL, "Requested validation layers, but some not available");
 		}
 
 		VkApplicationInfo appInfo{};
@@ -337,7 +337,7 @@ namespace Vivium {
 			float calculatedTimePerFrame = engine.pollFramesElapsedTime / engine.pollFramesCounted;
 			float calculatedTimePerUpdate = engine.pollUpdatesElapsedTime / engine.pollFramesCounted;
 
-			VIVIUM_LOG(Log::DEBUG,
+			VIVIUM_LOG(LogSeverity::DEBUG,
 				"Max FPS: {}, True FPS: {}, TPF: {}ms",
 				1.0f / calculatedTimePerFrame,
 				1.0f / calculatedTimePerUpdate,
@@ -347,7 +347,7 @@ namespace Vivium {
 			float delta_tpf = calculatedTimePerFrame - engine.targetTimePerFrame;
 
 			if (delta_tpf > 0.0f)
-				VIVIUM_LOG(Log::WARN, "Running behind by {}ms on average",
+				VIVIUM_LOG(LogSeverity::WARN, "Running behind by {}ms on average",
 					delta_tpf * 1000.0f);
 
 			engine.pollFramesCounted = 0;
@@ -392,12 +392,12 @@ namespace Vivium {
 		_setOptions(engine, options);
 
 		if (!glfwInit()) {
-			VIVIUM_LOG(Log::FATAL, "GLFW failed to initialise");
+			VIVIUM_LOG(LogSeverity::FATAL, "GLFW failed to initialise");
 		}
 
 		// TODO: better error callback for glfw?
 		glfwSetErrorCallback([](int code, const char* desc) {
-			VIVIUM_LOG(Log::ERROR, "[GLFW {}] {}", code, desc);
+			VIVIUM_LOG(LogSeverity::ERROR, "[GLFW {}] {}", code, desc);
 			});
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);

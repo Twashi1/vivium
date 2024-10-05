@@ -33,7 +33,7 @@ namespace Vivium {
 			li.QuadPart = -(nanoseconds / 100);
 
 			if (!SetWaitableTimer(m_sleepTimer.waitableTimer, &li, 0, NULL, NULL, FALSE)) {
-				VIVIUM_LOG(Log::FATAL, "Failed to set waitable timer");
+				VIVIUM_LOG(LogSeverity::FATAL, "Failed to set waitable timer");
 
 				return FALSE;
 			}
