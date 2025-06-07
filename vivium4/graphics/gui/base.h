@@ -51,9 +51,18 @@ namespace Vivium {
 
 	bool pointInElement(F32x2 point, GUIProperties const& properties);
 
+	enum GUIElementType {
+		DEFAULT,
+		CONTAINER_VERTICAL,
+		CONTAINER_HORIZONTAL
+	};
+
 	struct GUIElementReference {
 		uint64_t index;
+		GUIElementType type;
 	};
+
+	bool operator==(GUIElementReference const& a, GUIElementReference const& b);
 
 	struct GUIElement {
 		GUIProperties properties;
@@ -67,6 +76,9 @@ namespace Vivium {
 	void updateGUIElement(GUIElementReference const objectHandle, GUIElementReference const parent, F32x2 windowDimensions, GUIContext& guiContext);
 	GUIProperties& properties(GUIElementReference const objectHandle, GUIContext& guiContext);
 	void addChild(GUIElementReference const parent, std::span<GUIElementReference const> children, GUIContext& guiContext);
+	void removeChild(GUIElementReference const parent, std::span<GUIElementReference const> children, GUIContext& guiContext);
+	// TODO: make use of this method
+	GUIElement const& _getGUIElement(GUIElementReference const reference, GUIContext const& guiContext);
 
 	template <typename T>
 	concept GUIGeneric = requires (T object) {
@@ -91,6 +103,12 @@ namespace Vivium {
 	void addChild(U const& object, V const& child, GUIContext& guiContext) {
 		// TODO: maybe don't need this copy to get around const
 		GUIElementReference copy = _extractGUIReference(child);
-		addChild(_extractGUIReference(object), {&copy, 1}, guiContext);
+		addChild(_extractGUIReference(object), { &copy, 1 }, guiContext);
+	}
+
+	template <GUIGeneric U, GUIGeneric V>
+	void removeChild(U const& object, V const& child, GUIContext& guiContext) {
+		GUIElementReference copy = _extractGUIReference(child);
+		removeChild(_extractGUIReference(object), { &copy, 1 }, guiContext);
 	}
 }

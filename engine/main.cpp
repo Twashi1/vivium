@@ -14,7 +14,7 @@ void ecs() {
 }
 
 int main(void) {
-	ecs();
+	game();
 
 	return NULL;
 }

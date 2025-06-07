@@ -1,6 +1,21 @@
+## Whiteboard
+
+- Need abstraction to be able to efficiently develop apps
+- Standard UI elements
+	- Button
+	- Slider
+	- Panel (with margin)
+	- OrganisedBox (vertical/horizontal ordering)
+		- current issue: vertical box/horizontal box needs to be integrated into the GUI update itself... somehow? a GUI element reference stores additional metadata is only viable approach
+- Easy-draw elements
+	- Standard shaded quad (ability for texture, standard coordinates plugged in, etc.)
 
 ## Current tasks
 
+- Some GUI commands are randomly split between `context.h` and `base.h`
+- 3D rendering tests (for fun)
+- HTML renderer
+- Dynamic resource manager
 - Input class refactor
 	- Initialisation function and update
 - Font namespace
@@ -36,8 +51,6 @@
 - Minimal overrides
 - No static member functions (even for specifications): just define a method
 - Renaming `ResourceManager` to `ResourceAllocator`
-- RAII storage objects are appealing (delete copy, define move) (`Storage::Static` and `Storage::Dynamic`)
-	- Alternative is to just `malloc` and `free` these, they're already only used as pointers anyway
 - `Commands::Context` should be multi-thread compatible
 - Easier-to-use temporary staging
 	- `Stager s = Commands::createStage(maximumSize)`

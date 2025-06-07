@@ -228,7 +228,7 @@ namespace Vivium {
 
 	Text createText(TextSpecification const& specification, GUIContext& guiContext)
 	{
-		GUIElementReference base = createGUIElement(guiContext);
+		GUIElementReference base = createGUIElement(guiContext, GUIElementType::DEFAULT);
 		addChild(specification.parent, { &base, 1 }, guiContext);
 
 		return Text{ base, specification.characters, specification.color, specification.metrics, specification.alignment };

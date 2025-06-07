@@ -10,7 +10,7 @@ namespace Vivium {
 	{
 		Button button;
 
-		button.base = createGUIElement(guiContext);
+		button.base = createGUIElement(guiContext, GUIElementType::DEFAULT);
 		addChild(specification.parent, { &button.base, 1 }, guiContext);
 		button.color = specification.color;
 		button.textColor = specification.textColor;

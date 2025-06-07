@@ -14,14 +14,18 @@ void _submitEditor(State& state)
 
 void _submitEntityView(State& state)
 {
-	state.editor.entityView.entityObjectsElement = createGUIElement(state.guiContext);
-
+	state.editor.entityView.entityObjectsElement = createGUIElement(state.guiContext, GUIElementType::DEFAULT);
 	state.editor.entityView.background = createPanel(state.guiContext, PanelSpecification{ state.editor.background.base, colorDarkGray, colorBlack, 0.01f });
 	state.editor.entityView.createButton = submitButton(state.manager, state.guiContext, state.engine, state.window, ButtonSpecification{ state.editor.entityView.background.base, colorDarkGray, colorBlack });
 	state.editor.entityView.entityTextBatch = submitTextBatch(state.manager, state.engine, state.guiContext, TextBatchSpecification{ 256, state.editor.entityView.createButton.textBatch.font });
+	state.editor.entityView.vbox = createContainer(state.guiContext, ContainerSpecification{
+		state.editor.entityView.background.base,
+		ContainerOrdering::VERTICAL
+	});
 
 	for (uint32_t i = 0; i < MAX_CONCURRENT_ENTITY_PANELS; i++) {
-		state.editor.entityView.entityPanels.push_back(createPanel(state.guiContext, PanelSpecification(state.editor.entityView.entityObjectsElement, colorDarkGray, colorBlack, 0.01f)));
+		state.editor.entityView.entityPanels.push_back(createPanel(state.guiContext, PanelSpecification(state.editor.entityView.vbox.base, colorDarkGray, colorBlack, 0.01f)));
+
 		state.editor.entityView.textObjects.push_back(createText(TextSpecification{
 			state.editor.entityView.entityPanels.back().base,
 			"",
@@ -64,14 +68,21 @@ void _setupEntityView(State& state)
 	properties(state.editor.entityView.entityObjectsElement, state.guiContext).centerY = GUIAnchor::TOP;
 	properties(state.editor.entityView.entityObjectsElement, state.guiContext).anchorY = GUIAnchor::TOP;
 	properties(state.editor.entityView.entityObjectsElement, state.guiContext).position = F32x2(0.0f, -0.115f);
+	properties(state.editor.entityView.vbox, state.guiContext).centerY = GUIAnchor::BOTTOM;
+	properties(state.editor.entityView.vbox, state.guiContext).anchorY = GUIAnchor::TOP;
+	properties(state.editor.entityView.vbox, state.guiContext).centerX = GUIAnchor::LEFT;
+	properties(state.editor.entityView.vbox, state.guiContext).anchorX = GUIAnchor::LEFT;
+	properties(state.editor.entityView.vbox, state.guiContext).position = F32x2(0.0f, -0.1f);
+	properties(state.editor.entityView.vbox, state.guiContext).dimensions = F32x2(1.0f, 1.0f);
 
 	for (uint32_t i = 0; i < MAX_CONCURRENT_ENTITY_PANELS; i++) {
 		GUIProperties& props = properties(state.editor.entityView.entityPanels[i], state.guiContext);
-		
+		// TODO: these dimensions are relative to the first element
+		//	we just need an alternative method of organisation for vbox
 		props.dimensions = F32x2(0.9f, 0.05f);
-		props.position = F32x2(0.0f, -0.015f + -0.075f * i);
+		props.position = F32x2(0.0f, -0.01f);
 		props.centerY = GUIAnchor::TOP;
-		props.anchorY = GUIAnchor::TOP;
+		props.anchorY = GUIAnchor::BOTTOM;
 
 		GUIProperties& textProps = properties(state.editor.entityView.textObjects[i], state.guiContext);
 		textProps.dimensions = F32x2(0.95f);
@@ -119,6 +130,7 @@ void _update(State& state)
 		textObjectsPtr.push_back(&state.editor.entityView.textObjects[i]);
 		state.editor.entityView.textObjects[i].metrics = calculateTextMetrics(name.name, state.editor.entityView.entityTextBatch.font);
 		state.editor.entityView.textObjects[i++].characters = name.name;
+
 	}
 
 	calculateTextBatch(state.editor.entityView.entityTextBatch, textObjectsPtr, state.context, state.guiContext, state.engine);
@@ -134,6 +146,7 @@ void _draw(State& state)
 	for (int i = 0; i < std::min(MAX_CONCURRENT_ENTITY_PANELS, (int)state.editor.entityView.entities.size()); i++) {
 		entityPanels.push_back(&state.editor.entityView.entityPanels[i]);
 	}
+
 	renderPanels(entityPanels, state.context, state.guiContext, state.window);
 
 	Button* buttons[] = { &state.editor.entityView.createButton };
