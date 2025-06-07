@@ -8,7 +8,7 @@ namespace Vivium {
 
 	ShaderSpecification compileShader(ShaderStage stage, const char* sourceFilename, const char* destFilename) {
 		if (!std::filesystem::exists(VIVIUM_GLSLC_PATH)) {
-			VIVIUM_LOG(Log::FATAL, "Couldn't find glslc.exe for compiling shaders");
+			VIVIUM_LOG(LogSeverity::FATAL, "Couldn't find glslc.exe for compiling shaders");
 		}
 
 		std::string stageOption;
@@ -26,7 +26,7 @@ namespace Vivium {
 		shaderBinaryFile.open(destFilename, std::ios::binary);
 
 		if (!shaderBinaryFile.is_open())
-			VIVIUM_LOG(Log::FATAL, "Failed to open shader binary file");
+			VIVIUM_LOG(LogSeverity::FATAL, "Failed to open shader binary file");
 
 		std::string binaryCode;
 		shaderBinaryFile.seekg(0, std::ios::end);

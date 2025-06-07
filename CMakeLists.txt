@@ -106,6 +106,9 @@ if (CMAKE_VERSION VERSION_GREATER 3.12)
   target_compile_features(vivium4 PUBLIC cxx_std_20)
 endif()
 
+string(LENGTH "${CMAKE_SOURCE_DIR}/" VIVIUM_SOURCE_PATH_SIZE)
+add_definitions("-DVIVIUM_SOURCE_PATH_SIZE=${VIVIUM_SOURCE_PATH_SIZE}")
+
 target_include_directories(vivium4 PUBLIC "${CMAKE_SOURCE_DIR}/external/freetype/include")
 target_include_directories(vivium4 PUBLIC "${CMAKE_SOURCE_DIR}/external/glm")
 target_include_directories(vivium4 PUBLIC "${CMAKE_SOURCE_DIR}/external/stb_image")

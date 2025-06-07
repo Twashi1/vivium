@@ -3,7 +3,9 @@
 using namespace Vivium;
 
 void groupTest() {
-	VIVIUM_LOG(Log::DEBUG, "Doing group test");
+	_logInit();
+
+	VIVIUM_LOG(LogSeverity::DEBUG, "Doing group test");
 
 	Registry reg;
 
@@ -62,5 +64,5 @@ void groupTest() {
 		}
 	}
 
-	VIVIUM_LOG(Log::DEBUG, "Group test successful");
+	VIVIUM_LOG(LogSeverity::DEBUG, "Group test successful");
 }

@@ -38,7 +38,7 @@ namespace Vivium {
 		template <ValidComponent T>
 		void push(Entity entity, T&& component) {
 			if (sparse.get(getIdentifier(entity)) != ECS_ENTITY_DEAD) {
-				VIVIUM_LOG(Log::FATAL, "Entity already had component");
+				VIVIUM_LOG(LogSeverity::FATAL, "Entity already had component");
 
 				return;
 			}
@@ -60,7 +60,7 @@ namespace Vivium {
 			uint32_t index = sparse.index(getIdentifier(entity));
 
 			if (index == ECS_ENTITY_DEAD) {
-				VIVIUM_LOG(Log::FATAL, "Entity didn't have component");
+				VIVIUM_LOG(LogSeverity::FATAL, "Entity didn't have component");
 			}
 
 			return *reinterpret_cast<T*>(&dense[index * manager.typeSize]);

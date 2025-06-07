@@ -23,7 +23,7 @@ namespace Vivium {
 		case GUIUnits::PIXELS:		multiplier = F32x2(1.0f); break;
 		case GUIUnits::VIEWPORT:	multiplier = windowDimensions; break;
 		case GUIUnits::RELATIVE:	multiplier = parentDimensions; break;
-		default: VIVIUM_LOG(Log::FATAL, "Invalid scale type"); break;
+		default: VIVIUM_LOG(LogSeverity::FATAL, "Invalid scale type"); break;
 		}
 
 		object.properties.trueDimensions = object.properties.dimensions * multiplier;
@@ -39,7 +39,7 @@ namespace Vivium {
 			case GUIAnchor::CENTER:
 				object.properties.truePosition.x += 0.5f * parentDimensions.x; break;
 			default:
-				VIVIUM_LOG(Log::FATAL, "Invalid anchor for horizontal direction"); break;
+				VIVIUM_LOG(LogSeverity::FATAL, "Invalid anchor for horizontal direction"); break;
 			}
 
 			switch (object.properties.anchorY) {
@@ -49,7 +49,7 @@ namespace Vivium {
 			case GUIAnchor::CENTER:
 				object.properties.truePosition.y += 0.5f * parentDimensions.y; break;
 			default:
-				VIVIUM_LOG(Log::FATAL, "Invalid anchor for vertical direction"); break;
+				VIVIUM_LOG(LogSeverity::FATAL, "Invalid anchor for vertical direction"); break;
 			}
 
 			switch (object.properties.centerX) {
@@ -61,7 +61,7 @@ namespace Vivium {
 				object.properties.truePosition.x -= object.properties.trueDimensions.x * 0.5f;
 				break;
 			default:
-				VIVIUM_LOG(Log::FATAL, "Invalid anchor for horizontal direction"); break;
+				VIVIUM_LOG(LogSeverity::FATAL, "Invalid anchor for horizontal direction"); break;
 			}
 
 			switch (object.properties.centerY) {
@@ -73,7 +73,7 @@ namespace Vivium {
 				object.properties.truePosition.y -= object.properties.trueDimensions.y * 0.5f;
 				break;
 			default:
-				VIVIUM_LOG(Log::FATAL, "Invalid anchor for vertical direction"); break;
+				VIVIUM_LOG(LogSeverity::FATAL, "Invalid anchor for vertical direction"); break;
 			}
 		}
 

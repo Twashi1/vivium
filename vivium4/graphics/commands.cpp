@@ -17,7 +17,7 @@ namespace Vivium {
 			}
 		}
 
-		VIVIUM_LOG(Log::FATAL, "Failed to find suitable memory type");
+		VIVIUM_LOG(LogSeverity::FATAL, "Failed to find suitable memory type");
 
 		return NULL;
 	}
@@ -72,7 +72,7 @@ namespace Vivium {
 			
 	void _contextFlush(CommandContext& context, Engine& engine)
 	{
-		context.frameIndex = (context.frameIndex + 1) % 2;
+		context.frameIndex = (context.frameIndex + 1) % VIVIUM_FRAMES_IN_FLIGHT;
 
 		for (std::function<void(void)> function : context.perFrameCleanupArrays[context.frameIndex]) {
 			function();
@@ -143,8 +143,9 @@ namespace Vivium {
 		renderPassInfo.dependencyCount = 1;
 		renderPassInfo.pDependencies = &dependency;
 
-		VIVIUM_VK_CHECK(vkCreateRenderPass(engine.device, &renderPassInfo, nullptr, renderPass),
-			"Failed to create render pass");
+		VIVIUM_VK_CHECK(vkCreateRenderPass(
+			engine.device, &renderPassInfo, nullptr, renderPass
+		), "Failed to create render pass");
 	}
 
 	void _cmdCreateBuffer(Engine& engine, VkBuffer* buffer, uint64_t size, BufferUsage usage, VkMemoryRequirements* memoryRequirements, const VkAllocationCallbacks* allocationCallbacks) {
@@ -163,10 +164,9 @@ namespace Vivium {
 		poolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		poolCreateInfo.flags = flags;
 
-		VIVIUM_VK_CHECK(
-			vkCreateCommandPool(engine.device, &poolCreateInfo, nullptr, pool),
-			"Failed to create command pool"
-		);
+		VIVIUM_VK_CHECK(vkCreateCommandPool(
+			engine.device, &poolCreateInfo, nullptr, pool
+		), "Failed to create command pool");
 	}
 
 	void _cmdCreateCommandBuffers(Engine& engine, VkCommandPool pool, VkCommandBuffer* commandBuffers, uint64_t count)
@@ -201,9 +201,7 @@ namespace Vivium {
 		for (uint64_t i = 0; i < count; i++) {
 			VIVIUM_VK_CHECK(vkEndCommandBuffer(
 				commandBuffers[i]
-			),
-				"Failed to end command buffer"
-			);
+			), "Failed to end command buffer");
 		}
 
 		VkSubmitInfo submitInfo{};
@@ -308,9 +306,8 @@ namespace Vivium {
 			engine.device,
 			&imageCreateInfo,
 			allocationCallbacks,
-			image),
-			"Failed to create image"
-		);
+			image
+		), "Failed to create image");
 	}
 
 	void _cmdCreateView(Engine& engine, VkImageView* view, TextureFormat format, VkImage image, const VkAllocationCallbacks* allocationCallbacks)
@@ -330,9 +327,8 @@ namespace Vivium {
 			engine.device,
 			&viewCreateInfo,
 			allocationCallbacks,
-			view),
-			"Failed to create image view"
-		);
+			view
+		), "Failed to create image view");
 	}
 
 	void _cmdCreateSampler(Engine& engine, VkSampler* sampler, TextureFilter filter, const VkAllocationCallbacks* allocationCallbacks)
@@ -466,9 +462,8 @@ namespace Vivium {
 			engine.device,
 			&pipelineLayoutInfo,
 			layoutAllocationCallback,
-			layout),
-			"Failed to create pipeline layout"
-		);
+			layout
+		), "Failed to create pipeline layout");
 
 		VkGraphicsPipelineCreateInfo pipelineInfo{};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;

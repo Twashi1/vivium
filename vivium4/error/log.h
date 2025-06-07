@@ -7,76 +7,68 @@
 #include "../time/timer.h"
 
 namespace Vivium {
-	namespace Log {
-		enum Severity {
-			INVALID,
-			DEBUG,
-			WARN,
-			ERROR,
-			FATAL
-		};
+	enum class LogSeverity {
+		DEBUG,
+		WARN,
+		ERROR,
+		FATAL
+	};
 
-		const char* getSeverityName(Severity severity);
+	const char* getSeverityName(LogSeverity severity);
 
-		enum Color {
-			NONE = -1,
-			BLACK,
-			RED,
-			GREEN,
-			YELLOW,
-			BLUE,
-			MAGENTA,
-			CYAN,
-			WHITE
-		};
+	enum class LogColor {
+		NONE = -1,
+		BLACK,
+		RED,
+		GREEN,
+		YELLOW,
+		BLUE,
+		MAGENTA,
+		CYAN,
+		WHITE
+	};
 
-		Color getSeverityColor(Severity severity);
+#ifdef VIVIUM_PLATFORM_WINDOWS
+	// https://learn.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences#EXAMPLE_OF_ENABLING_VIRTUAL_TERMINAL_PROCESSING
+	void _activateVirtualTerminal();
+#endif
 
-		// Windows
-		// https://learn.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences#EXAMPLE_OF_ENABLING_VIRTUAL_TERMINAL_PROCESSING
-		void m_activeVirtualTerminal();
-		void m_init();
+	void _logInit();
+	std::string _setLogTextColor(std::string const& text, LogColor color);
 
-		// TODO: forgot where i yoinked this from
-		std::string m_setColor(const std::string& text, Color color);
+	struct LogContext {
+		LogSeverity severity;
+		std::string message;
 
-		struct Context {
-			Severity severity;
-			std::string message;
+		uint32_t line;
+		const char* functionSignature;
+		const char* filename;
 
-			uint32_t line;
-			const char* functionSignature;
-			const char* filename;
+		std::chrono::system_clock::time_point timestamp;
+	};
 
-			std::chrono::system_clock::time_point timestamp;
-		};
+	typedef void(*LogCallback)(LogContext const&);
+	void _defaultLogCallback(LogContext const& context);
+	std::string _defaultFormatLog(LogContext const& context);
 
-		typedef void(*LogCallback)(const Context&);
-		void m_defaultLogCallback(const Context& context);
-		std::string m_formatLog(const Context& context);
+	struct LogState {
+		LogCallback logCallback;
+		bool isColorEnabled;
+	};
 
-		struct LoggerState {
-			LogCallback logCallback;
-			bool isColorEnabled;
+	void setLogCallback(LogCallback callback);
 
-			LoggerState()
-				: logCallback(m_defaultLogCallback), isColorEnabled(false)
-			{}
-		};
-
-		inline LoggerState m_state;
-
-		void setLogCallback(LogCallback callback);
-	}
+	inline LogState _logState;
 }
 
 #ifdef NDEBUG
 #define VIVIUM_LOG(severity, message, ...) ((void)0)
 #else
+// Use VIVIUM_SOURCE_PATH_SIZE to advance the __FILE__ pointer to cut off the source path
 #define VIVIUM_LOG(severity, message, ...) \
-	Vivium::Log::m_state.logCallback( \
-		Vivium::Log::Context{ \
-			severity, std::format(message, __VA_ARGS__), __LINE__, __FUNCSIG__, __FILE__, std::chrono::system_clock::now() \
+	Vivium::_logState.logCallback( \
+		Vivium::LogContext{ \
+			severity, std::format(message, __VA_ARGS__), __LINE__, __FUNCSIG__, __FILE__ + VIVIUM_SOURCE_PATH_SIZE, std::chrono::system_clock::now() \
 		} \
 	)
 #endif

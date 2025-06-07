@@ -5,7 +5,7 @@ namespace Vivium {
 		void init()
 		{
 			if (FT_Init_FreeType(&ftLibrary))
-				VIVIUM_LOG(Log::FATAL, "Failed to initialise FreeType library");
+				VIVIUM_LOG(LogSeverity::FATAL, "Failed to initialise FreeType library");
 		}
 		
 		void terminate()
@@ -150,7 +150,7 @@ namespace Vivium {
 			FT_Face face;
 
 			if (FT_Error error = FT_New_Face(ftLibrary, inputFontFile, 0, &face))
-				VIVIUM_LOG(Log::FATAL, "Failed to load font at {}, error: {}", inputFontFile, error);
+				VIVIUM_LOG(LogSeverity::FATAL, "Failed to load font at {}, error: {}", inputFontFile, error);
 
 			FT_Set_Pixel_Sizes(face, 0, inputFontSize);
 
@@ -160,7 +160,7 @@ namespace Vivium {
 			int glyphPaddedSize = inputFontSize + padding;
 			int fieldPaddedSize = outputFieldSize + padding;
 
-			VIVIUM_LOG(Log::DEBUG, "Padding is: {}", padding);
+			VIVIUM_LOG(LogSeverity::DEBUG, "Padding is: {}", padding);
 
 			font.fontSize = fieldPaddedSize;
 			font.imageDimensions = I32x2(VIVIUM_CHARACTERS_TO_EXTRACT * fieldPaddedSize, fieldPaddedSize);
@@ -173,7 +173,7 @@ namespace Vivium {
 			for (uint8_t character = 0; character < VIVIUM_CHARACTERS_TO_EXTRACT; character++) {
 				// TODO: FT_LOAD_RENDER probably a bad flag
 				if (FT_Load_Char(face, character, FT_LOAD_RENDER)) {
-					VIVIUM_LOG(Log::ERROR, "Failed to extract character {} from font", character);
+					VIVIUM_LOG(LogSeverity::ERROR, "Failed to extract character {} from font", character);
 
 					continue;
 				}
@@ -284,7 +284,7 @@ namespace Vivium {
 			font.fontSize = fontSize;
 
 			if (FT_Error error = FT_New_Face(ftLibrary, filename, 0, &face))
-				VIVIUM_LOG(Log::FATAL, "Failed to load font at {}, error: {}", filename, error);
+				VIVIUM_LOG(LogSeverity::FATAL, "Failed to load font at {}, error: {}", filename, error);
 
 			FT_Set_Pixel_Sizes(face, 0, fontSize);
 
@@ -298,7 +298,7 @@ namespace Vivium {
 			for (uint8_t character = 0; character < VIVIUM_CHARACTERS_TO_EXTRACT; character++) {
 				// TODO: FT_LOAD_RENDER probably a bad flag
 				if (FT_Load_Char(face, character, FT_LOAD_RENDER)) {
-					VIVIUM_LOG(Log::ERROR, "Failed to extract character {} from font", character);
+					VIVIUM_LOG(LogSeverity::ERROR, "Failed to extract character {} from font", character);
 					
 					continue;
 				}
