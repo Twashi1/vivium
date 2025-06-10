@@ -86,16 +86,15 @@ namespace Vivium {
 			updateGUIElement(child, element, windowDimensions, context);
 
 			if (element.type == GUIElementType::CONTAINER_VERTICAL || element.type == GUIElementType::CONTAINER_HORIZONTAL) {
-				F32x2 childDimensions = properties(child, context).trueDimensions;
+				F32x2 childOffset = properties(element, context).trueDimensions + properties(element, context).truePosition - properties(child, context).truePosition;
 
-				if (element.type == GUIElementType::CONTAINER_VERTICAL) { childDimensions.x = 0.0f; }
-				if (element.type == GUIElementType::CONTAINER_HORIZONTAL) { childDimensions.y = 0.0f; }
+				if (element.type == GUIElementType::CONTAINER_VERTICAL) { childOffset.x = 0.0f; }
+				if (element.type == GUIElementType::CONTAINER_HORIZONTAL) { childOffset.y = 0.0f; }
+
+				F32x2 totalOffset = childOffset;
 				
-				// TODO: we need the container ordering here
-				// TODO: this doesn't take into account any padding of the child
-				properties(element, context).truePosition -= childDimensions;
-				containerOffset += childDimensions;
-				// properties(element, context).truePosition = properties(child, context).truePosition;
+				properties(element, context).truePosition -= totalOffset;
+				containerOffset += totalOffset;
 			}
 		}
 

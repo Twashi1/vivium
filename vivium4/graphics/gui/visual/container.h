@@ -3,6 +3,7 @@
 
 #include "context.h"
 #include "../../color.h"
+#include "../../../error/log.h"
 
 namespace Vivium {
 	enum ContainerOrdering {

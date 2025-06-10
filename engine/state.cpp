@@ -68,21 +68,19 @@ void _setupEntityView(State& state)
 	properties(state.editor.entityView.entityObjectsElement, state.guiContext).centerY = GUIAnchor::TOP;
 	properties(state.editor.entityView.entityObjectsElement, state.guiContext).anchorY = GUIAnchor::TOP;
 	properties(state.editor.entityView.entityObjectsElement, state.guiContext).position = F32x2(0.0f, -0.115f);
-	properties(state.editor.entityView.vbox, state.guiContext).centerY = GUIAnchor::BOTTOM;
+	properties(state.editor.entityView.vbox, state.guiContext).centerY = GUIAnchor::TOP;
 	properties(state.editor.entityView.vbox, state.guiContext).anchorY = GUIAnchor::TOP;
-	properties(state.editor.entityView.vbox, state.guiContext).centerX = GUIAnchor::LEFT;
-	properties(state.editor.entityView.vbox, state.guiContext).anchorX = GUIAnchor::LEFT;
-	properties(state.editor.entityView.vbox, state.guiContext).position = F32x2(0.0f, -0.1f);
+	properties(state.editor.entityView.vbox, state.guiContext).centerX = GUIAnchor::CENTER;
+	properties(state.editor.entityView.vbox, state.guiContext).anchorX = GUIAnchor::CENTER;
+	properties(state.editor.entityView.vbox, state.guiContext).position = F32x2(0.0f, -0.115f);
 	properties(state.editor.entityView.vbox, state.guiContext).dimensions = F32x2(1.0f, 1.0f);
 
 	for (uint32_t i = 0; i < MAX_CONCURRENT_ENTITY_PANELS; i++) {
 		GUIProperties& props = properties(state.editor.entityView.entityPanels[i], state.guiContext);
-		// TODO: these dimensions are relative to the first element
-		//	we just need an alternative method of organisation for vbox
 		props.dimensions = F32x2(0.9f, 0.05f);
 		props.position = F32x2(0.0f, -0.01f);
 		props.centerY = GUIAnchor::TOP;
-		props.anchorY = GUIAnchor::BOTTOM;
+		props.anchorY = GUIAnchor::TOP;
 
 		GUIProperties& textProps = properties(state.editor.entityView.textObjects[i], state.guiContext);
 		textProps.dimensions = F32x2(0.95f);
@@ -138,6 +136,11 @@ void _update(State& state)
 
 void _draw(State& state)
 {
+	GUIProperties& props = properties(state.editor.entityView.vbox, state.guiContext);
+
+	VIVIUM_LOG(LogSeverity::DEBUG, "Vbox: Pos [{:.2f}, {:.2f}] Dim [{:.2f}, {:.2f}]", 
+		props.truePosition.x, props.truePosition.y, props.trueDimensions.x, props.trueDimensions.y);
+
 	std::vector<Panel*> entityPanels;
 
 	entityPanels.push_back(&state.editor.background);
@@ -156,6 +159,7 @@ void _draw(State& state)
 }
 
 void initialise(State& state) {
+	_logInit(); // TODO: ugly that we have to initialise this
 	Font::init();
 
 	state.engine = createEngine(EngineOptions{});

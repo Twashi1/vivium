@@ -8,7 +8,7 @@ namespace Vivium {
 		GUIElementType containerType = GUIElementType::DEFAULT;
 
 		switch (specification.ordering) {
-		case ContainerOrdering::NONE: VIVIUM_LOG(Log::ERROR, "Container ordering must be vertical/horizontal"); break;
+		case ContainerOrdering::NONE: VIVIUM_LOG(LogSeverity::ERROR, "Container ordering must be vertical/horizontal"); break;
 		case ContainerOrdering::VERTICAL: containerType = GUIElementType::CONTAINER_VERTICAL; break;
 		case ContainerOrdering::HORIZONTAL: containerType = GUIElementType::CONTAINER_HORIZONTAL; break;
 		}

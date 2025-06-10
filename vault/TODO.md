@@ -2,11 +2,7 @@
 
 - Need abstraction to be able to efficiently develop apps
 - Standard UI elements
-	- Button
 	- Slider
-	- Panel (with margin)
-	- OrganisedBox (vertical/horizontal ordering)
-		- current issue: vertical box/horizontal box needs to be integrated into the GUI update itself... somehow? a GUI element reference stores additional metadata is only viable approach
 - Easy-draw elements
 	- Standard shaded quad (ability for texture, standard coordinates plugged in, etc.)
 
@@ -40,6 +36,7 @@
 - Dynamic allocation storage (at least a wrapper for `new`/`delete`  temporarily)
 - Reflection data on shader files
 	- Use to validate alignment requirements
+	- Some custom parsing of shader files
 - Offset before size on `PushConstant`, not ideal
 - Can free `DescriptorLayout` at same stage we free `Shader`?
 - Static allocator being re-useable is an anti-pattern
