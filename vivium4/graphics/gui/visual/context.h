@@ -23,6 +23,18 @@ namespace Vivium {
 		float _fill0;			// 48 bytes
 	};
 
+	struct _GUISliderInstanceData {
+		F32x2 position;			// 8
+		F32x2 scale;			// 16
+		Color foregroundColor;	// 28
+		float percent;			// 32
+		Color sliderColor;		// 44
+		float contrast;			// 48
+		F32x2 sliderScale;		// 56
+		float selectorScale;	// 60
+		float _fill0;			// 64
+	};
+
 	struct GUIContext {
 		Ref<Buffer> rectVertexBuffer;
 		Ref<Buffer> rectIndexBuffer;
@@ -63,6 +75,19 @@ namespace Vivium {
 			Ref<Pipeline> pipeline;
 		} panel;
 
+		struct {
+			static constexpr uint64_t MAX_SLIDERS = 128;
+
+			Ref<Shader> fragmentShader;
+			Ref<Shader> vertexShader;
+
+			Ref<Buffer> storageBuffer;
+
+			Ref<DescriptorLayout> descriptorLayout;
+			Ref<DescriptorSet> descriptorSet;
+			Ref<Pipeline> pipeline;
+		} slider;
+
 		GUIElementReference defaultParent;
 		std::vector<GUIElement> guiElements;
 	};
@@ -74,6 +99,7 @@ namespace Vivium {
 	void _submitTextGUIContext(GUIContext& context, ResourceManager& manager, Engine& engine, Window& window);
 	void _submitButtonGUIContext(GUIContext& context, ResourceManager& manager, Engine& engine, Window& window);
 	void _submitPanelGUIContext(GUIContext& context, ResourceManager& manager, Engine& engine, Window& window);
+	void _submitSliderGUIContext(GUIContext& context, ResourceManager& manager, Engine& engine, Window& window);
 
 	GUIContext createGUIContext(ResourceManager& manager, Engine& engine, Window& window);
 				

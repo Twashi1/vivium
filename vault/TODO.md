@@ -1,13 +1,12 @@
 ## Whiteboard
 
 - Need abstraction to be able to efficiently develop apps
-- Standard UI elements
-	- Slider
 - Easy-draw elements
 	- Standard shaded quad (ability for texture, standard coordinates plugged in, etc.)
 
 ## Current tasks
 
+- Comprehensive documentation of all structs/methods/etc.
 - Some GUI commands are randomly split between `context.h` and `base.h`
 - 3D rendering tests (for fun)
 - HTML renderer
@@ -33,6 +32,8 @@
 - Investigate ability to change size of group (not during iteration) and still correctly see all entities
 ## Core
 
+- Super easy `debugRect` and `debugPoint` commands for a given coordinate or GUIElement
+- Should be easy to perform event `onButtonPress`, either through callback or looping on an `if`
 - Dynamic allocation storage (at least a wrapper for `new`/`delete`  temporarily)
 - Reflection data on shader files
 	- Use to validate alignment requirements
@@ -47,6 +48,8 @@
 - Re-implementation of dynamic buffers
 - Minimal overrides
 - No static member functions (even for specifications): just define a method
+	- `fromXXX` constructors violate this
+	- `Color::multiply`
 - Renaming `ResourceManager` to `ResourceAllocator`
 - `Commands::Context` should be multi-thread compatible
 - Easier-to-use temporary staging

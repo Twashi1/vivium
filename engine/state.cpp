@@ -22,6 +22,14 @@ void _submitEntityView(State& state)
 		state.editor.entityView.background.base,
 		ContainerOrdering::VERTICAL
 	});
+	state.editor.entityView.randomSlider = createSlider(state.guiContext, SliderSpecification{
+		state.editor.entityView.vbox.base,
+		Color::multiply(colorDarkGray, 0.9),
+		0.5f,
+		colorCyan,
+		F32x2(0.9f),
+		0.05f
+	});
 
 	for (uint32_t i = 0; i < MAX_CONCURRENT_ENTITY_PANELS; i++) {
 		state.editor.entityView.entityPanels.push_back(createPanel(state.guiContext, PanelSpecification(state.editor.entityView.vbox.base, colorDarkGray, colorBlack, 0.01f)));
@@ -74,6 +82,10 @@ void _setupEntityView(State& state)
 	properties(state.editor.entityView.vbox, state.guiContext).anchorX = GUIAnchor::CENTER;
 	properties(state.editor.entityView.vbox, state.guiContext).position = F32x2(0.0f, -0.115f);
 	properties(state.editor.entityView.vbox, state.guiContext).dimensions = F32x2(1.0f, 1.0f);
+	properties(state.editor.entityView.randomSlider, state.guiContext).centerY = GUIAnchor::TOP;
+	properties(state.editor.entityView.randomSlider, state.guiContext).anchorY = GUIAnchor::TOP;
+	properties(state.editor.entityView.randomSlider, state.guiContext).position = F32x2(0.0f, -0.01f);
+	properties(state.editor.entityView.randomSlider, state.guiContext).dimensions = F32x2(0.9f, 0.05f);
 
 	for (uint32_t i = 0; i < MAX_CONCURRENT_ENTITY_PANELS; i++) {
 		GUIProperties& props = properties(state.editor.entityView.entityPanels[i], state.guiContext);
@@ -111,6 +123,8 @@ void _update(State& state)
 {
 	setButtonText(state.editor.entityView.createButton, state.engine, state.window, state.context, state.guiContext, "Entity create");
 
+	updateSlider(state.editor.entityView.randomSlider, state.guiContext);
+
 	if (pointInElement(Input::getCursor(), properties(state.editor.entityView.createButton, state.guiContext)) && Input::get(Input::BTN_LEFT).state == Input::PRESS) {
 		Entity newEntity = state.registry.create();
 		state.registry.addComponent<ComponentName>(newEntity, ComponentName{ std::format("Entity {}", newEntity & ECS_ENTITY_MASK) });
@@ -145,7 +159,11 @@ void _draw(State& state)
 		entityPanels.push_back(&state.editor.entityView.entityPanels[i]);
 	}
 
+	std::vector<Slider*> sliders;
+	sliders.push_back(&state.editor.entityView.randomSlider);
+
 	renderPanels(entityPanels, state.context, state.guiContext, state.window);
+	renderSliders(sliders, state.context, state.guiContext, state.window);
 
 	Button* buttons[] = { &state.editor.entityView.createButton };
 	renderButtons(buttons, state.context, state.guiContext, state.window);

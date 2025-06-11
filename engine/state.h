@@ -32,6 +32,7 @@ struct State {
 			Panel background;
 			Button createButton;
 			TextBatch entityTextBatch;
+			Slider randomSlider;
 
 			GUIElementReference entityObjectsElement;
 

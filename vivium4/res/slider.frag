@@ -26,7 +26,7 @@ void main() {
 	//	i.e., 0.1 on each side
 	// so (1-x) * 0.5 gives lb, x + (1 - x) * 0.5 gives ub
 	vec2 paddingScaleMin = (vec2(1.0) - vSliderScale) * 0.5;
-	vec2 paddingScaleMax = vec(1.0) - paddingScaleMin;
+	vec2 paddingScaleMax = vec2(1.0) - paddingScaleMin;
 
 	if (vUVCoords.x < paddingScaleMin.x || vUVCoords.x > paddingScaleMax.x ||
 		vUVCoords.y < paddingScaleMin.y || vUVCoords.y > paddingScaleMax.y)
@@ -37,7 +37,7 @@ void main() {
 		// Draw percentage bar (square for now)
 		// TODO: rounded bar maths?
 		float scaledPercentage = vPercent * vSliderScale.x + paddingScaleMin.x;
-		if (scaledPercentage < vUVCoords.x) {
+		if (scaledPercentage > vUVCoords.x) {
 			color = vec4(vSliderColor, 1.0);
 		} else {
 			color = vec4(vForegroundColor, 1.0);

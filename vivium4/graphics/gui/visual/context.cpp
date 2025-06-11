@@ -127,6 +127,43 @@ namespace Vivium {
 			) }));
 	}
 
+	void _submitSliderGUIContext(GUIContext& guiContext, ResourceManager& manager, Engine& engine, Window& window)
+	{
+		submitResource(manager, &guiContext.slider.storageBuffer.reference, MemoryType::UNIFORM,
+			std::vector<BufferSpecification>({ BufferSpecification(guiContext.slider.MAX_SLIDERS * sizeof(_GUISliderInstanceData), BufferUsage::STORAGE) }));
+
+		submitResource(manager, &guiContext.slider.descriptorLayout.reference, std::vector<DescriptorLayoutSpecification>({
+			DescriptorLayoutSpecification(std::vector<UniformBinding>({
+					UniformBinding(ShaderStage::VERTEX, 0, UniformType::STORAGE_BUFFER)
+				}))
+			}));
+
+		submitResource(manager, &guiContext.slider.descriptorSet.reference, std::vector<DescriptorSetSpecification>({
+			DescriptorSetSpecification(guiContext.slider.descriptorLayout.reference, std::vector<UniformData>({
+				UniformData::fromBuffer(guiContext.slider.storageBuffer.reference, guiContext.slider.MAX_SLIDERS * sizeof(_GUISliderInstanceData), 0)
+			}))
+			}));
+
+		submitResource(manager, &guiContext.slider.fragmentShader.reference, std::vector<ShaderSpecification>({
+			compileShader(ShaderStage::FRAGMENT, "vivium4/res/slider.frag", "vivium4/res/slider_frag.spv")
+			}));
+
+		submitResource(manager, &guiContext.slider.vertexShader.reference, std::vector<ShaderSpecification>({
+			compileShader(ShaderStage::VERTEX, "vivium4/res/slider.vert", "vivium4/res/slider_vert.spv")
+			}));
+
+		submitResource(manager,
+			&guiContext.slider.pipeline.reference,
+			std::vector<PipelineSpecification>({
+			PipelineSpecification::fromWindow(
+				std::vector<ShaderReference>({ guiContext.slider.fragmentShader.reference, guiContext.slider.vertexShader.reference }),
+				BufferLayout::fromTypes(std::vector<ShaderDataType>({ ShaderDataType::VEC2 })),
+				std::vector<DescriptorLayoutReference>({ guiContext.slider.descriptorLayout.reference }),
+				std::vector<PushConstant>({ PushConstant(ShaderStage::VERTEX, 0, sizeof(Math::Perspective))}),
+				window
+			) }));
+	}
+
 	GUIElementReference createGUIElement(GUIContext& guiContext, GUIElementType type)
 	{
 		guiContext.guiElements.push_back(GUIElement());
@@ -154,6 +191,7 @@ namespace Vivium {
 		_submitTextGUIContext(context, manager, engine, window);
 		_submitButtonGUIContext(context, manager, engine, window);
 		_submitPanelGUIContext(context, manager, engine, window);
+		_submitSliderGUIContext(context, manager, engine, window);
 
 		return context;
 	}
@@ -179,6 +217,13 @@ namespace Vivium {
 		convertResourceReference(manager, guiContext.panel.storageBuffer);
 		convertResourceReference(manager, guiContext.panel.descriptorSet);
 
+		convertResourceReference(manager, guiContext.slider.pipeline);
+		convertResourceReference(manager, guiContext.slider.descriptorLayout);
+		convertResourceReference(manager, guiContext.slider.fragmentShader);
+		convertResourceReference(manager, guiContext.slider.vertexShader);
+		convertResourceReference(manager, guiContext.slider.storageBuffer);
+		convertResourceReference(manager, guiContext.slider.descriptorSet);
+
 		convertResourceReference(manager, guiContext.rectVertexBuffer);
 		convertResourceReference(manager, guiContext.rectIndexBuffer);
 
@@ -193,10 +238,14 @@ namespace Vivium {
 
 		// TODO: big error here, we schedule two moves from the same staging buffer, resulting in
 		// an overwrite that gives bogus data!
+		// TODO: this is a really old TODO? circumvented this (poorly)
+		//	by making a large staging buffer, and using the first n bytes for vertex data
+		//  and the last m bytes for index data
 
 		VkDeviceMemory temporaryMemory;
 		VkBuffer stagingBuffer;
 		void* stagingMapping;
+		// Staging buffer both for vertex data and index data
 		_cmdCreateTransientStagingBuffer(engine, &stagingBuffer, &temporaryMemory,
 			8 * sizeof(float) + 6 * sizeof(uint16_t), &stagingMapping);
 
@@ -225,6 +274,8 @@ namespace Vivium {
 		dropShader(guiContext.panel.fragmentShader.resource, engine);
 		dropShader(guiContext.panel.vertexShader.resource, engine);
 
+		dropShader(guiContext.slider.fragmentShader.resource, engine);
+		dropShader(guiContext.slider.vertexShader.resource, engine);
 		// TODO: maybe the descriptor layout can be freed here?
 	}
 
@@ -238,15 +289,18 @@ namespace Vivium {
 		guiContext.guiElements = {};
 
 		dropDescriptorLayout(guiContext.text.descriptorLayout.resource, engine);
-		dropPipeline(guiContext.text.pipeline.resource, engine);
-
 		dropDescriptorLayout(guiContext.button.descriptorLayout.resource, engine);
 		dropDescriptorLayout(guiContext.panel.descriptorLayout.resource, engine);
+		dropDescriptorLayout(guiContext.slider.descriptorLayout.resource, engine);
+		
+		dropPipeline(guiContext.text.pipeline.resource, engine);
 		dropPipeline(guiContext.button.pipeline.resource, engine);
 		dropPipeline(guiContext.panel.pipeline.resource, engine);
+		dropPipeline(guiContext.slider.pipeline.resource, engine);
 
 		dropBuffer(guiContext.button.storageBuffer.resource, engine);
 		dropBuffer(guiContext.panel.storageBuffer.resource, engine);
+		dropBuffer(guiContext.slider.storageBuffer.resource, engine);
 
 		dropBuffer(guiContext.rectVertexBuffer.resource, engine);
 		dropBuffer(guiContext.rectIndexBuffer.resource, engine);
