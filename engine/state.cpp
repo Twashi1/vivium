@@ -136,11 +136,6 @@ void _update(State& state)
 
 void _draw(State& state)
 {
-	GUIProperties& props = properties(state.editor.entityView.vbox, state.guiContext);
-
-	VIVIUM_LOG(LogSeverity::DEBUG, "Vbox: Pos [{:.2f}, {:.2f}] Dim [{:.2f}, {:.2f}]", 
-		props.truePosition.x, props.truePosition.y, props.trueDimensions.x, props.trueDimensions.y);
-
 	std::vector<Panel*> entityPanels;
 
 	entityPanels.push_back(&state.editor.background);
