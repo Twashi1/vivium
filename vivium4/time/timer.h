@@ -10,6 +10,7 @@ namespace Vivium {
 	namespace Time {
 		std::string getTimestampString(std::chrono::system_clock::time_point time);
 
+#ifdef VIVIUM_PLATFORM_WINDOWS
 		struct SleepTimer {
 			// Could be NULL on non-debug mode
 			Windows::HANDLE waitableTimer;
@@ -20,6 +21,7 @@ namespace Vivium {
 
 		// TODO: testing this creates the waitable timer and destroys it appropriately
 		inline thread_local SleepTimer m_sleepTimer;
+#endif
 
 		// Returns if sleep went well or not, resolution of ~100ns
 		// https://stackoverflow.com/questions/13397571/precise-thread-sleep-needed-max-1ms-error

@@ -23,6 +23,9 @@ namespace Vivium {
 		inline const DWORD _WAIT_OBJECT_0 = WAIT_OBJECT_0;
 		inline const HANDLE _INVALID_HANDLE_VALUE = INVALID_HANDLE_VALUE;
 
+		inline const DWORD _ENABLE_VIRTUAL_TERMINAL_PROCESSING = ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+		inline const DWORD _DISABLE_NEWLINE_AUTO_RETURN = DISABLE_NEWLINE_AUTO_RETURN;
+
 		#undef ERROR
 		#undef MOD_SHIFT
 		#undef MOD_ALT
@@ -33,6 +36,9 @@ namespace Vivium {
 		#undef STATUS_WAIT_0
 		#undef WAIT_OBJECT_0
 		#undef INVALID_HANDLE_VALUE
+
+		#undef ENABLE_VIRTUAL_TERMINAL_PROCESSING
+		#undef DISABLE_NEWLINE_AUTO_RETURN
 	}
 // TODO: linux alternative (nanosleep and coloured terminal)
 #endif

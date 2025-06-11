@@ -5,6 +5,7 @@
 
 namespace Vivium {
 	namespace Time {
+#ifdef VIVIUM_PLATFORM_WINDOWS
 		SleepTimer::SleepTimer() {
 			waitableTimer = Windows::CreateWaitableTimerExW(
 				NULL,
@@ -19,12 +20,14 @@ namespace Vivium {
 		SleepTimer::~SleepTimer() {
 			if (waitableTimer != NULL) Windows::CloseHandle(waitableTimer);
 		}
+#endif
 		
 		std::string getTimestampString(std::chrono::system_clock::time_point time)
 		{
 			return std::format("{:%H:%M:%OS}", time);
 		}
 
+#if defined(VIVIUM_PLATFORM_WINDOWS)
 		bool nanosleep(long long nanoseconds)
 		{
 			Windows::LARGE_INTEGER li;
@@ -45,6 +48,22 @@ namespace Vivium {
 
 			return TRUE;
 		}
+#elif defined(VIVIUM_PLATFORM_LINUX)
+		// https://stackoverflow.com/questions/7684359/how-to-use-nanosleep-in-c-what-are-tim-tv-sec-and-tim-tv-nsec
+		// NOTE: untested, don't have a linux machine, nor desire to build for linux just yet
+		bool nanosleep(long long nanoseconds)
+		{
+			timespec time;
+			time.tv_nsec = nanoseconds;
+
+			if (::nanosleep(&time, nullptr) < 0) {
+				// Sleep failed
+				return false;
+			}
+
+			return true;
+		}
+#endif
 		
 		float Timer::m_getSecondsBetween(clock_type::time_point start, clock_type::time_point end)
 		{

@@ -14,6 +14,7 @@ namespace Vivium {
 		}
 	}
 
+#ifdef VIVIUM_PLATFORM_WINDOWS
 	void _activateVirtualTerminal()
 	{
 		Windows::HANDLE handleOutput = Windows::GetStdHandle(Windows::_STD_OUTPUT_HANDLE);
@@ -25,12 +26,15 @@ namespace Vivium {
 		if (!Windows::GetConsoleMode(handleOutput, &originalOutputMode)) return;
 
 		// TODO: macros should be specially defined
-		Windows::DWORD requestedOutputModes = originalOutputMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING | DISABLE_NEWLINE_AUTO_RETURN;
+		Windows::DWORD requestedOutputModes = originalOutputMode
+			| Windows::_ENABLE_VIRTUAL_TERMINAL_PROCESSING
+			| Windows::_DISABLE_NEWLINE_AUTO_RETURN;
 
 		if (!Windows::SetConsoleMode(handleOutput, requestedOutputModes)) return;
 
 		_logState.isColorEnabled = true;
 	}
+#endif
 		
 	void _logInit()
 	{
