@@ -1,6 +1,17 @@
+## Whiteboard
+
+- Need abstraction to be able to efficiently develop apps
+- Standard UI elements
+	- Slider
+- Easy-draw elements
+	- Standard shaded quad (ability for texture, standard coordinates plugged in, etc.)
 
 ## Current tasks
 
+- Some GUI commands are randomly split between `context.h` and `base.h`
+- 3D rendering tests (for fun)
+- HTML renderer
+- Dynamic resource manager
 - Input class refactor
 	- Initialisation function and update
 - Font namespace
@@ -25,6 +36,7 @@
 - Dynamic allocation storage (at least a wrapper for `new`/`delete`  temporarily)
 - Reflection data on shader files
 	- Use to validate alignment requirements
+	- Some custom parsing of shader files
 - Offset before size on `PushConstant`, not ideal
 - Can free `DescriptorLayout` at same stage we free `Shader`?
 - Static allocator being re-useable is an anti-pattern
@@ -36,8 +48,6 @@
 - Minimal overrides
 - No static member functions (even for specifications): just define a method
 - Renaming `ResourceManager` to `ResourceAllocator`
-- RAII storage objects are appealing (delete copy, define move) (`Storage::Static` and `Storage::Dynamic`)
-	- Alternative is to just `malloc` and `free` these, they're already only used as pointers anyway
 - `Commands::Context` should be multi-thread compatible
 - Easier-to-use temporary staging
 	- `Stager s = Commands::createStage(maximumSize)`

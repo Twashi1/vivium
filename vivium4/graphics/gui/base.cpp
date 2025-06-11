@@ -6,6 +6,10 @@ namespace Vivium {
 		return Math::pointInAABB(point, properties.truePosition, properties.truePosition + properties.trueDimensions);
 	}
 
+	bool operator==(GUIElementReference const& a, GUIElementReference const& b) {
+		return a.index == b.index;
+	}
+
 	void updateGUIElement(GUIElementReference const element, GUIElementReference const parent, F32x2 windowDimensions, GUIContext& context) {
 		// If we have no parent, resort to using window as a pseudo-parent
 		F32x2 parentDimensions = parent.index == NULL ? windowDimensions : context.guiElements[parent.index].properties.trueDimensions;
@@ -73,10 +77,28 @@ namespace Vivium {
 			}
 		}
 
+		// TODO: super messy because of container ordering
+
+		F32x2 containerOffset = F32x2(0.0f);
+
 		for (GUIElementReference child : object.children)
 		{
 			updateGUIElement(child, element, windowDimensions, context);
+
+			if (element.type == GUIElementType::CONTAINER_VERTICAL || element.type == GUIElementType::CONTAINER_HORIZONTAL) {
+				F32x2 childOffset = properties(element, context).trueDimensions + properties(element, context).truePosition - properties(child, context).truePosition;
+
+				if (element.type == GUIElementType::CONTAINER_VERTICAL) { childOffset.x = 0.0f; }
+				if (element.type == GUIElementType::CONTAINER_HORIZONTAL) { childOffset.y = 0.0f; }
+
+				F32x2 totalOffset = childOffset;
+				
+				properties(element, context).truePosition -= totalOffset;
+				containerOffset += totalOffset;
+			}
 		}
+
+		properties(element, context).truePosition += containerOffset;
 	}
 			
 	GUIProperties& properties(GUIElementReference const objectHandle, GUIContext& guiContext)
@@ -89,6 +111,21 @@ namespace Vivium {
 		GUIElement& parentObject = guiContext.guiElements[parent.index];
 
 		parentObject.children.insert(parentObject.children.end(), children.begin(), children.end());
+	}
+
+	// TODO: O(n^2) algorithm
+	void removeChild(GUIElementReference const parent, std::span<GUIElementReference const> children, GUIContext& guiContext)
+	{
+		GUIElement& parentObject = guiContext.guiElements[parent.index];
+
+		for (GUIElementReference const reference : children) {
+			parentObject.children.erase(std::find(parentObject.children.begin(), parentObject.children.end(), reference));
+		}
+	}
+
+	GUIElement const& _getGUIElement(GUIElementReference const reference, GUIContext const& guiContext)
+	{
+		return guiContext.guiElements[reference.index];
 	}
 	
 	void updateGUI(F32x2 windowDimensions, GUIContext& guiContext)

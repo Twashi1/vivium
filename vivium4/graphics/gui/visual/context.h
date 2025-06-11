@@ -7,10 +7,10 @@
 
 namespace Vivium {
 	struct _GUIButtonInstanceData {
-		F32x2 position; // 8 bytes
-		F32x2 scale;    // 16 bytes
-		Color foregroundColor; // 28 bytes
-		float _fill0; // 32 bytes
+		F32x2 position;			// 8 bytes
+		F32x2 scale;			// 16 bytes
+		Color foregroundColor;	// 28 bytes
+		float _fill0;			// 32 bytes
 	};
 
 	// TODO: border size not in px
@@ -18,9 +18,9 @@ namespace Vivium {
 		F32x2 position;
 		F32x2 scale;
 		Color backgroundColor;
-		float borderSizePx; // 32 bytes
-		Color borderColor; // 44 bytes
-		float _fill0;
+		float borderSizePx;		// 32 bytes
+		Color borderColor;		// 44 bytes
+		float _fill0;			// 48 bytes
 	};
 
 	struct GUIContext {
@@ -67,7 +67,7 @@ namespace Vivium {
 		std::vector<GUIElement> guiElements;
 	};
 
-	GUIElementReference createGUIElement(GUIContext& context);
+	GUIElementReference createGUIElement(GUIContext& context, GUIElementType type);
 	GUIElementReference defaultGUIParent(GUIContext& context);
 
 	void _submitGenericGUIContext(GUIContext& context, ResourceManager& manager, Engine& engine, Window& window);

@@ -35,6 +35,8 @@ struct State {
 
 			GUIElementReference entityObjectsElement;
 
+			Container vbox;
+
 			std::vector<Entity> entities;
 			std::vector<Text> textObjects;
 			std::vector<Panel> entityPanels;
