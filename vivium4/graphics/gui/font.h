@@ -9,6 +9,7 @@
 #include <freetype/freetype.h>
 
 #include "../../storage.h"
+#include "../../math/atlas.h"
 
 #define VIVIUM_CHARACTERS_TO_EXTRACT 128
 

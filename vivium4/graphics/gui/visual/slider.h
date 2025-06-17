@@ -27,4 +27,6 @@ namespace Vivium {
 	// NOTE: assumes slider already updated
 	void updateSlider(Slider& slider, GUIContext& guiContext);
 	void renderSliders(const std::span<Slider*> sliders, CommandContext& context, GUIContext& guiContext, Window& window);
+
+	float getSliderValue(Slider& slider, float min, float max);
 }

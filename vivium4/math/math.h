@@ -16,24 +16,5 @@ namespace Vivium {
 		T nearestMultiple(T number, T multiple) {
 			return (number + multiple - 1) & (-multiple);
 		}
-
-		struct AtlasIndex {
-			// Texture coordinate format
-			float left;
-			float right;
-			float top;
-			float bottom;
-
-			// Alternative format (For instance rendering)
-			F32x2 translation;
-			F32x2 scale;
-		};
-
-		// TODO: move to its own header?
-		AtlasIndex _calculateAtlasIndex(int left, int right, int bottom, int top, I32x2 atlasSize, I32x2 spriteSize);
-
-		AtlasIndex textureAtlasIndex(I32x2 atlasSize, I32x2 spriteSize, int index);
-		AtlasIndex textureAtlasIndex(I32x2 atlasSize, I32x2 spriteSize, I32x2 index);
-		AtlasIndex textureAtlasIndex(I32x2 atlasSize, I32x2 spriteSize, I32x2 topLeft, I32x2 bottomRight);
 	}
 }

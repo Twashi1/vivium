@@ -45,6 +45,7 @@
 #define VIVIUM_IS_DEBUG 1
 #endif
 
+// TODO: weird place for this variable
 #define VIVIUM_FRAMES_IN_FLIGHT 2
 
 #define VIVIUM_GLSLC_PATH "external/vulkan/Bin/glslc.exe"

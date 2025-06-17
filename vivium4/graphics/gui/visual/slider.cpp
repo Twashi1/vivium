@@ -58,4 +58,9 @@ namespace Vivium {
 		cmdWritePushConstants(context, &perspective, sizeof(Math::Perspective), 0, ShaderStage::VERTEX, guiContext.slider.pipeline.resource);
 		cmdDrawIndexed(context, 6, sliderData.size());
 	}
+
+	float getSliderValue(Slider& slider, float min, float max)
+	{
+		return slider.percent * (max - min) + min;
+	}
 }

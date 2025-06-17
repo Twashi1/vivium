@@ -4,6 +4,16 @@
 - Easy-draw elements
 	- Standard shaded quad (ability for texture, standard coordinates plugged in, etc.)
 
+## Shader planning
+
+- run-time reflection and some partial compilation on shaders
+	- checks alignment requirements
+- vertex/fragment shader merging (can look into geometry/tesselation/compile/etc. later)
+- code re-use across shaders with utility files and such
+	- c-like include structure
+
+- might as well look into building a LSP for it
+- look into debug and simulation on CPU side (would require rasterization etc.)
 ## Current tasks
 
 - Comprehensive documentation of all structs/methods/etc.

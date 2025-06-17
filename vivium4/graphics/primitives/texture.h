@@ -3,13 +3,10 @@
 #include "../../core.h"
 #include "../../engine.h"
 #include "../gui/font.h"
+#include "../texture_format.h"
+#include "../image_load.h"
 
 namespace Vivium {
-	enum class TextureFormat {
-		RGBA = VK_FORMAT_R8G8B8A8_SRGB,
-		MONOCHROME = VK_FORMAT_R8_UNORM
-	};
-
 	enum class TextureFilter {
 		NEAREST = VK_FILTER_NEAREST,
 		LINEAR = VK_FILTER_LINEAR
@@ -32,6 +29,8 @@ namespace Vivium {
 		// TODO: from raw data
 		static TextureSpecification fromImageFile(const char* imageFile, TextureFormat imageFormat, TextureFilter imageFilter);
 		static TextureSpecification fromFont(Font::Font font, TextureFormat imageFormat, TextureFilter imageFilter);
+		static TextureSpecification fromData(uint8_t const* data, I32x2 dimensions, TextureFormat imageFormat, TextureFilter imageFilter);
+		static TextureSpecification fromImage(Image image, TextureFilter imageFilter);
 	};
 	
 	struct TextureReference {

@@ -50,7 +50,10 @@ set(VIVIUM_SOURCES
   "vivium4/ecs/group.cpp"
   "vivium4/graphics/gui/visual/container.cpp"
   "vivium4/graphics/gui/visual/slider.cpp"
-)
+ "vivium4/graphics/gui/visual/sprite.cpp"
+ "vivium4/math/atlas.cpp"
+ "vivium4/graphics/texture_format.cpp"
+ "vivium4/graphics/image_load.cpp")
 set(VIVIUM_HEADERS
   "vivium4/error/result.h"
   "vivium4/graphics/primitives/buffer.h"
@@ -102,6 +105,10 @@ set(VIVIUM_HEADERS
   "engine/ecstest.h"
   "vivium4/graphics/gui/visual/container.h"
   "vivium4/graphics/gui/visual/slider.h"
+"vivium4/graphics/gui/visual/sprite.h"
+"vivium4/math/atlas.h"
+"vivium4/graphics/texture_format.h"
+"vivium4/graphics/image_load.h"
 )
 
 add_subdirectory("${CMAKE_SOURCE_DIR}/external/glfw")

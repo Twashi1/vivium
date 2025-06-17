@@ -8,6 +8,10 @@ void _submit(State& state)
 void _submitEditor(State& state)
 {
 	state.editor.background = createPanel(state.guiContext, PanelSpecification{ defaultGUIParent(state.guiContext), colorDarkGray, colorBlack, 0.0f});
+	state.editor.testSprite0 = createSprite(state.guiContext, SpriteSpecification(defaultGUIParent(state.guiContext),
+		state.editor.entityView.img0.translation, state.editor.entityView.img0.scale));
+	state.editor.testSprite1 = createSprite(state.guiContext, SpriteSpecification(defaultGUIParent(state.guiContext),
+		state.editor.entityView.img1.translation, state.editor.entityView.img1.scale));
 
 	_submitEntityView(state);
 }
@@ -86,6 +90,9 @@ void _setupEntityView(State& state)
 	properties(state.editor.entityView.randomSlider, state.guiContext).anchorY = GUIAnchor::TOP;
 	properties(state.editor.entityView.randomSlider, state.guiContext).position = F32x2(0.0f, -0.01f);
 	properties(state.editor.entityView.randomSlider, state.guiContext).dimensions = F32x2(0.9f, 0.05f);
+	properties(state.editor.testSprite0, state.guiContext).dimensions = F32x2(0.2f, 0.2f);
+	properties(state.editor.testSprite1, state.guiContext).dimensions = F32x2(0.2f, 0.2f);
+	properties(state.editor.testSprite1, state.guiContext).position = F32x2(0.2f, 0.2f);
 
 	for (uint32_t i = 0; i < MAX_CONCURRENT_ENTITY_PANELS; i++) {
 		GUIProperties& props = properties(state.editor.entityView.entityPanels[i], state.guiContext);
@@ -165,13 +172,32 @@ void _draw(State& state)
 	renderPanels(entityPanels, state.context, state.guiContext, state.window);
 	renderSliders(sliders, state.context, state.guiContext, state.window);
 
+	std::vector<Sprite*> sprites;
+	sprites.push_back(&state.editor.testSprite0);
+	sprites.push_back(&state.editor.testSprite1);
+	renderSprites(sprites, state.context, state.guiContext, state.window);
+
 	Button* buttons[] = { &state.editor.entityView.createButton };
 	renderButtons(buttons, state.context, state.guiContext, state.window);
 
 	renderTextBatch(state.editor.entityView.entityTextBatch, state.context, state.guiContext, Math::orthogonalPerspective2D(windowDimensions(state.window), F32x2(0.0f), 0.0f, 1.0f));
 }
 
-void initialise(State& state) {
+StitchedAtlas _createSpriteAtlas(State& state)
+{
+	StitchedAtlasCreator creator = createStitchedAtlasCreator(TextureFormat::RGBA);
+	StitchedAtlasReference img0 = submitToStitchedAtlasCreator("vivium4/res/img0.png", creator);
+	StitchedAtlasReference img1 = submitToStitchedAtlasCreator("vivium4/res/img1.png", creator);
+	StitchedAtlas atlas = finishAtlasCreation(creator);
+	dropAtlasCreator(creator);
+	state.editor.entityView.img0 = convertStitchedAtlasReference(img0, atlas);
+	state.editor.entityView.img1 = convertStitchedAtlasReference(img1, atlas);
+
+	return atlas;
+}
+
+void initialise(State& state)
+{
 	_logInit(); // TODO: ugly that we have to initialise this
 	Font::init();
 
@@ -183,8 +209,10 @@ void initialise(State& state) {
 	state.context = createCommandContext(state.engine);
 
 	state.manager = createManager();
+	
+	StitchedAtlas atlas = _createSpriteAtlas(state);
 
-	state.guiContext = createGUIContext(state.manager, state.engine, state.window);
+	state.guiContext = createGUIContext(state.manager, state.engine, state.window, &atlas);
 
 	_submit(state);
 
@@ -194,6 +222,7 @@ void initialise(State& state) {
 	_setup(state);
 
 	clearManagerReferences(state.manager);
+	dropAtlas(atlas);
 }
 
 void gameloop(State& state) {

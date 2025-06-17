@@ -33,6 +33,8 @@ namespace Vivium {
 		specification.imageFormat = imageFormat;
 		specification.imageFilter = imageFilter;
 
+		// TODO: realistically should just call TextureSpecification::fromData (define recursively where possible)
+
 		stbi_image_free(data);
 
 		return specification;
@@ -56,6 +58,8 @@ namespace Vivium {
 			break;
 		}
 
+		// TODO: realistically should just call TextureSpecification::fromData (define recursively where possible)
+
 		specification.data = font.data;
 		specification.width = font.imageDimensions.x;
 		specification.height = font.imageDimensions.y;
@@ -64,6 +68,27 @@ namespace Vivium {
 		specification.imageFormat = imageFormat;
 
 		return specification;
+	}
+
+	TextureSpecification TextureSpecification::fromData(uint8_t const* data, I32x2 dimensions, TextureFormat imageFormat, TextureFilter imageFilter)
+	{
+		TextureSpecification specification;
+
+		specification.data.resize(dimensions.x * dimensions.y * getTextureFormatStride(imageFormat));
+		memcpy(specification.data.data(), data, specification.data.size());
+
+		specification.width = dimensions.x;
+		specification.height = dimensions.y;
+		specification.channels = getTextureFormatChannels(imageFormat);
+		specification.imageFilter = imageFilter;
+		specification.imageFormat = imageFormat;
+
+		return specification;
+	}
+
+	TextureSpecification TextureSpecification::fromImage(Image image, TextureFilter imageFilter)
+	{
+		return TextureSpecification::fromData(image.data, image.size, image.format, imageFilter);
 	}
 
 	void dropTexture(Texture& texture, Engine& engine) {

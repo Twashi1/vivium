@@ -9,6 +9,7 @@
 #include "graphics/gui/visual/button.h"
 #include "graphics/gui/visual/panel.h"
 #include "graphics/gui/visual/slider.h"
+#include "graphics/gui/visual/sprite.h"
 #include "graphics/gui/visual/container.h"
 #include "graphics/primitives/framebuffer.h"
 #include "physics/physics.h"

@@ -212,7 +212,7 @@ namespace Vivium {
 					}
 				}
 
-				Math::AtlasIndex index = Math::textureAtlasIndex(font.imageDimensions, font.fontSpriteSize, character);
+				AtlasIndex index = textureAtlasIndex(font.imageDimensions, font.fontSpriteSize, character);
 
 				// Scaling from glyph parameters to field parameters
 				float scaleRatio = static_cast<float>(fieldPaddedSize) / static_cast<float>(glyphPaddedSize);
@@ -319,7 +319,7 @@ namespace Vivium {
 
 				bufferOffset += fontSize;
 
-				Math::AtlasIndex index = Math::textureAtlasIndex(font.imageDimensions, font.fontSpriteSize, character);
+				AtlasIndex index = textureAtlasIndex(font.imageDimensions, font.fontSpriteSize, character);
 
 				// TODO: constructor
 				font.characters[character] = Character{

@@ -27,6 +27,8 @@ struct State {
 
 	struct {
 		Panel background;
+		Sprite testSprite0;
+		Sprite testSprite1;
 
 		struct {
 			Panel background;
@@ -41,6 +43,9 @@ struct State {
 			std::vector<Entity> entities;
 			std::vector<Text> textObjects;
 			std::vector<Panel> entityPanels;
+
+			AtlasIndex img0;
+			AtlasIndex img1;
 		} entityView;
 	} editor;
 };
@@ -65,6 +70,8 @@ void _dropEntityView(State& state);
 
 void _update(State& state);
 void _draw(State& state);
+
+StitchedAtlas _createSpriteAtlas(State& state);
 
 void initialise(State& state);
 void gameloop(State& state);
