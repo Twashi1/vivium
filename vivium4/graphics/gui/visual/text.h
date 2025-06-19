@@ -41,8 +41,8 @@ namespace Vivium {
 		float maxLineWidth;
 	};
 
-	TextMetrics calculateTextMetrics(std::string_view const& text, Font::Font const& font);
-	std::vector<PerGlyphData> generateTextRenderData(TextMetrics const& metrics, const std::string_view& text, const Font::Font& font, F32x2 scale, TextAlignment alignment);
+	TextMetrics calculateTextMetrics(std::string_view const& text, Font const& font);
+	std::vector<PerGlyphData> generateTextRenderData(TextMetrics const& metrics, const std::string_view& text, const Font& font, F32x2 scale, TextAlignment alignment);
 
 	struct TextSpecification {
 		GUIElementReference parent;
@@ -64,13 +64,13 @@ namespace Vivium {
 
 	struct TextBatchSpecification {
 		uint64_t maxCharacterCount;
-		Font::Font font;
+		Font font;
 	};
 
 	struct TextBatch {
 		Batch batch;
 
-		Font::Font font;
+		Font font;
 		Ref<Texture> fontTexture;
 		Ref<DescriptorSet> descriptorSet;
 	};
@@ -79,7 +79,7 @@ namespace Vivium {
 	// SetText of each text object, places into one single batch
 	// Everything done in one draw call (with one font)
 	// Can continually update text of each text object, then recalculate all on separate command
-	void renderTextBatch(TextBatch& text, CommandContext& context, GUIContext& guiContext, Math::Perspective const& perspective);
+	void renderTextBatch(TextBatch& text, CommandContext& context, GUIContext& guiContext, Perspective const& perspective);
 	void calculateTextBatch(TextBatch& text, std::span<Text*> textObjects, CommandContext& context, GUIContext& guiContext, Engine& engine);
 
 	TextBatch submitTextBatch(ResourceManager& manager, Engine& engine, GUIContext& guiContext, TextBatchSpecification const& specification);

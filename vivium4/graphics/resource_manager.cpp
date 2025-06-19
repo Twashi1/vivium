@@ -80,7 +80,7 @@ namespace Vivium {
 			// Create the VkBuffer and get the memory requirements
 			_cmdCreateBuffer(engine, &resource.buffer, specification.size, specification.usage, &memoryRequirements, nullptr);
 			// Calculate offset this buffer should be at in the device memory
-			uint64_t resourceOffset = Math::nearestMultiple(totalSize, memoryRequirements.alignment);
+			uint64_t resourceOffset = nearestMultiple(totalSize, memoryRequirements.alignment);
 			bufferOffsets[i] = resourceOffset;
 			totalSize = resourceOffset + memoryRequirements.size;
 
@@ -214,7 +214,7 @@ namespace Vivium {
 				&memoryRequirements
 			);
 
-			uint64_t resourceOffset = Math::nearestMultiple(totalSize, memoryRequirements.alignment);
+			uint64_t resourceOffset = nearestMultiple(totalSize, memoryRequirements.alignment);
 			offsets[i] = resourceOffset;
 			totalSize = resourceOffset + memoryRequirements.size;
 
@@ -375,7 +375,7 @@ namespace Vivium {
 			VkMemoryRequirements requirements;
 			vkGetImageMemoryRequirements(engine.device, resource.image, &requirements);
 
-			uint64_t resourceOffset = Math::nearestMultiple(totalMemoryRequired, requirements.alignment);
+			uint64_t resourceOffset = nearestMultiple(totalMemoryRequired, requirements.alignment);
 			imageMemoryLocations[i] = resourceOffset;
 			totalMemoryRequired = resourceOffset + requirements.size;
 

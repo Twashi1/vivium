@@ -1,7 +1,7 @@
 #include "text.h"
 
 namespace Vivium {
-	TextMetrics calculateTextMetrics(std::string_view const& text, Font::Font const& font) {
+	TextMetrics calculateTextMetrics(std::string_view const& text, Font const& font) {
 		TextMetrics metrics;
 
 		metrics.newLineCount = 0;
@@ -33,7 +33,7 @@ namespace Vivium {
 				continue;
 			}
 
-			Font::Character fontCharacter = font.characters[character];
+			FontCharacter fontCharacter = font.characters[character];
 
 			currentLineWidth += fontCharacter.advance;
 			
@@ -59,7 +59,7 @@ namespace Vivium {
 		return metrics;
 	}
 
-	std::vector<PerGlyphData> generateTextRenderData(TextMetrics const& metrics, const std::string_view& text, const Font::Font& font, F32x2 scale, TextAlignment alignment)
+	std::vector<PerGlyphData> generateTextRenderData(TextMetrics const& metrics, const std::string_view& text, const Font& font, F32x2 scale, TextAlignment alignment)
 	{
 		// TODO: investigate how this works with vertical scaling on multiple lines
 
@@ -99,7 +99,7 @@ namespace Vivium {
 			}
 
 			// TODO: warn on characters we don't know how to draw, or that should never be drawn
-			Font::Character fontCharacter = font.characters[character];
+			FontCharacter fontCharacter = font.characters[character];
 
 			if (!isspace(character)) {
 				F32x2 bottomLeft = F32x2(position.x + fontCharacter.bearing.x * scale.x, position.y - (fontCharacter.size.y - fontCharacter.bearing.y) * scale.y);
@@ -120,11 +120,11 @@ namespace Vivium {
 		return renderData;
 	}
 
-	void renderTextBatch(TextBatch& text, CommandContext& context, GUIContext& guiContext, Math::Perspective const& perspective)
+	void renderTextBatch(TextBatch& text, CommandContext& context, GUIContext& guiContext, Perspective const& perspective)
 	{
 		if (indexCountBatch(text.batch) == 0) { return; }
 
-		cmdWritePushConstants(context, &perspective, sizeof(Math::Perspective), 0, ShaderStage::VERTEX, guiContext.text.pipeline.resource);
+		cmdWritePushConstants(context, &perspective, sizeof(Perspective), 0, ShaderStage::VERTEX, guiContext.text.pipeline.resource);
 
 		cmdBindPipeline(context, guiContext.text.pipeline.resource);
 		cmdBindDescriptorSet(context, text.descriptorSet.resource, guiContext.text.pipeline.resource);

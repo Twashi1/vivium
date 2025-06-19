@@ -1,8 +1,31 @@
 ## Whiteboard
 
 - Need abstraction to be able to efficiently develop apps
-- Easy-draw elements
-	- Standard shaded quad (ability for texture, standard coordinates plugged in, etc.)
+
+How do we organise the game engine?
+- ideally we want to create something unique
+- and with minimal overhead
+- ideal would be to directly compile to `C++` the construction of objects
+	- but seems complicated in practice?
+- better would be to compile to some intermediary
+	- optimise/interpret this intermediary representation
+	- can then compile intermediary in future, but for now direct interpretation seems much easier
+
+How does the user interact with the game engine?
+- user creates entities
+- user is responsible themselves for creation of the pipeline
+	- they construct and attach shaders
+	- any relevant shader resources are attached to a descriptor set, which is then attached to the pipeline with a matching descriptor layout
+- representation of draw commands?
+	- need some submission of a buffer to the shader layout/for rasterization
+	- any given pipeline also has a buffer layout that the buffer must match
+	- but we just also attach the buffer to the pipeline
+	- when we draw, we have to select the relevant buffer/descriptor to bind
+
+To implement this?
+- drag-and drop UI functionality
+- a UI "slot" where we can place other elements inside
+- 
 
 ## Shader planning
 
@@ -17,15 +40,14 @@
 ## Current tasks
 
 - Comprehensive documentation of all structs/methods/etc.
+	- just use doxygen format, can build a custom tool later
 - Some GUI commands are randomly split between `context.h` and `base.h`
 - 3D rendering tests (for fun)
 - HTML renderer
 - Dynamic resource manager
 - Input class refactor
 	- Initialisation function and update
-- Font namespace
-	- Initialisation function
-- Math class namespaces
+- Physics namespaces
 - Check non-multisampled rendering is still working
 - Serialiser is super old
 - Test framebuffers
@@ -42,6 +64,7 @@
 - Investigate ability to change size of group (not during iteration) and still correctly see all entities
 ## Core
 
+- Textures loading upside down for stitched atlas specifically?
 - Super easy `debugRect` and `debugPoint` commands for a given coordinate or GUIElement
 - Should be easy to perform event `onButtonPress`, either through callback or looping on an `if`
 - Dynamic allocation storage (at least a wrapper for `new`/`delete`  temporarily)

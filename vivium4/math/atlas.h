@@ -46,6 +46,7 @@ namespace Vivium {
 		uint64_t xOffset; // Relatively naive approach to packing, just put it all in a row
 	};
 
+	// TODO: textures loading upside-down
 	struct StitchedAtlas {
 		uint8_t* data;
 		I32x2 size;

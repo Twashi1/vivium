@@ -3,7 +3,7 @@
 
 namespace Vivium {
 	bool pointInElement(F32x2 point, GUIProperties const& properties) {
-		return Math::pointInAABB(point, properties.truePosition, properties.truePosition + properties.trueDimensions);
+		return pointInAABB(point, properties.truePosition, properties.truePosition + properties.trueDimensions);
 	}
 
 	bool operator==(GUIElementReference const& a, GUIElementReference const& b) {

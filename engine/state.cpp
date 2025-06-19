@@ -180,7 +180,7 @@ void _draw(State& state)
 	Button* buttons[] = { &state.editor.entityView.createButton };
 	renderButtons(buttons, state.context, state.guiContext, state.window);
 
-	renderTextBatch(state.editor.entityView.entityTextBatch, state.context, state.guiContext, Math::orthogonalPerspective2D(windowDimensions(state.window), F32x2(0.0f), 0.0f, 1.0f));
+	renderTextBatch(state.editor.entityView.entityTextBatch, state.context, state.guiContext, orthogonalPerspective2D(windowDimensions(state.window), F32x2(0.0f), 0.0f, 1.0f));
 }
 
 StitchedAtlas _createSpriteAtlas(State& state)
@@ -199,7 +199,7 @@ StitchedAtlas _createSpriteAtlas(State& state)
 void initialise(State& state)
 {
 	_logInit(); // TODO: ugly that we have to initialise this
-	Font::init();
+	_fontInit();
 
 	state.engine = createEngine(EngineOptions{});
 	state.window = createWindow(WindowOptions{}, state.engine);
@@ -256,5 +256,5 @@ void terminate(State& state) {
 	dropWindow(state.window, state.engine);
 	dropEngine(state.engine);
 
-	Font::terminate();
+	_fontTerminate();
 }

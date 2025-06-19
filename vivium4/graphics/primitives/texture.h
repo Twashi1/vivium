@@ -28,7 +28,7 @@ namespace Vivium {
 
 		// TODO: from raw data
 		static TextureSpecification fromImageFile(const char* imageFile, TextureFormat imageFormat, TextureFilter imageFilter);
-		static TextureSpecification fromFont(Font::Font font, TextureFormat imageFormat, TextureFilter imageFilter);
+		static TextureSpecification fromFont(Font font, TextureFormat imageFormat, TextureFilter imageFilter);
 		static TextureSpecification fromData(uint8_t const* data, I32x2 dimensions, TextureFormat imageFormat, TextureFilter imageFilter);
 		static TextureSpecification fromImage(Image image, TextureFilter imageFilter);
 	};

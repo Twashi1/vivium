@@ -6,7 +6,7 @@ namespace Vivium {
 			: depth(0.0f), vector(0.0f), contacts({F32x2(0.0f), F32x2(0.0f)}), contactCount(0)
 		{}
 		
-		EdgeManifold axisOfLeastPenetration(const Math::Polygon& a, const Math::Polygon& b, const Math::Transform& aTransform, const Math::Transform& bTransform)
+		EdgeManifold axisOfLeastPenetration(const Polygon& a, const Polygon& b, const Transform& aTransform, const Transform& bTransform)
 		{
 			// For each face, find the support point in the direction of the negation of the normal to that face
 			// i.e. the vertex furthest in a certain normal direction
@@ -26,7 +26,7 @@ namespace Vivium {
 				F32x2 support = supportPolygon(b, -bSpaceNormalA);
 				// Transform vertex from A's model space into B's model space
 				// A -> World -> B
-				F32x2 vertex = Math::unapplyTransform(Math::applyTransform(a.vertices[i], aTransform), bTransform);
+				F32x2 vertex = unapplyTransform(applyTransform(a.vertices[i], aTransform), bTransform);
 
 				// Calculate penetration distance in B's model space
 				//	by projecting distance between support and one of the vertices of face
@@ -42,7 +42,7 @@ namespace Vivium {
 			return EdgeManifold{ maximumIndex, maximumDistance };
 		}
 		
-		std::array<F32x2, 2> getIncidentFace(const Math::Polygon& reference, const Math::Polygon& incident, const Math::Transform& referenceTransform, const Math::Transform& incidentTransform, uint64_t referenceIndex)
+		std::array<F32x2, 2> getIncidentFace(const Polygon& reference, const Polygon& incident, const Transform& referenceTransform, const Transform& incidentTransform, uint64_t referenceIndex)
 		{
 			F32x2 incidentSpaceReferenceNormal = incidentTransform.rotationInverse * (referenceTransform.rotation * reference.normals[referenceIndex]);
 
@@ -59,8 +59,8 @@ namespace Vivium {
 			}
 
 			std::array<F32x2, 2> faceVertices;
-			faceVertices[0] = Math::applyTransform(incident.vertices[minimumIndex], incidentTransform);
-			faceVertices[1] = Math::applyTransform(
+			faceVertices[0] = applyTransform(incident.vertices[minimumIndex], incidentTransform);
+			faceVertices[1] = applyTransform(
 				incident.vertices[
 					minimumIndex == incident.vertices.size() - 1 ? 0 : minimumIndex + 1
 				], incidentTransform
@@ -100,7 +100,7 @@ namespace Vivium {
 			return outIndex;
 		}
 		
-		PenetrationManifold polygonToPolygon(const Math::Polygon& a, const Math::Polygon& b, const Math::Transform& aTransform, const Math::Transform& bTransform)
+		PenetrationManifold polygonToPolygon(const Polygon& a, const Polygon& b, const Transform& aTransform, const Transform& bTransform)
 		{
 			PenetrationManifold manifold;
 
@@ -112,10 +112,10 @@ namespace Vivium {
 
 			if (edgeB.depth >= 0.0f) return manifold;
 
-			const Math::Polygon* reference;
-			const Math::Polygon* incident;
-			const Math::Transform* referenceTransform;
-			const Math::Transform* incidentTransform;
+			const Polygon* reference;
+			const Polygon* incident;
+			const Transform* referenceTransform;
+			const Transform* incidentTransform;
 			bool flip;
 			EdgeManifold* referenceManifold;
 
@@ -143,8 +143,8 @@ namespace Vivium {
 
 			std::array<F32x2, 2> incidentFace = getIncidentFace(*reference, *incident, *referenceTransform, *incidentTransform, referenceManifold->edgeIndex);
 
-			F32x2 referenceFaceVertex0 = Math::applyTransform(reference->vertices[referenceManifold->edgeIndex], *referenceTransform);
-			F32x2 referenceFaceVertex1 = Math::applyTransform(reference->vertices[referenceManifold->edgeIndex == reference->vertices.size() - 1 ? 0 : referenceManifold->edgeIndex + 1], *referenceTransform);
+			F32x2 referenceFaceVertex0 = applyTransform(reference->vertices[referenceManifold->edgeIndex], *referenceTransform);
+			F32x2 referenceFaceVertex1 = applyTransform(reference->vertices[referenceManifold->edgeIndex == reference->vertices.size() - 1 ? 0 : referenceManifold->edgeIndex + 1], *referenceTransform);
 
 			F32x2 referenceFaceVector = F32x2::normalise(referenceFaceVertex1 - referenceFaceVertex0);
 			F32x2 referenceFaceNormal = F32x2::left(referenceFaceVector);
@@ -185,7 +185,7 @@ namespace Vivium {
 			// If either is disabled, they are not colliding
 			if ((!a.enabled) || (!b.enabled)) return false;
 
-			return Math::AABBIntersectAABB(
+			return AABBIntersectAABB(
 				a.shape.getMin() + a.position,
 				a.shape.getMax() + a.position,
 				b.shape.getMin() + b.position,
@@ -199,20 +199,20 @@ namespace Vivium {
 			if (!broadCollisionCheck(a, b)) return;
 
 			// Generate transforms from body
-			Math::Transform transformA;
+			Transform transformA;
 			transformA.position = a.position;
-			transformA.rotation = Math::Mat2x2::fromAngle(a.angle);
+			transformA.rotation = Mat2x2::fromAngle(a.angle);
 			transformA.rotationInverse = transformA.rotation.transpose();
 
-			Math::Transform transformB;
+			Transform transformB;
 			transformB.position = b.position;
-			transformB.rotation = Math::Mat2x2::fromAngle(b.angle);
+			transformB.rotation = Mat2x2::fromAngle(b.angle);
 			transformB.rotationInverse = transformB.rotation.transpose();
 
 			// Perform SAT collision check
 			// TODO: in future use jump table
-			const Math::Polygon* polyA = reinterpret_cast<const Math::Polygon*>(a.shape.shape);
-			const Math::Polygon* polyB = reinterpret_cast<const Math::Polygon*>(b.shape.shape);
+			const Polygon* polyA = reinterpret_cast<const Polygon*>(a.shape.shape);
+			const Polygon* polyB = reinterpret_cast<const Polygon*>(b.shape.shape);
 
 			PenetrationManifold manifold = polygonToPolygon(*polyA, *polyB, transformA, transformB);
 

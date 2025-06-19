@@ -21,7 +21,7 @@ struct State {
 	GUIContext guiContext;
 	ResourceManager manager;
 
-	Math::Perspective perspective;
+	Perspective perspective;
 
 	Registry registry;
 

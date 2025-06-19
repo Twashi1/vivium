@@ -47,7 +47,7 @@ namespace Vivium {
 				std::vector<ShaderReference>({ guiContext.text.fragmentShader.reference, guiContext.text.vertexShader.reference }),
 				guiContext.text.bufferLayout,
 				std::vector<DescriptorLayoutReference>({ guiContext.text.descriptorLayout.reference }),
-				std::vector<PushConstant>({ PushConstant(ShaderStage::VERTEX, 0, sizeof(Math::Perspective))}),
+				std::vector<PushConstant>({ PushConstant(ShaderStage::VERTEX, 0, sizeof(Perspective))}),
 				window
 			)
 		}));
@@ -85,7 +85,7 @@ namespace Vivium {
 				std::vector<ShaderReference>({ guiContext.button.fragmentShader.reference, guiContext.button.vertexShader.reference }),
 				BufferLayout::fromTypes(std::vector<ShaderDataType>({ ShaderDataType::VEC2 })),
 				std::vector<DescriptorLayoutReference>({ guiContext.button.descriptorLayout.reference }),
-				std::vector<PushConstant>({ PushConstant(ShaderStage::VERTEX, 0, sizeof(Math::Perspective))}),
+				std::vector<PushConstant>({ PushConstant(ShaderStage::VERTEX, 0, sizeof(Perspective))}),
 				window
 			) }));
 	}
@@ -122,7 +122,7 @@ namespace Vivium {
 				std::vector<ShaderReference>({ guiContext.panel.fragmentShader.reference, guiContext.panel.vertexShader.reference }),
 				BufferLayout::fromTypes(std::vector<ShaderDataType>({ ShaderDataType::VEC2 })),
 				std::vector<DescriptorLayoutReference>({ guiContext.panel.descriptorLayout.reference }),
-				std::vector<PushConstant>({ PushConstant(ShaderStage::VERTEX, 0, sizeof(Math::Perspective))}),
+				std::vector<PushConstant>({ PushConstant(ShaderStage::VERTEX, 0, sizeof(Perspective))}),
 				window
 			) }));
 	}
@@ -159,7 +159,7 @@ namespace Vivium {
 				std::vector<ShaderReference>({ guiContext.slider.fragmentShader.reference, guiContext.slider.vertexShader.reference }),
 				BufferLayout::fromTypes(std::vector<ShaderDataType>({ ShaderDataType::VEC2 })),
 				std::vector<DescriptorLayoutReference>({ guiContext.slider.descriptorLayout.reference }),
-				std::vector<PushConstant>({ PushConstant(ShaderStage::VERTEX, 0, sizeof(Math::Perspective))}),
+				std::vector<PushConstant>({ PushConstant(ShaderStage::VERTEX, 0, sizeof(Perspective))}),
 				window
 			) }));
 	}
@@ -202,7 +202,7 @@ namespace Vivium {
 				std::vector<ShaderReference>({ guiContext.sprite.fragmentShader.reference, guiContext.sprite.vertexShader.reference }),
 				BufferLayout::fromTypes(std::vector<ShaderDataType>({ ShaderDataType::VEC2 })),
 				std::vector<DescriptorLayoutReference>({ guiContext.sprite.descriptorLayout.reference }),
-				std::vector<PushConstant>({ PushConstant(ShaderStage::VERTEX, 0, sizeof(Math::Perspective))}),
+				std::vector<PushConstant>({ PushConstant(ShaderStage::VERTEX, 0, sizeof(Perspective))}),
 				window
 			) }));
 	}
@@ -225,7 +225,7 @@ namespace Vivium {
 		// Generate the font if it doesn't exist
 		if (!std::filesystem::exists("vivium4/res/fonts/consola.sdf"))
 		{
-			Font::compileSignedDistanceField("vivium4/res/fonts/consola.ttf", 512, "vivium4/res/fonts/consola.sdf", 48, 1.0f);
+			compileSignedDistanceField("vivium4/res/fonts/consola.ttf", 512, "vivium4/res/fonts/consola.sdf", 48, 1.0f);
 		}
 
 		GUIContext context;

@@ -16,7 +16,7 @@ namespace Vivium {
 			F32x2 getMax() const;
 
 			Shape() = default;
-			Shape(const Math::Polygon* polygon);
+			Shape(const Polygon* polygon);
 		};
 	}
 }

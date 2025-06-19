@@ -48,14 +48,14 @@ namespace Vivium {
 			sliderData[i] = instance;
 		}
 
-		Math::Perspective perspective = Math::orthogonalPerspective2D(windowDimensions(window), F32x2(0.0f), 0.0f, 1.0f);
+		Perspective perspective = orthogonalPerspective2D(windowDimensions(window), F32x2(0.0f), 0.0f, 1.0f);
 
 		setBuffer(guiContext.slider.storageBuffer.resource, 0, sliderData.data(), sliderData.size() * sizeof(_GUISliderInstanceData));
 		cmdBindPipeline(context, guiContext.slider.pipeline.resource);
 		cmdBindVertexBuffer(context, guiContext.rectVertexBuffer.resource);
 		cmdBindIndexBuffer(context, guiContext.rectIndexBuffer.resource);
 		cmdBindDescriptorSet(context, guiContext.slider.descriptorSet.resource, guiContext.slider.pipeline.resource);
-		cmdWritePushConstants(context, &perspective, sizeof(Math::Perspective), 0, ShaderStage::VERTEX, guiContext.slider.pipeline.resource);
+		cmdWritePushConstants(context, &perspective, sizeof(Perspective), 0, ShaderStage::VERTEX, guiContext.slider.pipeline.resource);
 		cmdDrawIndexed(context, 6, sliderData.size());
 	}
 

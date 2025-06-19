@@ -36,15 +36,15 @@ namespace Vivium {
 		//	what the user would typical use
 
 		// Find axis of separation
-		EdgeManifold axisOfLeastPenetration(const Math::Polygon& a, const Math::Polygon& b, const Math::Transform& aTransform, const Math::Transform& bTransform);
+		EdgeManifold axisOfLeastPenetration(const Polygon& a, const Polygon& b, const Transform& aTransform, const Transform& bTransform);
 	
-		std::array<F32x2, 2> getIncidentFace(const Math::Polygon& reference, const Math::Polygon& incident, const Math::Transform& referenceTransform, const Math::Transform& incidentTransform, uint64_t referenceIndex);
+		std::array<F32x2, 2> getIncidentFace(const Polygon& reference, const Polygon& incident, const Transform& referenceTransform, const Transform& incidentTransform, uint64_t referenceIndex);
 		uint64_t clip(F32x2 edgeVector, float side, std::array<F32x2, MAX_CONTACT_COUNT>& face);
 
 		// Algorithm from: https://code.tutsplus.com/how-to-create-a-custom-2d-physics-engine-oriented-rigid-bodies--gamedev-8032t
 		// Which in turn is based on: https://gdcvault.com/play/1017646/Physics-for-Game-Programmers-The
 		// An advancement on the typical SAT method of projecting polygon extents onto each other for each axis
-		PenetrationManifold polygonToPolygon(const Math::Polygon& a, const Math::Polygon& b, const Math::Transform& aTransform, const Math::Transform& bTransform);
+		PenetrationManifold polygonToPolygon(const Polygon& a, const Polygon& b, const Transform& aTransform, const Transform& bTransform);
 	
 		// Returns if two body AABBs are intersecting (broad phase collision check)
 		bool broadCollisionCheck(Body const& a, Body const& b);

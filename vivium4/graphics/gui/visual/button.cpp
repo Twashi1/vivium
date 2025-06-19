@@ -16,7 +16,7 @@ namespace Vivium {
 		button.textColor = specification.textColor;
 
 		// TODO: maximum text length should be parameter
-		button.textBatch = submitTextBatch(manager, engine, guiContext, TextBatchSpecification{ 64, Font::Font::fromDistanceFieldFile("vivium4/res/fonts/consola.sdf") });
+		button.textBatch = submitTextBatch(manager, engine, guiContext, TextBatchSpecification{ 64, createFontDistanceField("vivium4/res/fonts/consola.sdf") });
 		button.text = createText(TextSpecification{ button.base, "", specification.textColor, calculateTextMetrics("", button.textBatch.font), TextAlignment::CENTER }, guiContext);
 
 		addChild(button.base, { &button.text.base, 1 }, guiContext);
@@ -65,14 +65,14 @@ namespace Vivium {
 			buttonData[i] = instance;
 		}
 
-		Math::Perspective perspective = Math::orthogonalPerspective2D(windowDimensions(window), F32x2(0.0f), 0.0f, 1.0f);
+		Perspective perspective = orthogonalPerspective2D(windowDimensions(window), F32x2(0.0f), 0.0f, 1.0f);
 
 		setBuffer(guiContext.button.storageBuffer.resource, 0, buttonData.data(), buttonData.size() * sizeof(_GUIButtonInstanceData));
 		cmdBindPipeline(context, guiContext.button.pipeline.resource);
 		cmdBindVertexBuffer(context, guiContext.rectVertexBuffer.resource);
 		cmdBindIndexBuffer(context, guiContext.rectIndexBuffer.resource);
 		cmdBindDescriptorSet(context, guiContext.button.descriptorSet.resource, guiContext.button.pipeline.resource);
-		cmdWritePushConstants(context, &perspective, sizeof(Math::Perspective), 0, ShaderStage::VERTEX, guiContext.button.pipeline.resource);
+		cmdWritePushConstants(context, &perspective, sizeof(Perspective), 0, ShaderStage::VERTEX, guiContext.button.pipeline.resource);
 		cmdDrawIndexed(context, 6, buttons.size());
 
 		for (Button* buttonPtr : buttons) {
