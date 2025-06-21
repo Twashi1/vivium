@@ -116,7 +116,8 @@ namespace Vivium {
 		std::vector<GUIElement> guiElements;
 	};
 
-	GUIElementReference createGUIElement(GUIContext& context, GUIElementType type);
+	GUIElementReference createGUIElement(GUIContext& context);
+	GUIElementReference createGUIElement(GUIContext& context, _ContainerUpdateData updateData);
 	GUIElementReference defaultGUIParent(GUIContext& context);
 
 	void _submitGenericGUIContext(GUIContext& guiContext, ResourceManager& manager, Engine& engine, Window& window);

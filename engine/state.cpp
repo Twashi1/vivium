@@ -18,7 +18,7 @@ void _submitEditor(State& state)
 
 void _submitEntityView(State& state)
 {
-	state.editor.entityView.entityObjectsElement = createGUIElement(state.guiContext, GUIElementType::DEFAULT);
+	state.editor.entityView.entityObjectsElement = createGUIElement(state.guiContext);
 	state.editor.entityView.background = createPanel(state.guiContext, PanelSpecification{ state.editor.background.base, colorDarkGray, colorBlack, 0.01f });
 	state.editor.entityView.createButton = submitButton(state.manager, state.guiContext, state.engine, state.window, ButtonSpecification{ state.editor.entityView.background.base, colorDarkGray, colorBlack });
 	state.editor.entityView.entityTextBatch = submitTextBatch(state.manager, state.engine, state.guiContext, TextBatchSpecification{ 256, state.editor.entityView.createButton.textBatch.font });

@@ -5,7 +5,7 @@ namespace Vivium {
 	{
 		Slider slider{};
 
-		slider.base = createGUIElement(guiContext, GUIElementType::DEFAULT);
+		slider.base = createGUIElement(guiContext);
 		slider.foregroundColor = specification.foregroundColor;
 		slider.percent = specification.percent;
 		slider.sliderColor = specification.sliderColor;

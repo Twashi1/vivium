@@ -22,10 +22,22 @@ How does the user interact with the game engine?
 	- but we just also attach the buffer to the pipeline
 	- when we draw, we have to select the relevant buffer/descriptor to bind
 
+To create
+- drag and drop to add to hierarchy (like add element to inspector window)
+- expand/hide child elements
+- add children
+	- middle 1/2 would make child
+	- top 1/4 would make sibling above
+	- bot 1/4 would make sibling below
+	- need some "null" node
+	- 
+- given some tree of children, interpret it to create elements
+	- parse the tree somehow?
+
 To implement this?
 - drag-and drop UI functionality
 - a UI "slot" where we can place other elements inside
-- 
+- essentially need a custom scripting language that transpiles to c++
 
 ## Shader planning
 
@@ -64,6 +76,7 @@ To implement this?
 - Investigate ability to change size of group (not during iteration) and still correctly see all entities
 ## Core
 
+- Container's need to be updated
 - Textures loading upside down for stitched atlas specifically?
 - Super easy `debugRect` and `debugPoint` commands for a given coordinate or GUIElement
 - Should be easy to perform event `onButtonPress`, either through callback or looping on an `if`

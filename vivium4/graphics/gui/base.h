@@ -52,29 +52,57 @@ namespace Vivium {
 	bool pointInElement(F32x2 point, GUIProperties const& properties);
 
 	enum GUIElementType {
-		DEFAULT,
-		CONTAINER_VERTICAL,
-		CONTAINER_HORIZONTAL
+		NONE,
+		CARDINAL_CONTAINER,
+		TREE_CONTAINER,
+		BUTTON,
+		PANEL,
+		SLIDER,
+		SPRITE,
+		TEXT
 	};
 
 	struct GUIElementReference {
 		uint64_t index;
-		GUIElementType type;
 	};
 
 	bool operator==(GUIElementReference const& a, GUIElementReference const& b);
 
+	enum class ContainerOrdering;
+	struct GUIContext;
+	struct Container;
+
+	struct _ContainerUpdateData {
+		ContainerOrdering ordering;
+	};
+
+	typedef void(*ArbitraryUpdatePtr)(GUIElementReference reference, void* data, F32x2 windowDimensions, GUIContext& guiContext);
+
+	struct ArbitraryUpdateData {
+		ArbitraryUpdatePtr func;
+		void* data;
+	};
+
+	union _AdditionalElementData {
+		_ContainerUpdateData container;
+		ArbitraryUpdateData arbitrary;
+	};
+
 	struct GUIElement {
 		GUIProperties properties;
+		GUIElementType type;
+		_AdditionalElementData data;
 
 		std::vector<GUIElementReference> children;
 	};
 
-	struct GUIContext;
-
+	// TODO: naming convention on reference/object/element
+	void _updateContainer(GUIElementReference reference, _ContainerUpdateData containerData, F32x2 windowDimensions, GUIContext& guiContext);
 	// TODO: versions of these functions for general objects, like Button, Text, etc.
 	void updateGUIElement(GUIElementReference const objectHandle, GUIElementReference const parent, F32x2 windowDimensions, GUIContext& guiContext);
+	
 	GUIProperties& properties(GUIElementReference const objectHandle, GUIContext& guiContext);
+	
 	void addChild(GUIElementReference const parent, std::span<GUIElementReference const> children, GUIContext& guiContext);
 	void removeChild(GUIElementReference const parent, std::span<GUIElementReference const> children, GUIContext& guiContext);
 	// TODO: make use of this method

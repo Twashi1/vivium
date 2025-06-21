@@ -4,7 +4,7 @@ namespace Vivium {
 	void _submitGenericGUIContext(GUIContext& guiContext, ResourceManager& manager, Engine& engine, Window& window)
 	{
 		// Create null element
-		guiContext.defaultParent = createGUIElement(guiContext, GUIElementType::DEFAULT);
+		guiContext.defaultParent = createGUIElement(guiContext);
 
 		std::array<BufferReference, 2> deviceBuffers;
 
@@ -207,11 +207,26 @@ namespace Vivium {
 			) }));
 	}
 
-	GUIElementReference createGUIElement(GUIContext& guiContext, GUIElementType type)
+	GUIElementReference createGUIElement(GUIContext& context)
 	{
-		guiContext.guiElements.push_back(GUIElement());
+		GUIElement element;
+		element.type = GUIElementType::NONE;
+		element.data.arbitrary = ArbitraryUpdateData(nullptr, nullptr);
 
-		return GUIElementReference(guiContext.guiElements.size() - 1, type);
+		context.guiElements.push_back(element);
+
+		return GUIElementReference(context.guiElements.size() - 1);
+	}
+
+	GUIElementReference createGUIElement(GUIContext& context, _ContainerUpdateData updateData)
+	{
+		GUIElement element;
+		element.type = GUIElementType::CARDINAL_CONTAINER;
+		element.data.container = updateData;
+
+		context.guiElements.push_back(element);
+
+		return GUIElementReference(context.guiElements.size() - 1);
 	}
 
 	GUIElementReference defaultGUIParent(GUIContext& context)

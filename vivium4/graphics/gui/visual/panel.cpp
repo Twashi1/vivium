@@ -5,7 +5,7 @@ namespace Vivium {
 	{
 		Panel panel{};
 
-		panel.base = createGUIElement(guiContext, GUIElementType::DEFAULT);
+		panel.base = createGUIElement(guiContext);
 		panel.backgroundColor = specification.backgroundColor;
 		panel.borderColor = specification.borderColor;
 		panel.borderSize = specification.borderSize;

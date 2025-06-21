@@ -5,7 +5,7 @@ namespace Vivium {
 	{
 		Sprite sprite{};
 
-		sprite.base = createGUIElement(guiContext, GUIElementType::DEFAULT);
+		sprite.base = createGUIElement(guiContext);
 		sprite.textureOffset = specification.textureOffset;
 		sprite.textureScale = specification.textureScale;
 

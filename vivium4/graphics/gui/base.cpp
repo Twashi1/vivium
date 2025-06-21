@@ -1,16 +1,44 @@
 #include "base.h"
 #include "visual/context.h"
+#include "visual/container.h"
 
 namespace Vivium {
-	bool pointInElement(F32x2 point, GUIProperties const& properties) {
+	bool pointInElement(F32x2 point, GUIProperties const& properties)
+	{
 		return pointInAABB(point, properties.truePosition, properties.truePosition + properties.trueDimensions);
 	}
 
-	bool operator==(GUIElementReference const& a, GUIElementReference const& b) {
+	bool operator==(GUIElementReference const& a, GUIElementReference const& b)
+	{
 		return a.index == b.index;
 	}
 
-	void updateGUIElement(GUIElementReference const element, GUIElementReference const parent, F32x2 windowDimensions, GUIContext& context) {
+	void _updateContainer(GUIElementReference reference, _ContainerUpdateData containerData, F32x2 windowDimensions, GUIContext& context)
+	{
+		F32x2 totalOffset = F32x2(0.0f);
+
+		// TODO: some method to grab reference to object
+		GUIElement& element = context.guiElements[reference.index];
+
+		for (GUIElementReference child : element.children)
+		{
+			updateGUIElement(child, reference, windowDimensions, context);
+
+			F32x2 childOffset = properties(reference, context).trueDimensions + properties(reference, context).truePosition - properties(child, context).truePosition;
+
+			if (containerData.ordering == ContainerOrdering::VERTICAL) { childOffset.x = 0.0f; }
+			if (containerData.ordering == ContainerOrdering::HORIZONTAL) { childOffset.y = 0.0f; }
+
+			properties(reference, context).truePosition -= childOffset;
+			totalOffset += childOffset;
+
+		}
+
+		properties(reference, context).truePosition += totalOffset;
+	}
+
+	void updateGUIElement(GUIElementReference const element, GUIElementReference const parent, F32x2 windowDimensions, GUIContext& context)
+	{
 		// If we have no parent, resort to using window as a pseudo-parent
 		F32x2 parentDimensions = parent.index == NULL ? windowDimensions : context.guiElements[parent.index].properties.trueDimensions;
 		F32x2 parentPosition = parent.index == NULL ? F32x2(0.0f) : context.guiElements[parent.index].properties.truePosition;
@@ -77,28 +105,17 @@ namespace Vivium {
 			}
 		}
 
-		// TODO: super messy because of container ordering
+		// Look for any required special treatment
+		switch (object.type) {
+		case GUIElementType::CARDINAL_CONTAINER: return _updateContainer(element, object.data.container, windowDimensions, context);
+		default: break;
+		}
 
-		F32x2 containerOffset = F32x2(0.0f);
-
+		// We only update children if its not some special container
 		for (GUIElementReference child : object.children)
 		{
 			updateGUIElement(child, element, windowDimensions, context);
-
-			if (element.type == GUIElementType::CONTAINER_VERTICAL || element.type == GUIElementType::CONTAINER_HORIZONTAL) {
-				F32x2 childOffset = properties(element, context).trueDimensions + properties(element, context).truePosition - properties(child, context).truePosition;
-
-				if (element.type == GUIElementType::CONTAINER_VERTICAL) { childOffset.x = 0.0f; }
-				if (element.type == GUIElementType::CONTAINER_HORIZONTAL) { childOffset.y = 0.0f; }
-
-				F32x2 totalOffset = childOffset;
-				
-				properties(element, context).truePosition -= totalOffset;
-				containerOffset += totalOffset;
-			}
 		}
-
-		properties(element, context).truePosition += containerOffset;
 	}
 			
 	GUIProperties& properties(GUIElementReference const objectHandle, GUIContext& guiContext)

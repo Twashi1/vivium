@@ -6,7 +6,7 @@
 #include "../../../error/log.h"
 
 namespace Vivium {
-	enum ContainerOrdering {
+	enum class ContainerOrdering {
 		NONE,
 		VERTICAL,
 		HORIZONTAL
