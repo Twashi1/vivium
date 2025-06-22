@@ -24,14 +24,15 @@ namespace Vivium {
 		{
 			updateGUIElement(child, reference, windowDimensions, context);
 
+			// TODO: use min/max extent calculations instead
 			F32x2 childOffset = properties(reference, context).trueDimensions + properties(reference, context).truePosition - properties(child, context).truePosition;
+			F32x2 newOffset = properties(child, context).maxExtent - properties(child, context).minExtent;
 
-			if (containerData.ordering == ContainerOrdering::VERTICAL) { childOffset.x = 0.0f; }
-			if (containerData.ordering == ContainerOrdering::HORIZONTAL) { childOffset.y = 0.0f; }
+			if (containerData.ordering == ContainerOrdering::VERTICAL) { newOffset.x = 0.0f; }
+			if (containerData.ordering == ContainerOrdering::HORIZONTAL) { newOffset.y = 0.0f; }
 
-			properties(reference, context).truePosition -= childOffset;
-			totalOffset += childOffset;
-
+			properties(reference, context).truePosition -= newOffset;
+			totalOffset += newOffset;
 		}
 
 		properties(reference, context).truePosition += totalOffset;
@@ -56,6 +57,8 @@ namespace Vivium {
 
 		object.properties.trueDimensions = object.properties.dimensions * multiplier;
 		object.properties.truePosition = object.properties.position * multiplier;
+		object.properties.minExtent = object.properties.truePosition;
+		object.properties.maxExtent = object.properties.truePosition + object.properties.trueDimensions;
 
 		if (object.properties.positionType == GUIPositionType::RELATIVE) {
 			object.properties.truePosition += parentPosition;
@@ -115,12 +118,30 @@ namespace Vivium {
 		for (GUIElementReference child : object.children)
 		{
 			updateGUIElement(child, element, windowDimensions, context);
+			object.properties.minExtent.x = std::min(object.properties.minExtent.x, properties(child, context).minExtent.x);
+			object.properties.minExtent.y = std::min(object.properties.minExtent.y, properties(child, context).minExtent.y);
+			object.properties.maxExtent.x = std::max(object.properties.maxExtent.x, properties(child, context).maxExtent.x);
+			object.properties.maxExtent.y = std::max(object.properties.maxExtent.y, properties(child, context).maxExtent.y);
 		}
 	}
 			
 	GUIProperties& properties(GUIElementReference const objectHandle, GUIContext& guiContext)
 	{
 		return guiContext.guiElements[objectHandle.index].properties;
+	}
+
+	uint64_t getChildPosition(GUIElementReference const parent, GUIElementReference const child, GUIContext& guiContext)
+	{
+		GUIElement& parentObject = guiContext.guiElements[parent.index];
+
+		return std::distance(parentObject.children.begin(), std::find(parentObject.children.begin(), parentObject.children.end(), child));
+	}
+
+	void insertChild(GUIElementReference const parent, std::span<GUIElementReference const> children, uint64_t position, GUIContext& guiContext)
+	{
+		GUIElement& parentObject = guiContext.guiElements[parent.index];
+
+		parentObject.children.insert(parentObject.children.begin() + position, children.begin(), children.end());
 	}
 
 	void addChild(GUIElementReference const parent, std::span<GUIElementReference const> children, GUIContext& guiContext)

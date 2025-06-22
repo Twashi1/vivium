@@ -1,8 +1,7 @@
 #pragma once
 
-#include "../vivium4/vivium4.h"
-
-using namespace Vivium;
+#include "engine.h"
+#include "tree_container.h"
 
 struct ComponentName {
 	std::string name;
@@ -34,11 +33,8 @@ struct State {
 			Panel background;
 			Button createButton;
 			TextBatch entityTextBatch;
-			Slider randomSlider;
 
-			GUIElementReference entityObjectsElement;
-
-			Container vbox;
+			TreeContainer entityTree;
 
 			std::vector<Entity> entities;
 			std::vector<Text> textObjects;

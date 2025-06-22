@@ -39,6 +39,10 @@ To implement this?
 - a UI "slot" where we can place other elements inside
 - essentially need a custom scripting language that transpiles to c++
 
+Given a TreeContainer
+- need some function to add a child to another element
+- we need a way to compute the maximum extent of children (DONE)
+
 ## Shader planning
 
 - run-time reflection and some partial compilation on shaders
@@ -51,6 +55,7 @@ To implement this?
 - look into debug and simulation on CPU side (would require rasterization etc.)
 ## Current tasks
 
+- CMAKE of vivium should be separate to CMAKE of editor
 - Comprehensive documentation of all structs/methods/etc.
 	- just use doxygen format, can build a custom tool later
 - Some GUI commands are randomly split between `context.h` and `base.h`

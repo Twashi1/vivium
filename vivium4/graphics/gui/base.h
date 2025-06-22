@@ -47,6 +47,11 @@ namespace Vivium {
 		F32x2 truePosition = F32x2(0.0f);
 		// Dimensions of each axis in px
 		F32x2 trueDimensions = F32x2(0.0f);
+
+		// Considering this element and all its children
+		//	what is the min/max positions
+		F32x2 minExtent = F32x2(0.0f);
+		F32x2 maxExtent = F32x2(0.0f);
 	};
 
 	bool pointInElement(F32x2 point, GUIProperties const& properties);
@@ -103,6 +108,8 @@ namespace Vivium {
 	
 	GUIProperties& properties(GUIElementReference const objectHandle, GUIContext& guiContext);
 	
+	uint64_t getChildPosition(GUIElementReference const parent, GUIElementReference const child, GUIContext& guiContext);
+	void insertChild(GUIElementReference const parent, std::span<GUIElementReference const> children, uint64_t position, GUIContext& guiContext);
 	void addChild(GUIElementReference const parent, std::span<GUIElementReference const> children, GUIContext& guiContext);
 	void removeChild(GUIElementReference const parent, std::span<GUIElementReference const> children, GUIContext& guiContext);
 	// TODO: make use of this method
