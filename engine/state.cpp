@@ -22,9 +22,11 @@ void _submitEntityView(State& state)
 	state.editor.entityView.createButton = submitButton(state.manager, state.guiContext, state.engine, state.window, ButtonSpecification{ state.editor.entityView.background.base, colorDarkGray, colorBlack });
 	state.editor.entityView.entityTree = createTreeContainer(state.guiContext, state.editor.entityView.background.base);
 	state.editor.entityView.entityTextBatch = submitTextBatch(state.manager, state.engine, state.guiContext, TextBatchSpecification{ 256, state.editor.entityView.createButton.textBatch.font });
+	state.editor.entityView.heldElement = nullptr;
 
 	for (uint32_t i = 0; i < MAX_CONCURRENT_ENTITY_PANELS; i++) {
-		state.editor.entityView.entityPanels.push_back(createPanel(state.guiContext, PanelSpecification(state.editor.entityView.entityTree.root.base, colorDarkGray, colorBlack, 0.01f)));
+		state.editor.entityView.entityPanels.push_back(createPanel(state.guiContext, PanelSpecification(nullGUIParent(), colorDarkGray, colorBlack, 0.01f)));
+		addNewChild(state.editor.entityView.entityTree, &state.editor.entityView.entityPanelIndices[i], state.editor.entityView.entityPanels.back().base, state.guiContext);
 
 		state.editor.entityView.textObjects.push_back(createText(TextSpecification{
 			state.editor.entityView.entityPanels.back().base,
@@ -76,7 +78,7 @@ void _setupEntityView(State& state)
 	for (uint32_t i = 0; i < MAX_CONCURRENT_ENTITY_PANELS; i++) {
 		GUIProperties& props = properties(state.editor.entityView.entityPanels[i], state.guiContext);
 		props.dimensions = F32x2(0.9f, 0.05f);
-		props.position = F32x2(0.0f, -0.01f);
+		props.position = F32x2(0.05f, -0.01f);
 		props.centerY = GUIAnchor::TOP;
 		props.anchorY = GUIAnchor::TOP;
 
@@ -86,6 +88,8 @@ void _setupEntityView(State& state)
 		textProps.centerY = GUIAnchor::BOTTOM;
 		textProps.anchorX = GUIAnchor::CENTER;
 		textProps.anchorY = GUIAnchor::CENTER;
+
+		state.editor.entityView.entityPanelIndices[i] = i;
 	}
 }
 
@@ -114,7 +118,15 @@ void _update(State& state)
 		state.registry.addComponent<ComponentName>(newEntity, ComponentName{ std::format("Entity {}", newEntity & ECS_ENTITY_MASK) });
 
 		state.editor.entityView.entities.push_back(newEntity);
+		// Enable the relevant container
+		TreeContainer* container = getContainerByPanel(state.editor.entityView.entities.size() - 1, state.editor.entityView.entityTree);
+
+		VIVIUM_ASSERT(container != nullptr, "Couldn't get container for new panel");
+
+		container->enabled = true;
 	}
+
+	state.editor.entityView.heldElement = updateTreeContainer(Input::getCursor(), state.editor.entityView.entityTree, state.editor.entityView.heldElement, state.guiContext);
 
 	// TODO: get view from registry
 	int i = 0;
@@ -126,7 +138,6 @@ void _update(State& state)
 		textObjectsPtr.push_back(&state.editor.entityView.textObjects[i]);
 		state.editor.entityView.textObjects[i].metrics = calculateTextMetrics(name.name, state.editor.entityView.entityTextBatch.font);
 		state.editor.entityView.textObjects[i++].characters = name.name;
-
 	}
 
 	calculateTextBatch(state.editor.entityView.entityTextBatch, textObjectsPtr, state.context, state.guiContext, state.engine);
@@ -138,6 +149,9 @@ void _draw(State& state)
 
 	entityPanels.push_back(&state.editor.background);
 	entityPanels.push_back(&state.editor.entityView.background);
+	
+	// TODO: iterate the tree container
+	//	mark the relevant panels that are disabled with appropriate colour
 
 	for (int i = 0; i < std::min(MAX_CONCURRENT_ENTITY_PANELS, (int)state.editor.entityView.entities.size()); i++) {
 		entityPanels.push_back(&state.editor.entityView.entityPanels[i]);
@@ -211,6 +225,7 @@ void gameloop(State& state) {
 		windowBeginRender(state.window);
 
 		_draw(state);
+		renderDebugRects(state.context, state.guiContext, state.window);
 		
 		windowEndRender(state.window);
 		windowEndFrame(state.window, state.engine);
@@ -230,4 +245,19 @@ void terminate(State& state) {
 	dropEngine(state.engine);
 
 	_fontTerminate();
+}
+
+TreeContainer* getContainerByPanel(int panelIndex, TreeContainer& container)
+{
+	if (*(int*)container.data == panelIndex) {
+		return &container;
+	}
+
+	for (TreeContainer& child : container.children) {
+		TreeContainer* result = getContainerByPanel(panelIndex, child);
+
+		if (result != nullptr) return result;
+	}
+
+	return nullptr;
 }

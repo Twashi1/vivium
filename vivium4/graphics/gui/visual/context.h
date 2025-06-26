@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+
 #include "../../../storage.h"
 #include "../../resource_manager.h"
 #include "../../color.h"
@@ -41,6 +43,13 @@ namespace Vivium {
 		F32x2 scale;
 		F32x2 texturePosition;
 		F32x2 textureScale;
+	};
+
+	struct _GUIDebugRectInstanceData {
+		F32x2 position;
+		F32x2 scale;
+		Color borderColor;
+		float borderSize;
 	};
 
 	struct GUIContext {
@@ -97,6 +106,21 @@ namespace Vivium {
 		} slider;
 
 		struct {
+			static constexpr uint64_t MAX_DEBUG_RECTS = 128;
+
+			Ref<Shader> fragmentShader;
+			Ref<Shader> vertexShader;
+
+			Ref<Buffer> storageBuffer;
+
+			Ref<DescriptorLayout> descriptorLayout;
+			Ref<DescriptorSet> descriptorSet;
+			Ref<Pipeline> pipeline;
+
+			std::vector<_GUIDebugRectInstanceData> rects;
+		} debugRect;
+
+		struct {
 			static constexpr uint64_t MAX_SPRITES = 128;
 
 			Ref<Shader> fragmentShader;
@@ -119,6 +143,7 @@ namespace Vivium {
 	GUIElementReference createGUIElement(GUIContext& context);
 	GUIElementReference createGUIElement(GUIContext& context, _ContainerUpdateData updateData);
 	GUIElementReference defaultGUIParent(GUIContext& context);
+	GUIElementReference nullGUIParent();
 
 	void _submitGenericGUIContext(GUIContext& guiContext, ResourceManager& manager, Engine& engine, Window& window);
 	void _submitTextGUIContext(GUIContext& guiContext, ResourceManager& manager, Engine& engine, Window& window);
@@ -126,6 +151,7 @@ namespace Vivium {
 	void _submitPanelGUIContext(GUIContext& guiContext, ResourceManager& manager, Engine& engine, Window& window);
 	void _submitSliderGUIContext(GUIContext& guiContext, ResourceManager& manager, Engine& engine, Window& window);
 	void _submitSpriteGUIContext(GUIContext& guiContext, ResourceManager& manager, Engine& engine, Window& window);
+	void _submitDebugRectGUIContext(GUIContext& guiContext, ResourceManager& manager, Engine& engine, Window& window);
 	
 	GUIContext createGUIContext(ResourceManager& manager, Engine& engine, Window& window, StitchedAtlas const* spriteAtlas);
 				

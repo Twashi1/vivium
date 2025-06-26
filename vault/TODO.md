@@ -30,7 +30,6 @@ To create
 	- top 1/4 would make sibling above
 	- bot 1/4 would make sibling below
 	- need some "null" node
-	- 
 - given some tree of children, interpret it to create elements
 	- parse the tree somehow?
 
@@ -40,8 +39,9 @@ To implement this?
 - essentially need a custom scripting language that transpiles to c++
 
 Given a TreeContainer
-- need some function to add a child to another element
-- we need a way to compute the maximum extent of children (DONE)
+- once we detect which child of the root is hovered
+	- select that child (enable/disable that tree container)
+- move the held element
 
 ## Shader planning
 
@@ -81,6 +81,20 @@ Given a TreeContainer
 - Investigate ability to change size of group (not during iteration) and still correctly see all entities
 ## Core
 
+- Rename border size px, because its not in terms of pixels but percentage
+- Current problem with GUI
+	- We made a container, a child of another container
+	- we want this child to have no set size, to grow dynamically with the size of its children
+	- but the children depend on the size of the container
+	- we can make this container span the maximum size
+	- but then the next child will be placed way too far down
+	- we can make the extent of an element based on only its children
+	- but this doesn't fix anchoring onto another container
+		- but honestly good enough fix for now?
+- Vec2 uses a bunch of static functions
+- When creating GUI object, don't add to parent automatically, must add manually to make relationships clearer
+- Some elements being added twice (look element index 7 has 2 instances of index 30?)
+	- debug mode safety warning?
 - Container's need to be updated
 - Textures loading upside down for stitched atlas specifically?
 - Super easy `debugRect` and `debugPoint` commands for a given coordinate or GUIElement

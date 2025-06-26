@@ -9,6 +9,8 @@ TreeContainer createTreeContainer(GUIContext& guiContext, GUIElementReference pa
 	TreeContainer tree;
 
 	tree.root = createContainer(guiContext, ContainerSpecification(parent, ContainerOrdering::VERTICAL));
+	properties(tree.root, guiContext).anchorY = GUIAnchor::TOP;
+	properties(tree.root, guiContext).centerY = GUIAnchor::TOP;
 
 	return tree;
 }
@@ -32,7 +34,7 @@ void removeChild(TreeContainer& container, TreeContainer& child, GUIContext& gui
 	}
 
 	if (std::find(container.children.begin(), container.children.end(), child) != container.children.end()) {
-		std::remove(container.children.begin(), container.children.end(), child);
+		container.children.erase(std::remove(container.children.begin(), container.children.end(), child), container.children.end());
 		removeChild(container.root.base, { &child.root.base, 1 }, guiContext);
 	}
 	else {
@@ -43,19 +45,25 @@ void removeChild(TreeContainer& container, TreeContainer& child, GUIContext& gui
 }
 
 TreeContainer* getContainer(F32x2 position, TreeContainer& container, GUIContext& guiContext) {
-	if (container.enabled && pointInElement(position, properties(container.root, guiContext))) {
-		return &container;
-	}
+	// TODO: if the container has children, we should be more specific in finding the exact child
+	//	that we're hovering, rather than just the container
+	// TODO: not sure this code is correct by above ^
+	TreeContainer* result = nullptr;
 
-	for (TreeContainer& child : container.children) {
-		TreeContainer* result = getContainer(position, child, guiContext);
+	if (container.enabled && pointInExtent(position, properties(container.root, guiContext))) {
+		result = &container;
 
-		if (result != nullptr) {
-			return result;
+		// Search children to attempt to get more specificity
+		for (TreeContainer& child : container.children) {
+			TreeContainer* childResult = getContainer(position, child, guiContext);
+
+			if (childResult != nullptr) {
+				return childResult;
+			}
 		}
 	}
 
-	return nullptr;
+	return result;
 }
 
 TreeContainer* findParent(TreeContainer& container, TreeContainer& child, GUIContext& guiContext)
@@ -73,63 +81,111 @@ TreeContainer* findParent(TreeContainer& container, TreeContainer& child, GUICon
 	return nullptr;
 }
 
+void addNewChild(TreeContainer& container, void* data, GUIElementReference reference, GUIContext& guiContext)
+{
+	TreeContainer newTree = createTreeContainer(guiContext, container.root.base);
+	newTree.data = data;
+	newTree.enabled = false;
+	addChild(newTree.root.base, { &reference, 1 }, guiContext);
+
+	// Add slight x offset
+	properties(newTree.root, guiContext).position.x = 0.05f;
+	
+	container.children.push_back(newTree);
+}
+
 TreeContainer* updateTreeContainer(F32x2 cursorPosition, TreeContainer& container, TreeContainer* held, GUIContext& context)
 {
 	// TODO: should not be able to pick up the root
-	// TODO: rename to hovered
-	TreeContainer* selectedElement = getContainer(cursorPosition, container, context);
+	// TODO: should be ensuring we can't make a loop
+	// TODO: manually disable the root container?
+	// TODO: detection code doesn't work great?
+	//	probably won't work at all on child containers
+	TreeContainer* hovered = getContainer(cursorPosition, container, context);
 
-	// If we're not holding anything, and we pressed left, then select this element
-	if (held == nullptr && Input::get(Input::BTN_1).state == Input::DOWN) {
-		selectedElement->enabled = false;
-		return selectedElement;
+	if (hovered != nullptr) {
+		GUIProperties& props = properties(hovered->root.base, context);
+		debugRect(props.minExtent, props.maxExtent - props.minExtent, Color(1.0f, 0.0f, 0.0f), context);
+
+		// VIVIUM_LOG(LogSeverity::DEBUG, "Hovering {} at {} {}", hovered->root.base.index, cursorPosition.x, cursorPosition.y);
 	}
 
-	// If we've not selected anything and we released
-	if (selectedElement == nullptr && Input::get(Input::BTN_1).state == Input::UP) {
-		// Re-enable the held element
-		if (held != nullptr) {
-			held->enabled = true;
-		}
-		// Return nullptr to indicate we've stopped holding anything
-
-		return nullptr;
+	if (hovered != nullptr && *hovered == container) {
+		return held;
 	}
+
+	// If we're not holding anything, and we pressed left,
+	//  then select this element
+	if (hovered != nullptr && held == nullptr && Input::get(Input::BTN_1).state == Input::DOWN) {
+		VIVIUM_LOG(LogSeverity::DEBUG, "Element is held {}", hovered->root.base.index);
+		hovered->enabled = false;
+		return hovered;
+	}
+
 	// If we're holding something, and we've released on something selected
-	if (selectedElement != nullptr && Input::get(Input::BTN_1).state == Input::UP && held != nullptr) {
+	if (Input::get(Input::BTN_1).state == Input::UP && held != nullptr) {
+		// If we released the held element on itself return
+		if (held == hovered) {
+			VIVIUM_LOG(LogSeverity::DEBUG, "Element is released on itself");
+			return nullptr;
+		}
+
+		// If we released the held element on nothing return
+		if (hovered == nullptr) {
+			VIVIUM_LOG(LogSeverity::DEBUG, "Element is released on nothing");
+			held->enabled = false;
+			return nullptr;
+		}
+
+		VIVIUM_LOG(LogSeverity::DEBUG, "Element is released on something {}", hovered->root.base.index);
 		// Figure out which area we're holding to figure out the action to take
-		GUIProperties selectedProperties = properties(selectedElement->root.base, context);
-		float bot = selectedProperties.truePosition.y;
-		float height = selectedProperties.trueDimensions.y;
-		float top = bot + height;
+		GUIProperties const& selectedProperties = properties(hovered->root.base, context);
+		// TODO: probably want the extent of the container not position/dimension
+		// TODO: we really want to just look at the position and dimension of the root element
+		//	but this isn't realistically possible? because we don't have access to the panel
+		float bot = selectedProperties.minExtent.y;
+		float top = selectedProperties.maxExtent.y;
+		float height = top - bot;
 
 		float bot_quarter = bot + height * 0.25f;
 		float top_quarter = bot + height * 0.75f;
 
+		// TODO: this reference is a bit dodgy but required
+		TreeContainer& hoveredElement = *hovered;
+		// Note this is a copy, because otherwise we point to something that doesn't exist anymore
+		TreeContainer heldElement = *held;
+		heldElement.enabled = true;
+
+		// TODO: the held element (and hovered) is a pointer that has now changed
 		// Remove held element from container
-		removeChild(container, *held, context);
+		removeChild(container, heldElement, context);
 		// Get position of selected
 		// TODO: requires us to find the parent
-		TreeContainer* parentSelected = findParent(container, *selectedElement, context);
+		TreeContainer* parentSelected = findParent(container, hoveredElement, context);
 
 		VIVIUM_ASSERT(parentSelected != nullptr, "Couldn't find parent of selected element");
 
-		uint64_t selectedChildPosition = getChildPosition(parentSelected->root.base, selectedElement->root.base, context);
+		uint64_t selectedChildPosition = getChildPosition(parentSelected->root.base, hoveredElement.root.base, context);
 
 		// If in the top 1/4, add above
 		if (cursorPosition.y < bot_quarter) {
 			// TODO: insert child method
-			insertChild(*parentSelected, *held, selectedChildPosition, context);
+			VIVIUM_LOG(LogSeverity::DEBUG, "Inserting above");
+			insertChild(*parentSelected, heldElement, selectedChildPosition, context);
 		}
 		// If in the bot 1/4, add below
 		else if (cursorPosition.y > top_quarter) {
-			insertChild(*parentSelected, *held, selectedChildPosition + 1, context);
+			VIVIUM_LOG(LogSeverity::DEBUG, "Inserting below");
+			insertChild(*parentSelected, heldElement, selectedChildPosition + 1, context);
 		}
 		// If in the middle 1/2, add as child
 		else {
-			addChild(*selectedElement, *held, context);
+			VIVIUM_LOG(LogSeverity::DEBUG, "Inserting into");
+			addChild(hoveredElement, heldElement, context);
 		}
+
+		return nullptr;
 	}
 
-	return nullptr;
+	return held;
 }

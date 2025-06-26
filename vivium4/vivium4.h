@@ -11,6 +11,7 @@
 #include "graphics/gui/visual/slider.h"
 #include "graphics/gui/visual/sprite.h"
 #include "graphics/gui/visual/container.h"
+#include "graphics/gui/visual/debugrect.h"
 #include "graphics/primitives/framebuffer.h"
 #include "physics/physics.h"
 #include "math/polygon.h"

@@ -207,6 +207,43 @@ namespace Vivium {
 			) }));
 	}
 
+	void _submitDebugRectGUIContext(GUIContext& guiContext, ResourceManager& manager, Engine& engine, Window& window)
+	{
+		submitResource(manager, &guiContext.debugRect.storageBuffer.reference, MemoryType::UNIFORM,
+			std::vector<BufferSpecification>({ BufferSpecification(guiContext.debugRect.MAX_DEBUG_RECTS * sizeof(_GUIDebugRectInstanceData), BufferUsage::STORAGE) }));
+
+		submitResource(manager, &guiContext.debugRect.descriptorLayout.reference, std::vector<DescriptorLayoutSpecification>({
+			DescriptorLayoutSpecification(std::vector<UniformBinding>({
+					UniformBinding(ShaderStage::VERTEX, 0, UniformType::STORAGE_BUFFER)
+				}))
+			}));
+
+		submitResource(manager, &guiContext.debugRect.descriptorSet.reference, std::vector<DescriptorSetSpecification>({
+			DescriptorSetSpecification(guiContext.debugRect.descriptorLayout.reference, std::vector<UniformData>({
+				UniformData::fromBuffer(guiContext.debugRect.storageBuffer.reference, guiContext.debugRect.MAX_DEBUG_RECTS * sizeof(_GUIDebugRectInstanceData), 0)
+			}))
+			}));
+
+		submitResource(manager, &guiContext.debugRect.fragmentShader.reference, std::vector<ShaderSpecification>({
+			compileShader(ShaderStage::FRAGMENT, "vivium4/res/debugrect.frag", "vivium4/res/debugrect_frag.spv")
+			}));
+
+		submitResource(manager, &guiContext.debugRect.vertexShader.reference, std::vector<ShaderSpecification>({
+			compileShader(ShaderStage::VERTEX, "vivium4/res/debugrect.vert", "vivium4/res/debugrect_vert.spv")
+			}));
+
+		submitResource(manager,
+			&guiContext.debugRect.pipeline.reference,
+			std::vector<PipelineSpecification>({
+			PipelineSpecification::fromWindow(
+				std::vector<ShaderReference>({ guiContext.debugRect.fragmentShader.reference, guiContext.debugRect.vertexShader.reference }),
+				BufferLayout::fromTypes(std::vector<ShaderDataType>({ ShaderDataType::VEC2 })),
+				std::vector<DescriptorLayoutReference>({ guiContext.debugRect.descriptorLayout.reference }),
+				std::vector<PushConstant>({ PushConstant(ShaderStage::VERTEX, 0, sizeof(Perspective))}),
+				window
+			) }));
+	}
+
 	GUIElementReference createGUIElement(GUIContext& context)
 	{
 		GUIElement element;
@@ -234,6 +271,11 @@ namespace Vivium {
 		return context.defaultParent;
 	}
 
+	GUIElementReference nullGUIParent()
+	{
+		return GUIElementReference(UINT64_MAX);
+	}
+
 	// TODO: create doesn't match the pattern, elements that require a setup, should also be `submit`
 	GUIContext createGUIContext(ResourceManager& manager, Engine& engine, Window& window, StitchedAtlas const* spriteAtlas) {
 		// TODO: move the code, should be done in some initialisation function
@@ -252,6 +294,7 @@ namespace Vivium {
 		_submitPanelGUIContext(context, manager, engine, window);
 		_submitSliderGUIContext(context, manager, engine, window);
 		_submitSpriteGUIContext(context, manager, engine, window);
+		_submitDebugRectGUIContext(context, manager, engine, window);
 
 		return context;
 	}
@@ -291,6 +334,13 @@ namespace Vivium {
 		convertResourceReference(manager, guiContext.sprite.vertexShader);
 		convertResourceReference(manager, guiContext.sprite.storageBuffer);
 		convertResourceReference(manager, guiContext.sprite.descriptorSet);
+
+		convertResourceReference(manager, guiContext.debugRect.pipeline);
+		convertResourceReference(manager, guiContext.debugRect.descriptorLayout);
+		convertResourceReference(manager, guiContext.debugRect.fragmentShader);
+		convertResourceReference(manager, guiContext.debugRect.vertexShader);
+		convertResourceReference(manager, guiContext.debugRect.storageBuffer);
+		convertResourceReference(manager, guiContext.debugRect.descriptorSet);
 
 		convertResourceReference(manager, guiContext.rectVertexBuffer);
 		convertResourceReference(manager, guiContext.rectIndexBuffer);
@@ -347,6 +397,9 @@ namespace Vivium {
 
 		dropShader(guiContext.sprite.fragmentShader.resource, engine);
 		dropShader(guiContext.sprite.vertexShader.resource, engine);
+
+		dropShader(guiContext.debugRect.fragmentShader.resource, engine);
+		dropShader(guiContext.debugRect.vertexShader.resource, engine);
 		// TODO: maybe the descriptor layout can be freed here?
 	}
 
@@ -366,17 +419,20 @@ namespace Vivium {
 		dropDescriptorLayout(guiContext.panel.descriptorLayout.resource, engine);
 		dropDescriptorLayout(guiContext.slider.descriptorLayout.resource, engine);
 		dropDescriptorLayout(guiContext.sprite.descriptorLayout.resource, engine);
+		dropDescriptorLayout(guiContext.debugRect.descriptorLayout.resource, engine);
 		
 		dropPipeline(guiContext.text.pipeline.resource, engine);
 		dropPipeline(guiContext.button.pipeline.resource, engine);
 		dropPipeline(guiContext.panel.pipeline.resource, engine);
 		dropPipeline(guiContext.slider.pipeline.resource, engine);
 		dropPipeline(guiContext.sprite.pipeline.resource, engine);
+		dropPipeline(guiContext.debugRect.pipeline.resource, engine);
 
 		dropBuffer(guiContext.button.storageBuffer.resource, engine);
 		dropBuffer(guiContext.panel.storageBuffer.resource, engine);
 		dropBuffer(guiContext.slider.storageBuffer.resource, engine);
 		dropBuffer(guiContext.sprite.storageBuffer.resource, engine);
+		dropBuffer(guiContext.debugRect.storageBuffer.resource, engine);
 
 		dropBuffer(guiContext.rectVertexBuffer.resource, engine);
 		dropBuffer(guiContext.rectIndexBuffer.resource, engine);

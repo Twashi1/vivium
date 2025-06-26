@@ -57,6 +57,8 @@ namespace Vivium {
 		static T cross(Vec2 a, Vec2 b) { return a.x * b.y - a.y * b.x; }
 		static T length(Vec2 v) { return std::sqrt(dot(v, v)); }
 
+		static Vec2 inf() { return Vec2(std::numeric_limits<T>::max(), std::numeric_limits<T>::max()); }
+
 		template <typename U>
 		operator Vec2<U>() const { return Vec2<U>((U)x, (U)y); }
 	};

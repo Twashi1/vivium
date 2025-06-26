@@ -11,7 +11,7 @@ struct ComponentPosition {
 	F32x2 position;
 };
 
-inline constexpr int MAX_CONCURRENT_ENTITY_PANELS = 32;
+inline constexpr int MAX_CONCURRENT_ENTITY_PANELS = 8;
 
 struct State {
 	Engine engine;
@@ -35,6 +35,8 @@ struct State {
 			TextBatch entityTextBatch;
 
 			TreeContainer entityTree;
+			TreeContainer* heldElement;
+			std::array<int, MAX_CONCURRENT_ENTITY_PANELS> entityPanelIndices;
 
 			std::vector<Entity> entities;
 			std::vector<Text> textObjects;
@@ -72,3 +74,5 @@ StitchedAtlas _createSpriteAtlas(State& state);
 void initialise(State& state);
 void gameloop(State& state);
 void terminate(State& state);
+
+TreeContainer* getContainerByPanel(int panelIndex, TreeContainer& container);

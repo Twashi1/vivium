@@ -8,6 +8,11 @@ namespace Vivium {
 		return pointInAABB(point, properties.truePosition, properties.truePosition + properties.trueDimensions);
 	}
 
+	bool pointInExtent(F32x2 point, GUIProperties const& properties)
+	{
+		return pointInAABB(point, properties.minExtent, properties.maxExtent);
+	}
+
 	bool operator==(GUIElementReference const& a, GUIElementReference const& b)
 	{
 		return a.index == b.index;
@@ -20,12 +25,14 @@ namespace Vivium {
 		// TODO: some method to grab reference to object
 		GUIElement& element = context.guiElements[reference.index];
 
+		// Super hacky fix
+		element.properties.minExtent = F32x2::inf();
+		element.properties.maxExtent = -F32x2::inf();
+
 		for (GUIElementReference child : element.children)
 		{
 			updateGUIElement(child, reference, windowDimensions, context);
 
-			// TODO: use min/max extent calculations instead
-			F32x2 childOffset = properties(reference, context).trueDimensions + properties(reference, context).truePosition - properties(child, context).truePosition;
 			F32x2 newOffset = properties(child, context).maxExtent - properties(child, context).minExtent;
 
 			if (containerData.ordering == ContainerOrdering::VERTICAL) { newOffset.x = 0.0f; }
@@ -33,6 +40,11 @@ namespace Vivium {
 
 			properties(reference, context).truePosition -= newOffset;
 			totalOffset += newOffset;
+
+			element.properties.minExtent.x = std::min(element.properties.minExtent.x, properties(child, context).minExtent.x);
+			element.properties.minExtent.y = std::min(element.properties.minExtent.y, properties(child, context).minExtent.y);
+			element.properties.maxExtent.x = std::max(element.properties.maxExtent.x, properties(child, context).maxExtent.x);
+			element.properties.maxExtent.y = std::max(element.properties.maxExtent.y, properties(child, context).maxExtent.y);
 		}
 
 		properties(reference, context).truePosition += totalOffset;
@@ -57,8 +69,6 @@ namespace Vivium {
 
 		object.properties.trueDimensions = object.properties.dimensions * multiplier;
 		object.properties.truePosition = object.properties.position * multiplier;
-		object.properties.minExtent = object.properties.truePosition;
-		object.properties.maxExtent = object.properties.truePosition + object.properties.trueDimensions;
 
 		if (object.properties.positionType == GUIPositionType::RELATIVE) {
 			object.properties.truePosition += parentPosition;
@@ -108,6 +118,9 @@ namespace Vivium {
 			}
 		}
 
+		object.properties.minExtent = object.properties.truePosition;
+		object.properties.maxExtent = object.properties.truePosition + object.properties.trueDimensions;
+
 		// Look for any required special treatment
 		switch (object.type) {
 		case GUIElementType::CARDINAL_CONTAINER: return _updateContainer(element, object.data.container, windowDimensions, context);
@@ -139,6 +152,8 @@ namespace Vivium {
 
 	void insertChild(GUIElementReference const parent, std::span<GUIElementReference const> children, uint64_t position, GUIContext& guiContext)
 	{
+		if (parent == nullGUIParent()) return;
+
 		GUIElement& parentObject = guiContext.guiElements[parent.index];
 
 		parentObject.children.insert(parentObject.children.begin() + position, children.begin(), children.end());
@@ -146,6 +161,8 @@ namespace Vivium {
 
 	void addChild(GUIElementReference const parent, std::span<GUIElementReference const> children, GUIContext& guiContext)
 	{
+		if (parent == nullGUIParent()) return;
+
 		GUIElement& parentObject = guiContext.guiElements[parent.index];
 
 		parentObject.children.insert(parentObject.children.end(), children.begin(), children.end());
@@ -154,8 +171,11 @@ namespace Vivium {
 	// TODO: O(n^2) algorithm
 	void removeChild(GUIElementReference const parent, std::span<GUIElementReference const> children, GUIContext& guiContext)
 	{
+		if (parent == nullGUIParent()) return;
+
 		GUIElement& parentObject = guiContext.guiElements[parent.index];
 
+		// TODO: should use std::remove
 		for (GUIElementReference const reference : children) {
 			parentObject.children.erase(std::find(parentObject.children.begin(), parentObject.children.end(), reference));
 		}

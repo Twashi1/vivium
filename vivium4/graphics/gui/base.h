@@ -55,6 +55,7 @@ namespace Vivium {
 	};
 
 	bool pointInElement(F32x2 point, GUIProperties const& properties);
+	bool pointInExtent(F32x2 point, GUIProperties const& properties);
 
 	enum GUIElementType {
 		NONE,
