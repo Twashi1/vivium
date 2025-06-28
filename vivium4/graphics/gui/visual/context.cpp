@@ -255,6 +255,17 @@ namespace Vivium {
 		return GUIElementReference(context.guiElements.size() - 1);
 	}
 
+	GUIElementReference createGUIElement(GUIContext& context, GUIElementType elementType)
+	{
+		GUIElement element;
+		element.type = elementType;
+		element.data.arbitrary = ArbitraryUpdateData(nullptr, nullptr);
+
+		context.guiElements.push_back(element);
+
+		return GUIElementReference(context.guiElements.size() - 1);
+	}
+
 	GUIElementReference createGUIElement(GUIContext& context, _ContainerUpdateData updateData)
 	{
 		GUIElement element;

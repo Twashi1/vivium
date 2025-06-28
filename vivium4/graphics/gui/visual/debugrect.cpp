@@ -7,7 +7,7 @@ namespace Vivium {
 		rect.position = position;
 		rect.scale = scale;
 		rect.borderColor = color;
-		rect.borderSize = 0.05;
+		rect.borderSize = 0.01;
 
 		context.debugRect.rects.push_back(rect);
 	}

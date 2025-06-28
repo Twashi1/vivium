@@ -104,8 +104,35 @@ TreeContainer* updateTreeContainer(F32x2 cursorPosition, TreeContainer& containe
 	TreeContainer* hovered = getContainer(cursorPosition, container, context);
 
 	if (hovered != nullptr) {
-		GUIProperties& props = properties(hovered->root.base, context);
-		debugRect(props.minExtent, props.maxExtent - props.minExtent, Color(1.0f, 0.0f, 0.0f), context);
+		GUIProperties props;
+
+		// TODO: we really want to just look at the position and dimension of the root element
+		//	but this isn't realistically possible? because we don't have access to the panel
+		float bot = -1.0f;
+		float top = -1.0f;
+		float height = -1.0f;
+
+		for (GUIElementReference const child : getChildren(hovered->root.base, context)) {
+			if (_getGUIElement(child, context).type == GUIElementType::PANEL) {
+				GUIProperties const& selectedProperties = properties(child, context);
+
+				bot = selectedProperties.truePosition.y;
+				height = selectedProperties.trueDimensions.y;
+				top = bot + height;
+
+				props = selectedProperties;
+			}
+		}
+
+		float bot_quarter = bot + height * 0.25f;
+		float top_quarter = bot + height * 0.75f;
+
+		debugRect(
+			F32x2(props.truePosition.x, bot_quarter),
+			F32x2(props.trueDimensions.x, height * 0.5f),
+			Color(0.0f, 1.0f, 0.0f), context);
+
+		debugRect(props.truePosition, props.trueDimensions, Color(1.0f, 0.0f, 0.0f), context);
 
 		// VIVIUM_LOG(LogSeverity::DEBUG, "Hovering {} at {} {}", hovered->root.base.index, cursorPosition.x, cursorPosition.y);
 	}
@@ -139,19 +166,30 @@ TreeContainer* updateTreeContainer(F32x2 cursorPosition, TreeContainer& containe
 
 		VIVIUM_LOG(LogSeverity::DEBUG, "Element is released on something {}", hovered->root.base.index);
 		// Figure out which area we're holding to figure out the action to take
-		GUIProperties const& selectedProperties = properties(hovered->root.base, context);
-		// TODO: probably want the extent of the container not position/dimension
+		// We'll try to find the panel and take dimensions of that
+		float bot = -1.0f;
+		float top = -1.0f;
+		float height = -1.0f;
+
+		for (GUIElementReference const child : getChildren(hovered->root.base, context)) {
+			if (_getGUIElement(child, context).type == GUIElementType::PANEL) {
+				GUIProperties const& selectedProperties = properties(child, context);
+
+				bot = selectedProperties.truePosition.y;
+				height = selectedProperties.trueDimensions.y;
+				top = bot + height;
+			}
+		}
+
+		VIVIUM_ASSERT(bot != -1.0f, "Didn't get any child");
+
 		// TODO: we really want to just look at the position and dimension of the root element
 		//	but this isn't realistically possible? because we don't have access to the panel
-		float bot = selectedProperties.minExtent.y;
-		float top = selectedProperties.maxExtent.y;
-		float height = top - bot;
-
 		float bot_quarter = bot + height * 0.25f;
 		float top_quarter = bot + height * 0.75f;
 
-		// TODO: this reference is a bit dodgy but required
-		TreeContainer& hoveredElement = *hovered;
+		VIVIUM_LOG(LogSeverity::DEBUG, "bot: {}, top: {}, cursor: {}", bot_quarter, top_quarter, cursorPosition.y);
+
 		// Note this is a copy, because otherwise we point to something that doesn't exist anymore
 		TreeContainer heldElement = *held;
 		heldElement.enabled = true;
@@ -159,8 +197,13 @@ TreeContainer* updateTreeContainer(F32x2 cursorPosition, TreeContainer& containe
 		// TODO: the held element (and hovered) is a pointer that has now changed
 		// Remove held element from container
 		removeChild(container, heldElement, context);
+
+		// Refind the hovered element because container order changes
+		//	when we remove a child (so pointers/indices change); we
+		//	need this reference so we can add the held element as a child in some cases
+		TreeContainer& hoveredElement = *getContainer(cursorPosition, container, context);
+
 		// Get position of selected
-		// TODO: requires us to find the parent
 		TreeContainer* parentSelected = findParent(container, hoveredElement, context);
 
 		VIVIUM_ASSERT(parentSelected != nullptr, "Couldn't find parent of selected element");
@@ -168,13 +211,13 @@ TreeContainer* updateTreeContainer(F32x2 cursorPosition, TreeContainer& containe
 		uint64_t selectedChildPosition = getChildPosition(parentSelected->root.base, hoveredElement.root.base, context);
 
 		// If in the top 1/4, add above
-		if (cursorPosition.y < bot_quarter) {
+		if (cursorPosition.y > top_quarter) {
 			// TODO: insert child method
 			VIVIUM_LOG(LogSeverity::DEBUG, "Inserting above");
 			insertChild(*parentSelected, heldElement, selectedChildPosition, context);
 		}
 		// If in the bot 1/4, add below
-		else if (cursorPosition.y > top_quarter) {
+		else if (cursorPosition.y < bot_quarter) {
 			VIVIUM_LOG(LogSeverity::DEBUG, "Inserting below");
 			insertChild(*parentSelected, heldElement, selectedChildPosition + 1, context);
 		}

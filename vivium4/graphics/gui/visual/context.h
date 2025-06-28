@@ -139,8 +139,10 @@ namespace Vivium {
 		GUIElementReference defaultParent;
 		std::vector<GUIElement> guiElements;
 	};
-
+	
+	// TODO: deprecate this method
 	GUIElementReference createGUIElement(GUIContext& context);
+	GUIElementReference createGUIElement(GUIContext& context, GUIElementType elementType);
 	GUIElementReference createGUIElement(GUIContext& context, _ContainerUpdateData updateData);
 	GUIElementReference defaultGUIParent(GUIContext& context);
 	GUIElementReference nullGUIParent();

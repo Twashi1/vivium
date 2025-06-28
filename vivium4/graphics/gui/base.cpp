@@ -181,6 +181,15 @@ namespace Vivium {
 		}
 	}
 
+	std::vector<GUIElementReference> const& getChildren(GUIElementReference const parent, GUIContext& guiContext)
+	{
+		if (parent == nullGUIParent()) return {};
+
+		GUIElement const& parentObject = guiContext.guiElements[parent.index];
+
+		return parentObject.children;
+	}
+
 	GUIElement const& _getGUIElement(GUIElementReference const reference, GUIContext const& guiContext)
 	{
 		return guiContext.guiElements[reference.index];

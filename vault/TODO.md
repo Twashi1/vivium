@@ -43,6 +43,8 @@ Given a TreeContainer
 	- select that child (enable/disable that tree container)
 - move the held element
 
+We don't actually have a way to change a container's size based on its children
+
 ## Shader planning
 
 - run-time reflection and some partial compilation on shaders
