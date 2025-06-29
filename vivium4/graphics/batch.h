@@ -35,6 +35,6 @@ namespace Vivium {
 
 	void dropBatch(Batch& batch, Engine& engine);
 
-	Batch submitBatch(Engine& engine, ResourceManager& manager, BatchSpecification specification);
+	Batch submitBatch(ResourceManager& manager, BatchSpecification specification);
 	void setupBatch(Batch& handle, ResourceManager& manager);
 }

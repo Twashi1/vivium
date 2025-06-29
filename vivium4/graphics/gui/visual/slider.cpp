@@ -28,10 +28,8 @@ namespace Vivium {
 		}
 	}
 
-	void renderSliders(const std::span<Slider*> sliders, CommandContext& context, GUIContext& guiContext, Window& window)
+	void submitSliders(std::span<Slider*> const sliders, GUIContext& guiContext)
 	{
-		std::vector<_GUISliderInstanceData> sliderData(sliders.size());
-
 		for (uint64_t i = 0; i < sliders.size(); i++) {
 			Slider& slider = *sliders[i];
 
@@ -45,18 +43,23 @@ namespace Vivium {
 			instance.sliderScale = slider.sliderScale;
 			instance.selectorScale = slider.selectorScale;
 
-			sliderData[i] = instance;
+			guiContext.slider.sliders.push_back(instance);
 		}
+	}
 
+	void renderSliders(CommandContext& context, GUIContext& guiContext, Window& window)
+	{
 		Perspective perspective = orthogonalPerspective2D(windowDimensions(window), F32x2(0.0f), 0.0f, 1.0f);
 
-		setBuffer(guiContext.slider.storageBuffer.resource, 0, sliderData.data(), sliderData.size() * sizeof(_GUISliderInstanceData));
+		setBuffer(guiContext.slider.storageBuffer.resource, 0, guiContext.slider.sliders.data(), guiContext.slider.sliders.size() * sizeof(_GUISliderInstanceData));
 		cmdBindPipeline(context, guiContext.slider.pipeline.resource);
 		cmdBindVertexBuffer(context, guiContext.rectVertexBuffer.resource);
 		cmdBindIndexBuffer(context, guiContext.rectIndexBuffer.resource);
 		cmdBindDescriptorSet(context, guiContext.slider.descriptorSet.resource, guiContext.slider.pipeline.resource);
 		cmdWritePushConstants(context, &perspective, sizeof(Perspective), 0, ShaderStage::VERTEX, guiContext.slider.pipeline.resource);
-		cmdDrawIndexed(context, 6, sliderData.size());
+		cmdDrawIndexed(context, 6, guiContext.slider.sliders.size());
+		
+		guiContext.slider.sliders.clear();
 	}
 
 	float getSliderValue(Slider& slider, float min, float max)

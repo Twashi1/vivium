@@ -1,4 +1,5 @@
 #include "button.h"
+#include "context.h"
 
 namespace Vivium {
 	void dropButton(Button& button, Engine& engine, GUIContext& guiContext)
@@ -6,7 +7,7 @@ namespace Vivium {
 		dropTextBatch(button.textBatch, engine);
 	}
 
-	Button submitButton(ResourceManager& manager, GUIContext& guiContext, Engine& engine, Window& window, ButtonSpecification specification)
+	Button submitButton(ResourceManager& manager, GUIContext& guiContext, ButtonSpecification specification)
 	{
 		Button button;
 
@@ -16,7 +17,7 @@ namespace Vivium {
 		button.textColor = specification.textColor;
 
 		// TODO: maximum text length should be parameter
-		button.textBatch = submitTextBatch(manager, engine, guiContext, TextBatchSpecification{ 64, createFontDistanceField("vivium4/res/fonts/consola.sdf") });
+		button.textBatch = submitTextBatch(manager, guiContext, TextBatchSpecification{ 64, createFontDistanceField("vivium4/res/fonts/consola.sdf") });
 		button.text = createText(TextSpecification{ button.base, "", specification.textColor, calculateTextMetrics("", button.textBatch.font), TextAlignment::CENTER }, guiContext);
 
 		addChild(button.base, { &button.text.base, 1 }, guiContext);
@@ -39,7 +40,7 @@ namespace Vivium {
 		setupTextBatch(button.textBatch, manager);
 	}
 
-	void setButtonText(Button& button, Engine& engine, Window& window, CommandContext& context, GUIContext& guiContext, std::string_view text)
+	void setButtonText(Button& button, Engine& engine, CommandContext& context, GUIContext& guiContext, std::string_view text)
 	{
 		// Early exit if no text
 		if (text.size() == 0) return;
@@ -50,9 +51,9 @@ namespace Vivium {
 		calculateTextBatch(button.textBatch, textObjects, context, guiContext, engine);
 	}
 
-	void renderButtons(const std::span<Button*> buttons, CommandContext& context, GUIContext& guiContext, Window& window)
+	void submitButtons(std::span<Button*> const buttons, GUIContext& guiContext)
 	{
-		std::vector<_GUIButtonInstanceData> buttonData(buttons.size());
+		std::vector<TextBatch*> textBatches;
 
 		for (uint64_t i = 0; i < buttons.size(); i++) {
 			Button& button = *buttons[i];
@@ -62,23 +63,25 @@ namespace Vivium {
 			instance.scale = properties(button.base, guiContext).trueDimensions;
 			instance.foregroundColor = button.color;
 
-			buttonData[i] = instance;
+			guiContext.button.buttons.push_back(instance);
+			textBatches.push_back(&button.textBatch);
 		}
 
+		submitTextBatches(textBatches, guiContext);
+	}
+
+	void renderButtons(CommandContext& context, GUIContext& guiContext, Window& window)
+	{
 		Perspective perspective = orthogonalPerspective2D(windowDimensions(window), F32x2(0.0f), 0.0f, 1.0f);
 
-		setBuffer(guiContext.button.storageBuffer.resource, 0, buttonData.data(), buttonData.size() * sizeof(_GUIButtonInstanceData));
+		setBuffer(guiContext.button.storageBuffer.resource, 0, guiContext.button.buttons.data(), guiContext.button.buttons.size() * sizeof(_GUIButtonInstanceData));
 		cmdBindPipeline(context, guiContext.button.pipeline.resource);
 		cmdBindVertexBuffer(context, guiContext.rectVertexBuffer.resource);
 		cmdBindIndexBuffer(context, guiContext.rectIndexBuffer.resource);
 		cmdBindDescriptorSet(context, guiContext.button.descriptorSet.resource, guiContext.button.pipeline.resource);
 		cmdWritePushConstants(context, &perspective, sizeof(Perspective), 0, ShaderStage::VERTEX, guiContext.button.pipeline.resource);
-		cmdDrawIndexed(context, 6, buttons.size());
+		cmdDrawIndexed(context, 6, guiContext.button.buttons.size());
 
-		for (Button* buttonPtr : buttons) {
-			Button& button = *buttonPtr;
-			
-			renderTextBatch(button.textBatch, context, guiContext, perspective);
-		}
+		guiContext.button.buttons.clear();
 	}
 }

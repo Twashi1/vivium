@@ -157,15 +157,19 @@ void _draw(State& state)
 		entityPanels.push_back(&state.editor.entityView.entityPanels[i]);
 	}
 
-	renderPanels(entityPanels, state.context, state.guiContext, state.window);
+	submitPanels(entityPanels, state.guiContext);
 
 	std::vector<Sprite*> sprites;
 	sprites.push_back(&state.editor.testSprite0);
 	sprites.push_back(&state.editor.testSprite1);
-	renderSprites(sprites, state.context, state.guiContext, state.window);
+
+	submitSprites(sprites, state.guiContext);
 
 	Button* buttons[] = { &state.editor.entityView.createButton };
-	renderButtons(buttons, state.context, state.guiContext, state.window);
+
+	submitButtons(buttons, state.guiContext);
+
+	renderGUI(state.context, state.guiContext, state.window);
 
 	renderTextBatch(state.editor.entityView.entityTextBatch, state.context, state.guiContext, orthogonalPerspective2D(windowDimensions(state.window), F32x2(0.0f), 0.0f, 1.0f));
 }
@@ -225,7 +229,6 @@ void gameloop(State& state) {
 		windowBeginRender(state.window);
 
 		_draw(state);
-		renderDebugRects(state.context, state.guiContext, state.window);
 		
 		windowEndRender(state.window);
 		windowEndFrame(state.window, state.engine);

@@ -14,11 +14,9 @@ namespace Vivium {
 		
 		return panel;
 	}
-
-	void renderPanels(const std::span<Panel*> panels, CommandContext& context, GUIContext& guiContext, Window& window)
+	
+	void submitPanels(std::span<Panel*> const panels, GUIContext& guiContext)
 	{
-		std::vector<_GUIPanelInstanceData> panelData(panels.size());
-
 		for (uint64_t i = 0; i < panels.size(); i++) {
 			Panel& panel = *panels[i];
 
@@ -30,17 +28,22 @@ namespace Vivium {
 			instance.borderColor = panel.borderColor;
 			instance.borderSizePx = panel.borderSize;
 
-			panelData[i] = instance;
+			guiContext.panel.panels.push_back(instance);
 		}
-
+	}
+	
+	void renderPanels(CommandContext& context, GUIContext& guiContext, Window& window)
+	{
 		Perspective perspective = orthogonalPerspective2D(windowDimensions(window), F32x2(0.0f), 0.0f, 1.0f);
 
-		setBuffer(guiContext.panel.storageBuffer.resource, 0, panelData.data(), panelData.size() * sizeof(_GUIPanelInstanceData));
+		setBuffer(guiContext.panel.storageBuffer.resource, 0, guiContext.panel.panels.data(), guiContext.panel.panels.size() * sizeof(_GUIPanelInstanceData));
 		cmdBindPipeline(context, guiContext.panel.pipeline.resource);
 		cmdBindVertexBuffer(context, guiContext.rectVertexBuffer.resource);
 		cmdBindIndexBuffer(context, guiContext.rectIndexBuffer.resource);
 		cmdBindDescriptorSet(context, guiContext.panel.descriptorSet.resource, guiContext.panel.pipeline.resource);
 		cmdWritePushConstants(context, &perspective, sizeof(Perspective), 0, ShaderStage::VERTEX, guiContext.panel.pipeline.resource);
-		cmdDrawIndexed(context, 6, panelData.size());
+		cmdDrawIndexed(context, 6, guiContext.panel.panels.size());
+
+		guiContext.panel.panels.clear();
 	}
 }

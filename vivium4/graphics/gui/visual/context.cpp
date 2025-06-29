@@ -1,4 +1,10 @@
 #include "context.h"
+#include "button.h"
+#include "debugrect.h"
+#include "panel.h"
+#include "slider.h"
+#include "sprite.h"
+#include "text.h"
 
 namespace Vivium {
 	void _submitGenericGUIContext(GUIContext& guiContext, ResourceManager& manager, Engine& engine, Window& window)
@@ -308,6 +314,16 @@ namespace Vivium {
 		_submitDebugRectGUIContext(context, manager, engine, window);
 
 		return context;
+	}
+
+	void renderGUI(CommandContext& context, GUIContext& guiContext, Window& window)
+	{
+		renderPanels(context, guiContext, window);
+		renderSliders(context, guiContext, window);
+		renderButtons(context, guiContext, window);
+		renderSprites(context, guiContext, window);
+		renderTextBatch(context, guiContext, window);
+		renderDebugRects(context, guiContext, window);
 	}
 
 	void setupGUIContext(GUIContext& guiContext, ResourceManager& manager, CommandContext& context, Engine& engine)

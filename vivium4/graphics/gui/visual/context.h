@@ -7,6 +7,7 @@
 #include "../../color.h"
 #include "../base.h"
 #include "../../../math/atlas.h"
+#include "text.h"
 
 namespace Vivium {
 	struct _GUIButtonInstanceData {
@@ -64,6 +65,8 @@ namespace Vivium {
 
 			// Batch buffer layout
 			BufferLayout bufferLayout;
+
+			std::vector<TextBatch*> texts;
 		} text;
 
 		struct {
@@ -77,6 +80,8 @@ namespace Vivium {
 			Ref<DescriptorLayout> descriptorLayout;
 			Ref<DescriptorSet> descriptorSet;
 			Ref<Pipeline> pipeline;
+
+			std::vector<_GUIButtonInstanceData> buttons;
 		} button;
 
 		struct {
@@ -90,6 +95,8 @@ namespace Vivium {
 			Ref<DescriptorLayout> descriptorLayout;
 			Ref<DescriptorSet> descriptorSet;
 			Ref<Pipeline> pipeline;
+
+			std::vector<_GUIPanelInstanceData> panels;
 		} panel;
 
 		struct {
@@ -103,6 +110,8 @@ namespace Vivium {
 			Ref<DescriptorLayout> descriptorLayout;
 			Ref<DescriptorSet> descriptorSet;
 			Ref<Pipeline> pipeline;
+
+			std::vector<_GUISliderInstanceData> sliders;
 		} slider;
 
 		struct {
@@ -134,6 +143,8 @@ namespace Vivium {
 			Ref<Pipeline> pipeline;
 
 			StitchedAtlas const* atlas;
+
+			std::vector<_GUISpriteInstanceData> sprites;
 		} sprite;
 
 		GUIElementReference defaultParent;
@@ -156,6 +167,8 @@ namespace Vivium {
 	void _submitDebugRectGUIContext(GUIContext& guiContext, ResourceManager& manager, Engine& engine, Window& window);
 	
 	GUIContext createGUIContext(ResourceManager& manager, Engine& engine, Window& window, StitchedAtlas const* spriteAtlas);
+	// NOTE: can manually call render commands in desired order, this is just utility
+	void renderGUI(CommandContext& context, GUIContext& guiContext, Window& window);
 				
 	void setupGUIContext(GUIContext& guiContext, ResourceManager& manager, CommandContext& context, Engine& engine);
 	void updateGUIContext(GUIContext& guiContext, F32x2 windowDimensions);

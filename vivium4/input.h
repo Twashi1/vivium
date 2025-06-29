@@ -218,5 +218,6 @@ namespace Vivium {
 
 		static Modifier getModifiers();
 		static F32x2 getCursor();
+		static CharacterData getCharacters();
 	};
 }

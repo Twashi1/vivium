@@ -22,5 +22,6 @@ namespace Vivium {
 	};
 
 	Sprite createSprite(GUIContext& guiContext, SpriteSpecification specification);
-	void renderSprites(const std::span<Sprite*> sprites, CommandContext& context, GUIContext& guiContext, Window& window);
+	void submitSprites(std::span<Sprite*> const sprites, GUIContext& guiContext);
+	void renderSprites(CommandContext& context, GUIContext& guiContext, Window& window);
 }

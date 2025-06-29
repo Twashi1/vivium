@@ -1,4 +1,5 @@
 #include "text.h"
+#include "context.h"
 
 namespace Vivium {
 	TextMetrics calculateTextMetrics(std::string_view const& text, Font const& font) {
@@ -120,6 +121,33 @@ namespace Vivium {
 		return renderData;
 	}
 
+	void submitTextBatches(std::span<TextBatch*> const textBatches, GUIContext& guiContext)
+	{
+		for (TextBatch* batch : textBatches) {
+			guiContext.text.texts.push_back(batch);
+		}
+	}
+
+	void renderTextBatch(CommandContext& context, GUIContext& guiContext, Window& window)
+	{
+		Perspective perspective = orthogonalPerspective2D(windowDimensions(window), F32x2(0.0f), 0.0f, 1.0f);
+
+		for (TextBatch* batch : guiContext.text.texts) {
+			if (indexCountBatch(batch->batch) == 0) { return; }
+
+			cmdWritePushConstants(context, &perspective, sizeof(Perspective), 0, ShaderStage::VERTEX, guiContext.text.pipeline.resource);
+
+			cmdBindPipeline(context, guiContext.text.pipeline.resource);
+			cmdBindDescriptorSet(context, batch->descriptorSet.resource, guiContext.text.pipeline.resource);
+			cmdBindVertexBuffer(context, vertexBufferBatch(batch->batch));
+			cmdBindIndexBuffer(context, indexBufferBatch(batch->batch));
+
+			cmdDrawIndexed(context, indexCountBatch(batch->batch), 1);
+		}
+
+		guiContext.text.texts.clear();
+	}
+
 	void renderTextBatch(TextBatch& text, CommandContext& context, GUIContext& guiContext, Perspective const& perspective)
 	{
 		if (indexCountBatch(text.batch) == 0) { return; }
@@ -185,11 +213,11 @@ namespace Vivium {
 		endSubmissionBatch(textBatch.batch, context, engine);
 	}
 
-	TextBatch submitTextBatch(ResourceManager& manager, Engine& engine, GUIContext& guiContext, TextBatchSpecification const& specification)
+	TextBatch submitTextBatch(ResourceManager& manager, GUIContext& guiContext, TextBatchSpecification const& specification)
 	{
 		TextBatch text;
 
-		text.batch = submitBatch(engine, manager, BatchSpecification(
+		text.batch = submitBatch(manager, BatchSpecification(
 			specification.maxCharacterCount * 4,
 			specification.maxCharacterCount * 6,
 			guiContext.text.bufferLayout

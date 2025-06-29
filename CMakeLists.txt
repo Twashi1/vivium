@@ -53,7 +53,7 @@ set(VIVIUM_SOURCES
  "vivium4/graphics/gui/visual/sprite.cpp"
  "vivium4/math/atlas.cpp"
  "vivium4/graphics/texture_format.cpp"
- "vivium4/graphics/image_load.cpp"  "engine/tree_container.cpp" "vivium4/graphics/gui/visual/debugrect.cpp")
+ "vivium4/graphics/image_load.cpp"  "engine/tree_container.cpp" "vivium4/graphics/gui/visual/debugrect.cpp" "vivium4/graphics/gui/visual/entry.cpp")
 set(VIVIUM_HEADERS
   "vivium4/error/result.h"
   "vivium4/graphics/primitives/buffer.h"
@@ -109,7 +109,7 @@ set(VIVIUM_HEADERS
 "vivium4/math/atlas.h"
 "vivium4/graphics/texture_format.h"
 "vivium4/graphics/image_load.h"
-  "engine/tree_container.h" "engine/engine.h" "vivium4/graphics/gui/visual/debugrect.h")
+  "engine/tree_container.h" "engine/engine.h" "vivium4/graphics/gui/visual/debugrect.h" "engine/entities.h" "vivium4/graphics/gui/visual/entry.h")
 
 add_subdirectory("${CMAKE_SOURCE_DIR}/external/glfw")
 

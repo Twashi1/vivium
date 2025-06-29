@@ -65,7 +65,8 @@ namespace Vivium {
 		PANEL,
 		SLIDER,
 		SPRITE,
-		TEXT
+		TEXT,
+		ENTRY
 	};
 
 	struct GUIElementReference {

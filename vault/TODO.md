@@ -1,7 +1,5 @@
 ## Whiteboard
 
-- Need abstraction to be able to efficiently develop apps
-
 How do we organise the game engine?
 - ideally we want to create something unique
 - and with minimal overhead
@@ -23,25 +21,28 @@ How does the user interact with the game engine?
 	- when we draw, we have to select the relevant buffer/descriptor to bind
 
 To create
+- ability to add different entities
+- modify individual instances with given properties
+	- enter integer, string, list data
 - drag and drop to add to hierarchy (like add element to inspector window)
 - expand/hide child elements
-- add children
-	- middle 1/2 would make child
-	- top 1/4 would make sibling above
-	- bot 1/4 would make sibling below
-	- need some "null" node
 - given some tree of children, interpret it to create elements
 	- parse the tree somehow?
+
+How does rendering properties, entering properties, and creating the properties menu/storing properties for some type of object work
+- for the game engine we'd organise `Vulkan` objects as their own individual components
+- each component has a set of values we'd need to modify
+	- we hardcode the UI for these components?
+	- we have list/string entries
+		- we need this list UI to take arbitrary data
+		- we need some drop-down menu functionality for selecting the `ShaderDataType`
+		- list UI has a generalised display/entry mechanism (plus remove/organise buttons ideally)
+	- the UI itself stores the values for these components?
 
 To implement this?
 - drag-and drop UI functionality
 - a UI "slot" where we can place other elements inside
 - essentially need a custom scripting language that transpiles to c++
-
-Given a TreeContainer
-- once we detect which child of the root is hovered
-	- select that child (enable/disable that tree container)
-- move the held element
 
 We don't actually have a way to change a container's size based on its children
 
@@ -66,6 +67,7 @@ We don't actually have a way to change a container's size based on its children
 - Dynamic resource manager
 - Input class refactor
 	- Initialisation function and update
+	- Some easier way to get text input? Dealing with all backspace/modifiers/etc
 - Physics namespaces
 - Check non-multisampled rendering is still working
 - Serialiser is super old
@@ -83,6 +85,17 @@ We don't actually have a way to change a container's size based on its children
 - Investigate ability to change size of group (not during iteration) and still correctly see all entities
 ## Core
 
+- Eventually switch to some truly generalisable system for rendering any type of GUI component
+	- only need rectangles for base?
+	- then draw any sprites?
+	- then draw any text?
+	- currently we must impose a strict ordering on what gets drawn first between buttons, sliders, panels, etc.
+- Bad naming convention with submit on both submitting resources for rendering and a type of creation
+- Possible philosophy change
+	- either fully embrace C, or use only C++ conventions
+	- this would mean going back to using namespaces to differentiate things
+	- allowing member functions?
+	- allowing static functions?
 - Rename border size px, because its not in terms of pixels but percentage
 - Current problem with GUI
 	- We made a container, a child of another container

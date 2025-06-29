@@ -75,7 +75,7 @@ namespace Vivium {
 		dropBuffer(batch.indexDevice.resource, engine);
 	}
 
-	Batch submitBatch(Engine& engine, ResourceManager& manager, BatchSpecification specification)
+	Batch submitBatch(ResourceManager& manager, BatchSpecification specification)
 	{
 		Batch batch;
 

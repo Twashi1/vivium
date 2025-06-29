@@ -120,6 +120,11 @@ namespace Vivium {
 	{
 		return m_cursorPosition;
 	}
+
+	Input::CharacterData Input::getCharacters()
+	{
+		return Input::m_frontCharacters;
+	}
 	
 	Input::Listener::operator bool() const
 	{

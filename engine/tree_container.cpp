@@ -98,9 +98,8 @@ TreeContainer* updateTreeContainer(F32x2 cursorPosition, TreeContainer& containe
 {
 	// TODO: should not be able to pick up the root
 	// TODO: should be ensuring we can't make a loop
+	//		currently am able to make a parent its own child
 	// TODO: manually disable the root container?
-	// TODO: detection code doesn't work great?
-	//	probably won't work at all on child containers
 	TreeContainer* hovered = getContainer(cursorPosition, container, context);
 
 	if (hovered != nullptr) {
@@ -133,8 +132,6 @@ TreeContainer* updateTreeContainer(F32x2 cursorPosition, TreeContainer& containe
 			Color(0.0f, 1.0f, 0.0f), context);
 
 		debugRect(props.truePosition, props.trueDimensions, Color(1.0f, 0.0f, 0.0f), context);
-
-		// VIVIUM_LOG(LogSeverity::DEBUG, "Hovering {} at {} {}", hovered->root.base.index, cursorPosition.x, cursorPosition.y);
 	}
 
 	if (hovered != nullptr && *hovered == container) {
@@ -187,8 +184,6 @@ TreeContainer* updateTreeContainer(F32x2 cursorPosition, TreeContainer& containe
 		//	but this isn't realistically possible? because we don't have access to the panel
 		float bot_quarter = bot + height * 0.25f;
 		float top_quarter = bot + height * 0.75f;
-
-		VIVIUM_LOG(LogSeverity::DEBUG, "bot: {}, top: {}, cursor: {}", bot_quarter, top_quarter, cursorPosition.y);
 
 		// Note this is a copy, because otherwise we point to something that doesn't exist anymore
 		TreeContainer heldElement = *held;
