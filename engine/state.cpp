@@ -12,6 +12,9 @@ void _submitEditor(State& state)
 		state.editor.entityView.img0.translation, state.editor.entityView.img0.scale));
 	state.editor.testSprite1 = createSprite(state.guiContext, SpriteSpecification(defaultGUIParent(state.guiContext),
 		state.editor.entityView.img1.translation, state.editor.entityView.img1.scale));
+	state.editor.intEntry = submitIntegerTextEntry("0", state.guiContext, state.manager);
+
+	addChild(defaultGUIParent(state.guiContext), { &state.editor.intEntry.base, 1 }, state.guiContext);
 
 	_submitEntityView(state);
 }
@@ -19,9 +22,9 @@ void _submitEditor(State& state)
 void _submitEntityView(State& state)
 {
 	state.editor.entityView.background = createPanel(state.guiContext, PanelSpecification{ state.editor.background.base, colorDarkGray, colorBlack, 0.01f });
-	state.editor.entityView.createButton = submitButton(state.manager, state.guiContext, state.engine, state.window, ButtonSpecification{ state.editor.entityView.background.base, colorDarkGray, colorBlack });
+	state.editor.entityView.createButton = submitButton(state.manager, state.guiContext, ButtonSpecification{ state.editor.entityView.background.base, colorDarkGray, colorBlack });
 	state.editor.entityView.entityTree = createTreeContainer(state.guiContext, state.editor.entityView.background.base);
-	state.editor.entityView.entityTextBatch = submitTextBatch(state.manager, state.engine, state.guiContext, TextBatchSpecification{ 256, state.editor.entityView.createButton.textBatch.font });
+	state.editor.entityView.entityTextBatch = submitTextBatch(state.manager, state.guiContext, TextBatchSpecification{ 256, state.editor.entityView.createButton.textBatch.font });
 	state.editor.entityView.heldElement = nullptr;
 
 	for (uint32_t i = 0; i < MAX_CONCURRENT_ENTITY_PANELS; i++) {
@@ -45,15 +48,24 @@ void _setup(State& state)
 
 void _setupEditor(State& state)
 {
+	setupTextEntry(state.editor.intEntry, state.manager);
+
 	_setupEntityView(state);
 
+	properties(state.editor.testSprite0, state.guiContext).dimensions = F32x2(0.2f, 0.2f);
+	properties(state.editor.testSprite1, state.guiContext).dimensions = F32x2(0.2f, 0.2f);
+	properties(state.editor.testSprite1, state.guiContext).position = F32x2(0.2f, 0.2f);
+
 	properties(state.editor.background.base, state.guiContext).dimensions = F32x2(1.0f);
+
+	properties(state.editor.intEntry, state.guiContext).position = F32x2(0.3f);
+	properties(state.editor.intEntry, state.guiContext).dimensions = F32x2(0.3f, 0.1f);
 }
 
 void _setupEntityView(State& state)
 {
 	setupButton(state.editor.entityView.createButton, state.manager);
-	setButtonText(state.editor.entityView.createButton, state.engine, state.window, state.context, state.guiContext, "Create entity");
+	setButtonText(state.editor.entityView.createButton, state.engine, state.context, state.guiContext, "Create entity");
 
 	setupTextBatch(state.editor.entityView.entityTextBatch, state.manager);
 
@@ -71,9 +83,6 @@ void _setupEntityView(State& state)
 	properties(state.editor.entityView.entityTree.root.base, state.guiContext).anchorX = GUIAnchor::CENTER;
 	properties(state.editor.entityView.entityTree.root.base, state.guiContext).position = F32x2(0.0f, -0.115f);
 	properties(state.editor.entityView.entityTree.root.base, state.guiContext).dimensions = F32x2(1.0f, 1.0f);
-	properties(state.editor.testSprite0, state.guiContext).dimensions = F32x2(0.2f, 0.2f);
-	properties(state.editor.testSprite1, state.guiContext).dimensions = F32x2(0.2f, 0.2f);
-	properties(state.editor.testSprite1, state.guiContext).position = F32x2(0.2f, 0.2f);
 
 	for (uint32_t i = 0; i < MAX_CONCURRENT_ENTITY_PANELS; i++) {
 		GUIProperties& props = properties(state.editor.entityView.entityPanels[i], state.guiContext);
@@ -101,6 +110,8 @@ void _drop(State& state)
 void _dropEditor(State& state)
 {
 	_dropEntityView(state);
+
+	dropEntry(state.editor.intEntry, state.engine, state.guiContext);
 }
 
 void _dropEntityView(State& state)
@@ -111,7 +122,10 @@ void _dropEntityView(State& state)
 
 void _update(State& state)
 {
-	setButtonText(state.editor.entityView.createButton, state.engine, state.window, state.context, state.guiContext, "Entity create");
+	// TODO: does not need to be on every update...
+	setButtonText(state.editor.entityView.createButton, state.engine, state.context, state.guiContext, "Entity create");
+
+	updateEntry(state.editor.intEntry, state.guiContext, state.engine, state.context);
 
 	if (pointInElement(Input::getCursor(), properties(state.editor.entityView.createButton, state.guiContext)) && Input::get(Input::BTN_LEFT).state == Input::PRESS) {
 		Entity newEntity = state.registry.create();
@@ -168,6 +182,9 @@ void _draw(State& state)
 	Button* buttons[] = { &state.editor.entityView.createButton };
 
 	submitButtons(buttons, state.guiContext);
+
+	IntegerTextEntry* intEntry[] = { &state.editor.intEntry };
+	submitEntries(intEntry, state.guiContext);
 
 	renderGUI(state.context, state.guiContext, state.window);
 

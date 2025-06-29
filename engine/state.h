@@ -29,6 +29,8 @@ struct State {
 		Sprite testSprite0;
 		Sprite testSprite1;
 
+		IntegerTextEntry intEntry;
+
 		struct {
 			Panel background;
 			Button createButton;

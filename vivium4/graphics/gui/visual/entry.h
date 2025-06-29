@@ -43,6 +43,7 @@ namespace Vivium {
 	concept BaseEntry = requires (T & a, T const& b, char inputChar, GUIContext & context, std::span<T*> const span) {
 		typename T::ValueType;
 		{ getValue(b) } -> std::same_as<typename T::ValueType>;
+		// TODO: update this for text entries additional parameters
 		{ updateEntry(a, context) } -> std::same_as<void>;
 		{ submitEntries(span, context) } -> std::same_as<void>;
 	};
@@ -72,13 +73,17 @@ namespace Vivium {
 	void setupTextEntry(FloatTextEntry& entry, ResourceManager& resourceManager);
 	void setupTextEntry(StringTextEntry& entry, ResourceManager& resourceManager);
 
-	void updateEntry(IntegerTextEntry& entry, GUIContext& context);
-	void updateEntry(FloatTextEntry& entry, GUIContext& context);
-	void updateEntry(StringTextEntry& entry, GUIContext& context);
+	void updateEntry(IntegerTextEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
+	void updateEntry(FloatTextEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
+	void updateEntry(StringTextEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
 
 	void submitEntries(std::span<IntegerTextEntry*> const entries, GUIContext& context);
 	void submitEntries(std::span<FloatTextEntry*> const entries, GUIContext& context);
 	void submitEntries(std::span<StringTextEntry*> const entries, GUIContext& context);
+
+	void dropEntry(IntegerTextEntry& entry, Engine& engine, GUIContext& guiContext);
+	void dropEntry(FloatTextEntry& entry, Engine& engine, GUIContext& guiContext);
+	void dropEntry(StringTextEntry& entry, Engine& engine, GUIContext& guiContext);
 
 	template <typename T>
 	concept FiniteObjectType = requires (T a, T b) {

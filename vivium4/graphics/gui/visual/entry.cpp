@@ -1,13 +1,13 @@
 #include "entry.h"
 
 namespace Vivium {
-	IntegerTextEntry createIntegerTextEntry(std::string placeholder, GUIContext& context, ResourceManager& resourceManager)
+	IntegerTextEntry submitIntegerTextEntry(std::string placeholder, GUIContext& context, ResourceManager& resourceManager)
 	{
 		IntegerTextEntry entry;
 
 		entry.base = createGUIElement(context, GUIElementType::ENTRY);
 		entry.placeholder = placeholder;
-		entry.currentValue = placeholder;
+		entry.currentValue = "";
 		entry.inputArea = submitButton(
 			resourceManager,
 			context,
@@ -17,13 +17,13 @@ namespace Vivium {
 		return entry;
 	}
 
-	FloatTextEntry createFloatTextEntry(std::string placeholder, GUIContext& context, ResourceManager& resourceManager)
+	FloatTextEntry submitFloatTextEntry(std::string placeholder, GUIContext& context, ResourceManager& resourceManager)
 	{
 		FloatTextEntry entry;
 
 		entry.base = createGUIElement(context, GUIElementType::ENTRY);
 		entry.placeholder = placeholder;
-		entry.currentValue = placeholder;
+		entry.currentValue = "";
 		entry.inputArea = submitButton(
 			resourceManager,
 			context,
@@ -33,13 +33,13 @@ namespace Vivium {
 		return entry;
 	}
 
-	StringTextEntry createStringTextEntry(std::string placeholder, GUIContext& context, ResourceManager& resourceManager)
+	StringTextEntry submitStringTextEntry(std::string placeholder, GUIContext& context, ResourceManager& resourceManager)
 	{
 		StringTextEntry entry;
 
 		entry.base = createGUIElement(context, GUIElementType::ENTRY);
 		entry.placeholder = placeholder;
-		entry.currentValue = placeholder;
+		entry.currentValue = "";
 		entry.inputArea = submitButton(
 			resourceManager,
 			context,
@@ -64,18 +64,39 @@ namespace Vivium {
 		setupButton(entry.inputArea, resourceManager);
 	}
 
-	void updateEntry(IntegerTextEntry& entry, GUIContext& context)
+	void updateEntry(IntegerTextEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context)
 	{
 		// TODO
 		Input::CharacterData data = Input::getCharacters();
+
+		for (uint64_t i = 0; i < data.size; i++) {
+			uint32_t codepoint = data.codepoints[i];
+
+			char character = static_cast<char>(codepoint);
+			
+			if (isprint(character)) {
+				// TODO: right now we jsut pretend every codepoint is a valid ASCII character
+				// We want to only consider numbers
+				// TODO: deal with negatives as well
+
+				if (isdigit(character)) {
+					entry.currentValue += character;
+				}
+			}
+			else {
+				VIVIUM_LOG(LogSeverity::WARN, "Received unprintable character codepoint {}", codepoint);
+			}
+		}
+
+		setButtonText(entry.inputArea, engine, context, guiContext, entry.currentValue);
 	}
 
-	void updateEntry(FloatTextEntry& entry, GUIContext& context)
+	void updateEntry(FloatTextEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context)
 	{
 		// TODO
 	}
 
-	void updateEntry(StringTextEntry& entry, GUIContext& context)
+	void updateEntry(StringTextEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context)
 	{
 		// TODO
 	}
@@ -102,5 +123,20 @@ namespace Vivium {
 			Button* entryList[] = { &entry->inputArea };
 			submitButtons(entryList, context);
 		}
+	}
+
+	void dropEntry(IntegerTextEntry& entry, Engine& engine, GUIContext& guiContext)
+	{
+		dropButton(entry.inputArea, engine, guiContext);
+	}
+
+	void dropEntry(FloatTextEntry& entry, Engine& engine, GUIContext& guiContext)
+	{
+		dropButton(entry.inputArea, engine, guiContext);
+	}
+
+	void dropEntry(StringTextEntry& entry, Engine& engine, GUIContext& guiContext)
+	{
+		dropButton(entry.inputArea, engine, guiContext);
 	}
 }
