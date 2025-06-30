@@ -46,6 +46,19 @@ To implement this?
 
 We don't actually have a way to change a container's size based on its children
 
+To build a real UI quickly an efficiently
+- need some language with which to describe the UI quickly
+- the language must incorporate almost any expected feature very easily
+- intuitively build UI hierarchy
+
+Say we were to re-design the UI around a different philosophy
+- vast majority of UIs have a set font size and size of elements, with areas changing shapes to fit
+- we can support the sizing thing, but we can't modify areas to change shape to fit
+- we also can't make a container base its size off its children
+- "fit sizing" -> "grow sizing" -> "positions" -> "draw"
+- break up GUI update function a little to make it simpler
+- clipping of text? more text functions for organising and controlling text
+
 ## Shader planning
 
 - run-time reflection and some partial compilation on shaders
@@ -74,6 +87,7 @@ We don't actually have a way to change a container's size based on its children
 - Test framebuffers
 - Resize-able framebuffers?
 - Shared command pool for framebuffers?
+- Scrollable containers/scroll bar
 ## ECS
 
 - Iterators for single component view
@@ -148,6 +162,7 @@ We don't actually have a way to change a container's size based on its children
 - `Buffer::Slice(buffer)` - ability to allocate multiple slices within a buffer as a more aspirational goal
 	- Update `transferBuffer` to use slices
 	- Should be very quick to create from a buffer (almost seamless)
+- Reduce compile time and get rid of a lot of unnecessary code with `module`?
 ## Vulkan
 
 - Generalise `Commands::createRenderPass` for `Framebuffer` render passes as well

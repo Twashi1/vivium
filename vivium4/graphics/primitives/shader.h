@@ -37,6 +37,8 @@ namespace Vivium {
 	uint32_t _sizeOfShaderDataType(ShaderDataType type);
 	VkFormat _formatOfShaderDataType(ShaderDataType type);
 
+	char const* getString(ShaderDataType type);
+
 	enum class ShaderStage {
 		VERTEX = VK_SHADER_STAGE_VERTEX_BIT,
 		FRAGMENT = VK_SHADER_STAGE_FRAGMENT_BIT,

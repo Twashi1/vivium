@@ -133,7 +133,7 @@ namespace Vivium {
 		Perspective perspective = orthogonalPerspective2D(windowDimensions(window), F32x2(0.0f), 0.0f, 1.0f);
 
 		for (TextBatch* batch : guiContext.text.texts) {
-			if (indexCountBatch(batch->batch) == 0) { return; }
+			if (indexCountBatch(batch->batch) == 0) { continue; }
 
 			cmdWritePushConstants(context, &perspective, sizeof(Perspective), 0, ShaderStage::VERTEX, guiContext.text.pipeline.resource);
 

@@ -51,6 +51,31 @@ namespace Vivium {
 		return static_cast<VkFormat>(static_cast<uint64_t>(type) & ((1Ui64 << 32Ui64) - 1));
 	}
 
+	char const* getString(ShaderDataType type)
+	{
+		switch (type) {
+		case ShaderDataType::BOOL: return "Bool";
+		case ShaderDataType::INT: return "Int";
+		case ShaderDataType::UINT: return "UInt";
+		case ShaderDataType::FLOAT: return "Float";
+		case ShaderDataType::DOUBLE: return "Double";
+		case ShaderDataType::BVEC2: return "BVec2";
+		case ShaderDataType::IVEC2: return "IVec2";
+		case ShaderDataType::UVEC2: return "UVec2";
+		case ShaderDataType::VEC2: return "Vec2";
+		case ShaderDataType::DVEC2: return "DVec2";
+		case ShaderDataType::BVEC3: return "BVec3";
+		case ShaderDataType::IVEC3: return "IVec3";
+		case ShaderDataType::UVEC3: return "UVec3";
+		case ShaderDataType::VEC3: return "Vec3";
+		case ShaderDataType::BVEC4: return "BVec4";
+		case ShaderDataType::IVEC4: return "IVec4";
+		case ShaderDataType::UVEC4: return "UVec4";
+		case ShaderDataType::VEC4: return "Vec4";
+		default: return "Unknown";
+		}
+	}
+
 	void dropShader(Shader& shader, Engine& engine) {
 		vkDestroyShaderModule(engine.device, shader.shader, nullptr);
 	}

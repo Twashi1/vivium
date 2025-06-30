@@ -109,7 +109,13 @@ set(VIVIUM_HEADERS
 "vivium4/math/atlas.h"
 "vivium4/graphics/texture_format.h"
 "vivium4/graphics/image_load.h"
-  "engine/tree_container.h" "engine/engine.h" "vivium4/graphics/gui/visual/debugrect.h"  "vivium4/graphics/gui/visual/entry.h")
+  "engine/tree_container.h"
+  "engine/engine.h"
+  "vivium4/graphics/gui/visual/debugrect.h"
+  "vivium4/graphics/gui/visual/entry.h"
+  "vivium4/graphics/gui/visual/entry.inl"
+  "vivium4/input_string.h"
+)
 
 add_subdirectory("${CMAKE_SOURCE_DIR}/external/glfw")
 

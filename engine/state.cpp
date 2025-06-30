@@ -14,7 +14,14 @@ void _submitEditor(State& state)
 		state.editor.entityView.img1.translation, state.editor.entityView.img1.scale));
 	state.editor.intEntry = submitIntegerTextEntry("0", state.guiContext, state.manager);
 
+	state.editor.shaderEntry = submitObjectEntry<ShaderDataType>(state.guiContext, state.manager, ShaderDataType::FLOAT, {
+		ShaderDataType::FLOAT,
+		ShaderDataType::VEC2,
+		ShaderDataType::VEC3
+	});
+
 	addChild(defaultGUIParent(state.guiContext), { &state.editor.intEntry.base, 1 }, state.guiContext);
+	addChild(defaultGUIParent(state.guiContext), { &state.editor.shaderEntry.base, 1 }, state.guiContext);
 
 	_submitEntityView(state);
 }
@@ -49,6 +56,7 @@ void _setup(State& state)
 void _setupEditor(State& state)
 {
 	setupTextEntry(state.editor.intEntry, state.manager);
+	setupEntry(state.editor.shaderEntry, state.manager, state.engine, state.context, state.guiContext);
 
 	_setupEntityView(state);
 
@@ -60,6 +68,9 @@ void _setupEditor(State& state)
 
 	properties(state.editor.intEntry, state.guiContext).position = F32x2(0.3f);
 	properties(state.editor.intEntry, state.guiContext).dimensions = F32x2(0.3f, 0.1f);
+
+	properties(state.editor.shaderEntry, state.guiContext).position = F32x2(0.0f);
+	properties(state.editor.shaderEntry, state.guiContext).dimensions = F32x2(0.3f, 0.1f);
 }
 
 void _setupEntityView(State& state)
@@ -111,6 +122,7 @@ void _dropEditor(State& state)
 {
 	_dropEntityView(state);
 
+	dropEntry(state.editor.shaderEntry, state.engine, state.guiContext);
 	dropEntry(state.editor.intEntry, state.engine, state.guiContext);
 }
 
@@ -126,6 +138,7 @@ void _update(State& state)
 	setButtonText(state.editor.entityView.createButton, state.engine, state.context, state.guiContext, "Entity create");
 
 	updateEntry(state.editor.intEntry, state.guiContext, state.engine, state.context);
+	updateEntry(state.editor.shaderEntry, state.guiContext, state.engine, state.context);
 
 	if (pointInElement(Input::getCursor(), properties(state.editor.entityView.createButton, state.guiContext)) && Input::get(Input::BTN_LEFT).state == Input::PRESS) {
 		Entity newEntity = state.registry.create();
@@ -177,7 +190,7 @@ void _draw(State& state)
 	sprites.push_back(&state.editor.testSprite0);
 	sprites.push_back(&state.editor.testSprite1);
 
-	submitSprites(sprites, state.guiContext);
+	// submitSprites(sprites, state.guiContext);
 
 	Button* buttons[] = { &state.editor.entityView.createButton };
 
@@ -185,6 +198,9 @@ void _draw(State& state)
 
 	IntegerTextEntry* intEntry[] = { &state.editor.intEntry };
 	submitEntries(intEntry, state.guiContext);
+
+	ObjectEntry<ShaderDataType>* shaderEntry = &state.editor.shaderEntry;
+	submitEntries<ShaderDataType>({ &shaderEntry, 1 }, state.guiContext);
 
 	renderGUI(state.context, state.guiContext, state.window);
 

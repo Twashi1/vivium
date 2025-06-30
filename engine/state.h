@@ -31,6 +31,8 @@ struct State {
 
 		IntegerTextEntry intEntry;
 
+		ObjectEntry<ShaderDataType> shaderEntry;
+
 		struct {
 			Panel background;
 			Button createButton;

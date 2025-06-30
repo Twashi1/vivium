@@ -66,7 +66,8 @@ namespace Vivium {
 
 	void updateEntry(IntegerTextEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context)
 	{
-		// TODO
+		// TODO: deal with backspace and all the text handling stuff
+		//	should only enter character if cursor hovering/clicked/selected
 		Input::CharacterData data = Input::getCharacters();
 
 		for (uint64_t i = 0; i < data.size; i++) {
@@ -82,12 +83,15 @@ namespace Vivium {
 				if (isdigit(character)) {
 					entry.currentValue += character;
 				}
+
+				VIVIUM_LOG(LogSeverity::DEBUG, "Printable but not digit: {}", codepoint);
 			}
 			else {
 				VIVIUM_LOG(LogSeverity::WARN, "Received unprintable character codepoint {}", codepoint);
 			}
 		}
 
+		// TODO: only update text if change was made
 		setButtonText(entry.inputArea, engine, context, guiContext, entry.currentValue);
 	}
 
@@ -139,4 +143,11 @@ namespace Vivium {
 	{
 		dropButton(entry.inputArea, engine, guiContext);
 	}
+
+	template <FiniteObjectType T>
+	ObjectEntry<T> submitObjectEntry(GUIContext& context, ResourceManager& resourceManager, T const& defaultValue, std::vector<T> const& options);
+	template <FiniteObjectType T>
+	void setupEntry(ObjectEntry<T>& entry, ResourceManager& manager);
+	template <FiniteObjectType T>
+	void updateEntry(ObjectEntry<T>& entry, GUIContext& context);
 }

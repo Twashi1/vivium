@@ -208,6 +208,8 @@ namespace Vivium {
 		static void m_updateListener(Listener& listener, int action, float deltaTime);
 		static void m_characterInputCallback(GLFWwindow* window, uint32_t codepoint);
 
+		static void m_generalInputCallback(GLFWwindow* window, uint32_t codepoint);
+
 	public:
 		static Listener get(Key key);
 		static Listener get(Button button);
@@ -220,4 +222,9 @@ namespace Vivium {
 		static F32x2 getCursor();
 		static CharacterData getCharacters();
 	};
+
+	// TODO: want an easy way to control a string with inputs
+	//	this includes managing a cursor position, probably best for some
+	//	textArea class in future
+	// TODO: i remember designing a "bigTextArea"?
 }
