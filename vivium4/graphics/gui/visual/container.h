@@ -12,6 +12,11 @@ namespace Vivium {
 		HORIZONTAL
 	};
 
+	enum class OffsetMethod {
+		EXTENT,
+		IMMEDIATE_CHILD
+	};
+
 	struct Container {
 		GUIElementReference base;
 	};
@@ -19,6 +24,7 @@ namespace Vivium {
 	struct ContainerSpecification {
 		GUIElementReference parent;
 		ContainerOrdering ordering;
+		OffsetMethod offsetMethod;
 	};
 
 	Container createContainer(GUIContext& guiContext, ContainerSpecification specification);

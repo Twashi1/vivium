@@ -1,28 +1,27 @@
 #include "entry.h"
 
 namespace Vivium {
-	IntegerTextEntry submitIntegerTextEntry(std::string placeholder, GUIContext& context, ResourceManager& resourceManager)
+	IntegerTextEntry submitEntry(EntrySpecification<IntegerTextEntry> const& specification, GUIContext& context, ResourceManager& resourceManager)
 	{
 		IntegerTextEntry entry;
 
 		entry.base = createGUIElement(context, GUIElementType::ENTRY);
-		entry.placeholder = placeholder;
+		entry.placeholder = specification.placeholder;
 		entry.currentValue = "";
 		entry.inputArea = submitButton(
 			resourceManager,
 			context,
 			ButtonSpecification(entry.base, Color(0.15f, 0.15f, 0.15f), Color(0.0f, 0.0f, 0.0f))
 		);
-	
+
 		return entry;
 	}
-
-	FloatTextEntry submitFloatTextEntry(std::string placeholder, GUIContext& context, ResourceManager& resourceManager)
+	FloatTextEntry submitEntry(EntrySpecification<FloatTextEntry> const& specification, GUIContext& context, ResourceManager& resourceManager)
 	{
 		FloatTextEntry entry;
 
 		entry.base = createGUIElement(context, GUIElementType::ENTRY);
-		entry.placeholder = placeholder;
+		entry.placeholder = specification.placeholder;
 		entry.currentValue = "";
 		entry.inputArea = submitButton(
 			resourceManager,
@@ -33,12 +32,12 @@ namespace Vivium {
 		return entry;
 	}
 
-	StringTextEntry submitStringTextEntry(std::string placeholder, GUIContext& context, ResourceManager& resourceManager)
+	StringTextEntry submitEntry(EntrySpecification<StringTextEntry> const& specification, GUIContext& context, ResourceManager& resourceManager)
 	{
 		StringTextEntry entry;
 
 		entry.base = createGUIElement(context, GUIElementType::ENTRY);
-		entry.placeholder = placeholder;
+		entry.placeholder = specification.placeholder;
 		entry.currentValue = "";
 		entry.inputArea = submitButton(
 			resourceManager,
@@ -49,17 +48,18 @@ namespace Vivium {
 		return entry;
 	}
 
-	void setupTextEntry(IntegerTextEntry& entry, ResourceManager& resourceManager)
+
+	void setupEntry(IntegerTextEntry& entry, ResourceManager& resourceManager, Engine& engine, CommandContext& context, GUIContext& guiContext)
 	{
 		setupButton(entry.inputArea, resourceManager);
 	}
 
-	void setupTextEntry(FloatTextEntry& entry, ResourceManager& resourceManager)
+	void setupEntry(FloatTextEntry& entry, ResourceManager& resourceManager, Engine& engine, CommandContext& context, GUIContext& guiContext)
 	{
 		setupButton(entry.inputArea, resourceManager);
 	}
 
-	void setupTextEntry(StringTextEntry& entry, ResourceManager& resourceManager)
+	void setupEntry(StringTextEntry& entry, ResourceManager& resourceManager, Engine& engine, CommandContext& context, GUIContext& guiContext)
 	{
 		setupButton(entry.inputArea, resourceManager);
 	}

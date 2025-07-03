@@ -33,6 +33,9 @@ struct State {
 
 		ObjectEntry<ShaderDataType> shaderEntry;
 
+		ListEntry<ObjectEntry<ShaderDataType>> bufferEntry;
+		EntrySpecification<ObjectEntry<ShaderDataType>> bufferElementSpecification;
+
 		struct {
 			Panel background;
 			Button createButton;

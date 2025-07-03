@@ -5,7 +5,7 @@ namespace Vivium {
 	{
 		Container container;
 
-		container.base = createGUIElement(guiContext, _ContainerUpdateData(specification.ordering));
+		container.base = createGUIElement(guiContext, _ContainerUpdateData(specification.ordering, specification.offsetMethod));
 		addChild(specification.parent, { &container.base, 1 }, guiContext);
 
 		return container;

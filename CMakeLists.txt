@@ -53,7 +53,10 @@ set(VIVIUM_SOURCES
  "vivium4/graphics/gui/visual/sprite.cpp"
  "vivium4/math/atlas.cpp"
  "vivium4/graphics/texture_format.cpp"
- "vivium4/graphics/image_load.cpp"  "engine/tree_container.cpp" "vivium4/graphics/gui/visual/debugrect.cpp" "vivium4/graphics/gui/visual/entry.cpp")
+ "vivium4/graphics/image_load.cpp"
+ "engine/tree_container.cpp"
+ "vivium4/graphics/gui/visual/debugrect.cpp"
+ "vivium4/graphics/gui/visual/entry.cpp")
 set(VIVIUM_HEADERS
   "vivium4/error/result.h"
   "vivium4/graphics/primitives/buffer.h"
@@ -113,7 +116,6 @@ set(VIVIUM_HEADERS
   "engine/engine.h"
   "vivium4/graphics/gui/visual/debugrect.h"
   "vivium4/graphics/gui/visual/entry.h"
-  "vivium4/graphics/gui/visual/entry.inl"
   "vivium4/input_string.h"
 )
 

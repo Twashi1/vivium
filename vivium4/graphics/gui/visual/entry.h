@@ -45,6 +45,7 @@ namespace Vivium {
 		typename T::ValueType;
 		{ getValue(b) } -> std::same_as<typename T::ValueType>;
 		// TODO: update this for text entries additional parameters
+		// .base
 		{ updateEntry(a, context) } -> std::same_as<void>;
 		{ submitEntries(span, context) } -> std::same_as<void>;
 	};
@@ -66,25 +67,8 @@ namespace Vivium {
 	typedef TextEntry<float> FloatTextEntry;
 	typedef TextEntry<std::string> StringTextEntry;
 
-	IntegerTextEntry submitIntegerTextEntry(std::string placeholder, GUIContext& context, ResourceManager& resourceManager);
-	FloatTextEntry submitFloatTextEntry(std::string placeholder, GUIContext& context, ResourceManager& resourceManager);
-	StringTextEntry submitStringTextEntry(std::string placeholder, GUIContext& context, ResourceManager& resourceManager);
-
-	void setupTextEntry(IntegerTextEntry& entry, ResourceManager& resourceManager);
-	void setupTextEntry(FloatTextEntry& entry, ResourceManager& resourceManager);
-	void setupTextEntry(StringTextEntry& entry, ResourceManager& resourceManager);
-
-	void updateEntry(IntegerTextEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
-	void updateEntry(FloatTextEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
-	void updateEntry(StringTextEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
-
-	void submitEntries(std::span<IntegerTextEntry*> const entries, GUIContext& context);
-	void submitEntries(std::span<FloatTextEntry*> const entries, GUIContext& context);
-	void submitEntries(std::span<StringTextEntry*> const entries, GUIContext& context);
-
-	void dropEntry(IntegerTextEntry& entry, Engine& engine, GUIContext& guiContext);
-	void dropEntry(FloatTextEntry& entry, Engine& engine, GUIContext& guiContext);
-	void dropEntry(StringTextEntry& entry, Engine& engine, GUIContext& guiContext);
+	// TODO: get value methods for integer/float/string entries
+	//	additionally must deal with the string having invalid characters
 
 	template <typename T>
 	concept FiniteObjectType = requires (T a, T b) {
@@ -117,13 +101,80 @@ namespace Vivium {
 		//	this would require clipping content
 	};
 
+	template <typename ValueEntry>
+	struct ListEntry {
+		using ValueType = std::vector<ValueEntry>;
+
+		GUIElementReference base;
+
+		Button addEntry;
+		Container entryContainer;
+		std::vector<ValueEntry> entries;
+		std::vector<Panel> deleteEntry;
+		std::vector<Panel> entryUp;
+		std::vector<Panel> entryDown;
+		std::vector<Panel> entryWrapper;
+	};
+
+	// TODO: validation with concept
+	template <typename EntryType>
+	struct EntrySpecification;
+
+	// TODO: need more params probably
+	template <>
+	struct EntrySpecification<IntegerTextEntry> {
+		std::string placeholder;
+	};
+
+	template <>
+	struct EntrySpecification<FloatTextEntry> {
+		std::string placeholder;
+	};
+
+	template <>
+	struct EntrySpecification<StringTextEntry> {
+		std::string placeholder;
+	};
+
 	template <FiniteObjectType T>
-	ObjectEntry<T> submitObjectEntry(GUIContext& context, ResourceManager& resourceManager, T const& defaultValue, std::vector<T> const& options)
+	struct EntrySpecification<ObjectEntry<T>> {
+		T defaultValue;
+		std::vector<T> options;
+	};
+
+	template <typename ValueEntry>
+	struct EntrySpecification<ListEntry<ValueEntry>> {
+		uint64_t maxEntries;
+		EntrySpecification<ValueEntry>* valueSpecification;
+	};
+
+	IntegerTextEntry submitEntry(EntrySpecification<IntegerTextEntry> const& specification, GUIContext& context, ResourceManager& resourceManager);
+	FloatTextEntry submitEntry(EntrySpecification<FloatTextEntry> const& specification, GUIContext& context, ResourceManager& resourceManager);
+	StringTextEntry submitEntry(EntrySpecification<StringTextEntry> const& specification, GUIContext& context, ResourceManager& resourceManager);
+
+	void setupEntry(IntegerTextEntry& entry, ResourceManager& resourceManager, Engine& engine, CommandContext& context, GUIContext& guiContext);
+	void setupEntry(FloatTextEntry& entry, ResourceManager& resourceManager, Engine& engine, CommandContext& context, GUIContext& guiContext);
+	void setupEntry(StringTextEntry& entry, ResourceManager& resourceManager, Engine& engine, CommandContext& context, GUIContext& guiContext);
+
+	void updateEntry(IntegerTextEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
+	void updateEntry(FloatTextEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
+	void updateEntry(StringTextEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
+
+	void submitEntries(std::span<IntegerTextEntry*> const entries, GUIContext& context);
+	void submitEntries(std::span<FloatTextEntry*> const entries, GUIContext& context);
+	void submitEntries(std::span<StringTextEntry*> const entries, GUIContext& context);
+
+	void dropEntry(IntegerTextEntry& entry, Engine& engine, GUIContext& guiContext);
+	void dropEntry(FloatTextEntry& entry, Engine& engine, GUIContext& guiContext);
+	void dropEntry(StringTextEntry& entry, Engine& engine, GUIContext& guiContext);
+
+	template <FiniteObjectType T>
+	ObjectEntry<T> submitEntry(EntrySpecification<ObjectEntry<T>> const& specification, GUIContext& context, ResourceManager& resourceManager)
 	{
 		ObjectEntry<T> entry;
 
 		entry.base = createGUIElement(context, GUIElementType::ENTRY);
-		entry.defaultValue = defaultValue;
+		entry.defaultValue = specification.defaultValue;
 		entry.currentlySelected = entry.defaultValue;
 		entry.dropDownOpen = false;
 		
@@ -133,13 +184,13 @@ namespace Vivium {
 			Color(0.0f, 0.0f, 0.0f)
 		));
 
-		entry.dropDownContainer = createContainer(context, ContainerSpecification(entry.base, ContainerOrdering::VERTICAL));
-		entry.options = options;
-		entry.dropDownOptions.reserve(options.size());
+		entry.dropDownContainer = createContainer(context, ContainerSpecification(entry.objectView.base, ContainerOrdering::VERTICAL, OffsetMethod::EXTENT));
+		entry.options = specification.options;
+		entry.dropDownOptions.reserve(entry.options.size());
 
 		Color changingColor = Color(0.5f, 0.5f, 0.5f);
 
-		for (T const& value_type : options) {
+		for (T const& value_type : entry.options) {
 			Button dropDownOption;
 
 			dropDownOption = submitButton(resourceManager, context, ButtonSpecification(
@@ -171,7 +222,8 @@ namespace Vivium {
 		GUIProperties& props = properties(entry.dropDownContainer.base, guiContext);
 		props.anchorY = GUIAnchor::BOTTOM;
 		props.centerY = GUIAnchor::TOP;
-		props.dimensions = F32x2(1.0f, 0.5f);
+		props.dimensions = F32x2(1.0f, 1.0f);
+		props.position = F32x2(0.0f, -0.1f);
 	}
 
 	template <FiniteObjectType T>
@@ -188,6 +240,8 @@ namespace Vivium {
 		bool clicked = Input::get(Input::BTN_1).state == Input::RELEASE;
 		bool hoveringObjectView = pointInElement(Input::getCursor(), properties(entry.objectView.base, guiContext));
 		bool hoveringDropDown = pointInExtent(Input::getCursor(), properties(entry.dropDownContainer.base, guiContext));
+
+		setAsleep(entry.dropDownContainer.base, guiContext, !entry.dropDownOpen);
 
 		// If the drop down is open but our cursor isn't on it, or the object view, close it
 		if (entry.dropDownOpen && !(hoveringObjectView || hoveringDropDown)) {
@@ -263,11 +317,158 @@ namespace Vivium {
 		return entry.currentlySelected;
 	}
 
-	template <BaseEntry ValueEntry>
-	struct ListEntry {
-		using ValueType = std::vector<ValueEntry>;
-	};
+	template <typename ValueEntry>
+	ListEntry<ValueEntry> submitEntry(EntrySpecification<ListEntry<ValueEntry>> const& specification, GUIContext& context, ResourceManager& resourceManager)
+	{
+		ListEntry<ValueEntry> entry;
 
-	template <BaseEntry ValueEntry>
+		entry.base = createGUIElement(context, GUIElementType::ENTRY);
+		entry.entryContainer = createContainer(context, ContainerSpecification(
+			entry.base,
+			ContainerOrdering::VERTICAL,
+			OffsetMethod::EXTENT
+		));
+		entry.addEntry = submitButton(resourceManager, context, ButtonSpecification(
+			entry.entryContainer.base,
+			Color(0.25f, 0.65f, 0.25f),
+			Color(0.0f, 0.0f, 0.0f)
+		));
+
+		properties(entry.addEntry.base, context).dimensions = F32x2(1.0f, 0.15f);
+		properties(entry.addEntry.base, context).anchorY = GUIAnchor::BOTTOM;
+		properties(entry.addEntry.base, context).centerY = GUIAnchor::TOP;
+
+		entry.entries.resize(specification.maxEntries);
+		entry.deleteEntry.resize(specification.maxEntries);
+		entry.entryUp.resize(specification.maxEntries);
+		entry.entryDown.resize(specification.maxEntries);
+		entry.entryWrapper.resize(specification.maxEntries);
+
+		for (uint64_t i = 0; i < specification.maxEntries; i++) {
+			entry.entries[i] = submitEntry(*specification.valueSpecification, context, resourceManager);
+			entry.entryWrapper[i] = createPanel(context, PanelSpecification(
+				entry.entryContainer.base,
+				Color(0.25f, 0.25f, 0.25f),
+				Color(0.0f, 0.0f, 0.0f),
+				0.01f
+			));
+			properties(entry.entryWrapper[i].base, context).anchorY = GUIAnchor::BOTTOM;
+			properties(entry.entryWrapper[i].base, context).centerY = GUIAnchor::TOP;
+
+			entry.deleteEntry[i] = createPanel(context, PanelSpecification(
+				entry.entryWrapper[i].base,
+				Color(0.6f, 0.1f, 0.1f),
+				Color(0.0f, 0.0f, 0.0f),
+				0.01f
+			));
+			entry.entryUp[i] = createPanel(context, PanelSpecification(
+				entry.entryWrapper[i].base,
+				Color(0.6f, 0.6f, 0.6f),
+				Color(0.0f, 0.0f, 0.0f),
+				0.01f
+			));
+			entry.entryDown[i] = createPanel(context, PanelSpecification(
+				entry.entryWrapper[i].base,
+				Color(0.6f, 0.6f, 0.6f),
+				Color(0.0f, 0.0f, 0.0f),
+				0.01f
+			));
+
+			properties(entry.entryWrapper[i].base, context).dimensions = F32x2(1.0f, 0.15f);
+
+			properties(entry.deleteEntry[i].base, context).dimensions = F32x2(0.1f, 0.5f);
+			properties(entry.entryUp[i].base, context).dimensions = F32x2(0.1f, 0.3f);
+			properties(entry.entryDown[i].base, context).dimensions = F32x2(0.1f, 0.3f);
+			properties(entry.entries[i].base, context).dimensions = F32x2(0.65f, 0.85f);
+
+			properties(entry.deleteEntry[i].base, context).position = F32x2(0.1f, 0.0f);
+			properties(entry.entryUp[i].base, context).position = F32x2(-0.1f, 0.2f);
+			properties(entry.entryDown[i].base, context).position = F32x2(-0.1f, -0.2f);
+
+			properties(entry.entryDown[i].base, context).anchorX = GUIAnchor::RIGHT;
+			properties(entry.entryUp[i].base, context).anchorX = GUIAnchor::RIGHT;
+			properties(entry.deleteEntry[i].base, context).anchorX = GUIAnchor::LEFT;
+
+			properties(entry.entryDown[i].base, context).centerX = GUIAnchor::RIGHT;
+			properties(entry.entryUp[i].base, context).centerX = GUIAnchor::RIGHT;
+			properties(entry.deleteEntry[i].base, context).centerX = GUIAnchor::LEFT;
+
+			addChild(entry.entryWrapper[i].base, { &entry.entries[i].base, 1 }, context);
+		}
+
+		return entry;
+	}
+	
+	template <typename ValueEntry>
+	void setupEntry(ListEntry<ValueEntry>& entry, ResourceManager& resourceManager, Engine& engine, CommandContext& context, GUIContext& guiContext)
+	{
+		setupButton(entry.addEntry, resourceManager);
+		setButtonText(entry.addEntry, engine, context, guiContext, "Add entry");
+
+		for (ValueEntry& child : entry.entries) {
+			setupEntry(child, resourceManager, engine, context, guiContext);
+		}
+	}
+
+	template <typename ValueEntry>
+	void updateEntry(ListEntry<ValueEntry>& entry, GUIContext& guiContext, Engine& engine, CommandContext& context)
+	{
+		// TODO
+
+		for (ValueEntry& child : entry.entries) {
+			updateEntry(child, guiContext, engine, context);
+		}
+	}
+
+	template <typename ValueEntry>
+	void submitEntries(std::span<ListEntry<ValueEntry>*> const entries, GUIContext& context)
+	{
+		for (ListEntry<ValueEntry>* entry : entries) {
+			Button* button[] = { &entry->addEntry };
+			submitButtons(button, context);
+
+			std::vector<Panel*> panels;
+
+			for (Panel& panel : entry->entryWrapper) {
+				panels.push_back(&panel);
+			}
+
+			for (Panel& panel : entry->deleteEntry) {
+				panels.push_back(&panel);
+			}
+
+			for (Panel& panel : entry->entryUp) {
+				panels.push_back(&panel);
+			}
+
+			for (Panel& panel : entry->entryDown) {
+				panels.push_back(&panel);
+			}
+
+			submitPanels(panels, context);
+
+			std::vector<ValueEntry*> childEntries;
+
+			for (ValueEntry& child : entry->entries) {
+				childEntries.push_back(&child);
+			}
+
+			std::span<ValueEntry*> childEntrySpan = childEntries;
+
+			submitEntries(childEntrySpan, context);
+		}
+	}
+	
+	template <typename ValueEntry>
+	void dropEntry(ListEntry<ValueEntry>& entry, Engine& engine, GUIContext& guiContext)
+	{
+		dropButton(entry.addEntry, engine, guiContext);
+
+		for (ValueEntry& child : entry.entries) {
+			dropEntry(child, engine, guiContext);
+		}
+	}
+
+	template <typename ValueEntry>
 	ListEntry<ValueEntry>::ValueType getValue(ListEntry<ValueEntry> const& entry);
 }

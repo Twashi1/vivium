@@ -23,7 +23,7 @@ namespace Vivium {
 		addChild(button.base, { &button.text.base, 1 }, guiContext);
 		
 		GUIProperties& textProperties = properties(button.text.base, guiContext);
-		textProperties.dimensions = F32x2(0.90f);
+		textProperties.dimensions = F32x2(0.80f);
 		textProperties.position = F32x2(0.0f);
 		textProperties.unitsType = GUIUnits::RELATIVE;
 		textProperties.positionType = GUIPositionType::RELATIVE;

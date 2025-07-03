@@ -254,6 +254,7 @@ namespace Vivium {
 	{
 		GUIElement element;
 		element.type = GUIElementType::NONE;
+		element.asleep = false;
 		element.data.arbitrary = ArbitraryUpdateData(nullptr, nullptr);
 
 		context.guiElements.push_back(element);
@@ -265,6 +266,7 @@ namespace Vivium {
 	{
 		GUIElement element;
 		element.type = elementType;
+		element.asleep = false;
 		element.data.arbitrary = ArbitraryUpdateData(nullptr, nullptr);
 
 		context.guiElements.push_back(element);
@@ -276,6 +278,7 @@ namespace Vivium {
 	{
 		GUIElement element;
 		element.type = GUIElementType::CARDINAL_CONTAINER;
+		element.asleep = false;
 		element.data.container = updateData;
 
 		context.guiElements.push_back(element);

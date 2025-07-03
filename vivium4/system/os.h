@@ -11,7 +11,6 @@ static_assert(false, "Invalid build platform");
 namespace Vivium {
 #ifdef VIVIUM_PLATFORM_WINDOWS
 	namespace Windows {
-		#undef _MSC_EXTENSIONS
 		#define _WIN32_WINNT 0x0601
 		#define NOMINMAX
 		#define WIN32_LEAN_AND_MEAN

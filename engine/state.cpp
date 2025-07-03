@@ -12,16 +12,34 @@ void _submitEditor(State& state)
 		state.editor.entityView.img0.translation, state.editor.entityView.img0.scale));
 	state.editor.testSprite1 = createSprite(state.guiContext, SpriteSpecification(defaultGUIParent(state.guiContext),
 		state.editor.entityView.img1.translation, state.editor.entityView.img1.scale));
-	state.editor.intEntry = submitIntegerTextEntry("0", state.guiContext, state.manager);
+	state.editor.intEntry = submitEntry(EntrySpecification<IntegerTextEntry>("0"), state.guiContext, state.manager);
 
-	state.editor.shaderEntry = submitObjectEntry<ShaderDataType>(state.guiContext, state.manager, ShaderDataType::FLOAT, {
+	state.editor.bufferElementSpecification = EntrySpecification<ObjectEntry<ShaderDataType>>(
 		ShaderDataType::FLOAT,
-		ShaderDataType::VEC2,
-		ShaderDataType::VEC3
-	});
+		{
+			ShaderDataType::FLOAT,
+			ShaderDataType::VEC2,
+			ShaderDataType::VEC3
+		}
+	);
+
+	state.editor.bufferEntry = submitEntry(EntrySpecification<ListEntry<ObjectEntry<ShaderDataType>>>(
+		5,
+		&state.editor.bufferElementSpecification
+	), state.guiContext, state.manager);
+
+	state.editor.shaderEntry = submitEntry(EntrySpecification<ObjectEntry<ShaderDataType>>(
+		ShaderDataType::FLOAT,
+		{
+			ShaderDataType::FLOAT,
+			ShaderDataType::VEC2,
+			ShaderDataType::VEC3
+		}
+	), state.guiContext, state.manager);
 
 	addChild(defaultGUIParent(state.guiContext), { &state.editor.intEntry.base, 1 }, state.guiContext);
 	addChild(defaultGUIParent(state.guiContext), { &state.editor.shaderEntry.base, 1 }, state.guiContext);
+	addChild(defaultGUIParent(state.guiContext), { &state.editor.bufferEntry.base, 1 }, state.guiContext);
 
 	_submitEntityView(state);
 }
@@ -55,8 +73,9 @@ void _setup(State& state)
 
 void _setupEditor(State& state)
 {
-	setupTextEntry(state.editor.intEntry, state.manager);
+	setupEntry(state.editor.intEntry, state.manager, state.engine, state.context, state.guiContext);
 	setupEntry(state.editor.shaderEntry, state.manager, state.engine, state.context, state.guiContext);
+	setupEntry(state.editor.bufferEntry, state.manager, state.engine, state.context, state.guiContext);
 
 	_setupEntityView(state);
 
@@ -69,8 +88,11 @@ void _setupEditor(State& state)
 	properties(state.editor.intEntry, state.guiContext).position = F32x2(0.3f);
 	properties(state.editor.intEntry, state.guiContext).dimensions = F32x2(0.3f, 0.1f);
 
-	properties(state.editor.shaderEntry, state.guiContext).position = F32x2(0.0f);
-	properties(state.editor.shaderEntry, state.guiContext).dimensions = F32x2(0.3f, 0.1f);
+	properties(state.editor.shaderEntry, state.guiContext).position = F32x2(0.4f, 0.0f);
+	properties(state.editor.shaderEntry, state.guiContext).dimensions = F32x2(0.2f, 0.05f);
+
+	properties(state.editor.bufferEntry, state.guiContext).dimensions = F32x2(0.2f, 0.3f);
+	properties(state.editor.bufferEntry, state.guiContext).position = F32x2(0.0f, 0.5f);
 }
 
 void _setupEntityView(State& state)
@@ -124,6 +146,7 @@ void _dropEditor(State& state)
 
 	dropEntry(state.editor.shaderEntry, state.engine, state.guiContext);
 	dropEntry(state.editor.intEntry, state.engine, state.guiContext);
+	dropEntry(state.editor.bufferEntry, state.engine, state.guiContext);
 }
 
 void _dropEntityView(State& state)
@@ -139,6 +162,7 @@ void _update(State& state)
 
 	updateEntry(state.editor.intEntry, state.guiContext, state.engine, state.context);
 	updateEntry(state.editor.shaderEntry, state.guiContext, state.engine, state.context);
+	updateEntry(state.editor.bufferEntry, state.guiContext, state.engine, state.context);
 
 	if (pointInElement(Input::getCursor(), properties(state.editor.entityView.createButton, state.guiContext)) && Input::get(Input::BTN_LEFT).state == Input::PRESS) {
 		Entity newEntity = state.registry.create();
@@ -201,6 +225,9 @@ void _draw(State& state)
 
 	ObjectEntry<ShaderDataType>* shaderEntry = &state.editor.shaderEntry;
 	submitEntries<ShaderDataType>({ &shaderEntry, 1 }, state.guiContext);
+
+	auto bufferEntryPtr = &state.editor.bufferEntry;
+	submitEntries<ObjectEntry<ShaderDataType>>({ &bufferEntryPtr, 1 }, state.guiContext);
 
 	renderGUI(state.context, state.guiContext, state.window);
 

@@ -1,5 +1,9 @@
 ## Whiteboard
 
+Reached practical limitations of GUI
+- just force all the features in and continue, brute-force through it
+- we just can't afford a GUI re-write
+
 How do we organise the game engine?
 - ideally we want to create something unique
 - and with minimal overhead
@@ -71,6 +75,7 @@ Say we were to re-design the UI around a different philosophy
 - look into debug and simulation on CPU side (would require rasterization etc.)
 ## Current tasks
 
+- Tree container first element is broken
 - CMAKE of vivium should be separate to CMAKE of editor
 - Comprehensive documentation of all structs/methods/etc.
 	- just use doxygen format, can build a custom tool later

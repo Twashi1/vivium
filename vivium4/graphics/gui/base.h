@@ -76,11 +76,13 @@ namespace Vivium {
 	bool operator==(GUIElementReference const& a, GUIElementReference const& b);
 
 	enum class ContainerOrdering;
+	enum class OffsetMethod;
 	struct GUIContext;
 	struct Container;
 
 	struct _ContainerUpdateData {
 		ContainerOrdering ordering;
+		OffsetMethod offsetMethod;
 	};
 
 	typedef void(*ArbitraryUpdatePtr)(GUIElementReference reference, void* data, F32x2 windowDimensions, GUIContext& guiContext);
@@ -98,6 +100,7 @@ namespace Vivium {
 	struct GUIElement {
 		GUIProperties properties;
 		GUIElementType type;
+		bool asleep;
 		_AdditionalElementData data;
 
 		std::vector<GUIElementReference> children;
@@ -109,6 +112,7 @@ namespace Vivium {
 	void updateGUIElement(GUIElementReference const objectHandle, GUIElementReference const parent, F32x2 windowDimensions, GUIContext& guiContext);
 	
 	GUIProperties& properties(GUIElementReference const objectHandle, GUIContext& guiContext);
+	void setAsleep(GUIElementReference const objectHandle, GUIContext& guiContext, bool isAsleep);
 	
 	uint64_t getChildPosition(GUIElementReference const parent, GUIElementReference const child, GUIContext& guiContext);
 	void insertChild(GUIElementReference const parent, std::span<GUIElementReference const> children, uint64_t position, GUIContext& guiContext);

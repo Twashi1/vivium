@@ -33,13 +33,23 @@ namespace Vivium {
 		{
 			updateGUIElement(child, reference, windowDimensions, context);
 
-			F32x2 newOffset = properties(child, context).maxExtent - properties(child, context).minExtent;
+			F32x2 offset = F32x2(0.0f);
 
-			if (containerData.ordering == ContainerOrdering::VERTICAL) { newOffset.x = 0.0f; }
-			if (containerData.ordering == ContainerOrdering::HORIZONTAL) { newOffset.y = 0.0f; }
+			if (containerData.offsetMethod == OffsetMethod::EXTENT) {
+				offset = properties(child, context).maxExtent - properties(child, context).minExtent;
+			}
+			else {
+				offset = properties(reference, context).trueDimensions + properties(reference, context).truePosition - properties(child, context).truePosition;
+				VIVIUM_LOG(LogSeverity::DEBUG, "Offset [old] : {}", offset.y);
+				offset = properties(child, context).trueDimensions;
+				VIVIUM_LOG(LogSeverity::DEBUG, "Offset [new] : {}", offset.y);
+			}
 
-			properties(reference, context).truePosition -= newOffset;
-			totalOffset += newOffset;
+			if (containerData.ordering == ContainerOrdering::VERTICAL) { offset.x = 0.0f; }
+			if (containerData.ordering == ContainerOrdering::HORIZONTAL) { offset.y = 0.0f; }
+
+			properties(reference, context).truePosition -= offset;
+			totalOffset += offset;
 
 			element.properties.minExtent.x = std::min(element.properties.minExtent.x, properties(child, context).minExtent.x);
 			element.properties.minExtent.y = std::min(element.properties.minExtent.y, properties(child, context).minExtent.y);
@@ -121,6 +131,9 @@ namespace Vivium {
 		object.properties.minExtent = object.properties.truePosition;
 		object.properties.maxExtent = object.properties.truePosition + object.properties.trueDimensions;
 
+		// Quit update
+		if (object.asleep) { return; }
+
 		// Look for any required special treatment
 		switch (object.type) {
 		case GUIElementType::CARDINAL_CONTAINER: return _updateContainer(element, object.data.container, windowDimensions, context);
@@ -141,6 +154,11 @@ namespace Vivium {
 	GUIProperties& properties(GUIElementReference const objectHandle, GUIContext& guiContext)
 	{
 		return guiContext.guiElements[objectHandle.index].properties;
+	}
+
+	void setAsleep(GUIElementReference const objectHandle, GUIContext& guiContext, bool isAsleep)
+	{
+		guiContext.guiElements[objectHandle.index].asleep = isAsleep;
 	}
 
 	uint64_t getChildPosition(GUIElementReference const parent, GUIElementReference const child, GUIContext& guiContext)

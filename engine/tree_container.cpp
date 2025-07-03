@@ -8,7 +8,7 @@ bool operator==(TreeContainer const& a, TreeContainer const& b)
 TreeContainer createTreeContainer(GUIContext& guiContext, GUIElementReference parent) {
 	TreeContainer tree;
 
-	tree.root = createContainer(guiContext, ContainerSpecification(parent, ContainerOrdering::VERTICAL));
+	tree.root = createContainer(guiContext, ContainerSpecification(parent, ContainerOrdering::VERTICAL, OffsetMethod::EXTENT));
 	properties(tree.root, guiContext).anchorY = GUIAnchor::TOP;
 	properties(tree.root, guiContext).centerY = GUIAnchor::TOP;
 
