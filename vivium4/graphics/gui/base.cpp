@@ -199,6 +199,24 @@ namespace Vivium {
 		}
 	}
 
+	void rotateChild(GUIElementReference const parent, uint64_t src, uint64_t mid, uint64_t dest, GUIContext& guiContext)
+	{
+		if (parent == nullGUIParent()) return;
+
+		GUIElement& parentObject = guiContext.guiElements[parent.index];
+
+		std::rotate(parentObject.children.begin() + src, parentObject.children.begin() + mid, parentObject.children.begin() + dest);
+	}
+
+	void swapChildren(GUIElementReference const parent, uint64_t a, uint64_t b, GUIContext& guiContext)
+	{
+		if (parent == nullGUIParent()) return;
+
+		GUIElement& parentObject = guiContext.guiElements[parent.index];
+
+		std::swap(parentObject.children[a], parentObject.children[b]);
+	}
+
 	std::vector<GUIElementReference> const& getChildren(GUIElementReference const parent, GUIContext& guiContext)
 	{
 		if (parent == nullGUIParent()) return {};

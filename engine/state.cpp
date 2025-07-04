@@ -19,7 +19,9 @@ void _submitEditor(State& state)
 		{
 			ShaderDataType::FLOAT,
 			ShaderDataType::VEC2,
-			ShaderDataType::VEC3
+			ShaderDataType::VEC3,
+			ShaderDataType::BOOL,
+			ShaderDataType::INT
 		}
 	);
 

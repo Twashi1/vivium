@@ -107,6 +107,7 @@ namespace Vivium {
 
 		GUIElementReference base;
 
+		uint64_t numEntries;
 		Button addEntry;
 		Container entryContainer;
 		std::vector<ValueEntry> entries;
@@ -247,16 +248,12 @@ namespace Vivium {
 		if (entry.dropDownOpen && !(hoveringObjectView || hoveringDropDown)) {
 			entry.dropDownOpen = false;
 
-			VIVIUM_LOG(LogSeverity::DEBUG, "Closing drop down");
-
 			return;
 		}
 
 		// If drop down is closed and we click object view
 		if (!entry.dropDownOpen && clicked && hoveringObjectView) {
 			entry.dropDownOpen = true;
-
-			VIVIUM_LOG(LogSeverity::DEBUG, "Opening drop down");
 
 			return;
 		}
@@ -277,6 +274,8 @@ namespace Vivium {
 					// TODO: this seems to be the only set text thats working?
 					setButtonText(entry.objectView, engine, context, guiContext, optionRepresentation);
 					entry.currentlySelected = entry.options[i];
+
+					entry.dropDownOpen = false;
 
 					return;
 				}
@@ -333,6 +332,7 @@ namespace Vivium {
 			Color(0.25f, 0.65f, 0.25f),
 			Color(0.0f, 0.0f, 0.0f)
 		));
+		entry.numEntries = 0;
 
 		properties(entry.addEntry.base, context).dimensions = F32x2(1.0f, 0.15f);
 		properties(entry.addEntry.base, context).anchorY = GUIAnchor::BOTTOM;
@@ -394,6 +394,12 @@ namespace Vivium {
 			properties(entry.deleteEntry[i].base, context).centerX = GUIAnchor::LEFT;
 
 			addChild(entry.entryWrapper[i].base, { &entry.entries[i].base, 1 }, context);
+
+			setAsleep(entry.entries[i].base, context, true);
+			setAsleep(entry.entryWrapper[i].base, context, true);
+			setAsleep(entry.deleteEntry[i].base, context, true);
+			setAsleep(entry.entryUp[i].base, context, true);
+			setAsleep(entry.entryDown[i].base, context, true);
 		}
 
 		return entry;
@@ -411,12 +417,110 @@ namespace Vivium {
 	}
 
 	template <typename ValueEntry>
+	void _removeIndexFromListEntry(ListEntry<ValueEntry>& entry, GUIContext& guiContext, uint64_t index)
+	{
+		// what if we just moved that entry to the back of the list?
+		//	- should also be resetting its value to the default?
+		// also have to update the relevant container
+	
+		// TODO: how does tree container do it?
+		//	this container operates very differently
+		setAsleep(entry.entries[index].base, guiContext, true);
+		setAsleep(entry.entryWrapper[index].base, guiContext, true);
+		setAsleep(entry.deleteEntry[index].base, guiContext, true);
+		setAsleep(entry.entryUp[index].base, guiContext, true);
+		setAsleep(entry.entryDown[index].base, guiContext, true);
+
+		// Move element to end while preserving order
+		std::rotate(entry.entries.begin() + index, entry.entries.begin() + index + 1, entry.entries.end());
+		std::rotate(entry.entryWrapper.begin() + index, entry.entryWrapper.begin() + index + 1, entry.entryWrapper.end());
+		std::rotate(entry.deleteEntry.begin() + index, entry.deleteEntry.begin() + index + 1, entry.deleteEntry.end());
+		std::rotate(entry.entryUp.begin() + index, entry.entryUp.begin() + index + 1, entry.entryUp.end());
+		std::rotate(entry.entryDown.begin() + index, entry.entryDown.begin() + index + 1, entry.entryDown.end());
+		// TODO: terrible code
+		// NOTE: add 1 is because add entry is also stored in the container
+		rotateChild(entry.entryContainer.base, index + 1, index + 2, getChildren(entry.entryContainer.base, guiContext).size(), guiContext);
+
+		entry.numEntries--;
+	}
+
+	template <typename ValueEntry>
+	void _insertIndexToListEntry(ListEntry<ValueEntry>& entry, GUIContext& guiContext, uint64_t index)
+	{
+		if (entry.numEntries == entry.entries.size()) {
+			VIVIUM_LOG(LogSeverity::WARN, "List entry at max size");
+
+			return;
+		}
+
+		// We need to rotate the last element into place
+		std::rotate(entry.entries.begin() + index, entry.entries.end(), entry.entries.end());
+		std::rotate(entry.entryWrapper.begin() + index, entry.entryWrapper.end(), entry.entryWrapper.end());
+		std::rotate(entry.deleteEntry.begin() + index, entry.deleteEntry.end(), entry.deleteEntry.end());
+		std::rotate(entry.entryUp.begin() + index, entry.entryUp.end(), entry.entryUp.end());
+		std::rotate(entry.entryDown.begin() + index, entry.entryDown.end(), entry.entryDown.end());
+		rotateChild(entry.entryContainer.base, index + 1, getChildren(entry.entryContainer.base, guiContext).size(), getChildren(entry.entryContainer.base, guiContext).size(), guiContext);
+
+		setAsleep(entry.entries[index].base, guiContext, false);
+		setAsleep(entry.entryWrapper[index].base, guiContext, false);
+		setAsleep(entry.deleteEntry[index].base, guiContext, false);
+		setAsleep(entry.entryUp[index].base, guiContext, false);
+		setAsleep(entry.entryDown[index].base, guiContext, false);
+
+		entry.numEntries++;
+	}
+
+	template <typename ValueEntry>
+	void _swapIndicesListEntry(ListEntry<ValueEntry>& entry, GUIContext& guiContext, uint64_t a, uint64_t b)
+	{
+		if (a < 0 || b < 0) return;
+		if (a >= entry.numEntries || b >= entry.numEntries) return;
+
+		std::swap(entry.entries[a], entry.entries[b]);
+		std::swap(entry.entryWrapper[a], entry.entryWrapper[b]);
+		std::swap(entry.deleteEntry[a], entry.deleteEntry[b]);
+		std::swap(entry.entryUp[a], entry.entryUp[b]);
+		std::swap(entry.entryDown[a], entry.entryDown[b]);
+		swapChildren(entry.entryContainer.base, a + 1, b + 1, guiContext);
+	}
+
+	template <typename ValueEntry>
 	void updateEntry(ListEntry<ValueEntry>& entry, GUIContext& guiContext, Engine& engine, CommandContext& context)
 	{
-		// TODO
+		// TODO: add entry button
+		// TODO: move entry up/down
+		// TODO: delete entry
+		bool clicked = (Input::get(Input::BTN_1).state == Input::RELEASE);
+		F32x2 cursor = Input::getCursor();
 
-		for (ValueEntry& child : entry.entries) {
-			updateEntry(child, guiContext, engine, context);
+		if (clicked) {
+			if (pointInElement(cursor, properties(entry.addEntry.base, guiContext))) {
+				_insertIndexToListEntry(entry, guiContext, entry.numEntries);
+			}
+			else {
+				for (uint64_t i = 0; i < entry.numEntries; i++) {
+					if (pointInElement(cursor, properties(entry.deleteEntry[i].base, guiContext))) {
+						_removeIndexFromListEntry(entry, guiContext, i);
+
+						break;
+					}
+					else if (pointInElement(cursor, properties(entry.entryUp[i].base, guiContext))) {
+						_swapIndicesListEntry(entry, guiContext, i, i - 1);
+
+
+						break;
+					}
+					else if (pointInElement(cursor, properties(entry.entryDown[i].base, guiContext))) {
+						_swapIndicesListEntry(entry, guiContext, i, i + 1);
+
+						break;
+					}
+				}
+			}
+		}
+
+		for (uint64_t i = 0; i < entry.numEntries; i++) {
+			updateEntry(entry.entries[i], guiContext, engine, context);
 		}
 	}
 
@@ -428,31 +532,19 @@ namespace Vivium {
 			submitButtons(button, context);
 
 			std::vector<Panel*> panels;
+			std::vector<ValueEntry*> childEntries;
 
-			for (Panel& panel : entry->entryWrapper) {
-				panels.push_back(&panel);
-			}
-
-			for (Panel& panel : entry->deleteEntry) {
-				panels.push_back(&panel);
-			}
-
-			for (Panel& panel : entry->entryUp) {
-				panels.push_back(&panel);
-			}
-
-			for (Panel& panel : entry->entryDown) {
-				panels.push_back(&panel);
+			for (uint64_t i = 0; i < entry->numEntries; i++) {
+				panels.push_back(&entry->entryWrapper[i]);
+				panels.push_back(&entry->deleteEntry[i]);
+				panels.push_back(&entry->entryUp[i]);
+				panels.push_back(&entry->entryDown[i]);
+				childEntries.push_back(&entry->entries[i]);
 			}
 
 			submitPanels(panels, context);
 
-			std::vector<ValueEntry*> childEntries;
-
-			for (ValueEntry& child : entry->entries) {
-				childEntries.push_back(&child);
-			}
-
+			// TODO: not necessary likely
 			std::span<ValueEntry*> childEntrySpan = childEntries;
 
 			submitEntries(childEntrySpan, context);
