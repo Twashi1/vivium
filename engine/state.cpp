@@ -51,6 +51,7 @@ void _submitEntityView(State& state)
 	state.editor.entityView.background = createPanel(state.guiContext, PanelSpecification{ state.editor.background.base, colorDarkGray, colorBlack, 0.01f });
 	state.editor.entityView.createButton = submitButton(state.manager, state.guiContext, ButtonSpecification{ state.editor.entityView.background.base, colorDarkGray, colorBlack });
 	state.editor.entityView.entityTree = createTreeContainer(state.guiContext, state.editor.entityView.background.base);
+	state.editor.entityView.entityTree.enabled = true;
 	state.editor.entityView.entityTextBatch = submitTextBatch(state.manager, state.guiContext, TextBatchSpecification{ 256, state.editor.entityView.createButton.textBatch.font });
 	state.editor.entityView.heldElement = nullptr;
 
@@ -72,6 +73,7 @@ void _setup(State& state)
 {
 	_setupEditor(state);
 }
+
 
 void _setupEditor(State& state)
 {
@@ -175,6 +177,8 @@ void _update(State& state)
 		TreeContainer* container = getContainerByPanel(state.editor.entityView.entities.size() - 1, state.editor.entityView.entityTree);
 
 		VIVIUM_ASSERT(container != nullptr, "Couldn't get container for new panel");
+
+		VIVIUM_LOG(LogSeverity::DEBUG, "Enabling panel by id {}", state.editor.entityView.entities.size() - 1);
 
 		container->enabled = true;
 	}
@@ -314,8 +318,10 @@ void terminate(State& state) {
 
 TreeContainer* getContainerByPanel(int panelIndex, TreeContainer& container)
 {
-	if (*(int*)container.data == panelIndex) {
-		return &container;
+	if (container.data != nullptr) {
+		if (*(int*)container.data == panelIndex) {
+			return &container;
+		}
 	}
 
 	for (TreeContainer& child : container.children) {

@@ -43,11 +43,6 @@ How does rendering properties, entering properties, and creating the properties 
 		- list UI has a generalised display/entry mechanism (plus remove/organise buttons ideally)
 	- the UI itself stores the values for these components?
 
-To implement this?
-- drag-and drop UI functionality
-- a UI "slot" where we can place other elements inside
-- essentially need a custom scripting language that transpiles to c++
-
 We don't actually have a way to change a container's size based on its children
 
 To build a real UI quickly an efficiently
@@ -62,7 +57,6 @@ Say we were to re-design the UI around a different philosophy
 - "fit sizing" -> "grow sizing" -> "positions" -> "draw"
 - break up GUI update function a little to make it simpler
 - clipping of text? more text functions for organising and controlling text
-
 ## Shader planning
 
 - run-time reflection and some partial compilation on shaders

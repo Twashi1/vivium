@@ -11,6 +11,8 @@ TreeContainer createTreeContainer(GUIContext& guiContext, GUIElementReference pa
 	tree.root = createContainer(guiContext, ContainerSpecification(parent, ContainerOrdering::VERTICAL, OffsetMethod::EXTENT));
 	properties(tree.root, guiContext).anchorY = GUIAnchor::TOP;
 	properties(tree.root, guiContext).centerY = GUIAnchor::TOP;
+	tree.data = nullptr;
+	tree.enabled = false;
 
 	return tree;
 }
@@ -100,9 +102,12 @@ TreeContainer* updateTreeContainer(F32x2 cursorPosition, TreeContainer& containe
 	// TODO: should be ensuring we can't make a loop
 	//		currently am able to make a parent its own child
 	// TODO: manually disable the root container?
+	// TODO: problem with first element not being highlighted is that its disabled?
 	TreeContainer* hovered = getContainer(cursorPosition, container, context);
 
 	if (hovered != nullptr) {
+		VIVIUM_LOG(LogSeverity::DEBUG, "hovering something");
+
 		GUIProperties props;
 
 		// TODO: we really want to just look at the position and dimension of the root element

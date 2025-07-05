@@ -8,6 +8,8 @@ namespace Vivium {
 		entry.base = createGUIElement(context, GUIElementType::ENTRY);
 		entry.placeholder = specification.placeholder;
 		entry.currentValue = "";
+		entry.lastValidValue = "0";
+		entry.entrySelected = false;
 		entry.inputArea = submitButton(
 			resourceManager,
 			context,
@@ -23,6 +25,8 @@ namespace Vivium {
 		entry.base = createGUIElement(context, GUIElementType::ENTRY);
 		entry.placeholder = specification.placeholder;
 		entry.currentValue = "";
+		entry.lastValidValue = "0.0";
+		entry.entrySelected = false;
 		entry.inputArea = submitButton(
 			resourceManager,
 			context,
@@ -39,6 +43,8 @@ namespace Vivium {
 		entry.base = createGUIElement(context, GUIElementType::ENTRY);
 		entry.placeholder = specification.placeholder;
 		entry.currentValue = "";
+		entry.lastValidValue = "";
+		entry.entrySelected = false;
 		entry.inputArea = submitButton(
 			resourceManager,
 			context,
@@ -66,28 +72,56 @@ namespace Vivium {
 
 	void updateEntry(IntegerTextEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context)
 	{
+		bool clicked = (Input::get(Input::BTN_1).state == Input::RELEASE);
+		bool hovered = pointInElement(Input::getCursor(), properties(entry.base, guiContext));
+		bool entered = (Input::get(Input::KEY_ENTER).state == Input::RELEASE);
+
 		// TODO: deal with backspace and all the text handling stuff
 		//	should only enter character if cursor hovering/clicked/selected
-		Input::CharacterData data = Input::getCharacters();
+		if (clicked && hovered) {
+			entry.entrySelected = true;
+			entry.currentValue = "";
+		}
 
-		for (uint64_t i = 0; i < data.size; i++) {
-			uint32_t codepoint = data.codepoints[i];
+		if ((clicked && !hovered) || entered) {
+			entry.entrySelected = false;
 
-			char character = static_cast<char>(codepoint);
-			
-			if (isprint(character)) {
-				// TODO: right now we jsut pretend every codepoint is a valid ASCII character
-				// We want to only consider numbers
-				// TODO: deal with negatives as well
+			// TODO: do work to submit vlaue
+			// Integer must be composed of just digits
+			std::regex intPattern("-?\\d+");
 
-				if (isdigit(character)) {
-					entry.currentValue += character;
-				}
-
-				VIVIUM_LOG(LogSeverity::DEBUG, "Printable but not digit: {}", codepoint);
+			if (std::regex_match(entry.currentValue, intPattern)) {
+				entry.lastValidValue = entry.currentValue;
 			}
 			else {
-				VIVIUM_LOG(LogSeverity::WARN, "Received unprintable character codepoint {}", codepoint);
+				VIVIUM_LOG(LogSeverity::WARN, "Invalid input entered: {}", entry.currentValue);
+
+				entry.currentValue = entry.lastValidValue;
+			}
+		}
+
+		if (entry.entrySelected) {
+			Input::CharacterData data = Input::getCharacters();
+
+			for (uint64_t i = 0; i < data.size; i++) {
+				uint32_t codepoint = data.codepoints[i];
+
+				char character = static_cast<char>(codepoint);
+
+				if (isprint(character)) {
+					// TODO: right now we jsut pretend every codepoint is a valid ASCII character
+					// We want to only consider numbers
+					// TODO: deal with negatives as well
+
+					if (isdigit(character) || character == '-') {
+						entry.currentValue += character;
+					}
+
+					VIVIUM_LOG(LogSeverity::DEBUG, "Printable but not digit: {}", codepoint);
+				}
+				else {
+					VIVIUM_LOG(LogSeverity::WARN, "Received unprintable character codepoint {}", codepoint);
+				}
 			}
 		}
 
@@ -97,18 +131,106 @@ namespace Vivium {
 
 	void updateEntry(FloatTextEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context)
 	{
-		// TODO
+		bool clicked = (Input::get(Input::BTN_1).state == Input::RELEASE);
+		bool hovered = pointInElement(Input::getCursor(), properties(entry.base, guiContext));
+		bool entered = (Input::get(Input::KEY_ENTER).state == Input::RELEASE);
+
+		// TODO: deal with backspace and all the text handling stuff
+		//	should only enter character if cursor hovering/clicked/selected
+		if (clicked && hovered) {
+			entry.entrySelected = true;
+			entry.currentValue = "";
+		}
+
+		if ((clicked && !hovered) || entered) {
+			entry.entrySelected = false;
+
+			// Float
+			std::regex floatPattern("-?\\d*\\.\\d+");
+
+			if (std::regex_match(entry.currentValue, floatPattern)) {
+				entry.lastValidValue = entry.currentValue;
+			}
+			else {
+				VIVIUM_LOG(LogSeverity::WARN, "Invalid input entered: {}", entry.currentValue);
+
+				entry.currentValue = entry.lastValidValue;
+			}
+		}
+
+		if (entry.entrySelected) {
+			Input::CharacterData data = Input::getCharacters();
+
+			for (uint64_t i = 0; i < data.size; i++) {
+				uint32_t codepoint = data.codepoints[i];
+
+				char character = static_cast<char>(codepoint);
+
+				if (isprint(character)) {
+					// TODO: right now we jsut pretend every codepoint is a valid ASCII character
+					// We want to only consider numbers
+					// TODO: if it would lead to invalid currentValue, don't allow it
+
+					if (isdigit(character) || character == '.' || character == '-') {
+						entry.currentValue += character;
+					}
+
+					VIVIUM_LOG(LogSeverity::DEBUG, "Printable but not digit: {}", codepoint);
+				}
+				else {
+					VIVIUM_LOG(LogSeverity::WARN, "Received unprintable character codepoint {}", codepoint);
+				}
+			}
+		}
+
+		// TODO: only update text if change was made
+		setButtonText(entry.inputArea, engine, context, guiContext, entry.currentValue);
 	}
 
 	void updateEntry(StringTextEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context)
 	{
-		// TODO
+		bool clicked = (Input::get(Input::BTN_1).state == Input::RELEASE);
+		bool hovered = pointInElement(Input::getCursor(), properties(entry.base, guiContext));
+		bool entered = (Input::get(Input::KEY_ENTER).state == Input::RELEASE);
+
+		// TODO: deal with backspace and all the text handling stuff
+		//	should only enter character if cursor hovering/clicked/selected
+		if (clicked && hovered) {
+			entry.entrySelected = true;
+			entry.currentValue = "";
+		}
+
+		if ((clicked && !hovered) || entered) {
+			entry.entrySelected = false;
+
+			entry.lastValidValue = entry.currentValue;
+		}
+
+		if (entry.entrySelected) {
+			Input::CharacterData data = Input::getCharacters();
+
+			for (uint64_t i = 0; i < data.size; i++) {
+				uint32_t codepoint = data.codepoints[i];
+
+				char character = static_cast<char>(codepoint);
+
+				if (isprint(character)) {
+					entry.currentValue += character;
+				}
+				else {
+					VIVIUM_LOG(LogSeverity::WARN, "Received unprintable character codepoint {}", codepoint);
+				}
+			}
+		}
+
+		// TODO: only update text if change was made
+		setButtonText(entry.inputArea, engine, context, guiContext, entry.currentValue);
 	}
 
 	void submitEntries(std::span<IntegerTextEntry*> const entries, GUIContext& context)
 	{
 		for (IntegerTextEntry* entry : entries) {
-			Button* entryList[] = {&entry->inputArea};
+			Button* entryList[] = { &entry->inputArea };
 			submitButtons(entryList, context);
 		}
 	}
@@ -144,10 +266,18 @@ namespace Vivium {
 		dropButton(entry.inputArea, engine, guiContext);
 	}
 
-	template <FiniteObjectType T>
-	ObjectEntry<T> submitObjectEntry(GUIContext& context, ResourceManager& resourceManager, T const& defaultValue, std::vector<T> const& options);
-	template <FiniteObjectType T>
-	void setupEntry(ObjectEntry<T>& entry, ResourceManager& manager);
-	template <FiniteObjectType T>
-	void updateEntry(ObjectEntry<T>& entry, GUIContext& context);
+	int getValue(IntegerTextEntry const& entry)
+	{
+		return stoi(entry.currentValue);
+	}
+
+	float getValue(FloatTextEntry const& entry)
+	{
+		return stof(entry.currentValue);
+	}
+
+	std::string getValue(StringTextEntry const& entry)
+	{
+		return entry.currentValue;
+	}
 }

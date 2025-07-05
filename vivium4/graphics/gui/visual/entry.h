@@ -1,43 +1,12 @@
 #pragma once
 
+#include <regex>
+
 #include "context.h"
 #include "panel.h"
 #include "button.h"
 #include "container.h"
 #include "../../../input.h"
-
-// assume an object entry is entered by a list of values (otherwise its a list/float/string)
-//	we need that list of values to display/select from somehow
-
-// Text input
-//	arbitrary restriction function on characters that can be entered, and current data entered
-// Enum input (select from different values with drop down)
-// List input
-//	composed of some other input, storing multiple alterable copies of that other input
-//	or storing multiple inputs (that are re-arrangable)
-
-/*
-IntTextInput t = createIntTextInput(placeholderNumber)
-
-updateTextInput(t)
-getTextInput(t) -> int
-
-ObjectInput<ShaderData> o = createObjectInput<ShaderData>(placeHolderValue);
-
-updateObjectInput<ShaderData>(t)
-getObjectInput<ShaderData>(t) -> ShaderData
-
-ListInput<ObjectInput<ShaderData>> list = create....
-
-updateListInput...
-	- need general update function
-
-
-	- need general get returning predictable type
-
-submitInput (for rendering)
-renderInput
-*/
 
 namespace Vivium {
 	template <typename T>
@@ -58,9 +27,12 @@ namespace Vivium {
 
 		std::string placeholder;
 		std::string currentValue;
+		std::string lastValidValue;
 
 		// TODO: bastardised button to mix text and panel
 		Button inputArea;
+
+		bool entrySelected;
 	};
 
 	typedef TextEntry<int> IntegerTextEntry;
@@ -168,6 +140,10 @@ namespace Vivium {
 	void dropEntry(IntegerTextEntry& entry, Engine& engine, GUIContext& guiContext);
 	void dropEntry(FloatTextEntry& entry, Engine& engine, GUIContext& guiContext);
 	void dropEntry(StringTextEntry& entry, Engine& engine, GUIContext& guiContext);
+
+	int getValue(IntegerTextEntry const& entry);
+	float getValue(FloatTextEntry const& entry);
+	std::string getValue(StringTextEntry const& entry);
 
 	template <FiniteObjectType T>
 	ObjectEntry<T> submitEntry(EntrySpecification<ObjectEntry<T>> const& specification, GUIContext& context, ResourceManager& resourceManager)
@@ -487,9 +463,9 @@ namespace Vivium {
 	template <typename ValueEntry>
 	void updateEntry(ListEntry<ValueEntry>& entry, GUIContext& guiContext, Engine& engine, CommandContext& context)
 	{
-		// TODO: add entry button
-		// TODO: move entry up/down
-		// TODO: delete entry
+		// TODO: gotta find a work-around for this
+		setButtonText(entry.addEntry, engine, context, guiContext, "Add entry");
+		
 		bool clicked = (Input::get(Input::BTN_1).state == Input::RELEASE);
 		F32x2 cursor = Input::getCursor();
 
@@ -562,5 +538,14 @@ namespace Vivium {
 	}
 
 	template <typename ValueEntry>
-	ListEntry<ValueEntry>::ValueType getValue(ListEntry<ValueEntry> const& entry);
+	ListEntry<ValueEntry>::ValueType getValue(ListEntry<ValueEntry> const& entry)
+	{
+		std::vector<typename ValueEntry::ValueType> results;
+
+		for (uint64_t i = 0; i < entry.numEntries; i++) {
+			results.push_back(getValue(entry.entries[i]));
+		}
+
+		return results;
+	}
 }
