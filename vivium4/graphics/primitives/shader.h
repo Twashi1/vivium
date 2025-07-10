@@ -46,6 +46,7 @@ namespace Vivium {
 	};
 
 	ShaderStage operator|(ShaderStage lhs, ShaderStage rhs);
+	char const* getString(ShaderStage stage);
 
 	struct ShaderSpecification {
 		ShaderStage stage;

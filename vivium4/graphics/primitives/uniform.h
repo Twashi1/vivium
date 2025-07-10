@@ -16,6 +16,7 @@ namespace Vivium {
 		FRAMEBUFFER				= (1Ui64 << 32) | VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
 	};
 
+	char const* getString(UniformType type);
 	VkDescriptorType _descriptorType(UniformType type);
 
 	struct UniformBinding {

@@ -76,6 +76,15 @@ namespace Vivium {
 		}
 	}
 
+	char const* getString(ShaderStage stage) {
+		switch (stage) {
+		case ShaderStage::VERTEX: return "Vertex";
+		case ShaderStage::FRAGMENT: return "Fragment";
+		case ShaderStage::GEOMETRY: return "Geometry";
+		default: return "Unknown";
+		}
+	}
+
 	void dropShader(Shader& shader, Engine& engine) {
 		vkDestroyShaderModule(engine.device, shader.shader, nullptr);
 	}

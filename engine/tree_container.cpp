@@ -101,12 +101,11 @@ TreeContainer* updateTreeContainer(F32x2 cursorPosition, TreeContainer& containe
 	// TODO: should not be able to pick up the root
 	// TODO: should be ensuring we can't make a loop
 	//		currently am able to make a parent its own child
-	// TODO: manually disable the root container?
-	// TODO: problem with first element not being highlighted is that its disabled?
+	// TODO: seems like if we released the hovered element on nothing it doesnt get re-enabled immediately??
 	TreeContainer* hovered = getContainer(cursorPosition, container, context);
 
 	if (hovered != nullptr) {
-		VIVIUM_LOG(LogSeverity::DEBUG, "hovering something");
+		// VIVIUM_LOG(LogSeverity::DEBUG, "hovering something");
 
 		GUIProperties props;
 
@@ -162,7 +161,7 @@ TreeContainer* updateTreeContainer(F32x2 cursorPosition, TreeContainer& containe
 		// If we released the held element on nothing return
 		if (hovered == nullptr) {
 			VIVIUM_LOG(LogSeverity::DEBUG, "Element is released on nothing");
-			held->enabled = false;
+			held->enabled = true;
 			return nullptr;
 		}
 

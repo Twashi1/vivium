@@ -28,6 +28,18 @@ namespace Vivium {
 		return data;
 	}
 		
+	char const* getString(UniformType type)
+	{
+		switch (type) {
+		case UniformType::UNIFORM_BUFFER: return "UniformBuffer";
+		case UniformType::DYNAMIC_UNIFORM_BUFFER: return "DynamicUniformBuffer";
+		case UniformType::STORAGE_BUFFER: return "StorageBuffer";
+		case UniformType::TEXTURE: return "Texture";
+		case UniformType::FRAMEBUFFER: return "Framebuffer";
+		default: return "Unknown";
+		}
+	}
+
 	VkDescriptorType _descriptorType(UniformType type)
 	{
 		// TODO: different style of cast elsewhere

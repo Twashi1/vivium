@@ -1,6 +1,10 @@
 #include "entry.h"
 
 namespace Vivium {
+	std::string getString(Entity entity) {
+		return std::to_string(getIdentifier(entity));
+	};
+
 	IntegerTextEntry submitEntry(EntrySpecification<IntegerTextEntry> const& specification, GUIContext& context, ResourceManager& resourceManager)
 	{
 		IntegerTextEntry entry;

@@ -57,6 +57,19 @@ Say we were to re-design the UI around a different philosophy
 - "fit sizing" -> "grow sizing" -> "positions" -> "draw"
 - break up GUI update function a little to make it simpler
 - clipping of text? more text functions for organising and controlling text
+
+We use the ECS to store most relevant data
+- each entity has components for what data it has on it
+- pipeline objects require links
+	- buffer specification
+	- shaders
+	- etc.
+- we create these links by children or by drag and drop
+	- just look at each child of the tree container, get the relevant entity for that panel
+	- get the components for that entity
+	- see which ones fit our needs for that pipeline's links
+- an entry can link to a different entity?
+
 ## Shader planning
 
 - run-time reflection and some partial compilation on shaders
@@ -69,7 +82,6 @@ Say we were to re-design the UI around a different philosophy
 - look into debug and simulation on CPU side (would require rasterization etc.)
 ## Current tasks
 
-- Tree container first element is broken
 - CMAKE of vivium should be separate to CMAKE of editor
 - Comprehensive documentation of all structs/methods/etc.
 	- just use doxygen format, can build a custom tool later

@@ -30,11 +30,10 @@ struct State {
 		Sprite testSprite1;
 
 		IntegerTextEntry intEntry;
-
 		ObjectEntry<ShaderDataType> shaderEntry;
-
 		ListEntry<ObjectEntry<ShaderDataType>> bufferEntry;
 		EntrySpecification<ObjectEntry<ShaderDataType>> bufferElementSpecification;
+		UploadEntry<Entity> entityUpload;
 
 		struct {
 			Panel background;
@@ -48,6 +47,9 @@ struct State {
 			std::vector<Entity> entities;
 			std::vector<Text> textObjects;
 			std::vector<Panel> entityPanels;
+
+			Entity* heldEntityPtr;
+			Entity heldEntity;
 
 			AtlasIndex img0;
 			AtlasIndex img1;

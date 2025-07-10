@@ -7,16 +7,32 @@
 #include "button.h"
 #include "container.h"
 #include "../../../input.h"
+#include "../../../ecs/defines.h"
 
 namespace Vivium {
+	// TODO: validation with concept
+	template <typename EntryType>
+	struct EntrySpecification;
+
 	template <typename T>
-	concept BaseEntry = requires (T & a, T const& b, char inputChar, GUIContext & context, std::span<T*> const span) {
+	concept BaseEntry = requires (
+		T & a,
+		T const& b,
+		GUIContext& guiContext,
+		std::span<T*> const span,
+		ResourceManager& resourceManager,
+		CommandContext& commandContext,
+		Engine& engine,
+		EntrySpecification<T>& entrySpec
+		) {
 		typename T::ValueType;
+		{ a.base } -> std::same_as<GUIElementReference&>;
 		{ getValue(b) } -> std::same_as<typename T::ValueType>;
-		// TODO: update this for text entries additional parameters
-		// .base
-		{ updateEntry(a, context) } -> std::same_as<void>;
-		{ submitEntries(span, context) } -> std::same_as<void>;
+		{ submitEntry(entrySpec, guiContext, resourceManager) } -> std::same_as<T>;
+		{ setupEntry(a, resourceManager, engine, commandContext, guiContext) } -> std::same_as<void>;
+		{ updateEntry(a, guiContext, engine, commandContext) } -> std::same_as<void>;
+		{ submitEntries(span, guiContext) } -> std::same_as<void>;
+		{ dropEntry(a, engine, guiContext) } -> std::same_as<void>;
 	};
 
 	template <typename T>
@@ -42,11 +58,30 @@ namespace Vivium {
 	// TODO: get value methods for integer/float/string entries
 	//	additionally must deal with the string having invalid characters
 
+	std::string getString(Entity entity);
+
 	template <typename T>
 	concept FiniteObjectType = requires (T a, T b) {
 		std::is_copy_assignable_v<T>;
 		{ a == b } -> std::same_as<bool>;
-		{ getString(a) } -> std::convertible_to<char const*>;
+		{ getString(a) } -> std::convertible_to<std::string>;
+	};
+
+	template <FiniteObjectType T>
+	struct UploadEntry {
+		using ValueType = T;
+
+		GUIElementReference base;
+
+		ValueType currentlySelected;
+		std::string placeholder;
+		ValueType** heldItemPointer;
+
+		Panel valuePanel;
+		Button valueButton;
+		Panel clearPanel;
+
+		bool hasValue;
 	};
 
 	template <FiniteObjectType T>
@@ -73,7 +108,7 @@ namespace Vivium {
 		//	this would require clipping content
 	};
 
-	template <typename ValueEntry>
+	template <BaseEntry ValueEntry>
 	struct ListEntry {
 		using ValueType = std::vector<ValueEntry>;
 
@@ -89,11 +124,8 @@ namespace Vivium {
 		std::vector<Panel> entryWrapper;
 	};
 
-	// TODO: validation with concept
-	template <typename EntryType>
-	struct EntrySpecification;
-
 	// TODO: need more params probably
+	//	- rendering settings?
 	template <>
 	struct EntrySpecification<IntegerTextEntry> {
 		std::string placeholder;
@@ -115,7 +147,13 @@ namespace Vivium {
 		std::vector<T> options;
 	};
 
-	template <typename ValueEntry>
+	template <FiniteObjectType T>
+	struct EntrySpecification<UploadEntry<T>> {
+		std::string placeholder;
+		T** heldItemPointer;
+	};
+
+	template <BaseEntry ValueEntry>
 	struct EntrySpecification<ListEntry<ValueEntry>> {
 		uint64_t maxEntries;
 		EntrySpecification<ValueEntry>* valueSpecification;
@@ -292,7 +330,116 @@ namespace Vivium {
 		return entry.currentlySelected;
 	}
 
-	template <typename ValueEntry>
+	template <FiniteObjectType T>
+	UploadEntry<T> submitEntry(EntrySpecification<UploadEntry<T>> const& specification, GUIContext& context, ResourceManager& resourceManager)
+	{
+		UploadEntry<T> entry;
+
+		entry.base = createGUIElement(context, GUIElementType::ENTRY);
+		entry.valuePanel = createPanel(context, PanelSpecification(
+			entry.base,
+			Color(0.25f, 0.25f, 0.25f),
+			Color(0.1f, 0.1f, 0.1f),
+			0.05f
+		));
+		entry.valueButton = submitButton(resourceManager, context, ButtonSpecification(
+			entry.valuePanel.base,
+			Color(0.25f, 0.25f, 0.25f),
+			Color(0.0f, 0.0f, 0.0f)
+		));
+
+		entry.clearPanel = createPanel(context, PanelSpecification(
+			entry.valuePanel.base,
+			Color(0.85f, 0.25f, 0.25f),
+			Color(0.1f, 0.1f, 0.1f),
+			0.05f
+		));
+		entry.hasValue = false;
+		entry.placeholder = specification.placeholder;
+		entry.heldItemPointer = specification.heldItemPointer;
+
+		VIVIUM_ASSERT(entry.heldItemPointer != nullptr, "No pointer to where held item is");
+
+		return entry;
+	}
+
+	template <FiniteObjectType T>
+	void setupEntry(UploadEntry<T>& entry, ResourceManager& manager, Engine& engine, CommandContext& context, GUIContext& guiContext)
+	{
+		setupButton(entry.valueButton, manager);
+		setButtonText(entry.valueButton, engine, context, guiContext, entry.placeholder);
+
+		// TODO: anchor to left?
+		properties(entry.valueButton, guiContext).dimensions = F32x2(0.65f, 1.0f);
+		
+		properties(entry.clearPanel, guiContext).anchorX = GUIAnchor::RIGHT;
+		properties(entry.clearPanel, guiContext).centerX = GUIAnchor::RIGHT;
+		properties(entry.clearPanel, guiContext).dimensions = F32x2(0.15f, 0.8f);
+		properties(entry.clearPanel, guiContext).position = F32x2(-0.05f, 0.0f);
+	}
+
+	template <FiniteObjectType T>
+	void updateEntry(UploadEntry<T>& entry, GUIContext& guiContext, Engine& engine, CommandContext& context)
+	{
+		// TODO: bad, switch on string not function
+		if (entry.hasValue) {
+			setButtonText(entry.valueButton, engine, context, guiContext,
+				std::format("Entity {}", getString(entry.currentlySelected)));
+		}
+		else {
+			setButtonText(entry.valueButton, engine, context, guiContext, entry.placeholder);
+		}
+
+		bool clicked = Input::get(Input::BTN_1).state == Input::RELEASE;
+		bool hoveringUpload = pointInElement(Input::getCursor(), properties(entry.valueButton.base, guiContext));
+		bool hoveringClear = pointInElement(Input::getCursor(), properties(entry.clearPanel.base, guiContext));
+
+		if (clicked) {
+			if (hoveringClear) {
+				// Clear out the currently selected value
+				entry.hasValue = false;
+			}
+
+			// Need to update the selected value
+			if (hoveringUpload) {
+				// Check we're holding something
+				if (*entry.heldItemPointer != nullptr) {
+					entry.currentlySelected = **entry.heldItemPointer;
+					entry.hasValue = true;
+				}
+				// TODO: We should release the held item... how?
+				//	could just leave it to the application being responsible for releasing it
+			}
+		}
+	}
+
+	template <FiniteObjectType T>
+	void submitEntries(std::span<UploadEntry<T>*> const entries, GUIContext& context)
+	{
+		for (UploadEntry<T>* entry : entries) {
+			Button* buttons[] = { &entry->valueButton };
+			submitButtons(buttons, context);
+
+			Panel* panels[] = { &entry->valuePanel, &entry->clearPanel };
+			submitPanels(panels, context);
+		}
+	}
+
+	template <FiniteObjectType T>
+	void dropEntry(UploadEntry<T>& entry, Engine& engine, GUIContext& guiContext)
+	{
+		dropButton(entry.valueButton, engine, guiContext);
+	}
+
+	template <FiniteObjectType ObjectType>
+	UploadEntry<ObjectType>::ValueType getValue(UploadEntry<ObjectType> const& entry)
+	{
+		// TODO: bit bad, only actually release selected value if there is one (hasValue)
+		VIVIUM_ASSERT(entry.hasValue, "Entry didn't have value but we tried to request it");
+		return entry.currentlySelected;
+	}
+
+	template <BaseEntry ValueEntry>
 	ListEntry<ValueEntry> submitEntry(EntrySpecification<ListEntry<ValueEntry>> const& specification, GUIContext& context, ResourceManager& resourceManager)
 	{
 		ListEntry<ValueEntry> entry;
@@ -381,7 +528,7 @@ namespace Vivium {
 		return entry;
 	}
 	
-	template <typename ValueEntry>
+	template <BaseEntry ValueEntry>
 	void setupEntry(ListEntry<ValueEntry>& entry, ResourceManager& resourceManager, Engine& engine, CommandContext& context, GUIContext& guiContext)
 	{
 		setupButton(entry.addEntry, resourceManager);
@@ -392,7 +539,7 @@ namespace Vivium {
 		}
 	}
 
-	template <typename ValueEntry>
+	template <BaseEntry ValueEntry>
 	void _removeIndexFromListEntry(ListEntry<ValueEntry>& entry, GUIContext& guiContext, uint64_t index)
 	{
 		// what if we just moved that entry to the back of the list?
@@ -420,7 +567,7 @@ namespace Vivium {
 		entry.numEntries--;
 	}
 
-	template <typename ValueEntry>
+	template <BaseEntry ValueEntry>
 	void _insertIndexToListEntry(ListEntry<ValueEntry>& entry, GUIContext& guiContext, uint64_t index)
 	{
 		if (entry.numEntries == entry.entries.size()) {
@@ -446,7 +593,7 @@ namespace Vivium {
 		entry.numEntries++;
 	}
 
-	template <typename ValueEntry>
+	template <BaseEntry ValueEntry>
 	void _swapIndicesListEntry(ListEntry<ValueEntry>& entry, GUIContext& guiContext, uint64_t a, uint64_t b)
 	{
 		if (a < 0 || b < 0) return;
@@ -460,7 +607,7 @@ namespace Vivium {
 		swapChildren(entry.entryContainer.base, a + 1, b + 1, guiContext);
 	}
 
-	template <typename ValueEntry>
+	template <BaseEntry ValueEntry>
 	void updateEntry(ListEntry<ValueEntry>& entry, GUIContext& guiContext, Engine& engine, CommandContext& context)
 	{
 		// TODO: gotta find a work-around for this
@@ -500,7 +647,7 @@ namespace Vivium {
 		}
 	}
 
-	template <typename ValueEntry>
+	template <BaseEntry ValueEntry>
 	void submitEntries(std::span<ListEntry<ValueEntry>*> const entries, GUIContext& context)
 	{
 		for (ListEntry<ValueEntry>* entry : entries) {
@@ -527,7 +674,7 @@ namespace Vivium {
 		}
 	}
 	
-	template <typename ValueEntry>
+	template <BaseEntry ValueEntry>
 	void dropEntry(ListEntry<ValueEntry>& entry, Engine& engine, GUIContext& guiContext)
 	{
 		dropButton(entry.addEntry, engine, guiContext);
@@ -537,7 +684,7 @@ namespace Vivium {
 		}
 	}
 
-	template <typename ValueEntry>
+	template <BaseEntry ValueEntry>
 	ListEntry<ValueEntry>::ValueType getValue(ListEntry<ValueEntry> const& entry)
 	{
 		std::vector<typename ValueEntry::ValueType> results;

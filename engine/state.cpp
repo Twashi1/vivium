@@ -13,6 +13,10 @@ void _submitEditor(State& state)
 	state.editor.testSprite1 = createSprite(state.guiContext, SpriteSpecification(defaultGUIParent(state.guiContext),
 		state.editor.entityView.img1.translation, state.editor.entityView.img1.scale));
 	state.editor.intEntry = submitEntry(EntrySpecification<IntegerTextEntry>("0"), state.guiContext, state.manager);
+	state.editor.entityUpload = submitEntry(EntrySpecification<UploadEntry<Entity>>(
+		"Upload entity",
+		&state.editor.entityView.heldEntityPtr
+	), state.guiContext, state.manager);
 
 	state.editor.bufferElementSpecification = EntrySpecification<ObjectEntry<ShaderDataType>>(
 		ShaderDataType::FLOAT,
@@ -42,6 +46,7 @@ void _submitEditor(State& state)
 	addChild(defaultGUIParent(state.guiContext), { &state.editor.intEntry.base, 1 }, state.guiContext);
 	addChild(defaultGUIParent(state.guiContext), { &state.editor.shaderEntry.base, 1 }, state.guiContext);
 	addChild(defaultGUIParent(state.guiContext), { &state.editor.bufferEntry.base, 1 }, state.guiContext);
+	addChild(defaultGUIParent(state.guiContext), { &state.editor.entityUpload.base, 1 }, state.guiContext);
 
 	_submitEntityView(state);
 }
@@ -54,6 +59,7 @@ void _submitEntityView(State& state)
 	state.editor.entityView.entityTree.enabled = true;
 	state.editor.entityView.entityTextBatch = submitTextBatch(state.manager, state.guiContext, TextBatchSpecification{ 256, state.editor.entityView.createButton.textBatch.font });
 	state.editor.entityView.heldElement = nullptr;
+	state.editor.entityView.heldEntityPtr = nullptr;
 
 	for (uint32_t i = 0; i < MAX_CONCURRENT_ENTITY_PANELS; i++) {
 		state.editor.entityView.entityPanels.push_back(createPanel(state.guiContext, PanelSpecification(nullGUIParent(), colorDarkGray, colorBlack, 0.01f)));
@@ -80,6 +86,7 @@ void _setupEditor(State& state)
 	setupEntry(state.editor.intEntry, state.manager, state.engine, state.context, state.guiContext);
 	setupEntry(state.editor.shaderEntry, state.manager, state.engine, state.context, state.guiContext);
 	setupEntry(state.editor.bufferEntry, state.manager, state.engine, state.context, state.guiContext);
+	setupEntry(state.editor.entityUpload, state.manager, state.engine, state.context, state.guiContext);
 
 	_setupEntityView(state);
 
@@ -97,6 +104,9 @@ void _setupEditor(State& state)
 
 	properties(state.editor.bufferEntry, state.guiContext).dimensions = F32x2(0.2f, 0.3f);
 	properties(state.editor.bufferEntry, state.guiContext).position = F32x2(0.0f, 0.5f);
+
+	properties(state.editor.entityUpload, state.guiContext).dimensions = F32x2(0.3f, 0.1f);
+	properties(state.editor.entityUpload, state.guiContext).position = F32x2(0.0f, 0.0f);
 }
 
 void _setupEntityView(State& state)
@@ -151,6 +161,7 @@ void _dropEditor(State& state)
 	dropEntry(state.editor.shaderEntry, state.engine, state.guiContext);
 	dropEntry(state.editor.intEntry, state.engine, state.guiContext);
 	dropEntry(state.editor.bufferEntry, state.engine, state.guiContext);
+	dropEntry(state.editor.entityUpload, state.engine, state.guiContext);
 }
 
 void _dropEntityView(State& state)
@@ -167,23 +178,47 @@ void _update(State& state)
 	updateEntry(state.editor.intEntry, state.guiContext, state.engine, state.context);
 	updateEntry(state.editor.shaderEntry, state.guiContext, state.engine, state.context);
 	updateEntry(state.editor.bufferEntry, state.guiContext, state.engine, state.context);
+	updateEntry(state.editor.entityUpload, state.guiContext, state.engine, state.context);
 
-	if (pointInElement(Input::getCursor(), properties(state.editor.entityView.createButton, state.guiContext)) && Input::get(Input::BTN_LEFT).state == Input::PRESS) {
-		Entity newEntity = state.registry.create();
-		state.registry.addComponent<ComponentName>(newEntity, ComponentName{ std::format("Entity {}", newEntity & ECS_ENTITY_MASK) });
+	bool clicked = Input::get(Input::BTN_LEFT).state == Input::RELEASE;
+	bool hoverCreateButton = pointInElement(Input::getCursor(), properties(state.editor.entityView.createButton, state.guiContext));
 
-		state.editor.entityView.entities.push_back(newEntity);
-		// Enable the relevant container
-		TreeContainer* container = getContainerByPanel(state.editor.entityView.entities.size() - 1, state.editor.entityView.entityTree);
+	// VIVIUM_LOG(LogSeverity::DEBUG, "Holding something: {}", state.editor.entityView.heldEntityPtr != nullptr);
 
-		VIVIUM_ASSERT(container != nullptr, "Couldn't get container for new panel");
+	if (clicked) {
+		if (hoverCreateButton) {
+			Entity newEntity = state.registry.create();
+			state.registry.addComponent<ComponentName>(newEntity, ComponentName{ std::format("Entity {}", newEntity & ECS_ENTITY_MASK) });
 
-		VIVIUM_LOG(LogSeverity::DEBUG, "Enabling panel by id {}", state.editor.entityView.entities.size() - 1);
+			state.editor.entityView.entities.push_back(newEntity);
+			// Enable the relevant container
+			TreeContainer* container = getContainerByPanel(state.editor.entityView.entities.size() - 1, state.editor.entityView.entityTree);
 
-		container->enabled = true;
+			VIVIUM_ASSERT(container != nullptr, "Couldn't get container for new panel");
+
+			VIVIUM_LOG(LogSeverity::DEBUG, "Enabling panel by id {}", state.editor.entityView.entities.size() - 1);
+
+			container->enabled = true;
+		}
 	}
 
+	// TODO: rename to hovered
 	state.editor.entityView.heldElement = updateTreeContainer(Input::getCursor(), state.editor.entityView.entityTree, state.editor.entityView.heldElement, state.guiContext);
+
+	// Look for entity of held element
+	if (state.editor.entityView.heldElement != nullptr && state.editor.entityView.heldElement->data != nullptr) {
+		int panelIndex = *(int*)state.editor.entityView.heldElement->data;
+		// We can assume the panel index is also the index for the relevant entity
+		state.editor.entityView.heldEntity = state.editor.entityView.entities[panelIndex];
+		state.editor.entityView.heldEntityPtr = &state.editor.entityView.heldEntity;
+
+		VIVIUM_LOG(LogSeverity::DEBUG, "Setting held entity index {}", panelIndex);
+	}
+	else {
+		state.editor.entityView.heldEntityPtr = nullptr;
+
+		VIVIUM_LOG(LogSeverity::DEBUG, "Clearing held entity");
+	}
 
 	// TODO: get view from registry
 	int i = 0;
@@ -234,6 +269,9 @@ void _draw(State& state)
 
 	auto bufferEntryPtr = &state.editor.bufferEntry;
 	submitEntries<ObjectEntry<ShaderDataType>>({ &bufferEntryPtr, 1 }, state.guiContext);
+
+	auto uploadEntityPtr = &state.editor.entityUpload;
+	submitEntries<Entity>({ &uploadEntityPtr, 1 }, state.guiContext);
 
 	renderGUI(state.context, state.guiContext, state.window);
 
