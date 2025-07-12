@@ -61,22 +61,56 @@ struct DescriptorSetComponent {
 	std::vector<Entity> bindingData;
 };
 
+/*
+		typename T::ValueType;
+		{ a.base } -> std::same_as<GUIElementReference&>;
+		{ getValue(b) } -> std::same_as<typename T::ValueType>;
+		{ submitEntry(entrySpec, guiContext, resourceManager) } -> std::same_as<T>;
+		{ setupEntry(a, resourceManager, engine, commandContext, guiContext) } -> std::same_as<void>;
+		{ updateEntry(a, guiContext, engine, commandContext) } -> std::same_as<void>;
+		{ submitEntries(span, guiContext) } -> std::same_as<void>;
+		{ dropEntry(a, engine, guiContext) } -> std::same_as<void>;
+*/
+
 struct PipelineEntry {
+	using ValueType = PipelineComponent;
+
 	// TODO: need the drag and drop for entities or something of sort
 };
 
 struct ShaderEntry {
+	using ValueType = ShaderComponent;
+
 	StringTextEntry filenameEntry;
 	ObjectEntry<ShaderStage> stageEntry;
 };
 
 struct BufferLayoutEntry {
+	using ValueType = BufferLayoutComponent;
+
 	ListEntry<ObjectEntry<ShaderDataType>> typesEntry;
 };
 
 // TODO: have to design this to fit the specifications of an entry
 struct UniformBindingEntry {
+	using ValueType = UniformBinding;
+
+	GUIElementReference base;
+
+	Panel background;
+	Container entryContainer;
+
 	ObjectEntry<ShaderStage> stageEntry;
 	IntegerTextEntry slotEntry;
 	ObjectEntry<UniformType> typeEntry;
 };
+
+template <>
+struct EntrySpecification<UniformBindingEntry> {};
+
+UniformBinding getValue(UniformBindingEntry& entry);
+UniformBindingEntry submitEntry(EntrySpecification<UniformBindingEntry> const& spec, GUIContext& guiContext, ResourceManager& resourceManager);
+void setupEntry(UniformBindingEntry& entry, ResourceManager& manager, Engine& engine, CommandContext& context, GUIContext& guiContext);
+void updateEntry(UniformBindingEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
+void submitEntries(std::span<UniformBindingEntry*> const entries, GUIContext& guiContext);
+void dropEntry(UniformBindingEntry& entry, Engine& engine, GUIContext& guiContext);

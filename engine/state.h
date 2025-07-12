@@ -2,6 +2,7 @@
 
 #include "engine.h"
 #include "tree_container.h"
+#include "components.h"
 
 struct ComponentName {
 	std::string name;
@@ -34,6 +35,8 @@ struct State {
 		ListEntry<ObjectEntry<ShaderDataType>> bufferEntry;
 		EntrySpecification<ObjectEntry<ShaderDataType>> bufferElementSpecification;
 		UploadEntry<Entity> entityUpload;
+
+		UniformBindingEntry bindingEntry;
 
 		struct {
 			Panel background;

@@ -110,6 +110,7 @@ We use the ECS to store most relevant data
 - Investigate ability to change size of group (not during iteration) and still correctly see all entities
 ## Core
 
+- We need to be able to smoothly switch between fonts appropriate to the size of text?
 - Eventually switch to some truly generalisable system for rendering any type of GUI component
 	- only need rectangles for base?
 	- then draw any sprites?

@@ -18,6 +18,8 @@ void _submitEditor(State& state)
 		&state.editor.entityView.heldEntityPtr
 	), state.guiContext, state.manager);
 
+	state.editor.bindingEntry = submitEntry(EntrySpecification<UniformBindingEntry>(), state.guiContext, state.manager);
+
 	state.editor.bufferElementSpecification = EntrySpecification<ObjectEntry<ShaderDataType>>(
 		ShaderDataType::FLOAT,
 		{
@@ -47,6 +49,7 @@ void _submitEditor(State& state)
 	addChild(defaultGUIParent(state.guiContext), { &state.editor.shaderEntry.base, 1 }, state.guiContext);
 	addChild(defaultGUIParent(state.guiContext), { &state.editor.bufferEntry.base, 1 }, state.guiContext);
 	addChild(defaultGUIParent(state.guiContext), { &state.editor.entityUpload.base, 1 }, state.guiContext);
+	addChild(defaultGUIParent(state.guiContext), { &state.editor.bindingEntry.base, 1 }, state.guiContext);
 
 	_submitEntityView(state);
 }
@@ -87,6 +90,7 @@ void _setupEditor(State& state)
 	setupEntry(state.editor.shaderEntry, state.manager, state.engine, state.context, state.guiContext);
 	setupEntry(state.editor.bufferEntry, state.manager, state.engine, state.context, state.guiContext);
 	setupEntry(state.editor.entityUpload, state.manager, state.engine, state.context, state.guiContext);
+	setupEntry(state.editor.bindingEntry, state.manager, state.engine, state.context, state.guiContext);
 
 	_setupEntityView(state);
 
@@ -106,7 +110,10 @@ void _setupEditor(State& state)
 	properties(state.editor.bufferEntry, state.guiContext).position = F32x2(0.0f, 0.5f);
 
 	properties(state.editor.entityUpload, state.guiContext).dimensions = F32x2(0.3f, 0.1f);
-	properties(state.editor.entityUpload, state.guiContext).position = F32x2(0.0f, 0.0f);
+	properties(state.editor.entityUpload, state.guiContext).position = F32x2(0.3f, 0.0f);
+
+	properties(state.editor.bindingEntry, state.guiContext).dimensions = F32x2(0.2f, 0.05f);
+	properties(state.editor.bindingEntry, state.guiContext).position = F32x2(-0.2f, -0.1f);
 }
 
 void _setupEntityView(State& state)
@@ -162,6 +169,7 @@ void _dropEditor(State& state)
 	dropEntry(state.editor.intEntry, state.engine, state.guiContext);
 	dropEntry(state.editor.bufferEntry, state.engine, state.guiContext);
 	dropEntry(state.editor.entityUpload, state.engine, state.guiContext);
+	dropEntry(state.editor.bindingEntry, state.engine, state.guiContext);
 }
 
 void _dropEntityView(State& state)
@@ -179,6 +187,7 @@ void _update(State& state)
 	updateEntry(state.editor.shaderEntry, state.guiContext, state.engine, state.context);
 	updateEntry(state.editor.bufferEntry, state.guiContext, state.engine, state.context);
 	updateEntry(state.editor.entityUpload, state.guiContext, state.engine, state.context);
+	updateEntry(state.editor.bindingEntry, state.guiContext, state.engine, state.context);
 
 	bool clicked = Input::get(Input::BTN_LEFT).state == Input::RELEASE;
 	bool hoverCreateButton = pointInElement(Input::getCursor(), properties(state.editor.entityView.createButton, state.guiContext));
@@ -202,7 +211,6 @@ void _update(State& state)
 		}
 	}
 
-	// TODO: rename to hovered
 	state.editor.entityView.heldElement = updateTreeContainer(Input::getCursor(), state.editor.entityView.entityTree, state.editor.entityView.heldElement, state.guiContext);
 
 	// Look for entity of held element
@@ -216,8 +224,6 @@ void _update(State& state)
 	}
 	else {
 		state.editor.entityView.heldEntityPtr = nullptr;
-
-		VIVIUM_LOG(LogSeverity::DEBUG, "Clearing held entity");
 	}
 
 	// TODO: get view from registry
@@ -272,6 +278,9 @@ void _draw(State& state)
 
 	auto uploadEntityPtr = &state.editor.entityUpload;
 	submitEntries<Entity>({ &uploadEntityPtr, 1 }, state.guiContext);
+
+	auto uniformEntry = &state.editor.bindingEntry;
+	submitEntries({ &uniformEntry, 1 }, state.guiContext);
 
 	renderGUI(state.context, state.guiContext, state.window);
 
