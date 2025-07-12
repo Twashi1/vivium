@@ -343,4 +343,7 @@ void submitEntries(std::span<BufferEntry*> const entries, GUIContext& guiContext
 void dropEntry(BufferEntry& entry, Engine& engine, GUIContext& guiContext)
 {
 	delete entry.entrySpec;
+
+	dropEntry(entry.data, engine, guiContext);
+	dropEntry(entry.usage, engine, guiContext);
 }
