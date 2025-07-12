@@ -152,6 +152,11 @@ struct BufferEntry {
 	EntrySpecification<FloatTextEntry>* entrySpec;
 };
 
+// TODO: should be union really but silly default constructor (let me be bad)
+struct DescriptorSetComponentItem {
+	BufferComponent buffer;
+};
+
 template <>
 struct EntrySpecification<UniformBindingEntry> {};
 
@@ -227,13 +232,5 @@ alternatively?
 -	and instead we use upload entries (much easier... better?)
 */
 
-void findEntitiesForDescriptorSet(std::span<Entity> entities, Registry registry) {
-	for (Entity entity : entities) {
-		// Look for components
-		// 1. Buffer
-		// 2. Texture
-		// 3. Framebuffer
-		// (right now we only have buffers so)
-		// TODO
-	}
-}
+std::vector<DescriptorSetComponentItem> findEntitiesForDescriptorSet(std::span<Entity> entities, Registry registry);
+void fillOutPipeline(std::span<Entity> entities, PipelineComponent& pipeline, Registry registry);

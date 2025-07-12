@@ -194,6 +194,13 @@ namespace Vivium {
 			return _getPoolOrCreate<T>()->get<T>(entity);
 		}
 
+		template <ValidComponent T>
+		bool hasComponent(Entity entity) {
+			Signature const& signature = signatures.index(getIdentifier(entity));
+
+			return signature.test(TypeGenerator::getIdentifier<T>());
+		}
+
 		template <OwnershipTag... Components>
 		View<Components...> createView() {
 			GroupMetadata* metadata = new GroupMetadata;

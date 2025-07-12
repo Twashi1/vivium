@@ -109,14 +109,7 @@ void dropEntry(UniformBindingEntry& entry, Engine& engine, GUIContext& guiContex
 
 BufferLayoutComponent getValue(BufferLayoutEntry& entry)
 {
-	std::vector<ObjectEntry<ShaderDataType>> entryTypes = getValue(entry.typesEntry);
-	std::vector<ShaderDataType> types(entryTypes.size());
-
-	for (uint64_t i = 0; i < entryTypes.size(); i++) {
-		types[i] = getValue(entryTypes[i]);
-	}
-
-	return BufferLayoutComponent(types);
+	return BufferLayoutComponent(getValue(entry.typesEntry));
 }
 
 BufferLayoutEntry submitEntry(EntrySpecification<BufferLayoutEntry> const& spec, GUIContext& guiContext, ResourceManager& resourceManager)
@@ -241,13 +234,8 @@ void dropEntry(ShaderEntry& entry, Engine& engine, GUIContext& guiContext)
 DescriptorLayoutComponent getValue(DescriptorLayoutEntry& entry)
 {
 	DescriptorLayoutComponent component;
-	std::vector<UniformBindingEntry> entries = getValue(entry.bindingEntries);
-	component.bindings.resize(entries.size());
-
-	for (uint64_t i = 0; i < component.bindings.size(); i++) {
-		component.bindings[i] = getValue(entries[i]);
-	}
-
+	// component.bindings = getValue(entry.bindingEntries);
+	// TODO: re-enable?
 	return component;
 }
 
@@ -263,6 +251,8 @@ DescriptorLayoutEntry submitEntry(EntrySpecification<DescriptorLayoutEntry> cons
 	), guiContext, resourceManager);
 	
 	addChild(entry.base, { &entry.bindingEntries.base, 1 }, guiContext);
+
+	return entry;
 }
 
 void setupEntry(DescriptorLayoutEntry& entry, ResourceManager& manager, Engine& engine, CommandContext& context, GUIContext& guiContext)
@@ -288,15 +278,11 @@ BufferComponent getValue(BufferEntry& entry)
 {
 	BufferComponent component;
 
-	std::vector<FloatTextEntry> entries = getValue(entry.data);
-	component.data.resize(entries.size());
-
-	for (uint64_t i = 0; i < component.data.size(); i++) {
-		component.data[i] = getValue(entries[i]);
-	}
-
+	component.data = getValue(entry.data);
 	component.size = component.data.size() * sizeof(float);
 	component.usage = getValue(entry.usage);
+
+	return component;
 }
 
 BufferEntry submitEntry(EntrySpecification<BufferEntry> const& spec, GUIContext& guiContext, ResourceManager& resourceManager)
@@ -315,6 +301,8 @@ BufferEntry submitEntry(EntrySpecification<BufferEntry> const& spec, GUIContext&
 
 	addChild(entry.base, { &entry.usage.base, 1 }, guiContext);
 	addChild(entry.base, { &entry.data.base, 1 }, guiContext);
+	
+	return entry;
 }
 
 void setupEntry(BufferEntry& entry, ResourceManager& manager, Engine& engine, CommandContext& context, GUIContext& guiContext)
@@ -346,4 +334,74 @@ void dropEntry(BufferEntry& entry, Engine& engine, GUIContext& guiContext)
 
 	dropEntry(entry.data, engine, guiContext);
 	dropEntry(entry.usage, engine, guiContext);
+}
+
+std::vector<DescriptorSetComponentItem> findEntitiesForDescriptorSet(std::span<Entity> entities, Registry registry) {
+	std::vector<DescriptorSetComponentItem> items;
+
+	for (Entity entity : entities) {
+		// Look for components
+		// 1. Buffer
+		// 2. Texture
+		// 3. Framebuffer
+		// (right now we only have buffers so)
+		if (registry.hasComponent<BufferComponent>(entity)) {
+			DescriptorSetComponentItem item;
+			item.buffer = registry.getComponent<BufferComponent>(entity);
+			items.push_back(item);
+		}
+	}
+	
+	return items;
+}
+
+void fillOutPipeline(std::span<Entity> entities, PipelineComponent& pipeline, Registry registry)
+{
+	/*
+		Entity bufferLayout;
+	Entity descriptorLayout;
+	Entity vertexShader;
+	Entity fragmentShader;
+	
+	Entity vertexBuffer;
+	Entity indexBuffer;
+	Entity descriptorSet;
+	*/
+
+	for (Entity entity : entities) {
+		// vertex/index buffer
+		if (registry.hasComponent<BufferComponent>(entity)) {
+			BufferComponent& buffer = registry.getComponent<BufferComponent>(entity);
+
+			if (buffer.usage == BufferUsage::VERTEX) {
+				pipeline.vertexBuffer = entity;
+			}
+			else if (buffer.usage == BufferUsage::INDEX) {
+				pipeline.indexBuffer = entity;
+			}
+		}
+
+		if (registry.hasComponent<BufferLayoutComponent>(entity)) {
+			pipeline.bufferLayout = entity;
+		}
+
+		if (registry.hasComponent<DescriptorLayoutComponent>(entity)) {
+			pipeline.descriptorLayout = entity;
+		}
+
+		if (registry.hasComponent<ShaderComponent>(entity)) {
+			ShaderComponent& shader = registry.getComponent<ShaderComponent>(entity);
+
+			if (shader.type == ShaderStage::VERTEX) {
+				pipeline.vertexShader = entity;
+			}
+			else if (shader.type == ShaderStage::FRAGMENT) {
+				pipeline.fragmentShader = entity;
+			}
+		}
+
+		if (registry.hasComponent<DescriptorSetComponent>(entity)) {
+			pipeline.descriptorSet = entity;
+		}
+	}
 }

@@ -25,6 +25,8 @@ namespace Vivium {
 		UniformType type;
 	};
 
+	// TODO: get rid of member structus
+	//	how can we tell apart? does the descriptor layout tell us?
 	union UniformData {
 		struct BufferData {
 			BufferReference buffer;

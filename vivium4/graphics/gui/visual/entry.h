@@ -89,7 +89,7 @@ namespace Vivium {
 
 	template <typename ValueEntry>
 	struct ListEntry {
-		using ValueType = std::vector<ValueEntry>;
+		using ValueType = std::vector<typename ValueEntry::ValueType>;
 
 		GUIElementReference base;
 
@@ -262,7 +262,7 @@ namespace Vivium {
 				// This is the button we clicked
 				if (hoveringButton) {
 					// Get string for the option we clicked
-					char const* optionRepresentation = getString(entry.options[i]);
+					std::string optionRepresentation = getString(entry.options[i]);
 
 					// TODO: this seems to be the only set text thats working?
 					setButtonText(entry.objectView, engine, context, guiContext, optionRepresentation);
