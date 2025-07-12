@@ -234,3 +234,91 @@ We use the ECS to store most relevant data
 - Raytracing
 - Shader debugger tool - use CPU to simulate GPU actions for some fragments
 - Platform independence (OS module, Timer module)
+
+## Future
+
+> After the MVP works
+
+Code style is torn between attempts to be C-compatible and a data-oriented C++ style
+- We should stick to one
+	- Namespaces? Just include them in the name of the relevant function
+	- In-code templates? None are a strict necessity, but seem to be needed to avoid excessive code duplication
+	- STL usage? We really need `std::vector`, not really any alternative other than macro programming which would make us completely C project
+	- We either lean more closely into the C++ style, or we pick a different language (or make custom)
+		- Consequences: reverting back to using namespaces to split up code
+		- Large parts of code change to fit C++ style
+
+GUI is an inefficient mess
+- Actual profiling concerns
+	- `calculateTextMetrics` takes a long time as we re-calculate text every frame
+	- many draw calls for each text object
+	- multiple different pipelines required for each type of GUI object
+- Immediate-mode convenient GUI
+	- we don't want to have to construct and manage the memory of GUI objects
+	- the ideal is to be able to edit a file so we don't have to recompile each time
+	- so we should be specifying the GUI in a file
+		- largest problem is running code to modify the GUI at run-time
+		- can't really have best of both worlds?
+- Either:
+	- File-based CSS-like approach, but at cost of complications in modifying GUI
+	- In-code with no externals
+
+```
+Vivium::GUI buttonObject = Vivium::Button("Button text", callbackFunction/lambda);
+Vivium::GUI textObject = Vivium::Text("Hello world");
+
+render(buttonObject, ...params);
+render(textObject, ...params);
+```
+- still need to store these objects
+- still need to call rendering commands, conditions on if they should be drawn or not
+- still need to drop them
+- crucially, still need to organise and sort them with containers/etc, manually set up dimensions and anchors, etc.
+- upside is more control and likely performance is better
+
+```
+beginGUI(styleGuide)
+
+beginContainer(VERTICAL, growDimension());   
+ref = button("Click me", fixed(200, 50), position(left, top, left, top, fixed(0, 0)), clickCallback);
+ref = text("Text that toggles visibility", fixedDimension(200, 40))
+ref = panel("Fit to size", fitDimension(100, 30), styleOverride); // declaring a minimum size
+addEvent(onHover, refPanel, callback);
+endContainer();
+
+GUI guiManifest = endGUI()
+
+submitGUI(guiManifest)
+setupGUI(guiManifest)
+renderGUI(guiManifest)
+dropGUI(guiManifest)
+```
+- still a lot of information to declare about positioning, dimension and how dimension changes
+- almost guaranteed to be less efficient
+- either functions have side effects (somewhat violating design), or we need to pass in the parent to every creation function
+	- (and now we see it basically arrives at the same design we had before)
+
+either we make a ton of assumptions on positioning, or we give full control and cause more declaration
+at the least this new system would require drastically fewer function calls and tracking of data
+- could we make entity tree with this new system?
+
+- if we want an editable GUI, we have 2 approaches
+	- unlimited size, but dynamic creation of objects and modification of GUI structure
+	- limited size, with enabling/disabling elements as required
+- in both approaches, we need static references to objects from which can be referenced to modify structure in functions (e.g. add new elements to a container, or enable/disable rendering)
+- or extreme complicated approach where we re-generate the entire GUI each time we need modification, just with some caching
+
+ultimate conclusion is that unless we want to limit GUI functionality, we should keep current GUI, but with some additional functionalities
+- grow/fit/fixed sizing
+- minimum/maximum/ideal sizing
+- rewrite GUI to work in just 2 draw calls
+	- rendering all generic panels (including borders, rounded corners, etc. customised)
+	- rendering all text
+- general "Style" component for most GUI objects? either `ButtonStyle`, `PanelStyle`, etc., or just a single `Style`
+- GUI should work under dynamic rendering allowing for better customisability in future
+
+## Final goal for MVP
+
+Editor window allows creation of a rendering pipeline through simple drag-and-drops and data entry
+- upon pressing a compile button, this data is converting into bytecode
+- add some console command that allows running of this bytecode to perform the described render pipeline

@@ -27,6 +27,26 @@ guiContext.button.buttons.clear();
 //	need specification for buffer layout
 //  need shaders
 
+// 1. we add components to entities (need button/selection)
+//	these components come with entries, which we fill out
+//  some components take their data from children of the entity they have been placed on
+
+// 2. parse the tree, looking for each entity with pipeline components (or just go through registry)
+//	resolve all dependencies
+//	compile to intermediary
+//	interpret intermediary to create vulkan objects
+
+enum VulkanComponent {
+	PIPELINE,
+	BUFFER_LAYOUT,
+	DESCRIPTOR_LAYOUT,
+	SHADER,
+	BUFFER,
+	DESCRIPTOR_SET
+};
+
+std::string getString(VulkanComponent component);
+
 struct PipelineComponent {
 	Entity bufferLayout;
 	Entity descriptorLayout;
@@ -47,7 +67,7 @@ struct DescriptorLayoutComponent {
 };
 
 struct ShaderComponent {
-	const char* filename;
+	std::string filename;
 	ShaderStage type;
 };
 
@@ -75,11 +95,17 @@ struct DescriptorSetComponent {
 struct PipelineEntry {
 	using ValueType = PipelineComponent;
 
+	GUIElementReference base;
 	// TODO: need the drag and drop for entities or something of sort
+
+	UploadEntry<Entity> vertexShader;
+	UploadEntry<Entity> fragmentShader;
 };
 
 struct ShaderEntry {
 	using ValueType = ShaderComponent;
+
+	GUIElementReference base;
 
 	StringTextEntry filenameEntry;
 	ObjectEntry<ShaderStage> stageEntry;
@@ -87,6 +113,8 @@ struct ShaderEntry {
 
 struct BufferLayoutEntry {
 	using ValueType = BufferLayoutComponent;
+
+	GUIElementReference base;
 
 	ListEntry<ObjectEntry<ShaderDataType>> typesEntry;
 };
@@ -105,8 +133,29 @@ struct UniformBindingEntry {
 	ObjectEntry<UniformType> typeEntry;
 };
 
+struct DescriptorLayoutEntry {
+	using ValueType = DescriptorLayoutComponent;
+
+	GUIElementReference base;
+
+	EntrySpecification<UniformBindingEntry>* entrySpec;
+	ListEntry<UniformBindingEntry> bindingEntries;
+};
+
 template <>
 struct EntrySpecification<UniformBindingEntry> {};
+
+template <>
+struct EntrySpecification<BufferLayoutEntry> {};
+
+template <>
+struct EntrySpecification<ShaderEntry> {};
+
+template <>
+struct EntrySpecification<PipelineEntry> {};
+
+template <>
+struct EntrySpecification<DescriptorLayoutEntry> {};
 
 UniformBinding getValue(UniformBindingEntry& entry);
 UniformBindingEntry submitEntry(EntrySpecification<UniformBindingEntry> const& spec, GUIContext& guiContext, ResourceManager& resourceManager);
@@ -114,3 +163,46 @@ void setupEntry(UniformBindingEntry& entry, ResourceManager& manager, Engine& en
 void updateEntry(UniformBindingEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
 void submitEntries(std::span<UniformBindingEntry*> const entries, GUIContext& guiContext);
 void dropEntry(UniformBindingEntry& entry, Engine& engine, GUIContext& guiContext);
+
+BufferLayoutComponent getValue(BufferLayoutEntry& entry);
+BufferLayoutEntry submitEntry(EntrySpecification<BufferLayoutEntry> const& spec, GUIContext& guiContext, ResourceManager& resourceManager);
+void setupEntry(BufferLayoutEntry& entry, ResourceManager& manager, Engine& engine, CommandContext& context, GUIContext& guiContext);
+void updateEntry(BufferLayoutEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
+void submitEntries(std::span<BufferLayoutEntry*> const entries, GUIContext& guiContext);
+void dropEntry(BufferLayoutEntry& entry, Engine& engine, GUIContext& guiContext);
+
+ShaderComponent getValue(ShaderEntry& entry);
+ShaderEntry submitEntry(EntrySpecification<ShaderEntry> const& spec, GUIContext& guiContext, ResourceManager& resourceManager);
+void setupEntry(ShaderEntry& entry, ResourceManager& manager, Engine& engine, CommandContext& context, GUIContext& guiContext);
+void updateEntry(ShaderEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
+void submitEntries(std::span<ShaderEntry*> const entries, GUIContext& guiContext);
+void dropEntry(ShaderEntry& entry, Engine& engine, GUIContext& guiContext);
+
+DescriptorLayoutComponent getValue(DescriptorLayoutEntry& entry);
+DescriptorLayoutEntry submitEntry(EntrySpecification<DescriptorLayoutEntry> const& spec, GUIContext& guiContext, ResourceManager& resourceManager);
+void setupEntry(DescriptorLayoutEntry& entry, ResourceManager& manager, Engine& engine, CommandContext& context, GUIContext& guiContext);
+void updateEntry(DescriptorLayoutEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
+void submitEntries(std::span<DescriptorLayoutEntry*> const entries, GUIContext& guiContext);
+void dropEntry(DescriptorLayoutEntry& entry, Engine& engine, GUIContext& guiContext);
+
+/*
+- click on an entity
+- want to open inspector window
+- click add button
+-	object entry, component type
+- adds a component
+-	grab relevant entry
+-	organises into a vbox (... problem, we can't create new entries at runtime)
+-	if we add components that look for certain children?
+-	component is added to the entity
+-	upon updating the entity (through tree container?)
+-		component that requires children of certain type
+-		look through all children entities
+-		any with relevant component are then tracked and added
+-		and we fill out the component's data for that frame
+
+
+alternatively?
+-	just treat the entity tree as an organisation tool, not relevant to representing hierarchys
+-	and instead we use upload entries (much easier... better?)
+*/

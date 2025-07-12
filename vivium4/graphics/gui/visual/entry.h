@@ -15,27 +15,6 @@ namespace Vivium {
 	struct EntrySpecification;
 
 	template <typename T>
-	concept BaseEntry = requires (
-		T & a,
-		T const& b,
-		GUIContext& guiContext,
-		std::span<T*> const span,
-		ResourceManager& resourceManager,
-		CommandContext& commandContext,
-		Engine& engine,
-		EntrySpecification<T>& entrySpec
-		) {
-		typename T::ValueType;
-		{ a.base } -> std::same_as<GUIElementReference&>;
-		{ getValue(b) } -> std::same_as<typename T::ValueType>;
-		{ submitEntry(entrySpec, guiContext, resourceManager) } -> std::same_as<T>;
-		{ setupEntry(a, resourceManager, engine, commandContext, guiContext) } -> std::same_as<void>;
-		{ updateEntry(a, guiContext, engine, commandContext) } -> std::same_as<void>;
-		{ submitEntries(span, guiContext) } -> std::same_as<void>;
-		{ dropEntry(a, engine, guiContext) } -> std::same_as<void>;
-	};
-
-	template <typename T>
 	struct TextEntry {
 		using ValueType = T;
 
@@ -108,7 +87,7 @@ namespace Vivium {
 		//	this would require clipping content
 	};
 
-	template <BaseEntry ValueEntry>
+	template <typename ValueEntry>
 	struct ListEntry {
 		using ValueType = std::vector<ValueEntry>;
 
@@ -153,7 +132,7 @@ namespace Vivium {
 		T** heldItemPointer;
 	};
 
-	template <BaseEntry ValueEntry>
+	template <typename ValueEntry>
 	struct EntrySpecification<ListEntry<ValueEntry>> {
 		uint64_t maxEntries;
 		EntrySpecification<ValueEntry>* valueSpecification;
@@ -439,7 +418,7 @@ namespace Vivium {
 		return entry.currentlySelected;
 	}
 
-	template <BaseEntry ValueEntry>
+	template <typename ValueEntry>
 	ListEntry<ValueEntry> submitEntry(EntrySpecification<ListEntry<ValueEntry>> const& specification, GUIContext& context, ResourceManager& resourceManager)
 	{
 		ListEntry<ValueEntry> entry;
@@ -528,7 +507,7 @@ namespace Vivium {
 		return entry;
 	}
 	
-	template <BaseEntry ValueEntry>
+	template <typename ValueEntry>
 	void setupEntry(ListEntry<ValueEntry>& entry, ResourceManager& resourceManager, Engine& engine, CommandContext& context, GUIContext& guiContext)
 	{
 		setupButton(entry.addEntry, resourceManager);
@@ -539,7 +518,7 @@ namespace Vivium {
 		}
 	}
 
-	template <BaseEntry ValueEntry>
+	template <typename ValueEntry>
 	void _removeIndexFromListEntry(ListEntry<ValueEntry>& entry, GUIContext& guiContext, uint64_t index)
 	{
 		// what if we just moved that entry to the back of the list?
@@ -567,7 +546,7 @@ namespace Vivium {
 		entry.numEntries--;
 	}
 
-	template <BaseEntry ValueEntry>
+	template <typename ValueEntry>
 	void _insertIndexToListEntry(ListEntry<ValueEntry>& entry, GUIContext& guiContext, uint64_t index)
 	{
 		if (entry.numEntries == entry.entries.size()) {
@@ -593,7 +572,7 @@ namespace Vivium {
 		entry.numEntries++;
 	}
 
-	template <BaseEntry ValueEntry>
+	template <typename ValueEntry>
 	void _swapIndicesListEntry(ListEntry<ValueEntry>& entry, GUIContext& guiContext, uint64_t a, uint64_t b)
 	{
 		if (a < 0 || b < 0) return;
@@ -607,7 +586,7 @@ namespace Vivium {
 		swapChildren(entry.entryContainer.base, a + 1, b + 1, guiContext);
 	}
 
-	template <BaseEntry ValueEntry>
+	template <typename ValueEntry>
 	void updateEntry(ListEntry<ValueEntry>& entry, GUIContext& guiContext, Engine& engine, CommandContext& context)
 	{
 		// TODO: gotta find a work-around for this
@@ -647,7 +626,7 @@ namespace Vivium {
 		}
 	}
 
-	template <BaseEntry ValueEntry>
+	template <typename ValueEntry>
 	void submitEntries(std::span<ListEntry<ValueEntry>*> const entries, GUIContext& context)
 	{
 		for (ListEntry<ValueEntry>* entry : entries) {
@@ -674,7 +653,7 @@ namespace Vivium {
 		}
 	}
 	
-	template <BaseEntry ValueEntry>
+	template <typename ValueEntry>
 	void dropEntry(ListEntry<ValueEntry>& entry, Engine& engine, GUIContext& guiContext)
 	{
 		dropButton(entry.addEntry, engine, guiContext);
@@ -684,7 +663,7 @@ namespace Vivium {
 		}
 	}
 
-	template <BaseEntry ValueEntry>
+	template <typename ValueEntry>
 	ListEntry<ValueEntry>::ValueType getValue(ListEntry<ValueEntry> const& entry)
 	{
 		std::vector<typename ValueEntry::ValueType> results;
