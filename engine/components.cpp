@@ -283,3 +283,64 @@ void dropEntry(DescriptorLayoutEntry& entry, Engine& engine, GUIContext& guiCont
 
 	dropEntry(entry.bindingEntries, engine, guiContext);
 }
+
+BufferComponent getValue(BufferEntry& entry)
+{
+	BufferComponent component;
+
+	std::vector<FloatTextEntry> entries = getValue(entry.data);
+	component.data.resize(entries.size());
+
+	for (uint64_t i = 0; i < component.data.size(); i++) {
+		component.data[i] = getValue(entries[i]);
+	}
+
+	component.size = component.data.size() * sizeof(float);
+	component.usage = getValue(entry.usage);
+}
+
+BufferEntry submitEntry(EntrySpecification<BufferEntry> const& spec, GUIContext& guiContext, ResourceManager& resourceManager)
+{
+	BufferEntry entry;
+
+	entry.entrySpec = new EntrySpecification<FloatTextEntry>();
+	entry.entrySpec->placeholder = "Value";
+
+	entry.base = createGUIElement(guiContext, GUIElementType::ENTRY);
+	entry.usage = submitEntry(EntrySpecification<ObjectEntry<BufferUsage>>(), guiContext, resourceManager);
+	entry.data = submitEntry(EntrySpecification<ListEntry<FloatTextEntry>>(
+		16,
+		entry.entrySpec
+	), guiContext, resourceManager);
+
+	addChild(entry.base, { &entry.usage.base, 1 }, guiContext);
+	addChild(entry.base, { &entry.data.base, 1 }, guiContext);
+}
+
+void setupEntry(BufferEntry& entry, ResourceManager& manager, Engine& engine, CommandContext& context, GUIContext& guiContext)
+{
+	setupEntry(entry.usage, manager, engine, context, guiContext);
+	setupEntry(entry.data, manager, engine, context, guiContext);
+}
+
+void updateEntry(BufferEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context)
+{
+	updateEntry(entry.data, guiContext, engine, context);
+	updateEntry(entry.usage, guiContext, engine, context);
+}
+
+void submitEntries(std::span<BufferEntry*> const entries, GUIContext& guiContext)
+{
+	for (BufferEntry* entry : entries) {
+		ListEntry<FloatTextEntry>* dataEntries[] = { &entry->data };
+		ObjectEntry<BufferUsage>* usageEntries[] = { &entry->usage };
+
+		submitEntries<FloatTextEntry>(dataEntries, guiContext);
+		submitEntries<BufferUsage>(usageEntries, guiContext);
+	}
+}
+
+void dropEntry(BufferEntry& entry, Engine& engine, GUIContext& guiContext)
+{
+	delete entry.entrySpec;
+}

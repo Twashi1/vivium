@@ -142,6 +142,16 @@ struct DescriptorLayoutEntry {
 	ListEntry<UniformBindingEntry> bindingEntries;
 };
 
+struct BufferEntry {
+	using ValueType = BufferComponent;
+
+	GUIElementReference base;
+
+	ObjectEntry<BufferUsage> usage;
+	ListEntry<FloatTextEntry> data;
+	EntrySpecification<FloatTextEntry>* entrySpec;
+};
+
 template <>
 struct EntrySpecification<UniformBindingEntry> {};
 
@@ -156,6 +166,9 @@ struct EntrySpecification<PipelineEntry> {};
 
 template <>
 struct EntrySpecification<DescriptorLayoutEntry> {};
+
+template <>
+struct EntrySpecification<BufferEntry> {};
 
 UniformBinding getValue(UniformBindingEntry& entry);
 UniformBindingEntry submitEntry(EntrySpecification<UniformBindingEntry> const& spec, GUIContext& guiContext, ResourceManager& resourceManager);
@@ -185,6 +198,13 @@ void updateEntry(DescriptorLayoutEntry& entry, GUIContext& guiContext, Engine& e
 void submitEntries(std::span<DescriptorLayoutEntry*> const entries, GUIContext& guiContext);
 void dropEntry(DescriptorLayoutEntry& entry, Engine& engine, GUIContext& guiContext);
 
+BufferComponent getValue(BufferEntry& entry);
+BufferEntry submitEntry(EntrySpecification<BufferEntry> const& spec, GUIContext& guiContext, ResourceManager& resourceManager);
+void setupEntry(BufferEntry& entry, ResourceManager& manager, Engine& engine, CommandContext& context, GUIContext& guiContext);
+void updateEntry(BufferEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
+void submitEntries(std::span<BufferEntry*> const entries, GUIContext& guiContext);
+void dropEntry(BufferEntry& entry, Engine& engine, GUIContext& guiContext);
+
 /*
 - click on an entity
 - want to open inspector window
@@ -206,3 +226,14 @@ alternatively?
 -	just treat the entity tree as an organisation tool, not relevant to representing hierarchys
 -	and instead we use upload entries (much easier... better?)
 */
+
+void findEntitiesForDescriptorSet(std::span<Entity> entities, Registry registry) {
+	for (Entity entity : entities) {
+		// Look for components
+		// 1. Buffer
+		// 2. Texture
+		// 3. Framebuffer
+		// (right now we only have buffers so)
+		// TODO
+	}
+}

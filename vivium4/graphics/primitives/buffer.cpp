@@ -16,6 +16,18 @@ namespace Vivium {
 		);
 	}
 
+	std::string getString(BufferUsage usage)
+	{
+		switch (usage) {
+		case BufferUsage::STAGING: return "Staging";
+		case BufferUsage::VERTEX: return "Vertex";
+		case BufferUsage::INDEX: return "Index";
+		case BufferUsage::STORAGE: return "Storage";
+		case BufferUsage::UNIFORM: return "Uniform";
+		default: return "Unknown";
+		}
+	}
+
 	void* getBufferMapping(Buffer& buffer)
 	{
 		return buffer.mapping;

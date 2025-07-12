@@ -12,6 +12,8 @@ namespace Vivium {
 		STORAGE = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
 	};
 
+	std::string getString(BufferUsage usage);
+
 	// TODO: still feels a little off
 	struct BufferLayout {
 		struct Element {
