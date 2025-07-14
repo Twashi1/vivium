@@ -42,21 +42,11 @@ enum VulkanComponent {
 	DESCRIPTOR_LAYOUT,
 	SHADER,
 	BUFFER,
-	DESCRIPTOR_SET
+	DESCRIPTOR_SET,
+	ENTER_COMPONENT
 };
 
 std::string getString(VulkanComponent component);
-
-struct PipelineComponent {
-	Entity bufferLayout;
-	Entity descriptorLayout;
-	Entity vertexShader;
-	Entity fragmentShader;
-	
-	Entity vertexBuffer;
-	Entity indexBuffer;
-	Entity descriptorSet;
-};
 
 struct BufferLayoutComponent {
 	std::vector<ShaderDataType> types;
@@ -81,25 +71,32 @@ struct DescriptorSetComponent {
 	std::vector<Entity> bindingData;
 };
 
-/*
-		typename T::ValueType;
-		{ a.base } -> std::same_as<GUIElementReference&>;
-		{ getValue(b) } -> std::same_as<typename T::ValueType>;
-		{ submitEntry(entrySpec, guiContext, resourceManager) } -> std::same_as<T>;
-		{ setupEntry(a, resourceManager, engine, commandContext, guiContext) } -> std::same_as<void>;
-		{ updateEntry(a, guiContext, engine, commandContext) } -> std::same_as<void>;
-		{ submitEntries(span, guiContext) } -> std::same_as<void>;
-		{ dropEntry(a, engine, guiContext) } -> std::same_as<void>;
-*/
+struct PipelineComponent {
+	BufferLayoutComponent bufferLayout;
+	DescriptorLayoutComponent descriptorLayout;
+	ShaderComponent vertexShader;
+	ShaderComponent fragmentShader;
+
+	BufferComponent vertexBuffer;
+	BufferComponent indexBuffer;
+	DescriptorSetComponent descriptorSet;
+};
 
 struct PipelineEntry {
 	using ValueType = PipelineComponent;
 
 	GUIElementReference base;
-	// TODO: need the drag and drop for entities or something of sort
 
+	Container container;
+	UploadEntry<Entity> bufferLayout;
+	UploadEntry<Entity> descriptorLayout;
 	UploadEntry<Entity> vertexShader;
 	UploadEntry<Entity> fragmentShader;
+	UploadEntry<Entity> vertexBuffer;
+	UploadEntry<Entity> indexBuffer;
+	UploadEntry<Entity> descriptorSet;
+
+	Registry* registry;
 };
 
 struct ShaderEntry {
@@ -107,6 +104,7 @@ struct ShaderEntry {
 
 	GUIElementReference base;
 
+	Container container;
 	StringTextEntry filenameEntry;
 	ObjectEntry<ShaderStage> stageEntry;
 };
@@ -119,7 +117,6 @@ struct BufferLayoutEntry {
 	ListEntry<ObjectEntry<ShaderDataType>> typesEntry;
 };
 
-// TODO: have to design this to fit the specifications of an entry
 struct UniformBindingEntry {
 	using ValueType = UniformBinding;
 
@@ -147,14 +144,19 @@ struct BufferEntry {
 
 	GUIElementReference base;
 
+	Container container;
 	ObjectEntry<BufferUsage> usage;
 	ListEntry<FloatTextEntry> data;
 	EntrySpecification<FloatTextEntry>* entrySpec;
 };
 
-// TODO: should be union really but silly default constructor (let me be bad)
-struct DescriptorSetComponentItem {
-	BufferComponent buffer;
+struct DescriptorSetEntry {
+	using ValueType = DescriptorSetComponent;
+
+	GUIElementReference base;
+
+	ListEntry<UploadEntry<Entity>> uniformData;
+	EntrySpecification<UploadEntry<Entity>>* entrySpec;
 };
 
 template <>
@@ -167,13 +169,21 @@ template <>
 struct EntrySpecification<ShaderEntry> {};
 
 template <>
-struct EntrySpecification<PipelineEntry> {};
+struct EntrySpecification<PipelineEntry> {
+	Registry* registry;
+	Entity** heldItemPointer;
+};
 
 template <>
 struct EntrySpecification<DescriptorLayoutEntry> {};
 
 template <>
 struct EntrySpecification<BufferEntry> {};
+
+template <>
+struct EntrySpecification<DescriptorSetEntry> {
+	Entity** heldItemPointer;
+};
 
 UniformBinding getValue(UniformBindingEntry& entry);
 UniformBindingEntry submitEntry(EntrySpecification<UniformBindingEntry> const& spec, GUIContext& guiContext, ResourceManager& resourceManager);
@@ -210,6 +220,20 @@ void updateEntry(BufferEntry& entry, GUIContext& guiContext, Engine& engine, Com
 void submitEntries(std::span<BufferEntry*> const entries, GUIContext& guiContext);
 void dropEntry(BufferEntry& entry, Engine& engine, GUIContext& guiContext);
 
+PipelineComponent getValue(PipelineEntry& entry);
+PipelineEntry submitEntry(EntrySpecification<PipelineEntry> const& spec, GUIContext& guiContext, ResourceManager& resourceManager);
+void setupEntry(PipelineEntry& entry, ResourceManager& manager, Engine& engine, CommandContext& context, GUIContext& guiContext);
+void updateEntry(PipelineEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
+void submitEntries(std::span<PipelineEntry*> const entries, GUIContext& guiContext);
+void dropEntry(PipelineEntry& entry, Engine& engine, GUIContext& guiContext);
+
+DescriptorSetComponent getValue(DescriptorSetEntry& entry);
+DescriptorSetEntry submitEntry(EntrySpecification<DescriptorSetEntry> const& spec, GUIContext& guiContext, ResourceManager& resourceManager);
+void setupEntry(DescriptorSetEntry& entry, ResourceManager& manager, Engine& engine, CommandContext& context, GUIContext& guiContext);
+void updateEntry(DescriptorSetEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
+void submitEntries(std::span<DescriptorSetEntry*> const entries, GUIContext& guiContext);
+void dropEntry(DescriptorSetEntry& entry, Engine& engine, GUIContext& guiContext);
+
 /*
 - click on an entity
 - want to open inspector window
@@ -231,6 +255,3 @@ alternatively?
 -	just treat the entity tree as an organisation tool, not relevant to representing hierarchys
 -	and instead we use upload entries (much easier... better?)
 */
-
-std::vector<DescriptorSetComponentItem> findEntitiesForDescriptorSet(std::span<Entity> entities, Registry registry);
-void fillOutPipeline(std::span<Entity> entities, PipelineComponent& pipeline, Registry registry);

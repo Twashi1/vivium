@@ -13,6 +13,7 @@ TreeContainer createTreeContainer(GUIContext& guiContext, GUIElementReference pa
 	properties(tree.root, guiContext).centerY = GUIAnchor::TOP;
 	tree.data = nullptr;
 	tree.enabled = false;
+	tree.held = false;
 
 	return tree;
 }
@@ -52,6 +53,7 @@ TreeContainer* getContainer(F32x2 position, TreeContainer& container, GUIContext
 	// TODO: not sure this code is correct by above ^
 	TreeContainer* result = nullptr;
 
+	// TODO: instead of checking for enabled/disabled, look for asleep
 	if (container.enabled && pointInExtent(position, properties(container.root, guiContext))) {
 		result = &container;
 
@@ -146,7 +148,7 @@ TreeContainer* updateTreeContainer(F32x2 cursorPosition, TreeContainer& containe
 	//  then select this element
 	if (hovered != nullptr && held == nullptr && Input::get(Input::BTN_1).state == Input::DOWN) {
 		VIVIUM_LOG(LogSeverity::DEBUG, "Element is held {}", hovered->root.base.index);
-		hovered->enabled = false;
+		hovered->held = false;
 		return hovered;
 	}
 
@@ -191,7 +193,7 @@ TreeContainer* updateTreeContainer(F32x2 cursorPosition, TreeContainer& containe
 
 		// Note this is a copy, because otherwise we point to something that doesn't exist anymore
 		TreeContainer heldElement = *held;
-		heldElement.enabled = true;
+		heldElement.held = true;
 
 		// TODO: the held element (and hovered) is a pointer that has now changed
 		// Remove held element from container

@@ -8,6 +8,7 @@ struct TreeContainer {
 	Container root;
 	void* data;
 	bool enabled;
+	bool held;
 	
 	std::vector<TreeContainer> children;
 };

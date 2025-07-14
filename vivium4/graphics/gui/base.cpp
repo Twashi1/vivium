@@ -36,7 +36,14 @@ namespace Vivium {
 			F32x2 offset = F32x2(0.0f);
 
 			if (containerData.offsetMethod == OffsetMethod::EXTENT) {
-				offset = properties(child, context).maxExtent - properties(child, context).minExtent;
+				GUIProperties& childProps = properties(child, context);
+
+				if (childProps.minExtent == F32x2::inf()) {
+					offset = F32x2(0.0f);
+				}
+				else {
+					offset = childProps.maxExtent - childProps.minExtent;
+				}
 			}
 			else {
 				offset = properties(reference, context).trueDimensions + properties(reference, context).truePosition - properties(child, context).truePosition;
@@ -69,6 +76,16 @@ namespace Vivium {
 		F32x2 multiplier = F32x2(0.0f);
 
 		GUIElement& object = context.guiElements[element.index];
+
+		// Quit update
+		// TODO: sleep code
+		if (object.asleep) {
+			object.properties.trueDimensions = F32x2(0.0f);
+			object.properties.minExtent = F32x2::inf();
+			object.properties.maxExtent = -F32x2::inf();
+
+			return;
+		}
 
 		switch (object.properties.unitsType) {
 		case GUIUnits::PIXELS:		multiplier = F32x2(1.0f); break;
@@ -130,9 +147,6 @@ namespace Vivium {
 
 		object.properties.minExtent = object.properties.truePosition;
 		object.properties.maxExtent = object.properties.truePosition + object.properties.trueDimensions;
-
-		// Quit update
-		if (object.asleep) { return; }
 
 		// Look for any required special treatment
 		switch (object.type) {

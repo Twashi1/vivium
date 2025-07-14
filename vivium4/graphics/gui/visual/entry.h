@@ -167,22 +167,22 @@ namespace Vivium {
 	{
 		ObjectEntry<T> entry;
 
-		entry.base = createGUIElement(context, GUIElementType::ENTRY);
 		entry.defaultValue = specification.defaultValue;
 		entry.currentlySelected = entry.defaultValue;
 		entry.dropDownOpen = false;
 		
 		entry.objectView = submitButton(resourceManager, context, ButtonSpecification(
-			entry.base,
+			nullGUIParent(),
 			Color(0.25f, 0.25f, 0.25f),
 			Color(0.0f, 0.0f, 0.0f)
 		));
+		entry.base = entry.objectView.base;
 
 		entry.dropDownContainer = createContainer(context, ContainerSpecification(entry.objectView.base, ContainerOrdering::VERTICAL, OffsetMethod::EXTENT));
 		entry.options = specification.options;
 		entry.dropDownOptions.reserve(entry.options.size());
 
-		Color changingColor = Color(0.5f, 0.5f, 0.5f);
+		Color changingColor = Color(0.5f, 0.5f, 0.0f);
 
 		for (T const& value_type : entry.options) {
 			Button dropDownOption;
@@ -216,14 +216,13 @@ namespace Vivium {
 		GUIProperties& props = properties(entry.dropDownContainer.base, guiContext);
 		props.anchorY = GUIAnchor::BOTTOM;
 		props.centerY = GUIAnchor::TOP;
-		props.dimensions = F32x2(1.0f, 1.0f);
+		props.dimensions = F32x2(0.9f, 1.0f);
 		props.position = F32x2(0.0f, -0.1f);
 	}
 
 	template <FiniteObjectType T>
 	void updateEntry(ObjectEntry<T>& entry, GUIContext& guiContext, Engine& engine, CommandContext& context)
 	{
-		// TODO: do we need this line? and the one below
 		setButtonText(entry.objectView, engine, context, guiContext, getString(entry.currentlySelected));
 
 		for (uint64_t i = 0; i < entry.options.size(); i++) {
@@ -314,13 +313,13 @@ namespace Vivium {
 	{
 		UploadEntry<T> entry;
 
-		entry.base = createGUIElement(context, GUIElementType::ENTRY);
 		entry.valuePanel = createPanel(context, PanelSpecification(
-			entry.base,
+			nullGUIParent(),
 			Color(0.25f, 0.25f, 0.25f),
 			Color(0.1f, 0.1f, 0.1f),
 			0.05f
 		));
+		entry.base = entry.valuePanel.base;
 		entry.valueButton = submitButton(resourceManager, context, ButtonSpecification(
 			entry.valuePanel.base,
 			Color(0.25f, 0.25f, 0.25f),
@@ -423,12 +422,13 @@ namespace Vivium {
 	{
 		ListEntry<ValueEntry> entry;
 
-		entry.base = createGUIElement(context, GUIElementType::ENTRY);
 		entry.entryContainer = createContainer(context, ContainerSpecification(
-			entry.base,
+			nullGUIParent(),
 			ContainerOrdering::VERTICAL,
 			OffsetMethod::EXTENT
 		));
+		entry.base = entry.entryContainer.base;
+
 		entry.addEntry = submitButton(resourceManager, context, ButtonSpecification(
 			entry.entryContainer.base,
 			Color(0.25f, 0.65f, 0.25f),
@@ -437,7 +437,7 @@ namespace Vivium {
 		entry.numEntries = 0;
 
 		properties(entry.addEntry.base, context).dimensions = F32x2(1.0f, 0.15f);
-		properties(entry.addEntry.base, context).anchorY = GUIAnchor::BOTTOM;
+		properties(entry.addEntry.base, context).anchorY = GUIAnchor::TOP;
 		properties(entry.addEntry.base, context).centerY = GUIAnchor::TOP;
 
 		entry.entries.resize(specification.maxEntries);
@@ -454,7 +454,7 @@ namespace Vivium {
 				Color(0.0f, 0.0f, 0.0f),
 				0.01f
 			));
-			properties(entry.entryWrapper[i].base, context).anchorY = GUIAnchor::BOTTOM;
+			properties(entry.entryWrapper[i].base, context).anchorY = GUIAnchor::TOP;
 			properties(entry.entryWrapper[i].base, context).centerY = GUIAnchor::TOP;
 
 			entry.deleteEntry[i] = createPanel(context, PanelSpecification(

@@ -14,6 +14,21 @@ struct ComponentPosition {
 
 inline constexpr int MAX_CONCURRENT_ENTITY_PANELS = 8;
 
+struct PropertyDisplay {
+	GUIElementReference base;
+	Container container;
+
+	Entity entity;
+	Registry* registry;
+
+	PipelineEntry pipeline;
+	BufferLayoutEntry bufferLayout;
+	DescriptorLayoutEntry descriptorLayout;
+	DescriptorSetEntry descriptor;
+	BufferEntry buffer;
+	ShaderEntry shader;
+};
+
 struct State {
 	Engine engine;
 	Window window;
@@ -27,16 +42,14 @@ struct State {
 
 	struct {
 		Panel background;
-		Sprite testSprite0;
-		Sprite testSprite1;
 
-		IntegerTextEntry intEntry;
-		ObjectEntry<ShaderDataType> shaderEntry;
-		ListEntry<ObjectEntry<ShaderDataType>> bufferEntry;
-		EntrySpecification<ObjectEntry<ShaderDataType>> bufferElementSpecification;
-		UploadEntry<Entity> entityUpload;
+		// Need to be able to render a variable amount of different entries
+		//	we know each entity can have strictly one of each type of component entry
+		Container inspectorContainer;
+		ObjectEntry<VulkanComponent> createComponent;
+		std::array<PropertyDisplay, MAX_CONCURRENT_ENTITY_PANELS> propertyDisplays;
 
-		UniformBindingEntry bindingEntry;
+		ObjectEntry<VulkanComponent> tmpExample;
 
 		struct {
 			Panel background;
@@ -53,6 +66,7 @@ struct State {
 
 			Entity* heldEntityPtr;
 			Entity heldEntity;
+			Entity lastClicked;
 
 			AtlasIndex img0;
 			AtlasIndex img1;
@@ -88,3 +102,9 @@ void gameloop(State& state);
 void terminate(State& state);
 
 TreeContainer* getContainerByPanel(int panelIndex, TreeContainer& container);
+
+PropertyDisplay _submitPropertyDisplay(State& state, Entity entity, Registry* registry);
+void _setupPropertyDisplay(State& state, PropertyDisplay& display);
+void _updatePropertyDisplay(State& state, PropertyDisplay& display);
+void _renderPropertyDisplay(State& state, PropertyDisplay& display);
+void _dropPropertyDisplay(State& state, PropertyDisplay& display);

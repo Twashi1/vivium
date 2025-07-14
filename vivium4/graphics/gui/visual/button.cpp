@@ -25,10 +25,6 @@ namespace Vivium {
 		GUIProperties& textProperties = properties(button.text.base, guiContext);
 		textProperties.dimensions = F32x2(0.80f);
 		textProperties.position = F32x2(0.0f);
-		textProperties.unitsType = GUIUnits::RELATIVE;
-		textProperties.positionType = GUIPositionType::RELATIVE;
-		textProperties.anchorX = GUIAnchor::CENTER;
-		textProperties.anchorY = GUIAnchor::CENTER;
 		textProperties.centerX = GUIAnchor::LEFT;
 		textProperties.centerY = GUIAnchor::BOTTOM;
 

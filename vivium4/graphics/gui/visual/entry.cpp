@@ -9,7 +9,6 @@ namespace Vivium {
 	{
 		IntegerTextEntry entry;
 
-		entry.base = createGUIElement(context, GUIElementType::ENTRY);
 		entry.placeholder = specification.placeholder;
 		entry.currentValue = "";
 		entry.lastValidValue = "0";
@@ -17,8 +16,9 @@ namespace Vivium {
 		entry.inputArea = submitButton(
 			resourceManager,
 			context,
-			ButtonSpecification(entry.base, Color(0.15f, 0.15f, 0.15f), Color(0.0f, 0.0f, 0.0f))
+			ButtonSpecification(nullGUIParent(), Color(0.15f, 0.15f, 0.15f), Color(0.0f, 0.0f, 0.0f))
 		);
+		entry.base = entry.inputArea.base;
 
 		return entry;
 	}
@@ -26,7 +26,6 @@ namespace Vivium {
 	{
 		FloatTextEntry entry;
 
-		entry.base = createGUIElement(context, GUIElementType::ENTRY);
 		entry.placeholder = specification.placeholder;
 		entry.currentValue = "";
 		entry.lastValidValue = "0.0";
@@ -34,8 +33,9 @@ namespace Vivium {
 		entry.inputArea = submitButton(
 			resourceManager,
 			context,
-			ButtonSpecification(entry.base, Color(0.15f, 0.15f, 0.15f), Color(0.0f, 0.0f, 0.0f))
+			ButtonSpecification(nullGUIParent(), Color(0.15f, 0.15f, 0.15f), Color(0.0f, 0.0f, 0.0f))
 		);
+		entry.base = entry.inputArea.base;
 
 		return entry;
 	}
@@ -52,8 +52,9 @@ namespace Vivium {
 		entry.inputArea = submitButton(
 			resourceManager,
 			context,
-			ButtonSpecification(entry.base, Color(0.15f, 0.15f, 0.15f), Color(0.0f, 0.0f, 0.0f))
+			ButtonSpecification(nullGUIParent(), Color(0.15f, 0.15f, 0.15f), Color(0.0f, 0.0f, 0.0f))
 		);
+		entry.base = entry.inputArea.base;
 
 		return entry;
 	}
