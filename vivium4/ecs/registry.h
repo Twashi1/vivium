@@ -164,6 +164,13 @@ namespace Vivium {
 		}
 
 		template <ValidComponent T>
+		void updateComponent(Entity entity, T&& component) {
+			// TODO: cleanup? undefined behaviour probably? ...
+			//	might not be dropping the existing entity correctly...
+			getComponent<T>(entity) = std::move(component);
+		}
+
+		template <ValidComponent T>
 		void removeComponent(Entity entity) {
 			uint8_t componentID = TypeGenerator::getIdentifier<T>();
 			ComponentArray* arr = _getPoolOrCreate<T>();

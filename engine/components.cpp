@@ -13,7 +13,7 @@ std::string getString(VulkanComponent component) {
 	}
 }
 
-UniformBinding getValue(UniformBindingEntry& entry)
+UniformBinding getValue(UniformBindingEntry const& entry)
 {
 	UniformBinding binding;
 
@@ -40,19 +40,12 @@ UniformBindingEntry submitEntry(EntrySpecification<UniformBindingEntry> const& s
 		std::vector<UniformType>({ UniformType::TEXTURE, UniformType::STORAGE_BUFFER, UniformType::UNIFORM_BUFFER })
 	), guiContext, resourceManager);
 
-	entry.background = createPanel(guiContext, PanelSpecification(
-		nullGUIParent(),
-		Color(0.1f, 0.1f, 0.1f),
-		Color(0.0f, 0.0f, 0.0f),
-		0.0f
-	));
-	entry.base = entry.background.base;
-
 	entry.entryContainer = createContainer(guiContext, ContainerSpecification(
-		entry.base,
+		nullGUIParent(),
 		ContainerOrdering::VERTICAL,
 		OffsetMethod::EXTENT
 	));
+	entry.base = entry.entryContainer.base;
 
 	return entry;
 }
@@ -69,12 +62,7 @@ void setupEntry(UniformBindingEntry& entry, ResourceManager& manager, Engine& en
 	addChild(entry.entryContainer.base, { &entry.stageEntry.base, 1 }, guiContext);
 	addChild(entry.entryContainer.base, { &entry.typeEntry.base, 1 }, guiContext);
 
-	properties(entry.background.base, guiContext).dimensions = F32x2(1.0f, 5.0f);
-	properties(entry.background.base, guiContext).anchorY = GUIAnchor::TOP;
-	properties(entry.background.base, guiContext).centerY = GUIAnchor::TOP;
-
-	properties(entry.entryContainer.base, guiContext).dimensions = F32x2(0.9f);
-	properties(entry.entryContainer.base, guiContext).position = F32x2(0.0f, -0.1f);
+	properties(entry.entryContainer.base, guiContext).dimensions = F32x2(1.0f);
 	properties(entry.entryContainer.base, guiContext).anchorY = GUIAnchor::TOP;
 	properties(entry.entryContainer.base, guiContext).centerY = GUIAnchor::TOP;
 
@@ -100,9 +88,7 @@ void submitEntries(std::span<UniformBindingEntry*> const entries, GUIContext& gu
 		IntegerTextEntry* slots[] = { &entry->slotEntry };
 		ObjectEntry<UniformType>* types[] = { &entry->typeEntry };
 		ObjectEntry<ShaderStage>* stages[] = { &entry->stageEntry };
-		Panel* panels[] = { &entry->background };
 
-		submitPanels(panels, guiContext);
 		submitEntries(slots, guiContext);
 		submitEntries<UniformType>(types, guiContext);
 		submitEntries<ShaderStage>(stages, guiContext);
@@ -116,7 +102,7 @@ void dropEntry(UniformBindingEntry& entry, Engine& engine, GUIContext& guiContex
 	dropEntry(entry.stageEntry, engine, guiContext);
 }
 
-BufferLayoutComponent getValue(BufferLayoutEntry& entry)
+BufferLayoutComponent getValue(BufferLayoutEntry const& entry)
 {
 	return BufferLayoutComponent(getValue(entry.typesEntry));
 }
@@ -169,7 +155,7 @@ void dropEntry(BufferLayoutEntry& entry, Engine& engine, GUIContext& guiContext)
 	dropEntry(entry.typesEntry, engine, guiContext);
 }
 
-ShaderComponent getValue(ShaderEntry& entry)
+ShaderComponent getValue(ShaderEntry const& entry)
 {
 	//std::string shaderFilename = getValue(entry.filenameEntry);
 	//std::string::iterator dot = std::find(shaderFilename.begin(), shaderFilename.end(), '.');
@@ -217,11 +203,9 @@ void setupEntry(ShaderEntry& entry, ResourceManager& manager, Engine& engine, Co
 
 	properties(entry.filenameEntry.base, guiContext).anchorY = GUIAnchor::TOP;
 	properties(entry.filenameEntry.base, guiContext).centerY = GUIAnchor::TOP;
-	properties(entry.filenameEntry.base, guiContext).dimensions = F32x2(1.0f, 0.4f);
 
 	properties(entry.stageEntry.base, guiContext).anchorY = GUIAnchor::TOP;
 	properties(entry.stageEntry.base, guiContext).centerY = GUIAnchor::TOP;
-	properties(entry.stageEntry.base, guiContext).dimensions = F32x2(1.0f, 0.4f);
 }
 
 void updateEntry(ShaderEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context)
@@ -247,12 +231,11 @@ void dropEntry(ShaderEntry& entry, Engine& engine, GUIContext& guiContext)
 	dropEntry(entry.stageEntry, engine, guiContext);
 }
 
-DescriptorLayoutComponent getValue(DescriptorLayoutEntry& entry)
+DescriptorLayoutComponent getValue(DescriptorLayoutEntry const& entry)
 {
 	DescriptorLayoutComponent component;
-	// component.bindings = getValue(entry.bindingEntries);
-	// TODO: re-enable?
-	// TODO: urgent fix
+	component.bindings = getValue(entry.bindingEntries);
+
 	return component;
 }
 
@@ -297,7 +280,7 @@ void dropEntry(DescriptorLayoutEntry& entry, Engine& engine, GUIContext& guiCont
 	dropEntry(entry.bindingEntries, engine, guiContext);
 }
 
-BufferComponent getValue(BufferEntry& entry)
+BufferComponent getValue(BufferEntry const& entry)
 {
 	BufferComponent component;
 
@@ -396,17 +379,24 @@ void dropEntry(BufferEntry& entry, Engine& engine, GUIContext& guiContext)
 	dropEntry(entry.usage, engine, guiContext);
 }
 
-PipelineComponent getValue(PipelineEntry& entry)
+PipelineComponent getValue(PipelineEntry const& entry)
 {
 	PipelineComponent pipeline;
 
-	pipeline.bufferLayout = entry.registry->getComponent<BufferLayoutComponent>(getValue(entry.bufferLayout));
-	pipeline.descriptorLayout = entry.registry->getComponent<DescriptorLayoutComponent>(getValue(entry.descriptorLayout));
-	pipeline.vertexShader = entry.registry->getComponent<ShaderComponent>(getValue(entry.vertexShader));
-	pipeline.fragmentShader = entry.registry->getComponent<ShaderComponent>(getValue(entry.fragmentShader));
-	pipeline.vertexBuffer = entry.registry->getComponent<BufferComponent>(getValue(entry.vertexBuffer));
-	pipeline.indexBuffer = entry.registry->getComponent<BufferComponent>(getValue(entry.indexBuffer));
-	pipeline.descriptorSet = entry.registry->getComponent<DescriptorSetComponent>(getValue(entry.descriptorSet));
+	if (entry.bufferLayout.hasValue)
+		pipeline.bufferLayout = entry.registry->getComponent<BufferLayoutComponent>(getValue(entry.bufferLayout));
+	if (entry.descriptorLayout.hasValue)
+		pipeline.descriptorLayout = entry.registry->getComponent<DescriptorLayoutComponent>(getValue(entry.descriptorLayout));
+	if (entry.vertexShader.hasValue)
+		pipeline.vertexShader = entry.registry->getComponent<ShaderComponent>(getValue(entry.vertexShader));
+	if (entry.fragmentShader.hasValue)
+		pipeline.fragmentShader = entry.registry->getComponent<ShaderComponent>(getValue(entry.fragmentShader));
+	if (entry.vertexBuffer.hasValue)
+		pipeline.vertexBuffer = entry.registry->getComponent<BufferComponent>(getValue(entry.vertexBuffer));
+	if (entry.indexBuffer.hasValue)
+		pipeline.indexBuffer = entry.registry->getComponent<BufferComponent>(getValue(entry.indexBuffer));
+	if (entry.descriptorSet.hasValue)
+		pipeline.descriptorSet = entry.registry->getComponent<DescriptorSetComponent>(getValue(entry.descriptorSet));
 
 	return pipeline;
 }
@@ -451,14 +441,6 @@ void setupEntry(PipelineEntry& entry, ResourceManager& manager, Engine& engine, 
 	setupEntry(entry.vertexBuffer, manager, engine, context, guiContext);
 	setupEntry(entry.indexBuffer, manager, engine, context, guiContext);
 	setupEntry(entry.descriptorSet, manager, engine, context, guiContext);
-
-	properties(entry.bufferLayout, guiContext).dimensions = F32x2(1.0f, 0.1f);
-	properties(entry.descriptorLayout, guiContext).dimensions = F32x2(1.0f, 0.1f);
-	properties(entry.vertexShader, guiContext).dimensions = F32x2(1.0f, 0.1f);
-	properties(entry.fragmentShader, guiContext).dimensions = F32x2(1.0f, 0.1f);
-	properties(entry.vertexBuffer, guiContext).dimensions = F32x2(1.0f, 0.1f);
-	properties(entry.indexBuffer, guiContext).dimensions = F32x2(1.0f, 0.1f);
-	properties(entry.descriptorSet, guiContext).dimensions = F32x2(1.0f, 0.1f);
 
 	properties(entry.bufferLayout, guiContext).anchorY = GUIAnchor::TOP;
 	properties(entry.descriptorLayout, guiContext).anchorY = GUIAnchor::TOP;
@@ -516,11 +498,25 @@ void dropEntry(PipelineEntry& entry, Engine& engine, GUIContext& guiContext)
 	dropEntry(entry.descriptorSet, engine, guiContext);
 }
 
-DescriptorSetComponent getValue(DescriptorSetEntry& entry)
+DescriptorSetComponent getValue(DescriptorSetEntry const& entry)
 {
 	DescriptorSetComponent set;
 
-	set.bindingData = getValue(entry.uniformData);
+	std::vector<Entity> entities = getValue(entry.uniformData);
+
+	if (entities.size() == 0) { return set; }
+
+	for (Entity entity : entities) {
+		if (entry.registry->hasComponent<BufferComponent>(entity)) {
+			// TODO: validate usage of buffer
+			DescriptorSetItem item;
+			item.bufferPart = entry.registry->getComponent<BufferComponent>(entity);
+
+			set.bindingData.push_back(item);
+		}
+
+		// TODO: textures/framebuffers
+	}
 
 	return set;
 }
@@ -535,6 +531,7 @@ DescriptorSetEntry submitEntry(EntrySpecification<DescriptorSetEntry> const& spe
 
 	entry.uniformData = submitEntry(EntrySpecification<ListEntry<UploadEntry<Entity>>>(4, entry.entrySpec), guiContext, resourceManager);
 	entry.base = entry.uniformData.base;
+	entry.registry = spec.registry;
 
 	return entry;
 }

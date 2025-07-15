@@ -240,6 +240,13 @@ namespace Vivium {
 		return parentObject.children;
 	}
 
+	void clearChildren(GUIElementReference const parent, GUIContext& guiContext)
+	{
+		if (parent == nullGUIParent()) return;
+
+		guiContext.guiElements[parent.index].children.clear();
+	}
+
 	GUIElement const& _getGUIElement(GUIElementReference const reference, GUIContext const& guiContext)
 	{
 		return guiContext.guiElements[reference.index];

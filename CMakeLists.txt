@@ -56,7 +56,7 @@ set(VIVIUM_SOURCES
  "vivium4/graphics/image_load.cpp"
  "engine/tree_container.cpp"
  "vivium4/graphics/gui/visual/debugrect.cpp"
- "vivium4/graphics/gui/visual/entry.cpp" "engine/components.cpp")
+ "vivium4/graphics/gui/visual/entry.cpp" "engine/components.cpp" "vivium4/serialiser/serialiser.cpp")
 set(VIVIUM_HEADERS
   "vivium4/error/result.h"
   "vivium4/graphics/primitives/buffer.h"

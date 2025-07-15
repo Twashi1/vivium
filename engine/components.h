@@ -67,8 +67,12 @@ struct BufferComponent {
 	uint64_t size;
 };
 
+struct DescriptorSetItem {
+	BufferComponent bufferPart;
+};
+
 struct DescriptorSetComponent {
-	std::vector<Entity> bindingData;
+	std::vector<DescriptorSetItem> bindingData;
 };
 
 struct PipelineComponent {
@@ -122,7 +126,6 @@ struct UniformBindingEntry {
 
 	GUIElementReference base;
 
-	Panel background;
 	Container entryContainer;
 
 	ObjectEntry<ShaderStage> stageEntry;
@@ -155,6 +158,7 @@ struct DescriptorSetEntry {
 
 	GUIElementReference base;
 
+	Registry* registry;
 	ListEntry<UploadEntry<Entity>> uniformData;
 	EntrySpecification<UploadEntry<Entity>>* entrySpec;
 };
@@ -182,76 +186,197 @@ struct EntrySpecification<BufferEntry> {};
 
 template <>
 struct EntrySpecification<DescriptorSetEntry> {
+	Registry* registry;
 	Entity** heldItemPointer;
 };
 
-UniformBinding getValue(UniformBindingEntry& entry);
+UniformBinding getValue(UniformBindingEntry const& entry);
 UniformBindingEntry submitEntry(EntrySpecification<UniformBindingEntry> const& spec, GUIContext& guiContext, ResourceManager& resourceManager);
 void setupEntry(UniformBindingEntry& entry, ResourceManager& manager, Engine& engine, CommandContext& context, GUIContext& guiContext);
 void updateEntry(UniformBindingEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
 void submitEntries(std::span<UniformBindingEntry*> const entries, GUIContext& guiContext);
 void dropEntry(UniformBindingEntry& entry, Engine& engine, GUIContext& guiContext);
 
-BufferLayoutComponent getValue(BufferLayoutEntry& entry);
+BufferLayoutComponent getValue(BufferLayoutEntry const& entry);
 BufferLayoutEntry submitEntry(EntrySpecification<BufferLayoutEntry> const& spec, GUIContext& guiContext, ResourceManager& resourceManager);
 void setupEntry(BufferLayoutEntry& entry, ResourceManager& manager, Engine& engine, CommandContext& context, GUIContext& guiContext);
 void updateEntry(BufferLayoutEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
 void submitEntries(std::span<BufferLayoutEntry*> const entries, GUIContext& guiContext);
 void dropEntry(BufferLayoutEntry& entry, Engine& engine, GUIContext& guiContext);
 
-ShaderComponent getValue(ShaderEntry& entry);
+ShaderComponent getValue(ShaderEntry const& entry);
 ShaderEntry submitEntry(EntrySpecification<ShaderEntry> const& spec, GUIContext& guiContext, ResourceManager& resourceManager);
 void setupEntry(ShaderEntry& entry, ResourceManager& manager, Engine& engine, CommandContext& context, GUIContext& guiContext);
 void updateEntry(ShaderEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
 void submitEntries(std::span<ShaderEntry*> const entries, GUIContext& guiContext);
 void dropEntry(ShaderEntry& entry, Engine& engine, GUIContext& guiContext);
 
-DescriptorLayoutComponent getValue(DescriptorLayoutEntry& entry);
+DescriptorLayoutComponent getValue(DescriptorLayoutEntry const& entry);
 DescriptorLayoutEntry submitEntry(EntrySpecification<DescriptorLayoutEntry> const& spec, GUIContext& guiContext, ResourceManager& resourceManager);
 void setupEntry(DescriptorLayoutEntry& entry, ResourceManager& manager, Engine& engine, CommandContext& context, GUIContext& guiContext);
 void updateEntry(DescriptorLayoutEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
 void submitEntries(std::span<DescriptorLayoutEntry*> const entries, GUIContext& guiContext);
 void dropEntry(DescriptorLayoutEntry& entry, Engine& engine, GUIContext& guiContext);
 
-BufferComponent getValue(BufferEntry& entry);
+BufferComponent getValue(BufferEntry const& entry);
 BufferEntry submitEntry(EntrySpecification<BufferEntry> const& spec, GUIContext& guiContext, ResourceManager& resourceManager);
 void setupEntry(BufferEntry& entry, ResourceManager& manager, Engine& engine, CommandContext& context, GUIContext& guiContext);
 void updateEntry(BufferEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
 void submitEntries(std::span<BufferEntry*> const entries, GUIContext& guiContext);
 void dropEntry(BufferEntry& entry, Engine& engine, GUIContext& guiContext);
 
-PipelineComponent getValue(PipelineEntry& entry);
+PipelineComponent getValue(PipelineEntry const& entry);
 PipelineEntry submitEntry(EntrySpecification<PipelineEntry> const& spec, GUIContext& guiContext, ResourceManager& resourceManager);
 void setupEntry(PipelineEntry& entry, ResourceManager& manager, Engine& engine, CommandContext& context, GUIContext& guiContext);
 void updateEntry(PipelineEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
 void submitEntries(std::span<PipelineEntry*> const entries, GUIContext& guiContext);
 void dropEntry(PipelineEntry& entry, Engine& engine, GUIContext& guiContext);
 
-DescriptorSetComponent getValue(DescriptorSetEntry& entry);
+DescriptorSetComponent getValue(DescriptorSetEntry const& entry);
 DescriptorSetEntry submitEntry(EntrySpecification<DescriptorSetEntry> const& spec, GUIContext& guiContext, ResourceManager& resourceManager);
 void setupEntry(DescriptorSetEntry& entry, ResourceManager& manager, Engine& engine, CommandContext& context, GUIContext& guiContext);
 void updateEntry(DescriptorSetEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
 void submitEntries(std::span<DescriptorSetEntry*> const entries, GUIContext& guiContext);
 void dropEntry(DescriptorSetEntry& entry, Engine& engine, GUIContext& guiContext);
 
-/*
-- click on an entity
-- want to open inspector window
-- click add button
--	object entry, component type
-- adds a component
--	grab relevant entry
--	organises into a vbox (... problem, we can't create new entries at runtime)
--	if we add components that look for certain children?
--	component is added to the entity
--	upon updating the entity (through tree container?)
--		component that requires children of certain type
--		look through all children entities
--		any with relevant component are then tracked and added
--		and we fill out the component's data for that frame
+struct PipelineBlueprint {
+	uint32_t bufferLayout;
+	uint32_t descriptorLayout;
+	uint32_t vertexShader;
+	uint32_t fragmentShader;
+	uint32_t vertexBuffer;
+	uint32_t indexBuffer;
+	uint32_t descriptorSet;
+};
 
+struct DescriptorSetBlueprint {
+	std::vector<uint32_t> bindingReferences;
+};
 
-alternatively?
--	just treat the entity tree as an organisation tool, not relevant to representing hierarchys
--	and instead we use upload entries (much easier... better?)
-*/
+struct ComponentHeaderBlueprint {
+	VulkanComponent component;
+	uint32_t index;
+};
+
+template <SerialiserInterface T>
+void serialiseWrite(ComponentHeaderBlueprint const& blueprint, T& store) {
+	serialiseWrite(blueprint.component, store);
+	serialiseWrite(blueprint.index, store);
+}
+
+template <SerialiserInterface T>
+void serialiseRead(ComponentHeaderBlueprint* blueprint, T& store) {
+	serialiseRead(&blueprint->component, store);
+	serialiseRead(&blueprint->index, store);
+}
+
+template <SerialiserInterface T>
+uint32_t writeComponent(BufferComponent const& component, T& store, uint32_t& objectReference)
+{
+	ComponentHeaderBlueprint head;
+	head.component = VulkanComponent::BUFFER;
+	head.index = objectReference++;
+
+	serialiseWrite(head, store);
+
+	serialiseWrite(component.data, store);
+	serialiseWrite(component.usage, store);
+	// TODO: size not required...
+	serialiseWrite(component.size, store);
+
+	return head.index;
+}
+
+template <SerialiserInterface T>
+uint32_t writeComponent(ShaderComponent const& component, T& store, uint32_t& objectReference)
+{
+	ComponentHeaderBlueprint head;
+	head.component = VulkanComponent::SHADER;
+	head.index = objectReference++;
+
+	serialiseWrite(head, store);
+
+	serialiseWrite(component.filename, store);
+	serialiseWrite(component.type, store);
+
+	return head.index;
+}
+
+template <SerialiserInterface T>
+uint32_t writeComponent(BufferLayoutComponent const& component, T& store, uint32_t& objectReference)
+{
+	ComponentHeaderBlueprint head;
+	head.component = VulkanComponent::BUFFER_LAYOUT;
+	head.index = objectReference++;
+
+	serialiseWrite(head, store);
+
+	serialiseWrite(component.types, store);
+
+	return head.index;
+}
+
+template <SerialiserInterface T>
+uint32_t writeComponent(DescriptorLayoutComponent const& component, T& store, uint32_t& objectReference)
+{
+	ComponentHeaderBlueprint head;
+	head.component = VulkanComponent::DESCRIPTOR_LAYOUT;
+	head.index = objectReference++;
+
+	serialiseWrite(head, store);
+
+	serialiseWrite(component.bindings, store);
+
+	return head.index;
+}
+
+template <SerialiserInterface T>
+uint32_t writeComponent(DescriptorSetComponent const& component, T& store, uint32_t& objectReference)
+{
+	ComponentHeaderBlueprint head;
+	head.component = VulkanComponent::DESCRIPTOR_SET;
+	head.index = objectReference++;
+
+	serialiseWrite(head, store);
+
+	serialiseWrite(component.bindingData.size(), store);
+
+	DescriptorSetBlueprint blueprint;
+	blueprint.bindingReferences.reserve(component.bindingData.size());
+
+	for (DescriptorSetItem const& item : component.bindingData) {
+		// TODO: without the layout, we can't tell what's stored at each item,
+		//	for now we only have one itme type so we can just assume that, but this will need big changes
+		//	in future with image/framebuffer support
+		uint32_t itemReference = writeComponent(item.bufferPart, store, objectReference);
+		blueprint.bindingReferences.push_back(itemReference);
+	}
+
+	return head.index;
+}
+
+template <SerialiserInterface T>
+uint32_t writeComponent(PipelineComponent const& component, T& store, uint32_t& objectReference)
+{
+	ComponentHeaderBlueprint head;
+	head.component = VulkanComponent::PIPELINE;
+	head.index = objectReference++;
+
+	serialiseWrite(head, store);
+
+	PipelineBlueprint blueprint;
+	blueprint.vertexBuffer = writeComponent(component.vertexBuffer, store, objectReference);
+	blueprint.indexBuffer = writeComponent(component.indexBuffer, store, objectReference);
+
+	blueprint.fragmentShader = writeComponent(component.fragmentShader, store, objectReference);
+	blueprint.vertexShader = writeComponent(component.vertexShader, store, objectReference);
+	
+	blueprint.bufferLayout = writeComponent(component.bufferLayout, store, objectReference);
+	blueprint.descriptorLayout = writeComponent(component.descriptorLayout, store, objectReference);
+
+	blueprint.descriptorSet = writeComponent(component.descriptorSet, store, objectReference);
+	
+	return head.index;
+}
+
+// TODO; read counterparts

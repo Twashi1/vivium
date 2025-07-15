@@ -121,6 +121,7 @@ namespace Vivium {
 	void rotateChild(GUIElementReference const parent, uint64_t src, uint64_t mid, uint64_t dest, GUIContext& guiContext);
 	void swapChildren(GUIElementReference const parent, uint64_t a, uint64_t b, GUIContext& guiContext);
 	std::vector<GUIElementReference> const& getChildren(GUIElementReference const parent, GUIContext& guiContext);
+	void clearChildren(GUIElementReference const parent, GUIContext& guiContext);
 	// TODO: make use of this method
 	GUIElement const& _getGUIElement(GUIElementReference const reference, GUIContext const& guiContext);
 

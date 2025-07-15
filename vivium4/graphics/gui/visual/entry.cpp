@@ -103,6 +103,10 @@ namespace Vivium {
 
 				entry.currentValue = entry.lastValidValue;
 			}
+
+			if (entry.currentValue == "") {
+				entry.currentValue = entry.placeholder;
+			}
 		}
 
 		if (entry.entrySelected) {
@@ -151,7 +155,7 @@ namespace Vivium {
 			entry.entrySelected = false;
 
 			// Float
-			std::regex floatPattern("-?\\d*\\.\\d+");
+			std::regex floatPattern("-?\\d*(\\.\\d+)?");
 
 			if (std::regex_match(entry.currentValue, floatPattern)) {
 				entry.lastValidValue = entry.currentValue;
@@ -160,6 +164,10 @@ namespace Vivium {
 				VIVIUM_LOG(LogSeverity::WARN, "Invalid input entered: {}", entry.currentValue);
 
 				entry.currentValue = entry.lastValidValue;
+			}
+
+			if (entry.currentValue == "") {
+				entry.currentValue = entry.placeholder;
 			}
 		}
 
@@ -209,6 +217,10 @@ namespace Vivium {
 			entry.entrySelected = false;
 
 			entry.lastValidValue = entry.currentValue;
+
+			if (entry.currentValue == "") {
+				entry.currentValue = entry.placeholder;
+			}
 		}
 
 		if (entry.entrySelected) {

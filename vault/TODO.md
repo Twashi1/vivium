@@ -70,6 +70,8 @@ We use the ECS to store most relevant data
 	- see which ones fit our needs for that pipeline's links
 - an entry can link to a different entity?
 
+- generate tree structure that we can then use to build application in interpreter
+- we need the scroll bar
 ## Shader planning
 
 - run-time reflection and some partial compilation on shaders
@@ -110,6 +112,12 @@ We use the ECS to store most relevant data
 - Investigate ability to change size of group (not during iteration) and still correctly see all entities
 ## Core
 
+- We assign `BufferComponent` and `ShaderComponent` etc. to entities
+	- but in reality we never store the data required until compile time
+	- so there is some big unnecessary complication?
+	- although we do still need some components to be able to reference other components that don't exist
+	- which is facilitated by entities right now...
+	- so its ok?
 - We need to be able to smoothly switch between fonts appropriate to the size of text?
 - Eventually switch to some truly generalisable system for rendering any type of GUI component
 	- only need rectangles for base?
@@ -322,3 +330,61 @@ ultimate conclusion is that unless we want to limit GUI functionality, we should
 Editor window allows creation of a rendering pipeline through simple drag-and-drops and data entry
 - upon pressing a compile button, this data is converting into bytecode
 - add some console command that allows running of this bytecode to perform the described render pipeline
+
+## Bytecode format
+
+```
+struct BufferLayoutComponent {
+	std::vector<ShaderDataType> types;
+};
+
+struct DescriptorLayoutComponent {
+	std::vector<UniformBinding> bindings;
+};
+
+struct ShaderComponent {
+	std::string filename;
+	ShaderStage type;
+};
+
+struct BufferComponent {
+	std::vector<float> data;
+	BufferUsage usage;
+	uint64_t size;
+};
+
+struct DescriptorSetComponent {
+	std::vector<Entity> bindingData;
+};
+
+struct PipelineComponent {
+	BufferLayoutComponent bufferLayout;
+	DescriptorLayoutComponent descriptorLayout;
+	ShaderComponent vertexShader;
+	ShaderComponent fragmentShader;
+
+	BufferComponent vertexBuffer;
+	BufferComponent indexBuffer;
+	DescriptorSetComponent descriptorSet;
+};
+```
+
+1. we grab all our relevant entries
+2. we begin in some bottom-to-top order assigning the `getValue` to the entity itself
+3. thus pipeline component will have valid references (and descriptor set)
+4. we then place this into a byte-code format
+
+instead of some complicated parsing, just serialise the `VulkanComponent` id, and then the actual component itself
+
+need new serialiser
+
+1. want to be able to write both to files or any type of stream
+	1. stream can read n bytes
+	2. stream can write n bytes (either/or)
+	3. stream can count bytes left for reading/writing (can have limited size)
+
+2. define basic methods for all basic types
+	1. int/float/bool/enum?
+	2. `span`
+	3. pointers in future (not required right now)
+

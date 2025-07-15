@@ -182,18 +182,14 @@ namespace Vivium {
 		entry.options = specification.options;
 		entry.dropDownOptions.reserve(entry.options.size());
 
-		Color changingColor = Color(0.5f, 0.5f, 0.0f);
-
 		for (T const& value_type : entry.options) {
 			Button dropDownOption;
 
 			dropDownOption = submitButton(resourceManager, context, ButtonSpecification(
 				entry.dropDownContainer.base,
-				changingColor,
+				Color(0.5f, 0.5f, 0.5f),
 				Color(0.0f, 0.0f, 0.0f)
 			));
-
-			changingColor.b += 0.1f;
 
 			entry.dropDownOptions.push_back(dropDownOption);
 		}
@@ -317,7 +313,7 @@ namespace Vivium {
 			nullGUIParent(),
 			Color(0.25f, 0.25f, 0.25f),
 			Color(0.1f, 0.1f, 0.1f),
-			0.05f
+			0.01f
 		));
 		entry.base = entry.valuePanel.base;
 		entry.valueButton = submitButton(resourceManager, context, ButtonSpecification(
@@ -330,7 +326,7 @@ namespace Vivium {
 			entry.valuePanel.base,
 			Color(0.85f, 0.25f, 0.25f),
 			Color(0.1f, 0.1f, 0.1f),
-			0.05f
+			0.01f
 		));
 		entry.hasValue = false;
 		entry.placeholder = specification.placeholder;
@@ -348,7 +344,7 @@ namespace Vivium {
 		setButtonText(entry.valueButton, engine, context, guiContext, entry.placeholder);
 
 		// TODO: anchor to left?
-		properties(entry.valueButton, guiContext).dimensions = F32x2(0.65f, 1.0f);
+		properties(entry.valueButton, guiContext).dimensions = F32x2(0.65f, 0.9f);
 		
 		properties(entry.clearPanel, guiContext).anchorX = GUIAnchor::RIGHT;
 		properties(entry.clearPanel, guiContext).centerX = GUIAnchor::RIGHT;
@@ -436,7 +432,7 @@ namespace Vivium {
 		));
 		entry.numEntries = 0;
 
-		properties(entry.addEntry.base, context).dimensions = F32x2(1.0f, 0.15f);
+		properties(entry.addEntry.base, context).dimensions = F32x2(1.0f, 1.0f);
 		properties(entry.addEntry.base, context).anchorY = GUIAnchor::TOP;
 		properties(entry.addEntry.base, context).centerY = GUIAnchor::TOP;
 
@@ -454,8 +450,6 @@ namespace Vivium {
 				Color(0.0f, 0.0f, 0.0f),
 				0.01f
 			));
-			properties(entry.entryWrapper[i].base, context).anchorY = GUIAnchor::TOP;
-			properties(entry.entryWrapper[i].base, context).centerY = GUIAnchor::TOP;
 
 			entry.deleteEntry[i] = createPanel(context, PanelSpecification(
 				entry.entryWrapper[i].base,
@@ -476,7 +470,9 @@ namespace Vivium {
 				0.01f
 			));
 
-			properties(entry.entryWrapper[i].base, context).dimensions = F32x2(1.0f, 0.15f);
+			properties(entry.entryWrapper[i].base, context).dimensions = F32x2(1.0f, 1.0f);
+			properties(entry.entryWrapper[i].base, context).anchorY = GUIAnchor::TOP;
+			properties(entry.entryWrapper[i].base, context).centerY = GUIAnchor::TOP;
 
 			properties(entry.deleteEntry[i].base, context).dimensions = F32x2(0.1f, 0.5f);
 			properties(entry.entryUp[i].base, context).dimensions = F32x2(0.1f, 0.3f);
@@ -669,6 +665,22 @@ namespace Vivium {
 		std::vector<typename ValueEntry::ValueType> results;
 
 		for (uint64_t i = 0; i < entry.numEntries; i++) {
+			results.push_back(getValue(entry.entries[i]));
+		}
+
+		return results;
+	}
+
+	template <typename T>
+	ListEntry<UploadEntry<T>>::ValueType getValue(ListEntry<UploadEntry<T>> const& entry)
+	{
+		using ReturnType = typename UploadEntry<T>::ValueType;
+
+		std::vector<ReturnType> results;
+
+		for (uint64_t i = 0; i < entry.numEntries; i++) {
+			if (!entry.entries[i].hasValue) return {};
+
 			results.push_back(getValue(entry.entries[i]));
 		}
 

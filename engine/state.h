@@ -49,7 +49,7 @@ struct State {
 		ObjectEntry<VulkanComponent> createComponent;
 		std::array<PropertyDisplay, MAX_CONCURRENT_ENTITY_PANELS> propertyDisplays;
 
-		ObjectEntry<VulkanComponent> tmpExample;
+		Button compileTree;
 
 		struct {
 			Panel background;
@@ -108,3 +108,5 @@ void _setupPropertyDisplay(State& state, PropertyDisplay& display);
 void _updatePropertyDisplay(State& state, PropertyDisplay& display);
 void _renderPropertyDisplay(State& state, PropertyDisplay& display);
 void _dropPropertyDisplay(State& state, PropertyDisplay& display);
+
+void _compileTree(State& state);
