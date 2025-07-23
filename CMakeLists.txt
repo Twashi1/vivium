@@ -56,7 +56,7 @@ set(VIVIUM_SOURCES
  "vivium4/graphics/image_load.cpp"
  "engine/tree_container.cpp"
  "vivium4/graphics/gui/visual/debugrect.cpp"
- "vivium4/graphics/gui/visual/entry.cpp" "engine/components.cpp" "vivium4/serialiser/serialiser.cpp")
+ "vivium4/graphics/gui/visual/entry.cpp" "engine/components.cpp" "vivium4/serialiser/serialiser.cpp" "runtime/main.cpp" "runtime/runtime.cpp")
 set(VIVIUM_HEADERS
   "vivium4/error/result.h"
   "vivium4/graphics/primitives/buffer.h"
@@ -117,7 +117,7 @@ set(VIVIUM_HEADERS
   "vivium4/graphics/gui/visual/debugrect.h"
   "vivium4/graphics/gui/visual/entry.h"
   "vivium4/input_string.h"
- "engine/components.h" )
+ "engine/components.h"  "runtime/runtime.h")
 
 add_subdirectory("${CMAKE_SOURCE_DIR}/external/glfw")
 
@@ -135,11 +135,13 @@ target_include_directories(vivium4 PUBLIC "${CMAKE_SOURCE_DIR}/external/freetype
 target_include_directories(vivium4 PUBLIC "${CMAKE_SOURCE_DIR}/external/glm")
 target_include_directories(vivium4 PUBLIC "${CMAKE_SOURCE_DIR}/external/stb_image")
 target_include_directories(vivium4 PUBLIC "${CMAKE_SOURCE_DIR}/external/vulkan/Include")
+target_include_directories(vivium4 PUBLIC "${CMAKE_SOURCE_DIR}/external/lua/include")
 
 target_link_libraries(vivium4 PUBLIC
 glfw
 "${CMAKE_SOURCE_DIR}/external/freetype/static/vs2015-2022/win64/freetype.lib"
 "${CMAKE_SOURCE_DIR}/external/vulkan/Lib/vulkan-1.lib"
+"${CMAKE_SOURCE_DIR}/external/lua/lua54.lib"
 winmm.lib
 )
 

@@ -79,8 +79,8 @@ namespace Vivium {
 
 		data->resize(arraySize);
 
-		for (uint64_t i = 0; i < data.size(); i++) {
-			store.readBytes(sizeof(T), &data[i]);
+		for (uint64_t i = 0; i < data->size(); i++) {
+			store.readBytes(sizeof(T), &(*data)[i]);
 		}
 	}
 
@@ -91,8 +91,8 @@ namespace Vivium {
 
 		data->resize(arraySize);
 
-		for (uint64_t i = 0; i < data.size(); i++) {
-			store.readBytes(sizeof(char), &data[i]);
+		for (uint64_t i = 0; i < data->size(); i++) {
+			store.readBytes(sizeof(char), &(*data)[i]);
 		}
 	}
 }

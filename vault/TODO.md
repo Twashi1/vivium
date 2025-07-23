@@ -1,76 +1,7 @@
-## Whiteboard
+## Next
 
-Reached practical limitations of GUI
-- just force all the features in and continue, brute-force through it
-- we just can't afford a GUI re-write
-
-How do we organise the game engine?
-- ideally we want to create something unique
-- and with minimal overhead
-- ideal would be to directly compile to `C++` the construction of objects
-	- but seems complicated in practice?
-- better would be to compile to some intermediary
-	- optimise/interpret this intermediary representation
-	- can then compile intermediary in future, but for now direct interpretation seems much easier
-
-How does the user interact with the game engine?
-- user creates entities
-- user is responsible themselves for creation of the pipeline
-	- they construct and attach shaders
-	- any relevant shader resources are attached to a descriptor set, which is then attached to the pipeline with a matching descriptor layout
-- representation of draw commands?
-	- need some submission of a buffer to the shader layout/for rasterization
-	- any given pipeline also has a buffer layout that the buffer must match
-	- but we just also attach the buffer to the pipeline
-	- when we draw, we have to select the relevant buffer/descriptor to bind
-
-To create
-- ability to add different entities
-- modify individual instances with given properties
-	- enter integer, string, list data
-- drag and drop to add to hierarchy (like add element to inspector window)
-- expand/hide child elements
-- given some tree of children, interpret it to create elements
-	- parse the tree somehow?
-
-How does rendering properties, entering properties, and creating the properties menu/storing properties for some type of object work
-- for the game engine we'd organise `Vulkan` objects as their own individual components
-- each component has a set of values we'd need to modify
-	- we hardcode the UI for these components?
-	- we have list/string entries
-		- we need this list UI to take arbitrary data
-		- we need some drop-down menu functionality for selecting the `ShaderDataType`
-		- list UI has a generalised display/entry mechanism (plus remove/organise buttons ideally)
-	- the UI itself stores the values for these components?
-
-We don't actually have a way to change a container's size based on its children
-
-To build a real UI quickly an efficiently
-- need some language with which to describe the UI quickly
-- the language must incorporate almost any expected feature very easily
-- intuitively build UI hierarchy
-
-Say we were to re-design the UI around a different philosophy
-- vast majority of UIs have a set font size and size of elements, with areas changing shapes to fit
-- we can support the sizing thing, but we can't modify areas to change shape to fit
-- we also can't make a container base its size off its children
-- "fit sizing" -> "grow sizing" -> "positions" -> "draw"
-- break up GUI update function a little to make it simpler
-- clipping of text? more text functions for organising and controlling text
-
-We use the ECS to store most relevant data
-- each entity has components for what data it has on it
-- pipeline objects require links
-	- buffer specification
-	- shaders
-	- etc.
-- we create these links by children or by drag and drop
-	- just look at each child of the tree container, get the relevant entity for that panel
-	- get the components for that entity
-	- see which ones fit our needs for that pipeline's links
-- an entry can link to a different entity?
-
-- generate tree structure that we can then use to build application in interpreter
+- scripting language
+- we allow multiple imports of vivium to avoid some useless shared middleman header
 - we need the scroll bar
 ## Shader planning
 
@@ -84,7 +15,8 @@ We use the ECS to store most relevant data
 - look into debug and simulation on CPU side (would require rasterization etc.)
 ## Current tasks
 
-- CMAKE of vivium should be separate to CMAKE of editor
+- Buffer component has `size` unused (should be number of elements?) also can't take arbitrary data
+- CMAKE of vivium library should be separate to CMAKE of editor/runtime
 - Comprehensive documentation of all structs/methods/etc.
 	- just use doxygen format, can build a custom tool later
 - Some GUI commands are randomly split between `context.h` and `base.h`
@@ -112,12 +44,24 @@ We use the ECS to store most relevant data
 - Investigate ability to change size of group (not during iteration) and still correctly see all entities
 ## Core
 
+- we need scripts, and to be able to control certain aspects through scripts
+	- need a scripting language
+	- looking closest towards using LUA?
+	- but a custom scripting language is also an option (more fun too)
+		- more easy to integrate in the end maybe
+	- most functionality would be integrated by built-in functions into the language itself
+	- when interpreting this language, its possible we can find some advantages in how resources are allocated? not having to worry about order so much because the interpreter sorts it out for us beforehand
+- certain pieces of data entry are just too cumbersome to do by hand
+	- we could do them by upload entries?
+- rename entities
+- see explicit name of each component, bordered and containerised
 - We assign `BufferComponent` and `ShaderComponent` etc. to entities
 	- but in reality we never store the data required until compile time
 	- so there is some big unnecessary complication?
 	- although we do still need some components to be able to reference other components that don't exist
 	- which is facilitated by entities right now...
 	- so its ok?
+- Buffer component shouldn't have size? just get from the data
 - We need to be able to smoothly switch between fonts appropriate to the size of text?
 - Eventually switch to some truly generalisable system for rendering any type of GUI component
 	- only need rectangles for base?
@@ -195,17 +139,15 @@ We use the ECS to store most relevant data
 
 ## GUI
 
+- Rename all `submitEntries` methods, and don't use weird pointer span stuff
 - Reverse argument order of `Text`
-- Cannot have multiple `renderPanel` or `renderButton` calls in the same draw call, data gets overwritten
 - Test left-aligned `Text` rendering
 - Per character `Text` colouring
 - Reduce parameters on GUI visual, customisability not the point of the system
 - `Scene` rendering for instanced/batching
-- `Sprite` class
 - `Button` functionality (hover/click events, colour changes on hover/click)
 	- Add ability for `Sprite` to display
 	- Should have `TextBatch` in `GUIContext` so we don't need a draw call for each button
-- `Slider` class
 - `Anchor` renamed since also used in `Center` parameters (also move to `Vec2`?)
 - Not considering the total y-extent of characters that go below the origin (like `p`, `q`, `y`, etc.), although whether it should be considered or not is to be determined - consider a line spacing parameter
 - Better values of `spreadFactor` for signed distance field font rendering
@@ -243,9 +185,36 @@ We use the ECS to store most relevant data
 - Shader debugger tool - use CPU to simulate GPU actions for some fragments
 - Platform independence (OS module, Timer module)
 
+## Script planning
+
+Going to make a scripting language python-esque
+- or regardless; we need some planning for the features of the lua/python/custom language
+1. Control primarily through the ECS
+2. Built-in`submit`, `setup`, `update`, `draw`, `drop` functions, for each stage
+- can add/remove components in `submit`
+- can reference entities at any point, and grab components on them
+- editing of components is also done strictly through built-in commands
+	- this way we can manage when buffer updates happen, or when we
+
+```
+e = createEntity()
+addComponent; removeComponent; editComponent;
+```
+
+- lua calls an external function
+- this external function must schedule something to be done within one of the commands
+
 ## Future
 
 > After the MVP works
+
+Is a compiled game engine actually special?
+- most interactions just devolve into writing code for a scripting language that gets compiled to bytecode and ran, just like unreal/unity?
+
+We need some sort of universal object referencing system for the Runtime
+- ECS is best approach
+- objects reference others by entity
+- we don't just store the data associated with an object, but also the vulkan object
 
 Code style is torn between attempts to be C-compatible and a data-oriented C++ style
 - We should stick to one
@@ -257,6 +226,7 @@ Code style is torn between attempts to be C-compatible and a data-oriented C++ s
 		- Large parts of code change to fit C++ style
 
 GUI is an inefficient mess
+- Investigate how immediate-mode rendering really works?
 - Actual profiling concerns
 	- `calculateTextMetrics` takes a long time as we re-calculate text every frame
 	- many draw calls for each text object
@@ -330,61 +300,3 @@ ultimate conclusion is that unless we want to limit GUI functionality, we should
 Editor window allows creation of a rendering pipeline through simple drag-and-drops and data entry
 - upon pressing a compile button, this data is converting into bytecode
 - add some console command that allows running of this bytecode to perform the described render pipeline
-
-## Bytecode format
-
-```
-struct BufferLayoutComponent {
-	std::vector<ShaderDataType> types;
-};
-
-struct DescriptorLayoutComponent {
-	std::vector<UniformBinding> bindings;
-};
-
-struct ShaderComponent {
-	std::string filename;
-	ShaderStage type;
-};
-
-struct BufferComponent {
-	std::vector<float> data;
-	BufferUsage usage;
-	uint64_t size;
-};
-
-struct DescriptorSetComponent {
-	std::vector<Entity> bindingData;
-};
-
-struct PipelineComponent {
-	BufferLayoutComponent bufferLayout;
-	DescriptorLayoutComponent descriptorLayout;
-	ShaderComponent vertexShader;
-	ShaderComponent fragmentShader;
-
-	BufferComponent vertexBuffer;
-	BufferComponent indexBuffer;
-	DescriptorSetComponent descriptorSet;
-};
-```
-
-1. we grab all our relevant entries
-2. we begin in some bottom-to-top order assigning the `getValue` to the entity itself
-3. thus pipeline component will have valid references (and descriptor set)
-4. we then place this into a byte-code format
-
-instead of some complicated parsing, just serialise the `VulkanComponent` id, and then the actual component itself
-
-need new serialiser
-
-1. want to be able to write both to files or any type of stream
-	1. stream can read n bytes
-	2. stream can write n bytes (either/or)
-	3. stream can count bytes left for reading/writing (can have limited size)
-
-2. define basic methods for all basic types
-	1. int/float/bool/enum?
-	2. `span`
-	3. pointers in future (not required right now)
-

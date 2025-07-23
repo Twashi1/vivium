@@ -255,27 +255,23 @@ struct DescriptorSetBlueprint {
 
 struct ComponentHeaderBlueprint {
 	VulkanComponent component;
-	uint32_t index;
 };
 
 template <SerialiserInterface T>
 void serialiseWrite(ComponentHeaderBlueprint const& blueprint, T& store) {
 	serialiseWrite(blueprint.component, store);
-	serialiseWrite(blueprint.index, store);
 }
 
 template <SerialiserInterface T>
 void serialiseRead(ComponentHeaderBlueprint* blueprint, T& store) {
 	serialiseRead(&blueprint->component, store);
-	serialiseRead(&blueprint->index, store);
 }
 
 template <SerialiserInterface T>
-uint32_t writeComponent(BufferComponent const& component, T& store, uint32_t& objectReference)
+void writeComponent(BufferComponent const& component, T& store)
 {
 	ComponentHeaderBlueprint head;
 	head.component = VulkanComponent::BUFFER;
-	head.index = objectReference++;
 
 	serialiseWrite(head, store);
 
@@ -283,100 +279,161 @@ uint32_t writeComponent(BufferComponent const& component, T& store, uint32_t& ob
 	serialiseWrite(component.usage, store);
 	// TODO: size not required...
 	serialiseWrite(component.size, store);
-
-	return head.index;
 }
 
 template <SerialiserInterface T>
-uint32_t writeComponent(ShaderComponent const& component, T& store, uint32_t& objectReference)
+void writeComponent(ShaderComponent const& component, T& store)
 {
 	ComponentHeaderBlueprint head;
 	head.component = VulkanComponent::SHADER;
-	head.index = objectReference++;
 
 	serialiseWrite(head, store);
 
 	serialiseWrite(component.filename, store);
 	serialiseWrite(component.type, store);
-
-	return head.index;
 }
 
 template <SerialiserInterface T>
-uint32_t writeComponent(BufferLayoutComponent const& component, T& store, uint32_t& objectReference)
+void writeComponent(BufferLayoutComponent const& component, T& store)
 {
 	ComponentHeaderBlueprint head;
 	head.component = VulkanComponent::BUFFER_LAYOUT;
-	head.index = objectReference++;
 
 	serialiseWrite(head, store);
 
 	serialiseWrite(component.types, store);
-
-	return head.index;
 }
 
 template <SerialiserInterface T>
-uint32_t writeComponent(DescriptorLayoutComponent const& component, T& store, uint32_t& objectReference)
+void writeComponent(DescriptorLayoutComponent const& component, T& store)
 {
 	ComponentHeaderBlueprint head;
 	head.component = VulkanComponent::DESCRIPTOR_LAYOUT;
-	head.index = objectReference++;
 
 	serialiseWrite(head, store);
 
 	serialiseWrite(component.bindings, store);
-
-	return head.index;
 }
 
 template <SerialiserInterface T>
-uint32_t writeComponent(DescriptorSetComponent const& component, T& store, uint32_t& objectReference)
+void writeComponent(DescriptorSetComponent const& component, T& store)
 {
 	ComponentHeaderBlueprint head;
 	head.component = VulkanComponent::DESCRIPTOR_SET;
-	head.index = objectReference++;
 
 	serialiseWrite(head, store);
 
 	serialiseWrite(component.bindingData.size(), store);
 
-	DescriptorSetBlueprint blueprint;
-	blueprint.bindingReferences.reserve(component.bindingData.size());
-
 	for (DescriptorSetItem const& item : component.bindingData) {
 		// TODO: without the layout, we can't tell what's stored at each item,
 		//	for now we only have one itme type so we can just assume that, but this will need big changes
 		//	in future with image/framebuffer support
-		uint32_t itemReference = writeComponent(item.bufferPart, store, objectReference);
-		blueprint.bindingReferences.push_back(itemReference);
+		writeComponent(item.bufferPart, store);
 	}
-
-	return head.index;
 }
 
 template <SerialiserInterface T>
-uint32_t writeComponent(PipelineComponent const& component, T& store, uint32_t& objectReference)
+void writeComponent(PipelineComponent const& component, T& store)
 {
 	ComponentHeaderBlueprint head;
 	head.component = VulkanComponent::PIPELINE;
-	head.index = objectReference++;
 
 	serialiseWrite(head, store);
 
-	PipelineBlueprint blueprint;
-	blueprint.vertexBuffer = writeComponent(component.vertexBuffer, store, objectReference);
-	blueprint.indexBuffer = writeComponent(component.indexBuffer, store, objectReference);
-
-	blueprint.fragmentShader = writeComponent(component.fragmentShader, store, objectReference);
-	blueprint.vertexShader = writeComponent(component.vertexShader, store, objectReference);
-	
-	blueprint.bufferLayout = writeComponent(component.bufferLayout, store, objectReference);
-	blueprint.descriptorLayout = writeComponent(component.descriptorLayout, store, objectReference);
-
-	blueprint.descriptorSet = writeComponent(component.descriptorSet, store, objectReference);
-	
-	return head.index;
+	writeComponent(component.vertexBuffer, store);
+	writeComponent(component.indexBuffer, store);
+	writeComponent(component.fragmentShader, store);
+	writeComponent(component.vertexShader, store);
+	writeComponent(component.bufferLayout, store);
+	writeComponent(component.descriptorLayout, store);
+	writeComponent(component.descriptorSet, store);
 }
 
-// TODO; read counterparts
+template <SerialiserInterface T>
+void readComponent(BufferComponent* component, T& store)
+{
+	ComponentHeaderBlueprint head;
+
+	serialiseRead(&head, store);
+	// TODO: enum strings for loggin
+	VIVIUM_ASSERT(head.component == VulkanComponent::BUFFER, "Read incorrect component type");
+
+	serialiseRead(&component->data, store);
+	serialiseRead(&component->usage, store);
+	serialiseRead(&component->size, store);
+}
+
+template <SerialiserInterface T>
+void readComponent(ShaderComponent* component, T& store)
+{
+	ComponentHeaderBlueprint head;
+
+	serialiseRead(&head, store);
+	// TODO: enum strings for loggin
+	VIVIUM_ASSERT(head.component == VulkanComponent::SHADER, "Read incorrect component type");
+
+	serialiseRead(&component->filename, store);
+	serialiseRead(&component->type, store);
+}
+
+template <SerialiserInterface T>
+void readComponent(BufferLayoutComponent* component, T& store)
+{
+	ComponentHeaderBlueprint head;
+
+	serialiseRead(&head, store);
+	// TODO: enum strings for loggin
+	VIVIUM_ASSERT(head.component == VulkanComponent::BUFFER_LAYOUT, "Read incorrect component type");
+
+	serialiseRead(&component->types, store);
+}
+
+
+template <SerialiserInterface T>
+void readComponent(DescriptorLayoutComponent* component, T& store)
+{
+	ComponentHeaderBlueprint head;
+
+	serialiseRead(&head, store);
+	// TODO: enum strings for loggin
+	VIVIUM_ASSERT(head.component == VulkanComponent::DESCRIPTOR_LAYOUT, "Read incorrect component type");
+
+	serialiseRead(&component->bindings, store);
+}
+
+template <SerialiserInterface T>
+void readComponent(DescriptorSetComponent* component, T& store)
+{
+	ComponentHeaderBlueprint head;
+
+	serialiseRead(&head, store);
+	// TODO: enum strings for loggin
+	VIVIUM_ASSERT(head.component == VulkanComponent::DESCRIPTOR_SET, "Read incorrect component type");
+
+	uint64_t count = 0;
+	serialiseRead(&count, store);
+	component->bindingData.resize(count);
+
+	for (uint64_t i = 0; i < count; i++) {
+		readComponent(&component->bindingData[i].bufferPart, store);
+	}
+}
+
+template <SerialiserInterface T>
+void readComponent(PipelineComponent* component, T& store)
+{
+	ComponentHeaderBlueprint head;
+
+	serialiseRead(&head, store);
+	// TODO: enum strings for loggin
+	VIVIUM_ASSERT(head.component == VulkanComponent::PIPELINE, "Read incorrect component type");
+
+	readComponent(&component->vertexBuffer, store);
+	readComponent(&component->indexBuffer, store);
+	readComponent(&component->fragmentShader, store);
+	readComponent(&component->vertexShader, store);
+	readComponent(&component->bufferLayout, store);
+	readComponent(&component->descriptorLayout, store);
+	readComponent(&component->descriptorSet, store);
+}

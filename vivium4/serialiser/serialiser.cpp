@@ -8,7 +8,7 @@ namespace Vivium {
 		file.open(fileLocation, flags);
 
 		if (!file.is_open()) {
-			VIVIUM_LOG(LogSeverity::ERROR, "Coulnd't find file location {}", fileLocation);
+			VIVIUM_LOG(LogSeverity::ERROR, "Couldnt't find file location {}", fileLocation);
 		}
 	}
 

@@ -175,7 +175,6 @@ void _update(State& state)
 	// TODO: only update the selected entity or the entity we last clicked on?
 	for (PropertyDisplay& display : state.editor.propertyDisplays) {
 		if (display.entity != nullEntity && state.editor.entityView.lastClicked == display.entity) {
-			VIVIUM_LOG(LogSeverity::DEBUG, "Updating a property display {}", (int)display.entity);
 			_updatePropertyDisplay(state, display);
 		}
 	}
@@ -574,46 +573,6 @@ void _dropPropertyDisplay(State& state, PropertyDisplay& display)
 
 void _compileTree(State& state)
 {
-	// 1. loop registry
-	// 2. into arrays, sort entities with BufferComponents, ShaderComponents, etc.
-	// 3. getValue and update the component of each entity in order
-	// 4. once we finally reach the PipelineComponent, we begin serialising everything
-
-	/*std::vector<Entity> bufferComponents;
-	std::vector<Entity> shaderComponents;
-	std::vector<Entity> bufferLayoutComponents;
-	std::vector<Entity> descriptorLayoutComponents;
-	std::vector<Entity> descriptorSetComponents;
-	std::vector<Entity> pipelineComponents;
-
-	for (uint64_t i = 0; i < state.editor.entityView.entities.size(); i++) {
-		Entity entity = state.editor.entityView.entities[i];
-
-		if (state.registry.hasComponent<BufferComponent>(entity)) {
-			bufferComponents.push_back(entity);
-		}
-
-		if (state.registry.hasComponent<ShaderComponent>(entity)) {
-			shaderComponents.push_back(entity);
-		}
-
-		if (state.registry.hasComponent<BufferLayoutComponent>(entity)) {
-			bufferLayoutComponents.push_back(entity);
-		}
-
-		if (state.registry.hasComponent<DescriptorLayoutComponent>(entity)) {
-			descriptorLayoutComponents.push_back(entity);
-		}
-
-		if (state.registry.hasComponent<DescriptorSetComponent>(entity)) {
-			descriptorSetComponents.push_back(entity);
-		}
-
-		if (state.registry.hasComponent<PipelineComponent>(entity)) {
-			pipelineComponents.push_back(entity);
-		}
-	}*/
-
 	// TODO: We somewhat want a reverse index from entity -> property display
 	//	but this doesn't exactly exist
 
@@ -664,16 +623,6 @@ void _compileTree(State& state)
 
 	// All values up to date, now grab every entity with a pipeline component and serialise it
 	// TODO: bad, but easier than looping entities again
-	/*
-	BufferLayoutComponent bufferLayout;
-	DescriptorLayoutComponent descriptorLayout;
-	ShaderComponent vertexShader;
-	ShaderComponent fragmentShader;
-
-	BufferComponent vertexBuffer;
-	BufferComponent indexBuffer;
-	DescriptorSetComponent descriptorSet;
-	*/
 
 	// Create serialiser for pipeline
 	//		when attempting to read the data to create the relevant objects
@@ -682,15 +631,16 @@ void _compileTree(State& state)
 	//		can hijack the entity id, but would require some restructuring of the previous step
 	//		some indexes should be enough?
 	// Horrible counter
-	uint32_t objectReferenceIndex = 0;
 	SerialiserFileInterface fileInterface;
 	fileInterface.begin("vivium4/res/gen.dat", false);
 
+	serialiseWrite(pipelineComponents.size(), fileInterface);
+
 	for (PipelineComponent& pipeline : pipelineComponents) {
-		writeComponent(pipeline, fileInterface, objectReferenceIndex);
+		writeComponent(pipeline, fileInterface);
 	}
 
 	fileInterface.end();
 
-	VIVIUM_LOG(LogSeverity::DEBUG, "Wrote {} objects to gen.dat", objectReferenceIndex);
+	VIVIUM_LOG(LogSeverity::DEBUG, "Finished writing to gen.dat");
 }
