@@ -56,6 +56,9 @@ namespace Vivium {
 	struct GUIContext {
 		Ref<Buffer> rectVertexBuffer;
 		Ref<Buffer> rectIndexBuffer;
+		
+		Font consolas64;
+		Ref<Texture> consolas64Texture;
 
 		struct {
 			Ref<Pipeline> pipeline;

@@ -190,7 +190,7 @@ namespace Vivium {
 			default: VIVIUM_LOG(LogSeverity::FATAL, "Invalid alignment"); break;
 			}
 
-			std::vector<PerGlyphData> renderData = generateTextRenderData(text->metrics, text->characters, textBatch.font, F32x2(1.0f), text->alignment);
+			std::vector<PerGlyphData> renderData = generateTextRenderData(text->metrics, text->characters, *textBatch.font, F32x2(1.0f), text->alignment);
 
 			// Duplicated for each vertex
 			Color textColorData[4];
@@ -224,10 +224,26 @@ namespace Vivium {
 		));
 
 		text.font = specification.font;
+		text.createdFontTexture = false;
 
-		submitResource(manager, &text.fontTexture.reference, std::vector<TextureSpecification>({
-			TextureSpecification::fromFont(specification.font, TextureFormat::MONOCHROME, TextureFilter::NEAREST)
+		VIVIUM_ASSERT(specification.font != nullptr, "Must pass font to text batch specification");
+
+		// We have a texture reference
+		if (specification.textureReference.referenceIndex != VIVIUM_NULL_REFERENCE) {
+			text.fontTexture.reference = specification.textureReference;
+		}
+		// We weren't provided the texture, so make it ourselves
+		else {
+			// TODO: we're submitting lots of duplicate texture specifications
+			//	causing masssive allocations
+			VIVIUM_LOG(LogSeverity::WARN, "TextBatch is creating its own font texture");
+
+			submitResource(manager, &text.fontTexture.reference, std::vector<TextureSpecification>({
+				TextureSpecification::fromFont(*specification.font, TextureFormat::MONOCHROME, TextureFilter::NEAREST)
 			}));
+
+			text.createdFontTexture = true;
+		}
 
 		submitResource(manager, &text.descriptorSet.reference, std::vector<DescriptorSetSpecification>({
 			DescriptorSetSpecification(guiContext.text.descriptorLayout.reference, std::vector<UniformData>({
@@ -265,6 +281,9 @@ namespace Vivium {
 	void dropTextBatch(TextBatch& text, Engine& engine)
 	{
 		dropBatch(text.batch, engine);
-		dropTexture(text.fontTexture.resource, engine);
+		// If we created the font texture, we have to clean it up too
+		if (text.createdFontTexture) { 
+			(text.fontTexture.resource, engine);
+		}
 	}
 }

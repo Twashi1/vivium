@@ -89,6 +89,7 @@ namespace Runtime {
 	void _loadScripts(State& state);
 	ScriptMetadata _loadScript(State& state, std::string path);
 	void _runScriptFunction(State& state, int functionIndex);
+	void _clearScriptFunctionReference(State& state, int functionIndex);
 
 	void init(State& state, std::string bytecodeFilename);
 	void run(State& state);

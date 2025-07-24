@@ -26,6 +26,10 @@ namespace Vivium {
 
 	void _submitTextGUIContext(GUIContext& guiContext, ResourceManager& manager, Engine& engine, Window& window)
 	{
+		submitResource(manager, &guiContext.consolas64Texture.reference, std::vector<TextureSpecification>({
+			TextureSpecification::fromFont(guiContext.consolas64, TextureFormat::MONOCHROME, TextureFilter::NEAREST)
+		}));
+
 		guiContext.text.bufferLayout = BufferLayout::fromTypes(std::vector<ShaderDataType>({
 			ShaderDataType::VEC2,
 			ShaderDataType::VEC2,
@@ -307,6 +311,7 @@ namespace Vivium {
 
 		GUIContext context;
 
+		context.consolas64 = createFontDistanceField("vivium4/res/fonts/consola.sdf");
 		context.sprite.atlas = spriteAtlas;
 		_submitGenericGUIContext(context, manager, engine, window);
 		_submitTextGUIContext(context, manager, engine, window);
@@ -331,6 +336,8 @@ namespace Vivium {
 
 	void setupGUIContext(GUIContext& guiContext, ResourceManager& manager, CommandContext& context, Engine& engine)
 	{
+		convertResourceReference(manager, guiContext.consolas64Texture);
+
 		convertResourceReference(manager, guiContext.text.pipeline);
 		convertResourceReference(manager, guiContext.text.descriptorLayout);
 		convertResourceReference(manager, guiContext.text.fragmentShader);
@@ -441,7 +448,8 @@ namespace Vivium {
 
 	void dropGUIContext(GUIContext& guiContext, Engine& engine) {
 		guiContext.guiElements = {};
-
+		
+		dropTexture(guiContext.consolas64Texture.resource, engine);
 		dropTexture(guiContext.sprite.texture.resource, engine);
 
 		dropDescriptorLayout(guiContext.text.descriptorLayout.resource, engine);

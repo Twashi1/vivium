@@ -40,7 +40,7 @@ namespace Vivium {
 		return specification;
 	}
 		
-	TextureSpecification TextureSpecification::fromFont(Font font, TextureFormat imageFormat, TextureFilter imageFilter)
+	TextureSpecification TextureSpecification::fromFont(Font const& font, TextureFormat imageFormat, TextureFilter imageFilter)
 	{
 		TextureSpecification specification;
 

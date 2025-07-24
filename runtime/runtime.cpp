@@ -7,6 +7,7 @@ namespace Runtime {
 
 		for (ScriptMetadata& metadata : state.scripts) {
 			_runScriptFunction(state, metadata.submitRef);
+			_clearScriptFunctionReference(state, metadata.submitRef);
 		}
 
 		state.pipelineComponents = state.registry.createView<Owned<PipelineComponent>>();
@@ -250,6 +251,11 @@ namespace Runtime {
 		}
 	}
 
+	void _clearScriptFunctionReference(State& state, int functionIndex)
+	{
+		luaL_unref(state.L, LUA_REGISTRYINDEX, functionIndex);
+	}
+
 	void _setup(State& state)
 	{
 		for (PipelineInstance& pipeline : state.pipelineInstances) {
@@ -312,6 +318,7 @@ namespace Runtime {
 
 		for (ScriptMetadata& metadata : state.scripts) {
 			_runScriptFunction(state, metadata.setupRef);
+			_clearScriptFunctionReference(state, metadata.setupRef);
 		}
 	}
 
@@ -345,6 +352,7 @@ namespace Runtime {
 	{
 		Perspective perspective = orthogonalPerspective2D(windowDimensions(state.window), F32x2(0.0f), 0.0f, 1.0f);
 
+		// TODO: don't draw any pipeline by default? make draw schedule it?
 		for (PipelineInstance& instance : state.pipelineInstances) {
 			cmdBindPipeline(state.context, instance.pipeline.resource);
 			cmdBindVertexBuffer(state.context, instance.vertexBuffer.resource);
@@ -395,6 +403,13 @@ namespace Runtime {
 
 	void drop(State& state)
 	{
+		for (ScriptMetadata& metadata : state.scripts) {
+			_runScriptFunction(state, metadata.dropRef);
+			_clearScriptFunctionReference(state, metadata.dropRef);
+			_clearScriptFunctionReference(state, metadata.updateRef);
+			_clearScriptFunctionReference(state, metadata.drawRef);
+		}
+
 		state.store.end();
 		lua_close(state.L);
 

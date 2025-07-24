@@ -1,11 +1,14 @@
 ## Next
 
+1. the texture specification for the font is duplicated across every instance of text (massively increasing size)
+2. after initialisation, each text batch stores the font, which contains all image data for the texture
+
 - scripting language
-	1. on submit/setup/update/draw/drop, we need to check for existence of the function in the script; and if so; call it (need some flag in the update/draw, so we don't check it every time)
-	2. we need implementations of each of the relevant commands laid out in [[Script]]
+	1. we need implementations of each of the relevant commands laid out in [[Script]]
 		- we need to preserve information about the entity tree so we can accurately reference entities
 		- thus we need an arbitrary way to store entities and their components (serialiser)
 		- we also need to be able to rename entities (change entity tree to use entry boxes?)
+- need to be able to re-open a project in the editor (save/load functionality)
 - we allow multiple imports of vivium to avoid some useless shared middleman header
 - we need the scroll bar
 

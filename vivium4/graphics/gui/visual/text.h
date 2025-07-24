@@ -65,15 +65,17 @@ namespace Vivium {
 
 	struct TextBatchSpecification {
 		uint64_t maxCharacterCount;
-		Font font;
+		Font* font;
+		TextureReference textureReference;
 	};
 
 	struct TextBatch {
 		Batch batch;
 
-		Font font;
+		Font* font;
 		Ref<Texture> fontTexture;
 		Ref<DescriptorSet> descriptorSet;
+		bool createdFontTexture;
 	};
 
 	void submitTextBatches(std::span<TextBatch*> const textBatches, GUIContext& guiContext);

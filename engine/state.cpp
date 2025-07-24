@@ -48,7 +48,7 @@ void _submitEntityView(State& state)
 	state.editor.entityView.createButton = submitButton(state.manager, state.guiContext, ButtonSpecification{ state.editor.entityView.background.base, colorDarkGray, colorBlack });
 	state.editor.entityView.entityTree = createTreeContainer(state.guiContext, state.editor.entityView.background.base);
 	state.editor.entityView.entityTree.enabled = true;
-	state.editor.entityView.entityTextBatch = submitTextBatch(state.manager, state.guiContext, TextBatchSpecification{ 256, state.editor.entityView.createButton.textBatch.font });
+	state.editor.entityView.entityTextBatch = submitTextBatch(state.manager, state.guiContext, TextBatchSpecification{ 256, &state.guiContext.consolas64, state.guiContext.consolas64Texture.reference });
 	state.editor.entityView.heldElement = nullptr;
 	state.editor.entityView.heldEntityPtr = nullptr;
 	state.editor.entityView.lastClicked = nullEntity;
@@ -61,7 +61,7 @@ void _submitEntityView(State& state)
 			state.editor.entityView.entityPanels.back().base,
 			"",
 			colorCyan,
-			calculateTextMetrics("", state.editor.entityView.entityTextBatch.font),
+			calculateTextMetrics("", state.guiContext.consolas64),
 			TextAlignment::CENTER
 			}, state.guiContext));
 	}
@@ -282,7 +282,7 @@ void _update(State& state)
 		ComponentName& name = state.registry.getComponent<ComponentName>(e);
 
 		textObjectsPtr.push_back(&state.editor.entityView.textObjects[i]);
-		state.editor.entityView.textObjects[i].metrics = calculateTextMetrics(name.name, state.editor.entityView.entityTextBatch.font);
+		state.editor.entityView.textObjects[i].metrics = calculateTextMetrics(name.name, state.guiContext.consolas64);
 		state.editor.entityView.textObjects[i++].characters = name.name;
 	}
 

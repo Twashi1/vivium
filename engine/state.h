@@ -8,11 +8,7 @@ struct ComponentName {
 	std::string name;
 };
 
-struct ComponentPosition {
-	F32x2 position;
-};
-
-inline constexpr int MAX_CONCURRENT_ENTITY_PANELS = 8;
+inline constexpr int MAX_CONCURRENT_ENTITY_PANELS = 16;
 
 struct PropertyDisplay {
 	GUIElementReference base;

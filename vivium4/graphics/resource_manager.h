@@ -14,6 +14,11 @@
 #include <atomic>
 #include <unordered_set>
 
+// TODO: not very correct
+//	we need a specific null reference defined for each type
+//	of resource... but this will do
+#define VIVIUM_NULL_REFERENCE UINT64_MAX
+
 namespace Vivium {
 	template <typename Resource>
 	union Ref {};

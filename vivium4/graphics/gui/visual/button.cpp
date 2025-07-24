@@ -17,8 +17,8 @@ namespace Vivium {
 		button.textColor = specification.textColor;
 
 		// TODO: maximum text length should be parameter
-		button.textBatch = submitTextBatch(manager, guiContext, TextBatchSpecification{ 64, createFontDistanceField("vivium4/res/fonts/consola.sdf") });
-		button.text = createText(TextSpecification{ button.base, "", specification.textColor, calculateTextMetrics("", button.textBatch.font), TextAlignment::CENTER }, guiContext);
+		button.textBatch = submitTextBatch(manager, guiContext, TextBatchSpecification{ 64, &guiContext.consolas64, guiContext.consolas64Texture.reference });
+		button.text = createText(TextSpecification{ button.base, "", specification.textColor, calculateTextMetrics("", *button.textBatch.font), TextAlignment::CENTER }, guiContext);
 
 		addChild(button.base, { &button.text.base, 1 }, guiContext);
 		
@@ -41,7 +41,7 @@ namespace Vivium {
 		// Early exit if no text
 		if (text.size() == 0) return;
 
-		setText(button.text, calculateTextMetrics(text, button.textBatch.font), text, button.textColor, button.text.alignment);
+		setText(button.text, calculateTextMetrics(text, *button.textBatch.font), text, button.textColor, button.text.alignment);
 		
 		Text* textObjects[] = { &button.text };
 		calculateTextBatch(button.textBatch, textObjects, context, guiContext, engine);
