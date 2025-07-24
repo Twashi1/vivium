@@ -1,8 +1,26 @@
 ## Next
 
 - scripting language
+	1. on submit/setup/update/draw/drop, we need to check for existence of the function in the script; and if so; call it (need some flag in the update/draw, so we don't check it every time)
+	2. we need implementations of each of the relevant commands laid out in [[Script]]
+		- we need to preserve information about the entity tree so we can accurately reference entities
+		- thus we need an arbitrary way to store entities and their components (serialiser)
+		- we also need to be able to rename entities (change entity tree to use entry boxes?)
 - we allow multiple imports of vivium to avoid some useless shared middleman header
 - we need the scroll bar
+
+Serialisation format changes
+1. we want to capture most of the entity tree (child entities and such don't matter)
+2. we want to preserve the data in the entries, not the ones in the components
+3. lua submit should be able to modify where data is gotten from by changing the entity, and also change the data entered; or fill in the date entered
+4. lua needs an easy memorable way to reference entities (names and even ids will work; but most systems use child scripts referencing their parents, or parameters entered into scripts)
+
+What we really want, is a way to serialise the ECS registry
+
+An entity passes to descriptor set can have both a buffer/texture/framebuffer, and thus there is ambiguity as to which should be taken as the desired data
+- also this entity-passing system seems flawed?
+- should it not instead be that the components themselves are organised in the tree structure for inheritance
+
 ## Shader planning
 
 - run-time reflection and some partial compilation on shaders
@@ -90,7 +108,7 @@
 	- debug mode safety warning?
 - Container's need to be updated
 - Textures loading upside down for stitched atlas specifically?
-- Super easy `debugRect` and `debugPoint` commands for a given coordinate or GUIElement
+- Super easy `debugPoint` command for a given coordinate or GUIElement
 - Should be easy to perform event `onButtonPress`, either through callback or looping on an `if`
 - Dynamic allocation storage (at least a wrapper for `new`/`delete`  temporarily)
 - Reflection data on shader files
@@ -226,6 +244,8 @@ Code style is torn between attempts to be C-compatible and a data-oriented C++ s
 		- Large parts of code change to fit C++ style
 
 GUI is an inefficient mess
+- the point of the GUI is not to build an optimal low-overhead system like most of the engine
+	- but rather give less control and performance for ease of creation and use
 - Investigate how immediate-mode rendering really works?
 - Actual profiling concerns
 	- `calculateTextMetrics` takes a long time as we re-calculate text every frame
@@ -254,7 +274,7 @@ render(textObject, ...params);
 - crucially, still need to organise and sort them with containers/etc, manually set up dimensions and anchors, etc.
 - upside is more control and likely performance is better
 
-```
+```cpp
 beginGUI(styleGuide)
 
 beginContainer(VERTICAL, growDimension());   
@@ -272,6 +292,7 @@ renderGUI(guiManifest)
 dropGUI(guiManifest)
 ```
 - still a lot of information to declare about positioning, dimension and how dimension changes
+	- its ok to have a lot of information to declare, as long as we have strong defaults and the option to inherit certain positioning from a style guide
 - almost guaranteed to be less efficient
 - either functions have side effects (somewhat violating design), or we need to pass in the parent to every creation function
 	- (and now we see it basically arrives at the same design we had before)

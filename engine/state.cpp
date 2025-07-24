@@ -624,20 +624,43 @@ void _compileTree(State& state)
 	// All values up to date, now grab every entity with a pipeline component and serialise it
 	// TODO: bad, but easier than looping entities again
 
-	// Create serialiser for pipeline
-	//		when attempting to read the data to create the relevant objects
-	//		we should ideally present it in some dependency order
-	//		we also need to be able to reference previous resources we created
-	//		can hijack the entity id, but would require some restructuring of the previous step
-	//		some indexes should be enough?
-	// Horrible counter
+	// TODO: want to serialise the registry, not the pipelines
 	SerialiserFileInterface fileInterface;
 	fileInterface.begin("vivium4/res/gen.dat", false);
 
-	serialiseWrite(pipelineComponents.size(), fileInterface);
+	serialiseWrite(state.editor.entityView.entities.size(), fileInterface);
 
-	for (PipelineComponent& pipeline : pipelineComponents) {
-		writeComponent(pipeline, fileInterface);
+	for (Entity entity : state.editor.entityView.entities) {
+		serialiseWrite(entity, fileInterface);
+		// TODO: need to write the signature of the entity somehow
+		// Write all components on the entity
+		if (state.registry.hasComponent<BufferComponent>(entity)) {
+			serialiseWrite(VulkanComponent::BUFFER, fileInterface);
+			serialiseWrite(state.registry.getComponent<BufferComponent>(entity), fileInterface);
+		}
+		if (state.registry.hasComponent<ShaderComponent>(entity)) {
+			serialiseWrite(VulkanComponent::SHADER, fileInterface);
+			serialiseWrite(state.registry.getComponent<ShaderComponent>(entity), fileInterface);
+		}
+		if (state.registry.hasComponent<BufferLayoutComponent>(entity)) {
+			serialiseWrite(VulkanComponent::BUFFER_LAYOUT, fileInterface);
+			serialiseWrite(state.registry.getComponent<BufferLayoutComponent>(entity), fileInterface);
+		}
+		if (state.registry.hasComponent<DescriptorLayoutComponent>(entity)) {
+			serialiseWrite(VulkanComponent::DESCRIPTOR_LAYOUT, fileInterface);
+			serialiseWrite(state.registry.getComponent<DescriptorLayoutComponent>(entity), fileInterface);
+		}
+		if (state.registry.hasComponent<DescriptorSetComponent>(entity)) {
+			serialiseWrite(VulkanComponent::DESCRIPTOR_SET, fileInterface);
+			serialiseWrite(state.registry.getComponent<DescriptorSetComponent>(entity), fileInterface);
+		}
+		if (state.registry.hasComponent<PipelineComponent>(entity)) {
+			serialiseWrite(VulkanComponent::PIPELINE, fileInterface);
+			serialiseWrite(state.registry.getComponent<PipelineComponent>(entity), fileInterface);
+		}
+		// Write an end component
+		// TODO: using ENTER_COMPONENT is a bit ugly
+		serialiseWrite(VulkanComponent::ENTER_COMPONENT, fileInterface);
 	}
 
 	fileInterface.end();

@@ -284,8 +284,13 @@ BufferComponent getValue(BufferEntry const& entry)
 {
 	BufferComponent component;
 
-	component.data = getValue(entry.data);
-	component.size = component.data.size() * sizeof(float);
+	// TODO: better way to copy vectors like this?
+	std::vector<float> floatData = getValue(entry.data);
+
+	component.data.resize(sizeof(float) * floatData.size());
+	memcpy(component.data.data(), floatData.data(), component.data.size());
+
+	component.numElements = floatData.size();
 	component.usage = getValue(entry.usage);
 
 	return component;
@@ -384,19 +389,19 @@ PipelineComponent getValue(PipelineEntry const& entry)
 	PipelineComponent pipeline;
 
 	if (entry.bufferLayout.hasValue)
-		pipeline.bufferLayout = entry.registry->getComponent<BufferLayoutComponent>(getValue(entry.bufferLayout));
+		pipeline.bufferLayout = getValue(entry.bufferLayout);
 	if (entry.descriptorLayout.hasValue)
-		pipeline.descriptorLayout = entry.registry->getComponent<DescriptorLayoutComponent>(getValue(entry.descriptorLayout));
+		pipeline.descriptorLayout = getValue(entry.descriptorLayout);
 	if (entry.vertexShader.hasValue)
-		pipeline.vertexShader = entry.registry->getComponent<ShaderComponent>(getValue(entry.vertexShader));
+		pipeline.vertexShader = getValue(entry.vertexShader);
 	if (entry.fragmentShader.hasValue)
-		pipeline.fragmentShader = entry.registry->getComponent<ShaderComponent>(getValue(entry.fragmentShader));
+		pipeline.fragmentShader = getValue(entry.fragmentShader);
 	if (entry.vertexBuffer.hasValue)
-		pipeline.vertexBuffer = entry.registry->getComponent<BufferComponent>(getValue(entry.vertexBuffer));
+		pipeline.vertexBuffer = getValue(entry.vertexBuffer);
 	if (entry.indexBuffer.hasValue)
-		pipeline.indexBuffer = entry.registry->getComponent<BufferComponent>(getValue(entry.indexBuffer));
+		pipeline.indexBuffer = getValue(entry.indexBuffer);
 	if (entry.descriptorSet.hasValue)
-		pipeline.descriptorSet = entry.registry->getComponent<DescriptorSetComponent>(getValue(entry.descriptorSet));
+		pipeline.descriptorSet = getValue(entry.descriptorSet);
 
 	return pipeline;
 }
@@ -508,11 +513,10 @@ DescriptorSetComponent getValue(DescriptorSetEntry const& entry)
 
 	for (Entity entity : entities) {
 		if (entry.registry->hasComponent<BufferComponent>(entity)) {
-			// TODO: validate usage of buffer
-			DescriptorSetItem item;
-			item.bufferPart = entry.registry->getComponent<BufferComponent>(entity);
-
-			set.bindingData.push_back(item);
+			set.bindingData.push_back(entity);
+		}
+		else {
+			VIVIUM_LOG(LogSeverity::ERROR, "Passed entity {} to descriptor set, but had no compatible/implemented type", entity);
 		}
 
 		// TODO: textures/framebuffers

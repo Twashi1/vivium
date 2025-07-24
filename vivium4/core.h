@@ -11,6 +11,12 @@
 #include "stb_image.h"
 #include "stb_image_write.h"
 
+extern "C" {
+#include <lua.h>
+#include <lauxlib.h>
+#include <lualib.h>
+}
+
 #include <format>
 #include <iostream>
 #include <string>

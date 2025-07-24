@@ -29,6 +29,16 @@ namespace Vivium {
 				return registry->getComponent<T>(entity);
 			}
 		}
+
+		template <typename T>
+		T const& get() const {
+			if constexpr (_isOwnedType<T, Components...>) {
+				return registry->componentPools[TypeGenerator::getIdentifier<T>()]->_getIndex<T>(index);
+			}
+			else {
+				return registry->getComponent<T>(entity);
+			}
+		}
 	};
 
 	template <OwnershipTag... WrappedTypes>

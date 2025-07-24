@@ -3,53 +3,129 @@
 namespace Runtime {
 	void _submit(State& state)
 	{
-		_loadPipelines(state);
-	}
+		_loadRegistry(state);
 
-	void _loadPipelines(State& state)
-	{
-		size_t pipelineCount = 0;
-		serialiseRead(&pipelineCount, state.store);
+		for (ScriptMetadata& metadata : state.scripts) {
+			_runScriptFunction(state, metadata.submitRef);
+		}
 
-		state.pipelines.resize(pipelineCount);
+		state.pipelineComponents = state.registry.createView<Owned<PipelineComponent>>();
 
-		for (size_t i = 0; i < pipelineCount; i++) {
-			PipelineComponent component;
+		for (auto const& viewElement : state.pipelineComponents) {
+			PipelineComponent const& pipeline = viewElement.get<PipelineComponent>();
 
-			readComponent(&component, state.store);
-
-			// Turn component into a pipeline object now?
-			state.pipelines[i] = _pipelineInstanceFromComponent(state, component);
+			state.pipelineInstances.push_back(_pipelineInstanceFromComponent(state, pipeline));
 		}
 	}
 
-	PipelineInstance _pipelineInstanceFromComponent(State& state, PipelineComponent& component)
+	void _loadRegistry(State& state)
+	{
+		state.registry = Registry();
+
+		// Begin loading in entities
+		size_t numEntities = 0;
+		serialiseRead(&numEntities, state.store);
+
+		for (size_t i = 0; i < numEntities; i++) {
+			Entity left = state.registry.create();
+
+			Entity right;
+			serialiseRead(&right, state.store);
+
+			state.entityMap.insert({ right, left });
+
+			VulkanComponent component;
+			
+			do {
+				serialiseRead(&component, state.store);
+
+				switch (component) {
+				case VulkanComponent::BUFFER:
+				{
+					BufferComponent data;
+					serialiseRead(&data, state.store);
+					state.registry.addComponent(left, std::move(data));
+					break;
+				}
+				case VulkanComponent::SHADER:
+				{
+					ShaderComponent data;
+					serialiseRead(&data, state.store);
+					state.registry.addComponent(left, std::move(data));
+					break;
+				}
+				case VulkanComponent::BUFFER_LAYOUT:
+				{
+					BufferLayoutComponent data;
+					serialiseRead(&data, state.store);
+					state.registry.addComponent(left, std::move(data));
+					break;
+				}
+				case VulkanComponent::DESCRIPTOR_LAYOUT:
+				{
+					DescriptorLayout data;
+					serialiseRead(&data, state.store);
+					state.registry.addComponent(left, std::move(data));
+					break;
+				}
+				case VulkanComponent::DESCRIPTOR_SET:
+				{
+					DescriptorSet data;
+					serialiseRead(&data, state.store);
+					state.registry.addComponent(left, std::move(data));
+					break;
+				}
+				case VulkanComponent::PIPELINE:
+				{
+					Pipeline data;
+					serialiseRead(&data, state.store);
+					state.registry.addComponent(left, std::move(data));
+					break;
+				}
+				case VulkanComponent::ENTER_COMPONENT: break;
+				default:
+					VIVIUM_LOG(LogSeverity::ERROR, "Received unknown vulkan component when reading entity; badly formatted data?");
+					break;
+				}
+			} while (component != VulkanComponent::ENTER_COMPONENT);
+		}
+	}
+
+	PipelineInstance _pipelineInstanceFromComponent(State& state, PipelineComponent const& component)
 	{
 		// TODO
 		PipelineInstance instance;
 		instance.component = component;
 
+		BufferComponent const& indexBuffer = state.registry.getComponent<BufferComponent>(instance.component.indexBuffer);
+		BufferComponent const& vertexBuffer = state.registry.getComponent<BufferComponent>(instance.component.vertexBuffer);
+		ShaderComponent const& fragmentShader = state.registry.getComponent<ShaderComponent>(instance.component.fragmentShader);
+		ShaderComponent const& vertexShader = state.registry.getComponent<ShaderComponent>(instance.component.vertexShader);
+
 		submitResource(state.manager, &instance.indexBuffer.reference, MemoryType::DEVICE, std::vector<BufferSpecification>(
-			{ BufferSpecification(component.indexBuffer.size, component.indexBuffer.usage) }
+			{ BufferSpecification(indexBuffer.data.size(), indexBuffer.usage)}
 		));
 
 		submitResource(state.manager, &instance.vertexBuffer.reference, MemoryType::DEVICE, std::vector<BufferSpecification>(
-			{ BufferSpecification(component.vertexBuffer.size, component.vertexBuffer.usage) }
+			{ BufferSpecification(vertexBuffer.data.size(), vertexBuffer.usage)}
 		));
 
-		ShaderSpecification vertexShader = compileShader(component.vertexShader.type, component.vertexShader.filename.c_str(), "out_vert.txt");
-		ShaderSpecification fragmentShader = compileShader(component.vertexShader.type, component.fragmentShader.filename.c_str(), "out_fragtxt");
+		ShaderSpecification vertexShaderSpec = compileShader(vertexShader.type, vertexShader.filename.c_str(), "out_vert.txt");
+		ShaderSpecification fragmentShaderSpec = compileShader(fragmentShader.type, fragmentShader.filename.c_str(), "out_frag.txt");
 
 		submitResource(state.manager, &instance.vertexShader.reference, std::vector<ShaderSpecification>(
-			{ vertexShader }
+			{ vertexShaderSpec }
 		));
 		submitResource(state.manager, &instance.fragmentShader.reference, std::vector<ShaderSpecification>(
-			{ fragmentShader }
+			{ fragmentShaderSpec }
 		));
 
 		std::vector<UniformData> uniformData;
+		
+		DescriptorSetComponent const& descriptorSet = state.registry.getComponent<DescriptorSetComponent>(instance.component.descriptorSet);
+		DescriptorLayoutComponent const& descriptorLayout = state.registry.getComponent<DescriptorLayoutComponent>(instance.component.descriptorLayout);
 
-		for (DescriptorSetItem const& item : component.descriptorSet.bindingData) {
+		for (Entity const& item : descriptorSet.bindingData) {
 			// TODO: switch on correct part
 			DescriptorSetObjects object;
 
@@ -57,31 +133,126 @@ namespace Runtime {
 			//	need additional information to distinsguish uniform/storage/etc...
 			object.type = UniformType::UNIFORM_BUFFER;
 
+			BufferComponent const& bufferPart = state.registry.getComponent<BufferComponent>(item);
+
 			submitResource(state.manager, &object.buffer.reference, MemoryType::UNIFORM, std::vector<BufferSpecification>({
-				BufferSpecification(item.bufferPart.size, item.bufferPart.usage)
+				BufferSpecification(bufferPart.data.size(), bufferPart.usage)
 			}));
 
-			uniformData.push_back(UniformData::fromBuffer(object.buffer.reference, item.bufferPart.size, 0));
+			uniformData.push_back(UniformData::fromBuffer(object.buffer.reference, bufferPart.data.size(), 0));
 
 			instance.descriptorObjects.push_back(object);
 		}
 
 		submitResource(state.manager, &instance.layout.reference, std::vector<DescriptorLayoutSpecification>({
-				DescriptorLayoutSpecification(component.descriptorLayout.bindings)
+				DescriptorLayoutSpecification(descriptorLayout.bindings)
 		}));
 
 		submitResource(state.manager, &instance.descriptor.reference, std::vector<DescriptorSetSpecification>({
 			DescriptorSetSpecification(instance.layout.reference, uniformData)
 		}));
 		
-		instance.indexCount = component.indexBuffer.data.size();
+		instance.indexCount = indexBuffer.numElements;
 
 		return instance;
 	}
 
+	void _loadScripts(State& state)
+	{
+		for (std::filesystem::directory_entry const& entry : std::filesystem::directory_iterator("vivium4/res/scripts/")) {
+			if (!entry.is_regular_file()) { continue; }
+			if (entry.path().extension() != ".lua") { continue; }
+
+			state.scripts.push_back(_loadScript(state, entry.path().string()));
+		}
+	}
+
+	ScriptMetadata _loadScript(State& state, std::string path)
+	{
+		ScriptMetadata metadata;
+		metadata.name = path;
+		metadata.submitRef = -1;
+		metadata.setupRef = -1;
+		metadata.updateRef = -1;
+		metadata.drawRef = -1;
+		metadata.dropRef = -1;
+
+		if (luaL_dofile(state.L, path.c_str()) != LUA_OK) {
+			VIVIUM_LOG(LogSeverity::ERROR, "Error loading script {}: {}", path, lua_tostring(state.L, -1));
+			lua_pop(state.L, 1);
+
+			return metadata;
+		}
+
+		if (!lua_istable(state.L, -1)) {
+			VIVIUM_LOG(LogSeverity::ERROR, "Script ({}) should return table with functions", path);
+			
+			return metadata;
+		}
+
+		// TODO: fix this with a function
+		// Look for function name, if its not a function pop it
+		lua_getfield(state.L, -1, SCRIPT_FUNCTION_NAME_SUBMIT);
+		if (!lua_isfunction(state.L, -1)) { lua_pop(state.L, 1); }
+		else {
+			metadata.submitRef = luaL_ref(state.L, LUA_REGISTRYINDEX);
+		}
+
+		lua_getfield(state.L, -1, SCRIPT_FUNCTION_NAME_SETUP);
+		if (!lua_isfunction(state.L, -1)) { lua_pop(state.L, 1); }
+		else {
+			metadata.setupRef = luaL_ref(state.L, LUA_REGISTRYINDEX);
+		}
+
+		lua_getfield(state.L, -1, SCRIPT_FUNCTION_NAME_UPDATE);
+		if (!lua_isfunction(state.L, -1)) { lua_pop(state.L, 1); }
+		else {
+			metadata.updateRef = luaL_ref(state.L, LUA_REGISTRYINDEX);
+		}
+
+		lua_getfield(state.L, -1, SCRIPT_FUNCTION_NAME_DRAW);
+		if (!lua_isfunction(state.L, -1)) { lua_pop(state.L, 1); }
+		else {
+			metadata.drawRef = luaL_ref(state.L, LUA_REGISTRYINDEX);
+		}
+
+		lua_getfield(state.L, -1, SCRIPT_FUNCTION_NAME_DROP);
+		if (!lua_isfunction(state.L, -1)) { lua_pop(state.L, 1); }
+		else {
+			metadata.dropRef = luaL_ref(state.L, LUA_REGISTRYINDEX);
+		}
+
+		// Pop the table
+		lua_pop(state.L, 1);
+
+		return metadata;
+	}
+
+	void _runScriptFunction(State& state, int functionIndex)
+	{
+		if (functionIndex < 0) return;
+
+		lua_rawgeti(state.L, LUA_REGISTRYINDEX, functionIndex);
+		if (!lua_isfunction(state.L, -1)) {
+			VIVIUM_LOG(LogSeverity::ERROR, "Failed to get function by index {}", functionIndex);
+			lua_pop(state.L, 1);
+
+			return;
+		}
+
+		// TODO: check returns nothing (nil?)
+
+		if (lua_pcall(state.L, 0, 0, 0) != LUA_OK) {
+			// TODO: script name for debug
+			VIVIUM_LOG(LogSeverity::ERROR, "Failed to run function: {}", lua_tostring(state.L, -1));
+			lua_pop(state.L, 1);
+			return;
+		}
+	}
+
 	void _setup(State& state)
 	{
-		for (PipelineInstance& pipeline : state.pipelines) {
+		for (PipelineInstance& pipeline : state.pipelineInstances) {
 			convertResourceReference(state.manager, pipeline.vertexBuffer);
 			convertResourceReference(state.manager, pipeline.indexBuffer);
 
@@ -97,11 +268,14 @@ namespace Runtime {
 			convertResourceReference(state.manager, pipeline.descriptor);
 			convertResourceReference(state.manager, pipeline.pipeline);
 
+			BufferComponent const& indexBuffer = state.registry.getComponent<BufferComponent>(pipeline.component.indexBuffer);
+			BufferComponent const& vertexBuffer = state.registry.getComponent<BufferComponent>(pipeline.component.vertexBuffer);
+
 			// TODO: this is really bad and slow code... but
 			//	reworking it is longer
 			//	should create one large staging buffer and upload everything to that
-			uint64_t vertexBufferSize = pipeline.component.vertexBuffer.data.size() * sizeof(float);
-			uint64_t indexBufferSize = pipeline.component.indexBuffer.data.size() * sizeof(uint16_t);
+			uint64_t vertexBufferSize = vertexBuffer.data.size();
+			uint64_t indexBufferSize = indexBuffer.data.size();
 
 			// Create staging for vertices and indices
 			VkDeviceMemory temporaryMemory;
@@ -122,12 +296,12 @@ namespace Runtime {
 			contextBeginTransfer(state.context);
 
 			std::memcpy(stagingMapping,
-				pipeline.component.vertexBuffer.data.data(),
+				vertexBuffer.data.data(),
 				vertexBufferSize);
 			cmdTransferBuffer(state.context, resource, vertexBufferSize, 0, pipeline.vertexBuffer.resource);
 
 			std::memcpy(reinterpret_cast<uint8_t*>(stagingMapping) + vertexBufferSize,
-				pipeline.component.indexBuffer.data.data(),
+				indexBuffer.data.data(),
 				indexBufferSize);
 			cmdTransferBuffer(state.context, resource, indexBufferSize, vertexBufferSize, pipeline.indexBuffer.resource);
 
@@ -135,12 +309,16 @@ namespace Runtime {
 
 			_cmdFreeTransientStagingBuffer(state.engine, stagingBuffer, temporaryMemory);
 		}
+
+		for (ScriptMetadata& metadata : state.scripts) {
+			_runScriptFunction(state, metadata.setupRef);
+		}
 	}
 
 	void _update(State& state)
 	{
 		// Upload any buffer data
-		for (PipelineInstance& instance : state.pipelines) {
+		for (PipelineInstance& instance : state.pipelineInstances) {
 			for (DescriptorSetObjects& object : instance.descriptorObjects) {
 				switch (object.type) {
 				case UniformType::UNIFORM_BUFFER:
@@ -157,19 +335,27 @@ namespace Runtime {
 				}
 			}
 		}
+
+		for (ScriptMetadata& metadata : state.scripts) {
+			_runScriptFunction(state, metadata.updateRef);
+		}
 	}
 
 	void _draw(State& state)
 	{
 		Perspective perspective = orthogonalPerspective2D(windowDimensions(state.window), F32x2(0.0f), 0.0f, 1.0f);
 
-		for (PipelineInstance& instance : state.pipelines) {
+		for (PipelineInstance& instance : state.pipelineInstances) {
 			cmdBindPipeline(state.context, instance.pipeline.resource);
 			cmdBindVertexBuffer(state.context, instance.vertexBuffer.resource);
 			cmdBindIndexBuffer(state.context, instance.indexBuffer.resource);
 			cmdBindDescriptorSet(state.context, instance.descriptor.resource, instance.pipeline.resource);
 			cmdWritePushConstants(state.context, &perspective, sizeof(Perspective), 0, ShaderStage::VERTEX, instance.pipeline.resource);
 			cmdDrawIndexed(state.context, instance.indexCount, 1);
+		}
+
+		for (ScriptMetadata& metadata : state.scripts) {
+			_runScriptFunction(state, metadata.drawRef);
 		}
 	}
 
@@ -183,6 +369,8 @@ namespace Runtime {
 		state.manager = createManager();
 		state.context = createCommandContext(state.engine);
 		state.store.begin(bytecodeFilename, true);
+		state.L = luaL_newstate();
+		luaL_openlibs(state.L);
 
 		Input::init(state.window);
 
@@ -208,8 +396,9 @@ namespace Runtime {
 	void drop(State& state)
 	{
 		state.store.end();
+		lua_close(state.L);
 
-		for (PipelineInstance& instance : state.pipelines) {
+		for (PipelineInstance& instance : state.pipelineInstances) {
 			dropBuffer(instance.vertexBuffer.resource, state.engine);
 			dropBuffer(instance.indexBuffer.resource, state.engine);
 

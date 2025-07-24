@@ -5,6 +5,12 @@
 
 using namespace Vivium;
 
+constexpr char const* SCRIPT_FUNCTION_NAME_SUBMIT = "vSubmit";
+constexpr char const* SCRIPT_FUNCTION_NAME_SETUP = "vSetup";
+constexpr char const* SCRIPT_FUNCTION_NAME_UPDATE = "vUpdate";
+constexpr char const* SCRIPT_FUNCTION_NAME_DRAW = "vDraw";
+constexpr char const* SCRIPT_FUNCTION_NAME_DROP = "vDrop";
+
 namespace Runtime {
 	// TODO: terrible names on all of these
 	struct DescriptorSetObjects {
@@ -38,15 +44,38 @@ namespace Runtime {
 		PipelineComponent component;
 	};
 
+	struct ScriptMetadata {
+		std::string name;
+
+		int submitRef;
+		int setupRef;
+		int updateRef;
+		int drawRef;
+		int dropRef;
+	};
+
 	struct State {
 		Engine engine;
 		Window window;
 		CommandContext context;
 		ResourceManager manager;
 
-		std::vector<PipelineInstance> pipelines;
+		std::vector<ScriptMetadata> scripts;
 
 		SerialiserFileInterface store;
+		Registry registry;
+
+		View<Owned<PipelineComponent>> pipelineComponents;
+		std::vector<PipelineInstance> pipelineInstances;
+		// TODO: might not be necessary with some smart creation of registry
+		//	or a better registry serialisation method
+		// When an entity is loaded from serialised data, we map the loaded entity ID
+		//	to the new runtime entity
+		// If we request an entity, we thus return the runtime entity from this map
+		//	and any set/update component requests just directly update that component
+		std::unordered_map<Entity, Entity> entityMap;
+
+		lua_State* L;
 	};
 
 	void _submit(State& state);
@@ -54,8 +83,12 @@ namespace Runtime {
 	void _update(State& state);
 	void _draw(State& state);
 
-	void _loadPipelines(State& state);
-	PipelineInstance _pipelineInstanceFromComponent(State& state, PipelineComponent& component);
+	void _loadRegistry(State& state);
+	PipelineInstance _pipelineInstanceFromComponent(State& state, PipelineComponent const& component);
+
+	void _loadScripts(State& state);
+	ScriptMetadata _loadScript(State& state, std::string path);
+	void _runScriptFunction(State& state, int functionIndex);
 
 	void init(State& state, std::string bytecodeFilename);
 	void run(State& state);
