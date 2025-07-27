@@ -3,6 +3,8 @@
 #include <array>
 #include <cstdint>
 
+#include "../serialiser/serialiser.h"
+
 namespace Vivium {
 	template <typename T, uint64_t pageSize, uint64_t capacity>
 	struct PagedArray {
@@ -56,4 +58,36 @@ namespace Vivium {
 			return page[indexInPage];
 		}
 	};
+
+	template <SerialiserInterface Interface, typename T, uint64_t pageSize, uint64_t capacity>
+	void serialiseWrite(PagedArray<T, pageSize, capacity> const& pagedArray, Interface& interface) {
+		// Not easily parallelised but whatever
+		serialiseWrite(pagedArray.defaultValue, interface);
+
+		for (uint64_t i = 0; i < pagedArray.pageCount; i++) {
+			serialiseWrite(pagedArray.pages[i] != nullptr, interface);
+
+			if (pagedArray.pages[i] != nullptr) {
+				for (uint64_t j = 0; j < pageSize; j++) {
+					serialiseWrite(pagedArray.pages[i][j], interface);
+				}
+			}
+		}
+	}
+
+	template <SerialiserInterface Interface, typename T, uint64_t pageSize, uint64_t capacity>
+	void serialiseRead(PagedArray<T, pageSize, capacity>* pagedArray, Interface& interface) {
+		serialiseRead(&pagedArray->defaultValue, interface);
+
+		for (uint64_t i = 0; i < pagedArray->pageCount; i++) {
+			bool hasData = false;
+			serialiseRead(&hasData, interface);
+
+			if (hasData) {
+				for (uint64_t j = 0; j < pageSize; j++) {
+					serialiseRead(&pagedArray->pages[i][j], interface);
+				}
+			}
+		}
+	}
 }

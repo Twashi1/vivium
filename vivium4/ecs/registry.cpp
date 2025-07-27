@@ -23,7 +23,7 @@ namespace Vivium {
 			if (!pool->contains(entity)) continue;
 
 			pool->free(entity);
-			signatures.index(getIdentifier(entity)).set(pool->manager.componentIDFunction(), 0);
+			signatures.index(getIdentifier(entity)).set(pool->manager.componentTypeIndex, 0);
 		}
 
 		++availableEntities;

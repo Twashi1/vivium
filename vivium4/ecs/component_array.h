@@ -22,6 +22,8 @@ namespace Vivium {
 		ComponentManager manager;
 		GroupMetadata* owner;
 
+		bool requiresDeserialise;
+
 		ComponentArray();
 		~ComponentArray();
 
@@ -32,6 +34,36 @@ namespace Vivium {
 		void swap(Entity a, Entity b);
 		void free(Entity entity);
 		void clear();
+
+		template <ValidComponent T>
+		void deserialise(uint64_t componentTypeIndex) {
+			// Checking for valid use
+			VIVIUM_ASSERT(dense != nullptr, "Can't deserialise if data hasn't been loaded");
+			VIVIUM_ASSERT(requiresDeserialise, "Doesn't require deserialisation, misconfiguration or loaded improperly?");
+
+			// sparse/entities/size already in
+			manager = defaultComponentManager<T>(componentTypeIndex);
+			// Create new component data array
+			uint8_t* components = new uint8_t[size * manager.typeSize];
+			// Begin deserialising components and writing it to the new array
+			// Create a memory interface to the dense array to read from
+			// TODO: bad... should be some dedicated serialiser interface for memory you
+			//	already own?
+			SerialiserMemoryInterface store;
+			store.destination = dense;
+			store.offset = 0;
+			store.maxSize = capacity;
+
+			for (uint64_t i = 0; i < size; i++) {
+				manager.readFunction(components + manager.getOffset(i), store);
+			}
+
+			// Replace the dense array with our own now
+			delete[] dense;
+			dense = components;
+			capacity = size * manager.typeSize;
+			requiresDeserialise = false;
+		}
 
 		bool isOwned() const;
 
@@ -67,8 +99,72 @@ namespace Vivium {
 		}
 
 		template <ValidComponent T>
-		T& _getIndex(uint32_t index) {
+		T& _getIndex(uint64_t index) {
 			return *reinterpret_cast<T*>(&dense[index * manager.typeSize]);
 		}
+
+		template <ValidComponent T>
+		T const& _getIndex(uint64_t index) const {
+			return *reinterpret_cast<T const*>(&dense[index * manager.typeSize]);
+		}
 	};
+
+	template <SerialiserInterface Interface>
+	void serialiseWrite(ComponentArray const& componentArray, Interface& interface) {
+		serialiseWrite(componentArray.sparse, interface);
+		serialiseWrite(componentArray.size, interface);
+		// TODO: best we can do?...
+		interface.writeBytes(componentArray.size * sizeof(Entity), componentArray.entities);
+
+		SerialiserMemoryInterface memoryInterface;
+		memoryInterface.begin(componentArray.size * componentArray.manager.typeSize);
+
+		for (uint64_t i = 0; i < componentArray.size; i++) {
+			void* componentData = componentArray.dense + componentArray.manager.getOffset(i);
+			componentArray.manager.writeFunction(componentData, memoryInterface);
+		}
+
+		// Write memory interface to regular interface
+		serialiseWrite(memoryInterface.offset, interface);
+		interface.writeBytes(memoryInterface.offset, memoryInterface.destination);
+
+		memoryInterface.end();
+
+		// Copy from memory interface to regular interface
+		//	write total number of bytes
+
+		for (uint64_t i = 0; i < componentArray.size; i++) {
+			serialiseWrite(componentArray.entities[i], interface);
+		}
+
+		// Not serialising the component manager or the group metadata
+	}
+
+	template <SerialiserInterface Interface>
+	void serialiseRead(ComponentArray* componentArray, Interface& interface) {
+		serialiseRead(&componentArray.sparse, interface);
+		serialiseRead(&componentArray.size, interface);
+		componentArray->entities = new Entity[componentArray->size];
+		interface.readBytes(componentArray->size * sizeof(Entity), componentArray.entities);
+
+		// We allocate enough space to store n elements, although this
+		//	might not necessarily accommodate all the deserialised data
+		//	its a good starting point
+
+		// Number of bytes of all the component data
+		uint64_t totalSize = 0;
+		serialiseRead(&totalSize, interface);
+		// We're gonna hijack the component array in a couple ways
+		//	reusing some memory... very bad!
+		componentArray->dense = new uint8_t[totalSize];
+		interface.readBytes(totalSize, componentArray->dense);
+		componentArray->capacity = totalSize; // So we know the size of the array for future reference
+		componentArray->manager = ComponentManager();
+
+		for (uint64_t i = 0; i < componentArray.size; i++) {
+			serialiseRead(&componentArray.entities[i], interface);
+		}
+
+		componentArray->requiresDeserialise = true;
+	}
 }

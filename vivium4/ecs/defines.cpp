@@ -8,11 +8,4 @@ namespace Vivium {
 	uint32_t getIdentifier(Entity entity) {
 		return entity & ECS_ENTITY_MASK;
 	}
-
-	uint32_t TypeGenerator::createIdentifier()
-	{
-		static uint32_t value = 0;
-
-		return value++;
-	}
 }

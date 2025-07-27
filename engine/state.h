@@ -8,6 +8,18 @@ struct ComponentName {
 	std::string name;
 };
 
+namespace Vivium {
+	template <SerialiserInterface Store>
+	void serialiseWrite(ComponentName const& name, Store& store) {
+		dispatchSerialiseWrite(name.name, store);
+	}
+
+	template <SerialiserInterface Store>
+	void serialiseRead(ComponentName* name, Store& store) {
+		dispatchSerialiseRead(&name->name, store);
+	}
+}
+
 inline constexpr int MAX_CONCURRENT_ENTITY_PANELS = 16;
 
 struct PropertyDisplay {

@@ -18,4 +18,6 @@
 #include "math/polygon.h"
 #include "math/math.h"
 #include "ecs/registry.h"
+#include "ecs/registry_impl.h"
+#include "ecs/component_manager_impl.h"
 #include "serialiser/serialiser.h"

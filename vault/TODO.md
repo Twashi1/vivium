@@ -1,8 +1,5 @@
 ## Next
 
-1. the texture specification for the font is duplicated across every instance of text (massively increasing size)
-2. after initialisation, each text batch stores the font, which contains all image data for the texture
-
 - scripting language
 	1. we need implementations of each of the relevant commands laid out in [[Script]]
 		- we need to preserve information about the entity tree so we can accurately reference entities
@@ -12,11 +9,27 @@
 - we allow multiple imports of vivium to avoid some useless shared middleman header
 - we need the scroll bar
 
+Most template meta problems solved, but one left:
+- we call serialiseRead on these components
+- but we don't know serialiseRead exists yet?
+
 Serialisation format changes
+- serialise function for c-array?
 1. we want to capture most of the entity tree (child entities and such don't matter)
 2. we want to preserve the data in the entries, not the ones in the components
 3. lua submit should be able to modify where data is gotten from by changing the entity, and also change the data entered; or fill in the date entered
 4. lua needs an easy memorable way to reference entities (names and even ids will work; but most systems use child scripts referencing their parents, or parameters entered into scripts)
+
+-
+1. at run-time, without information of the original type, we need to be able to serialise each component pool
+	- so the component manager must define a pointer function to convert the component into binary data (by default, SerialiserWrite)
+		- we don't want the user to have to define anything other than `serialiseWrite` and `serialiseRead` for each component
+		- we cannot account for the `SerialiserInterface` argument... just give up and make it a file interface always...?
+	- ideally this pointer function can write directly to an interface?
+	- for this it needs to be cable of taking a functor which requires templating?
+	- alternatively it writes to an intermediary, which is then directly written to the serialiser
+2. at run-time, with the information of the original type, we should be able to deserialise this information as needed
+
 
 What we really want, is a way to serialise the ECS registry
 
@@ -55,6 +68,23 @@ An entity passes to descriptor set can have both a buffer/texture/framebuffer, a
 - Shared command pool for framebuffers?
 - Scrollable containers/scroll bar
 ## ECS
+
+- fundamental issue with attempting to serialise the ECS
+	- we use pointer functions based on a passed-type to manage the components
+	- without the type to get these pointer functions, we cannot serialise the components safely
+
+- opt.1 serialisation function in the component manager
+	- the manager uses the serialisation function to serialise each component
+	- to deserialise, we simply store the serialised data until that component type is registered again
+		- at which point we can properly deserialise the data and re-enable that component pool
+
+- nothing better?
+
+- we already place a restriction on the number of components per registry
+	- additionally restrict number of registries?
+	- any component id is based on a family type generator
+	- we want a simple mapping from component id to an index within a registry
+	- sparse set can do this in O(1)?
 
 - Iterators for single component view
 - Drop function for group view
@@ -249,6 +279,7 @@ Code style is torn between attempts to be C-compatible and a data-oriented C++ s
 GUI is an inefficient mess
 - the point of the GUI is not to build an optimal low-overhead system like most of the engine
 	- but rather give less control and performance for ease of creation and use
+	- some balance, also current GUI system requires many extra allocations that are always hidden, but take initialisation time and memory costs
 - Investigate how immediate-mode rendering really works?
 - Actual profiling concerns
 	- `calculateTextMetrics` takes a long time as we re-calculate text every frame

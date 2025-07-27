@@ -1,7 +1,70 @@
 #include "../vivium4/vivium4.h"
 #include "runtime.h"
 
+void testing_ecs() {
+	Registry* registry = new Registry;
+
+	std::vector<Entity> entities;
+
+	for (uint64_t i = 0; i < 1000; i++) {
+		Entity e = registry->create();
+
+		if (i % 2 == 0) {
+			registry->addComponent<int>(e, i);
+		}
+		else {
+			registry->addComponent<std::string>(e, std::format("hello {}", i));
+		}
+
+		entities.push_back(e);
+	}
+
+	SerialiserFileInterface myFile;
+	myFile.begin("test.dat", false);
+
+	serialiseWrite(*registry, myFile);
+
+	myFile.end();
+
+	delete registry;
+
+	Registry* newRegistry = new Registry;
+
+	SerialiserFileInterface newFile;
+	newFile.begin("test.dat", true);
+	
+	serialiseRead(newRegistry, myFile);
+
+	// TODO: we lost all entity references once we deserialised the ECS...?
+	//	we assume the user serialised the entity references in a meaningful way
+
+	for (uint64_t i = 0; i < 1000; i++) {
+		Entity e = entities[i];
+
+		if (i % 2 == 0) {
+			VIVIUM_ASSERT(newRegistry->hasComponent<int>(e), "Entity {} didn't have int component", (uint32_t)e);
+			int value = newRegistry->getComponent<int>(e);
+
+			VIVIUM_ASSERT(value == i, "Entity {} didn't match value to index {} = {}", (uint32_t)e, value, i);
+		}
+		else {
+			VIVIUM_ASSERT(newRegistry->hasComponent<std::string>(e), "Entity {} didn't have string component", (uint32_t)e);
+			std::string value = newRegistry->getComponent<std::string>(e);
+
+			VIVIUM_ASSERT(value == std::format("hello {}", i), "Entity {} didn't match value to index {} = {}", (uint32_t)e, value, std::format("hello {}", i));
+		}
+	}
+
+	newFile.end();
+
+	delete newRegistry;
+}
+
 int main(int argc, char* argv[]) {
+	testing_ecs();
+
+	return NULL;
+
 	if (argc > 1) {
 		// Attempt to run the inputted program
 		char const* bytecodeFile = argv[2];

@@ -3,8 +3,11 @@
 #include <bitset>
 #include <cstdint>
 
+#include "../serialiser/serialiser.h"
+
 namespace Vivium {
 	constexpr uint64_t ECS_PAGE_SIZE = 4096U;
+	constexpr uint64_t ECS_MAX_TYPES = 0xffffU;
 
 	constexpr uint32_t ECS_ENTITY_MAX = 0xfffff;
 	constexpr uint32_t ECS_VERSION_MAX = 0xfff;
@@ -26,14 +29,37 @@ namespace Vivium {
 	constexpr Entity nullEntity = ECS_ENTITY_MAX & ECS_ENTITY_MASK;
 	constexpr Entity tombstoneEntity = ECS_ENTITY_MAX & ECS_VERSION_MASK;
 
-	struct TypeGenerator {
-		static uint32_t createIdentifier();
-		
-		template <typename>
-		static uint32_t getIdentifier() {
-			static const uint32_t value = createIdentifier();
-			
-			return value;
+	// TODO: test both these functions
+	template <SerialiserInterface Store>
+	void serialiseWrite(Signature const& signature, Store& store)
+	{
+		// Get number of bytes to represent bitset
+		uint8_t* bits = new uint8_t[sizeof(Signature)];
+
+		// TODO: better solution would necessitate custom bitset type
+		for (uint64_t i = 0; i < signature.size(); i++) {
+			bits[i / 8] |= (signature[i] << (i % 8));
 		}
-	};
+
+		store.writeBytes(sizeof(Signature), bits);
+
+		delete[] bits;
+	}
+
+	template <SerialiserInterface Store>
+	void serialiseRead(Signature* signature, Store& store)
+	{
+		uint8_t* bits = new uint8_t[sizeof(Signature)];
+
+		store.readBytes(sizeof(Signature), bits);
+
+		// Not necessary, but sanity
+		signature->reset();
+
+		for (uint64_t i = 0; i < sizeof(Signature); i++) {
+			(*signature) |= Signature(bits[i]) << (i * 8);
+		}
+
+		delete[] bits;
+	}
 }

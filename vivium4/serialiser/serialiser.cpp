@@ -27,6 +27,36 @@ namespace Vivium {
 		file.close();
 	}
 
-	void SerialiserMemoryInterface::writeBytes(uint64_t length, void const* data) {}
-	void SerialiserMemoryInterface::readBytes(uint64_t length, void* data) {}
+	void SerialiserMemoryInterface::begin(uint64_t capacity)
+	{
+		destination = new uint8_t[capacity];
+		maxSize = capacity;
+		offset = 0;
+	}
+
+	void SerialiserMemoryInterface::writeBytes(uint64_t length, void const* data) {
+		if (offset + length > maxSize) {
+			// Need to re-alloc
+			void* newDestination = new uint8_t[maxSize + (maxSize / 2) + length];
+			memcpy(newDestination, destination, offset);
+
+			delete[] destination;
+			destination = newDestination;
+		}
+
+		memcpy(reinterpret_cast<uint8_t*>(destination) + offset, data, length);
+		offset += length;
+	}
+	
+	void SerialiserMemoryInterface::readBytes(uint64_t length, void* data) {
+		VIVIUM_ASSERT(offset + length <= maxSize, "Exceeded maximum read");
+
+		memcpy(data, reinterpret_cast<uint8_t*>(destination) + offset, length);
+		offset += length;
+	}
+	
+	void SerialiserMemoryInterface::end()
+	{
+		delete[] destination;
+	}
 }

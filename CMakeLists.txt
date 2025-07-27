@@ -56,7 +56,7 @@ set(VIVIUM_SOURCES
  "vivium4/graphics/image_load.cpp"
  "engine/tree_container.cpp"
  "vivium4/graphics/gui/visual/debugrect.cpp"
- "vivium4/graphics/gui/visual/entry.cpp" "engine/components.cpp" "vivium4/serialiser/serialiser.cpp" "runtime/main.cpp" "runtime/runtime.cpp")
+ "vivium4/graphics/gui/visual/entry.cpp" "engine/components.cpp" "vivium4/serialiser/serialiser.cpp" "runtime/main.cpp" "runtime/runtime.cpp" "vivium4/ecs/component_manager.cpp")
 set(VIVIUM_HEADERS
   "vivium4/error/result.h"
   "vivium4/graphics/primitives/buffer.h"
@@ -117,7 +117,7 @@ set(VIVIUM_HEADERS
   "vivium4/graphics/gui/visual/debugrect.h"
   "vivium4/graphics/gui/visual/entry.h"
   "vivium4/input_string.h"
- "engine/components.h"  "runtime/runtime.h")
+ "engine/components.h"  "runtime/runtime.h" "vivium4/ecs/type_info.h" "vivium4/ecs/group_impl.h"  "vivium4/ecs/registry_impl.h"  "vivium4/ecs/component_manager_impl.h")
 
 add_subdirectory("${CMAKE_SOURCE_DIR}/external/glfw")
 

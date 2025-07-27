@@ -6,6 +6,7 @@
 #include <span>
 
 #include "../error/log.h"
+#include "../core.h"
 
 namespace Vivium {
 	// TODO: we need start/end on interfaces
@@ -18,13 +19,16 @@ namespace Vivium {
 		void end();
 	};
 
+	// TODO: this interface should dynamically grow to fit
 	struct SerialiserMemoryInterface {
 		void* destination;
 		uint64_t offset;
 		uint64_t maxSize;
 
+		void begin(uint64_t capacity);
 		void writeBytes(uint64_t length, void const* data);
 		void readBytes(uint64_t length, void* data);
+		void end();
 	};
 
 	template <typename T>
@@ -34,7 +38,13 @@ namespace Vivium {
 	};
 
 	template <typename T>
-	concept Trivial = std::is_trivially_constructible_v<T>;
+	concept Trivial = std::is_trivial_v<T> && std::is_standard_layout_v<T>;
+
+	template <typename T, typename U>
+	concept IsSerialisable = Trivial<T> || (SerialiserInterface<U> && requires (T const& ref, T * ptr, U & store) {
+		{ serialiseWrite(ref, store) } -> std::same_as<void>;
+		{ serialiseRead(ref, store) } -> std::same_as<void>;
+	});
 
 	template <SerialiserInterface Interface, Trivial T>
 	void serialiseWrite(T const& data, Interface& store) { store.writeBytes(sizeof(T), &data); }
@@ -93,6 +103,94 @@ namespace Vivium {
 
 		for (uint64_t i = 0; i < data->size(); i++) {
 			store.readBytes(sizeof(char), &(*data)[i]);
+		}
+	}
+
+	/*
+	#pragma once
+#include <type_traits>
+#include <concepts>
+
+// Forward-declare the interface
+class SerialiserMemoryInterface {
+public:
+    void writeBytes(const void* data, size_t size);
+};
+
+// Concept: trivial types
+template <typename T>
+concept TriviallySerializable = std::is_trivial_v<T> && std::is_standard_layout_v<T>;
+
+// Concept: ADL-detected custom serialization
+template <typename T>
+concept HasUserSerialiseWrite = requires(const T& t, SerialiserMemoryInterface& s) {
+    serialiseWrite(t, s); // Unqualified, enables ADL
+};
+
+// Combined concept: either trivial or custom-serializable
+template <typename T>
+concept Serializable = TriviallySerializable<T> || HasUserSerialiseWrite<T>;
+
+// Default impl for trivial types
+template <TriviallySerializable T>
+void serialiseWriteImpl(const T& value, SerialiserMemoryInterface& store) {
+    store.writeBytes(&value, sizeof(T));
+}
+
+// Forwarding call that uses ADL or fallback
+template <typename T>
+void dispatchSerialiseWrite(const T& value, SerialiserMemoryInterface& store) {
+    if constexpr (TriviallySerializable<T>) {
+        serialiseWriteImpl(value, store);  // memcpy
+    } else {
+        serialiseWrite(value, store);      // ADL-resolved
+    }
+}
+
+// Main entry point from the library
+template <Serializable T>
+void defaultSerialiseWrite(const void* src, SerialiserMemoryInterface& store) {
+    const T& value = *reinterpret_cast<const T*>(src);
+    dispatchSerialiseWrite(value, store);
+}
+	*/
+
+	/*
+	// This function is found via ADL if placed in same namespace
+inline void serialiseWrite(const MyVec3& v, SerialiserMemoryInterface& store) {
+    dispatchSerialiseWrite(v.x, store); // Works for float via default impl
+    dispatchSerialiseWrite(v.y, store);
+    dispatchSerialiseWrite(v.z, store);
+}
+	*/
+
+	template <typename T, SerialiserInterface Store>
+	void serialiseWriteImpl(T const& value, Store& store) {
+		store.writeBytes(sizeof(T), &value);
+	}
+
+	template <typename T, SerialiserInterface Store>
+	void serialiseReadImpl(T* value, Store& store) {
+		store.readBytes(sizeof(T), value);
+	}
+
+	template <typename T, SerialiserInterface Store>
+	void dispatchSerialiseWrite(T const& value, Store& store) {
+		if constexpr (Trivial<T>) {
+			serialiseWriteImpl(value, store);
+		}
+		else {
+			serialiseWrite(value, store);
+		}
+	}
+
+	template <typename T, SerialiserInterface Store>
+	void dispatchSerialiseRead(T* value, Store& store) {
+		if constexpr (Trivial<T>) {
+			serialiseReadImpl(value, store);
+		}
+		else {
+			serialiseRead(value, store);
 		}
 	}
 }

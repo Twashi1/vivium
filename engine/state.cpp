@@ -63,7 +63,7 @@ void _submitEntityView(State& state)
 			colorCyan,
 			calculateTextMetrics("", state.guiContext.consolas64),
 			TextAlignment::CENTER
-			}, state.guiContext));
+		}, state.guiContext));
 	}
 }
 
