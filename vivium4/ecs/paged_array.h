@@ -85,7 +85,7 @@ namespace Vivium {
 
 			if (hasData) {
 				for (uint64_t j = 0; j < pageSize; j++) {
-					serialiseRead(&pagedArray->pages[i][j], interface);
+					serialiseRead(&pagedArray->index(i * pageSize + j), interface);
 				}
 			}
 		}

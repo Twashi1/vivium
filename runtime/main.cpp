@@ -20,20 +20,20 @@ void testing_ecs() {
 	}
 
 	SerialiserFileInterface myFile;
-	myFile.begin("test.dat", false);
+	myFile.begin("new.dat", false);
 
 	serialiseWrite(*registry, myFile);
 
 	myFile.end();
 
-	delete registry;
+	// delete registry;
 
 	Registry* newRegistry = new Registry;
 
 	SerialiserFileInterface newFile;
-	newFile.begin("test.dat", true);
+	newFile.begin("new.dat", true);
 	
-	serialiseRead(newRegistry, myFile);
+	serialiseRead(newRegistry, newFile);
 
 	// TODO: we lost all entity references once we deserialised the ECS...?
 	//	we assume the user serialised the entity references in a meaningful way
@@ -58,6 +58,7 @@ void testing_ecs() {
 	newFile.end();
 
 	delete newRegistry;
+	delete registry;
 }
 
 int main(int argc, char* argv[]) {

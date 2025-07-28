@@ -10,16 +10,20 @@ namespace Vivium {
 		if (!file.is_open()) {
 			VIVIUM_LOG(LogSeverity::ERROR, "Couldnt't find file location {}", fileLocation);
 		}
+
+		countBytes = 0;
 	}
 
 	void SerialiserFileInterface::writeBytes(uint64_t length, void const* data)
 	{
 		file.write(reinterpret_cast<char const*>(data), length);
+		countBytes += length;
 	}
 
 	void SerialiserFileInterface::readBytes(uint64_t length, void* data)
 	{
 		file.read(reinterpret_cast<char*>(data), length);
+		countBytes += length;
 	}
 
 	void SerialiserFileInterface::end()

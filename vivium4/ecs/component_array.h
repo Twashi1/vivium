@@ -142,10 +142,10 @@ namespace Vivium {
 
 	template <SerialiserInterface Interface>
 	void serialiseRead(ComponentArray* componentArray, Interface& interface) {
-		serialiseRead(&componentArray.sparse, interface);
-		serialiseRead(&componentArray.size, interface);
+		dispatchSerialiseRead(&componentArray->sparse, interface);
+		dispatchSerialiseRead(&(componentArray->size), interface);
 		componentArray->entities = new Entity[componentArray->size];
-		interface.readBytes(componentArray->size * sizeof(Entity), componentArray.entities);
+		interface.readBytes(componentArray->size * sizeof(Entity), componentArray->entities);
 
 		// We allocate enough space to store n elements, although this
 		//	might not necessarily accommodate all the deserialised data
@@ -161,8 +161,8 @@ namespace Vivium {
 		componentArray->capacity = totalSize; // So we know the size of the array for future reference
 		componentArray->manager = ComponentManager();
 
-		for (uint64_t i = 0; i < componentArray.size; i++) {
-			serialiseRead(&componentArray.entities[i], interface);
+		for (uint64_t i = 0; i < componentArray->size; i++) {
+			serialiseRead(&componentArray->entities[i], interface);
 		}
 
 		componentArray->requiresDeserialise = true;

@@ -9,9 +9,9 @@
 - we allow multiple imports of vivium to avoid some useless shared middleman header
 - we need the scroll bar
 
-Most template meta problems solved, but one left:
-- we call serialiseRead on these components
-- but we don't know serialiseRead exists yet?
+Big note for serialiser
+- in some places, we assume the passed pointer points to nothing, so we can just treat it as store for memory for us to create
+- or, we create the assumption the pointer always points to some valid memory for the object, and thus we use assignment to delete the old object/replace it at that pointer
 
 Serialisation format changes
 - serialise function for c-array?
@@ -20,15 +20,14 @@ Serialisation format changes
 3. lua submit should be able to modify where data is gotten from by changing the entity, and also change the data entered; or fill in the date entered
 4. lua needs an easy memorable way to reference entities (names and even ids will work; but most systems use child scripts referencing their parents, or parameters entered into scripts)
 
--
-1. at run-time, without information of the original type, we need to be able to serialise each component pool
+5. at run-time, without information of the original type, we need to be able to serialise each component pool
 	- so the component manager must define a pointer function to convert the component into binary data (by default, SerialiserWrite)
 		- we don't want the user to have to define anything other than `serialiseWrite` and `serialiseRead` for each component
 		- we cannot account for the `SerialiserInterface` argument... just give up and make it a file interface always...?
 	- ideally this pointer function can write directly to an interface?
 	- for this it needs to be cable of taking a functor which requires templating?
 	- alternatively it writes to an intermediary, which is then directly written to the serialiser
-2. at run-time, with the information of the original type, we should be able to deserialise this information as needed
+6. at run-time, with the information of the original type, we should be able to deserialise this information as needed
 
 
 What we really want, is a way to serialise the ECS registry

@@ -12,6 +12,7 @@ namespace Vivium {
 	// TODO: we need start/end on interfaces
 	struct SerialiserFileInterface {
 		std::fstream file;
+		uint64_t countBytes;
 
 		void begin(std::string fileLocation, bool readMode);
 		void writeBytes(uint64_t length, void const* data);
@@ -38,7 +39,7 @@ namespace Vivium {
 	};
 
 	template <typename T>
-	concept Trivial = std::is_trivial_v<T> && std::is_standard_layout_v<T>;
+	concept Trivial = std::is_trivial_v<T> && std::is_standard_layout_v<T> && !std::is_pointer_v<T>;
 
 	template <typename T, typename U>
 	concept IsSerialisable = Trivial<T> || (SerialiserInterface<U> && requires (T const& ref, T * ptr, U & store) {
@@ -46,6 +47,7 @@ namespace Vivium {
 		{ serialiseRead(ref, store) } -> std::same_as<void>;
 	});
 
+	// TODO: disable pointer types
 	template <SerialiserInterface Interface, Trivial T>
 	void serialiseWrite(T const& data, Interface& store) { store.writeBytes(sizeof(T), &data); }
 	template <SerialiserInterface Interface, Trivial T>
@@ -76,10 +78,7 @@ namespace Vivium {
 	void serialiseWrite(std::string const& object, Interface& store) {
 		uint64_t arraySize = object.size();
 		store.writeBytes(sizeof(uint64_t), &arraySize);
-
-		for (uint64_t i = 0; i < object.size(); i++) {
-			store.writeBytes(sizeof(char), &object[i]);
-		}
+		store.writeBytes(arraySize, object.data());
 	}
 
 	template <SerialiserInterface Interface, typename T>
@@ -99,11 +98,9 @@ namespace Vivium {
 		uint64_t arraySize = 0;
 		store.readBytes(sizeof(uint64_t), &arraySize);
 
-		data->resize(arraySize);
+		new (data) std::string(arraySize, '\0');
 
-		for (uint64_t i = 0; i < data->size(); i++) {
-			store.readBytes(sizeof(char), &(*data)[i]);
-		}
+		store.readBytes(arraySize, data->data());
 	}
 
 	/*

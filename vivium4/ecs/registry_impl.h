@@ -56,26 +56,32 @@ namespace Vivium {
 		// TODO: just check if registered here,
 		//	and then allow re-registering
 		uint64_t componentID = type_id<T>();
-		typeIndexMap.insert({ componentID, componentPoolIndex++ });
 
-		uint64_t componentIndex = componentPoolIndex - 1;
+		// Either requires deserialisation, or already registered
+		if (typeIndexMap.contains(componentID)) {
+			uint64_t componentIndex = typeIndexMap[componentID];
+			ComponentArray* arr = componentPools[componentIndex];
 
-		ComponentArray*& arr = componentPools[componentIndex];
-
-		if (arr != nullptr) {
+			VIVIUM_ASSERT(arr != nullptr, "Registered component, but unallocated array");
+			
 			if (arr->requiresDeserialise) {
 				arr->deserialise<T>(componentIndex);
-			}
-			else {
-				VIVIUM_LOG(LogSeverity::FATAL, "Already registered component");
+
+				return;
 			}
 
-			return;
+			// Already registered component, can just fail here
 		}
+		else {
+			typeIndexMap.insert({ componentID, componentPoolIndex++ });
 
-		arr = new ComponentArray();
-		arr->manager = defaultComponentManager<T>(componentIndex);
-		arr->resize(0);
+			uint64_t componentIndex = typeIndexMap[componentID];
+			ComponentArray*& arr = componentPools[componentIndex];
+
+			arr = new ComponentArray();
+			arr->manager = defaultComponentManager<T>(componentIndex);
+			arr->resize(0);
+		}
 	}
 
 	template <ValidComponent T>
@@ -209,8 +215,6 @@ namespace Vivium {
 
 	template <SerialiserInterface Interface>
 	void serialiseWrite(Registry const& registry, Interface& interface) {
-		// TODO: inconsistent registration order...?
-
 		serialiseWrite(registry.componentPoolIndex, interface);
 		serialiseWrite(registry.typeIndexMap.size(), interface);
 
@@ -228,12 +232,15 @@ namespace Vivium {
 		//	we assume that the paged array will have the same page size and capacity between runs
 		//	but this could only change between builds so its very safe
 
-		serialiseWrite(registry.componentPools.size(), interface);
+		// We only want to write the enabled component arrays
+		for (auto const& [key, index] : registry.typeIndexMap) {
+			// Write the index of the pool that exists
+			serialiseWrite(index, interface);
 
-		for (uint64_t i = 0; i < registry.componentPools.size(); i++) {
-			// TODO: only serialise if enabled/exists
-			ComponentArray* componentArray = registry.componentPools[i];
-			serialiseWrite(componentArray, interface);
+			VIVIUM_ASSERT(registry.componentPools[index] != nullptr, "Null component pool for registered type");
+
+			ComponentArray* componentArray = registry.componentPools[index];
+			serialiseWrite(*componentArray, interface);
 		}
 
 		serialiseWrite(registry.signatures, interface);
@@ -263,15 +270,15 @@ namespace Vivium {
 		//	we assume that the paged array will have the same page size and capacity between runs
 		//	but this could only change between builds so its very safe
 
-		uint64_t componentPoolCount = 0;
-		serialiseRead(&componentPoolCount, interface);
+		for (uint64_t i = 0; i < typeIndexMapSize; i++) {
+			uint64_t componentIndex = 0;
+			serialiseRead(&componentIndex, interface);
 
-		for (uint64_t i = 0; i < componentPoolCount; i++) {
-			// TODO: only serialise if enabled/exists
-			// TODO: this won't work
-			//	look in obsidian for notes on how to implement serialisation and deserialisation of the component array
-			ComponentArray*& componentArray = registry->componentPools[i];
-			serialiseRead(&componentArray, interface);
+			ComponentArray*& componentArray = registry->componentPools[componentIndex];
+			// TODO: generalise new component array creation for safety?
+			componentArray = new ComponentArray;
+
+			serialiseRead(componentArray, interface);
 		}
 
 		serialiseRead(&registry->signatures, interface);
