@@ -45,11 +45,11 @@ namespace Vivium {
 			return page[indexInPage];
 		}
 
-		T const& get(uint64_t i) {
+		T const& get(uint64_t i) const {
 			uint64_t pageIndex = i / pageSize;
 			uint64_t indexInPage = i - pageIndex * pageSize;
 
-			T*& page = pages[pageIndex];
+			T const* const& page = pages[pageIndex];
 
 			if (page == nullptr) {
 				return defaultValue;
@@ -69,7 +69,7 @@ namespace Vivium {
 
 			if (pagedArray.pages[i] != nullptr) {
 				for (uint64_t j = 0; j < pageSize; j++) {
-					serialiseWrite(pagedArray.pages[i][j], interface);
+					serialiseWrite(pagedArray.get(i * pageSize + j), interface);
 				}
 			}
 		}

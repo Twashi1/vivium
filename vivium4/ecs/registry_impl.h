@@ -216,17 +216,29 @@ namespace Vivium {
 	template <SerialiserInterface Interface>
 	void serialiseWrite(Registry const& registry, Interface& interface) {
 		serialiseWrite(registry.componentPoolIndex, interface);
-		serialiseWrite(registry.typeIndexMap.size(), interface);
-
-		for (auto const& [key, index] : registry.typeIndexMap) {
-			serialiseWrite(key, interface);
-			serialiseWrite(index, interface);
-		}
-
 		serialiseWrite(registry.nextEntity, interface);
 		serialiseWrite(registry.nextLargestEntity, interface);
 		serialiseWrite(registry.availableEntities, interface);
 		serialiseWrite(registry.entities, interface);
+
+		uint64_t validKeyCount = 0;
+
+		for (auto const& [key, index] : registry.typeIndexMap) {
+			if (registry.componentPools[index] == nullptr) continue;
+			if (registry.componentPools[index]->size == 0) continue;
+
+			validKeyCount++;
+		}
+
+		serialiseWrite(validKeyCount, interface);
+
+		for (auto const& [key, index] : registry.typeIndexMap) {
+			if (registry.componentPools[index] == nullptr) continue;
+			if (registry.componentPools[index]->size == 0) continue;
+
+			serialiseWrite(key, interface);
+			serialiseWrite(index, interface);
+		}
 
 		// Write paged array
 		//	we assume that the paged array will have the same page size and capacity between runs
@@ -235,20 +247,29 @@ namespace Vivium {
 		// We only want to write the enabled component arrays
 		for (auto const& [key, index] : registry.typeIndexMap) {
 			// Write the index of the pool that exists
-			serialiseWrite(index, interface);
-
 			VIVIUM_ASSERT(registry.componentPools[index] != nullptr, "Null component pool for registered type");
 
 			ComponentArray* componentArray = registry.componentPools[index];
+			// Don't write empty component arrays
+			if (componentArray->size == 0) {
+				continue;
+			}
+
+			serialiseWrite(index, interface);
 			serialiseWrite(*componentArray, interface);
 		}
 
+		serialiseWrite((uint32_t)0xf5ab290d, interface);
 		serialiseWrite(registry.signatures, interface);
 	}
 
 	template <SerialiserInterface Interface>
 	void serialiseRead(Registry* registry, Interface& interface) {
 		serialiseRead(&registry->componentPoolIndex, interface);
+		serialiseRead(&registry->nextEntity, interface);
+		serialiseRead(&registry->nextLargestEntity, interface);
+		serialiseRead(&registry->availableEntities, interface);
+		serialiseRead(&registry->entities, interface);
 
 		uint64_t typeIndexMapSize = 0;
 		serialiseRead(&typeIndexMapSize, interface);
@@ -260,11 +281,6 @@ namespace Vivium {
 
 			registry->typeIndexMap.insert({ key, index });
 		}
-
-		serialiseRead(&registry->nextEntity, interface);
-		serialiseRead(&registry->nextLargestEntity, interface);
-		serialiseRead(&registry->availableEntities, interface);
-		serialiseRead(&registry->entities, interface);
 
 		// Write paged array
 		//	we assume that the paged array will have the same page size and capacity between runs
@@ -281,6 +297,10 @@ namespace Vivium {
 			serialiseRead(componentArray, interface);
 		}
 
+		uint32_t magicSanityCheck = 0;
+		serialiseRead(&magicSanityCheck, interface);
 		serialiseRead(&registry->signatures, interface);
+
+		VIVIUM_ASSERT(magicSanityCheck == (uint32_t)0xf5ab290d, "Something wrong with reading component arrays");
 	}
 };

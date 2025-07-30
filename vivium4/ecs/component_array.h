@@ -130,13 +130,6 @@ namespace Vivium {
 
 		memoryInterface.end();
 
-		// Copy from memory interface to regular interface
-		//	write total number of bytes
-
-		for (uint64_t i = 0; i < componentArray.size; i++) {
-			serialiseWrite(componentArray.entities[i], interface);
-		}
-
 		// Not serialising the component manager or the group metadata
 	}
 
@@ -160,10 +153,6 @@ namespace Vivium {
 		interface.readBytes(totalSize, componentArray->dense);
 		componentArray->capacity = totalSize; // So we know the size of the array for future reference
 		componentArray->manager = ComponentManager();
-
-		for (uint64_t i = 0; i < componentArray->size; i++) {
-			serialiseRead(&componentArray->entities[i], interface);
-		}
 
 		componentArray->requiresDeserialise = true;
 	}

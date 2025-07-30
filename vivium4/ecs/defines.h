@@ -35,6 +35,7 @@ namespace Vivium {
 	{
 		// Get number of bytes to represent bitset
 		uint8_t* bits = new uint8_t[sizeof(Signature)];
+		memset(bits, 0, sizeof(Signature));
 
 		// TODO: better solution would necessitate custom bitset type
 		for (uint64_t i = 0; i < signature.size(); i++) {

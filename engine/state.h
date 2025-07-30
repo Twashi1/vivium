@@ -37,6 +37,11 @@ struct PropertyDisplay {
 	ShaderEntry shader;
 };
 
+// Goal is to serialise the editor
+//	so we can reload it
+// 1. save entire registry
+// 2. save entity tree (Tree container tree)
+
 struct State {
 	Engine engine;
 	Window window;
@@ -58,6 +63,8 @@ struct State {
 		std::array<PropertyDisplay, MAX_CONCURRENT_ENTITY_PANELS> propertyDisplays;
 
 		Button compileTree;
+		Button saveProject;
+		Button loadProject;
 
 		struct {
 			Panel background;
@@ -117,4 +124,11 @@ void _updatePropertyDisplay(State& state, PropertyDisplay& display);
 void _renderPropertyDisplay(State& state, PropertyDisplay& display);
 void _dropPropertyDisplay(State& state, PropertyDisplay& display);
 
+void _addEntityButton(State& state);
+
+void _updateComponentValues(State& state);
+void _updateEntryValues(State& state);
 void _compileTree(State& state);
+
+void _saveState(State& state, std::string_view filename);
+void _loadState(State& state, std::string_view filename);

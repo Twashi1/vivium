@@ -102,6 +102,13 @@ void dropEntry(UniformBindingEntry& entry, Engine& engine, GUIContext& guiContex
 	dropEntry(entry.stageEntry, engine, guiContext);
 }
 
+void loadValue(UniformBindingEntry& entry, UniformBinding const& binding, GUIContext& guiContext)
+{
+	loadValue(entry.slotEntry, binding.slot, guiContext);
+	loadValue(entry.typeEntry, binding.type, guiContext);
+	loadValue(entry.stageEntry, binding.stage, guiContext);
+}
+
 BufferLayoutComponent getValue(BufferLayoutEntry const& entry)
 {
 	return BufferLayoutComponent(getValue(entry.typesEntry));
@@ -153,6 +160,11 @@ void submitEntries(std::span<BufferLayoutEntry*> const entries, GUIContext& guiC
 void dropEntry(BufferLayoutEntry& entry, Engine& engine, GUIContext& guiContext)
 {
 	dropEntry(entry.typesEntry, engine, guiContext);
+}
+
+void loadValue(BufferLayoutEntry& entry, BufferLayoutComponent const& layout, GUIContext& guiContext)
+{
+	loadValue(entry.typesEntry, layout.types, guiContext);
 }
 
 ShaderComponent getValue(ShaderEntry const& entry)
@@ -231,6 +243,12 @@ void dropEntry(ShaderEntry& entry, Engine& engine, GUIContext& guiContext)
 	dropEntry(entry.stageEntry, engine, guiContext);
 }
 
+void loadValue(ShaderEntry& entry, ShaderComponent const& shader, GUIContext& guiContext)
+{
+	loadValue(entry.filenameEntry, shader.filename, guiContext);
+	loadValue(entry.stageEntry, shader.type, guiContext);
+}
+
 DescriptorLayoutComponent getValue(DescriptorLayoutEntry const& entry)
 {
 	DescriptorLayoutComponent component;
@@ -278,6 +296,11 @@ void dropEntry(DescriptorLayoutEntry& entry, Engine& engine, GUIContext& guiCont
 	delete entry.entrySpec;
 
 	dropEntry(entry.bindingEntries, engine, guiContext);
+}
+
+void loadValue(DescriptorLayoutEntry& entry, DescriptorLayoutComponent const& descriptorLayout, GUIContext& guiContext)
+{
+	loadValue(entry.bindingEntries, descriptorLayout.bindings, guiContext);
 }
 
 BufferComponent getValue(BufferEntry const& entry)
@@ -382,6 +405,18 @@ void dropEntry(BufferEntry& entry, Engine& engine, GUIContext& guiContext)
 
 	dropEntry(entry.data, engine, guiContext);
 	dropEntry(entry.usage, engine, guiContext);
+}
+
+void loadValue(BufferEntry& entry, BufferComponent const& buffer, GUIContext& guiContext)
+{
+	loadValue(entry.usage, buffer.usage, guiContext);
+
+	VIVIUM_ASSERT(buffer.data.size() % 4 == 0, "Buffer data was not multiple of 4, incorrectly assumed float?");
+
+	std::vector<float> bufferDataConverted(buffer.data.size() / 4);
+	memcpy(bufferDataConverted.data(), buffer.data.data(), bufferDataConverted.size() * sizeof(float));
+
+	loadValue(entry.data, bufferDataConverted, guiContext);
 }
 
 PipelineComponent getValue(PipelineEntry const& entry)
@@ -503,6 +538,17 @@ void dropEntry(PipelineEntry& entry, Engine& engine, GUIContext& guiContext)
 	dropEntry(entry.descriptorSet, engine, guiContext);
 }
 
+void loadValue(PipelineEntry& entry, PipelineComponent const& pipeline, GUIContext& guiContext)
+{
+	loadValue(entry.bufferLayout, pipeline.bufferLayout, guiContext);
+	loadValue(entry.descriptorLayout, pipeline.descriptorLayout, guiContext);
+	loadValue(entry.vertexShader, pipeline.vertexShader, guiContext);
+	loadValue(entry.fragmentShader, pipeline.fragmentShader, guiContext);
+	loadValue(entry.vertexBuffer, pipeline.vertexBuffer, guiContext);
+	loadValue(entry.indexBuffer, pipeline.indexBuffer, guiContext);
+	loadValue(entry.descriptorSet, pipeline.descriptorSet, guiContext);
+}
+
 DescriptorSetComponent getValue(DescriptorSetEntry const& entry)
 {
 	DescriptorSetComponent set;
@@ -564,4 +610,9 @@ void dropEntry(DescriptorSetEntry& entry, Engine& engine, GUIContext& guiContext
 	delete entry.entrySpec;
 
 	dropEntry(entry.uniformData, engine, guiContext);
+}
+
+void loadValue(DescriptorSetEntry& entry, DescriptorSetComponent const& descriptor, GUIContext& guiContext)
+{
+	loadValue(entry.uniformData, descriptor.bindingData, guiContext);
 }

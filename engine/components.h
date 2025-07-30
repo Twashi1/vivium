@@ -191,6 +191,7 @@ void setupEntry(UniformBindingEntry& entry, ResourceManager& manager, Engine& en
 void updateEntry(UniformBindingEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
 void submitEntries(std::span<UniformBindingEntry*> const entries, GUIContext& guiContext);
 void dropEntry(UniformBindingEntry& entry, Engine& engine, GUIContext& guiContext);
+void loadValue(UniformBindingEntry& entry, UniformBinding const& binding, GUIContext& guiContext);
 
 BufferLayoutComponent getValue(BufferLayoutEntry const& entry);
 BufferLayoutEntry submitEntry(EntrySpecification<BufferLayoutEntry> const& spec, GUIContext& guiContext, ResourceManager& resourceManager);
@@ -198,6 +199,7 @@ void setupEntry(BufferLayoutEntry& entry, ResourceManager& manager, Engine& engi
 void updateEntry(BufferLayoutEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
 void submitEntries(std::span<BufferLayoutEntry*> const entries, GUIContext& guiContext);
 void dropEntry(BufferLayoutEntry& entry, Engine& engine, GUIContext& guiContext);
+void loadValue(BufferLayoutEntry& entry, BufferLayoutComponent const& layout, GUIContext& guiContext);
 
 ShaderComponent getValue(ShaderEntry const& entry);
 ShaderEntry submitEntry(EntrySpecification<ShaderEntry> const& spec, GUIContext& guiContext, ResourceManager& resourceManager);
@@ -205,6 +207,7 @@ void setupEntry(ShaderEntry& entry, ResourceManager& manager, Engine& engine, Co
 void updateEntry(ShaderEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
 void submitEntries(std::span<ShaderEntry*> const entries, GUIContext& guiContext);
 void dropEntry(ShaderEntry& entry, Engine& engine, GUIContext& guiContext);
+void loadValue(ShaderEntry& entry, ShaderComponent const& shader, GUIContext& guiContext);
 
 DescriptorLayoutComponent getValue(DescriptorLayoutEntry const& entry);
 DescriptorLayoutEntry submitEntry(EntrySpecification<DescriptorLayoutEntry> const& spec, GUIContext& guiContext, ResourceManager& resourceManager);
@@ -212,6 +215,7 @@ void setupEntry(DescriptorLayoutEntry& entry, ResourceManager& manager, Engine& 
 void updateEntry(DescriptorLayoutEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
 void submitEntries(std::span<DescriptorLayoutEntry*> const entries, GUIContext& guiContext);
 void dropEntry(DescriptorLayoutEntry& entry, Engine& engine, GUIContext& guiContext);
+void loadValue(DescriptorLayoutEntry& entry, DescriptorLayoutComponent const& descriptorLayout, GUIContext& guiContext);
 
 BufferComponent getValue(BufferEntry const& entry);
 BufferEntry submitEntry(EntrySpecification<BufferEntry> const& spec, GUIContext& guiContext, ResourceManager& resourceManager);
@@ -219,6 +223,7 @@ void setupEntry(BufferEntry& entry, ResourceManager& manager, Engine& engine, Co
 void updateEntry(BufferEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
 void submitEntries(std::span<BufferEntry*> const entries, GUIContext& guiContext);
 void dropEntry(BufferEntry& entry, Engine& engine, GUIContext& guiContext);
+void loadValue(BufferEntry& entry, BufferComponent const& buffer, GUIContext& guiContext);
 
 PipelineComponent getValue(PipelineEntry const& entry);
 PipelineEntry submitEntry(EntrySpecification<PipelineEntry> const& spec, GUIContext& guiContext, ResourceManager& resourceManager);
@@ -226,6 +231,7 @@ void setupEntry(PipelineEntry& entry, ResourceManager& manager, Engine& engine, 
 void updateEntry(PipelineEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
 void submitEntries(std::span<PipelineEntry*> const entries, GUIContext& guiContext);
 void dropEntry(PipelineEntry& entry, Engine& engine, GUIContext& guiContext);
+void loadValue(PipelineEntry& entry, PipelineComponent const& pipeline, GUIContext& guiContext);
 
 DescriptorSetComponent getValue(DescriptorSetEntry const& entry);
 DescriptorSetEntry submitEntry(EntrySpecification<DescriptorSetEntry> const& spec, GUIContext& guiContext, ResourceManager& resourceManager);
@@ -233,6 +239,7 @@ void setupEntry(DescriptorSetEntry& entry, ResourceManager& manager, Engine& eng
 void updateEntry(DescriptorSetEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
 void submitEntries(std::span<DescriptorSetEntry*> const entries, GUIContext& guiContext);
 void dropEntry(DescriptorSetEntry& entry, Engine& engine, GUIContext& guiContext);
+void loadValue(DescriptorSetEntry& entry, DescriptorSetComponent const& descriptor, GUIContext& guiContext);
 
 struct ComponentHeaderBlueprint {
 	VulkanComponent component;

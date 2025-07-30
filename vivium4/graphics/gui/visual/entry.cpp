@@ -297,4 +297,22 @@ namespace Vivium {
 	{
 		return entry.currentValue;
 	}
+
+	void loadValue(IntegerTextEntry& entry, int value, GUIContext& guiContext)
+	{
+		entry.currentValue = std::to_string(value);
+		entry.lastValidValue = entry.currentValue;
+	}
+
+	void loadValue(FloatTextEntry& entry, float value, GUIContext& guiContext)
+	{
+		entry.currentValue = std::to_string(value);
+		entry.lastValidValue = entry.currentValue;
+	}
+
+	void loadValue(StringTextEntry& entry, std::string const& value, GUIContext& guiContext)
+	{
+		entry.currentValue = value;
+		entry.lastValidValue = value;
+	}
 }

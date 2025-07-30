@@ -79,7 +79,8 @@ namespace Vivium {
 	
 	void ComponentArray::clear()
 	{
-		manager.destroyFunction(dense, size);
+		// Only deconstruct objects if there are actual objects
+		if (!requiresDeserialise) { manager.destroyFunction(dense, size); }
 
 		size = 0;
 		owner = nullptr;

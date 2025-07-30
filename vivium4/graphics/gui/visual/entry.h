@@ -162,6 +162,10 @@ namespace Vivium {
 	float getValue(FloatTextEntry const& entry);
 	std::string getValue(StringTextEntry const& entry);
 
+	void loadValue(IntegerTextEntry& entry, int value, GUIContext& guiContext);
+	void loadValue(FloatTextEntry& entry, float value, GUIContext& guiContext);
+	void loadValue(StringTextEntry& entry, std::string const& value, GUIContext& guiContext);
+
 	template <FiniteObjectType T>
 	ObjectEntry<T> submitEntry(EntrySpecification<ObjectEntry<T>> const& specification, GUIContext& context, ResourceManager& resourceManager)
 	{
@@ -304,6 +308,11 @@ namespace Vivium {
 		return entry.currentlySelected;
 	}
 
+	template <FiniteObjectType ObjectType>
+	void loadValue(ObjectEntry<ObjectType>& entry, typename ObjectEntry<ObjectType>::ValueType const& value, GUIContext& guiContext) {
+		entry.currentlySelected = value;
+	}
+
 	template <FiniteObjectType T>
 	UploadEntry<T> submitEntry(EntrySpecification<UploadEntry<T>> const& specification, GUIContext& context, ResourceManager& resourceManager)
 	{
@@ -411,6 +420,12 @@ namespace Vivium {
 		// TODO: bit bad, only actually release selected value if there is one (hasValue)
 		VIVIUM_ASSERT(entry.hasValue, "Entry didn't have value but we tried to request it");
 		return entry.currentlySelected;
+	}
+
+	template <FiniteObjectType ObjectType>
+	void loadValue(UploadEntry<ObjectType>& entry, typename UploadEntry<ObjectType>::ValueType const& value, GUIContext& guiContext) {
+		entry.hasValue = true;
+		entry.currentlySelected = value;
 	}
 
 	template <typename ValueEntry>
@@ -669,6 +684,22 @@ namespace Vivium {
 		}
 
 		return results;
+	}
+
+	template <typename ValueEntry>
+	void loadValue(ListEntry<ValueEntry>& entry, typename ListEntry<ValueEntry>::ValueType const& value, GUIContext& guiContext)
+	{
+		entry.numEntries = value.size();
+
+		for (uint64_t i = 0; i < value.size(); i++) {
+			loadValue(entry.entries[i], value[i], guiContext);
+
+			setAsleep(entry.entries[i].base, guiContext, false);
+			setAsleep(entry.entryWrapper[i].base, guiContext, false);
+			setAsleep(entry.deleteEntry[i].base, guiContext, false);
+			setAsleep(entry.entryUp[i].base, guiContext, false);
+			setAsleep(entry.entryDown[i].base, guiContext, false);
+		}
 	}
 
 	template <typename T>

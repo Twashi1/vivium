@@ -35,6 +35,18 @@ void _submitEditor(State& state)
 		Color(0.0f, 0.0f, 0.0f)
 	));
 
+	state.editor.saveProject = submitButton(state.manager, state.guiContext, ButtonSpecification(
+		state.editor.background.base,
+		Color(0.0f, 0.6f, 0.6f),
+		Color(0.0f, 0.0f, 0.0f)
+	));
+
+	state.editor.loadProject = submitButton(state.manager, state.guiContext, ButtonSpecification(
+		state.editor.background.base,
+		Color(0.0f, 0.3f, 0.3f),
+		Color(0.0f, 0.0f, 0.0f)
+	));
+
 	for (uint64_t i = 0; i < state.editor.propertyDisplays.size(); i++) {
 		state.editor.propertyDisplays[i] = _submitPropertyDisplay(state, nullEntity, &state.registry);
 	}
@@ -76,10 +88,23 @@ void _setupEditor(State& state)
 {
 	setupEntry(state.editor.createComponent, state.manager, state.engine, state.context, state.guiContext);
 	setupButton(state.editor.compileTree, state.manager);
+	setupButton(state.editor.saveProject, state.manager);
+	setupButton(state.editor.loadProject, state.manager);
 
-	properties(state.editor.compileTree, state.guiContext).dimensions = F32x2(0.2f, 0.05f);
+	properties(state.editor.compileTree, state.guiContext).dimensions = F32x2(0.15f, 0.03f);
+	properties(state.editor.compileTree, state.guiContext).position = F32x2(-0.2f, -0.02f);
 	properties(state.editor.compileTree, state.guiContext).anchorY = GUIAnchor::TOP;
 	properties(state.editor.compileTree, state.guiContext).centerY = GUIAnchor::TOP;
+
+	properties(state.editor.saveProject, state.guiContext).dimensions = F32x2(0.15f, 0.03f);
+	properties(state.editor.saveProject, state.guiContext).position = F32x2(0.0f, -0.02f);
+	properties(state.editor.saveProject, state.guiContext).anchorY = GUIAnchor::TOP;
+	properties(state.editor.saveProject, state.guiContext).centerY = GUIAnchor::TOP;
+
+	properties(state.editor.loadProject, state.guiContext).dimensions = F32x2(0.15f, 0.03f);
+	properties(state.editor.loadProject, state.guiContext).position = F32x2(0.2f, -0.02f);
+	properties(state.editor.loadProject, state.guiContext).anchorY = GUIAnchor::TOP;
+	properties(state.editor.loadProject, state.guiContext).centerY = GUIAnchor::TOP;
 
 	properties(state.editor.inspectorContainer.base, state.guiContext).dimensions = F32x2(0.2f, 1.0f);
 	properties(state.editor.inspectorContainer.base, state.guiContext).anchorX = GUIAnchor::RIGHT;
@@ -152,6 +177,8 @@ void _dropEditor(State& state)
 	}
 
 	dropButton(state.editor.compileTree, state.engine, state.guiContext);
+	dropButton(state.editor.saveProject, state.engine, state.guiContext);
+	dropButton(state.editor.loadProject, state.engine, state.guiContext);
 	dropEntry(state.editor.createComponent, state.engine, state.guiContext);
 	_dropEntityView(state);
 }
@@ -169,6 +196,8 @@ void _update(State& state)
 
 	bool clicked = Input::get(Input::BTN_LEFT).state == Input::RELEASE;
 	bool hoverCreateButton = pointInElement(Input::getCursor(), properties(state.editor.entityView.createButton, state.guiContext));
+	bool hoverSaveProject = pointInElement(Input::getCursor(), properties(state.editor.saveProject, state.guiContext));
+	bool hoverLoadProject = pointInElement(Input::getCursor(), properties(state.editor.loadProject, state.guiContext));
 
 	// VIVIUM_LOG(LogSeverity::DEBUG, "Holding something: {}", state.editor.entityView.heldEntityPtr != nullptr);
 
@@ -185,6 +214,16 @@ void _update(State& state)
 	//	  rendered property display
 	updateEntry(state.editor.createComponent, state.guiContext, state.engine, state.context);
 	setButtonText(state.editor.compileTree, state.engine, state.context, state.guiContext, "Compile tree");
+	setButtonText(state.editor.saveProject, state.engine, state.context, state.guiContext, "Save");
+	setButtonText(state.editor.loadProject, state.engine, state.context, state.guiContext, "Load");
+
+	if (clicked && hoverSaveProject) {
+		_saveState(state, "save_editor.dat");
+	}
+
+	if (clicked && hoverLoadProject) {
+		_loadState(state, "save_editor.dat");
+	}
 
 	if (clicked && pointInElement(Input::getCursor(), properties(state.editor.compileTree, state.guiContext))) {
 		VIVIUM_LOG(LogSeverity::DEBUG, "Clicked compile button");
@@ -222,24 +261,8 @@ void _update(State& state)
 		state.editor.createComponent.currentlySelected = VulkanComponent::ENTER_COMPONENT;
 	}
 
-	if (clicked) {
-		if (hoverCreateButton) {
-			Entity newEntity = state.registry.create();
-			state.registry.addComponent<ComponentName>(newEntity, ComponentName{ std::format("Entity {}", newEntity & ECS_ENTITY_MASK) });
-
-			state.editor.entityView.entities.push_back(newEntity);
-			// Enable the relevant container
-			TreeContainer* container = getContainerByPanel(state.editor.entityView.entities.size() - 1, state.editor.entityView.entityTree);
-
-			VIVIUM_ASSERT(container != nullptr, "Couldn't get container for new panel");
-
-			VIVIUM_LOG(LogSeverity::DEBUG, "Enabling panel by id {}", state.editor.entityView.entities.size() - 1);
-
-			container->enabled = true;
-
-			// Set the entity for the property display
-			state.editor.propertyDisplays[state.editor.entityView.entities.size() - 1].entity = newEntity;
-		}
+	if (clicked && hoverCreateButton) {
+		_addEntityButton(state);
 	}
 
 	if (clicked) {
@@ -305,7 +328,7 @@ void _draw(State& state)
 
 	submitPanels(entityPanels, state.guiContext);
 
-	Button* buttons[] = { &state.editor.entityView.createButton, &state.editor.compileTree };
+	Button* buttons[] = { &state.editor.entityView.createButton, &state.editor.compileTree, &state.editor.saveProject, &state.editor.loadProject };
 
 	submitButtons(buttons, state.guiContext);
 
@@ -571,12 +594,27 @@ void _dropPropertyDisplay(State& state, PropertyDisplay& display)
 	dropEntry(display.pipeline, state.engine, state.guiContext);
 }
 
-void _compileTree(State& state)
+void _addEntityButton(State& state)
 {
-	// TODO: We somewhat want a reverse index from entity -> property display
-	//	but this doesn't exactly exist
+	Entity newEntity = state.registry.create();
+	state.registry.addComponent<ComponentName>(newEntity, ComponentName{ std::format("Entity {}", newEntity & ECS_ENTITY_MASK) });
 
-	// For each display, we want to compile all buffer, shader, buffer layout, and descriptor layout components first
+	state.editor.entityView.entities.push_back(newEntity);
+	// Enable the relevant container
+	TreeContainer* container = getContainerByPanel(state.editor.entityView.entities.size() - 1, state.editor.entityView.entityTree);
+
+	VIVIUM_ASSERT(container != nullptr, "Couldn't get container for new panel");
+
+	VIVIUM_LOG(LogSeverity::DEBUG, "Enabling panel by id {}", state.editor.entityView.entities.size() - 1);
+
+	container->enabled = true;
+
+	// Set the entity for the property display
+	state.editor.propertyDisplays[state.editor.entityView.entities.size() - 1].entity = newEntity;
+}
+
+void _updateComponentValues(State& state)
+{
 	for (uint64_t i = 0; i < state.editor.propertyDisplays.size(); i++) {
 		PropertyDisplay& display = state.editor.propertyDisplays[i];
 		Entity entity = display.entity;
@@ -598,6 +636,7 @@ void _compileTree(State& state)
 		}
 	}
 
+	// TODO: no need to order these anymore?
 	// Then descriptor sets
 	for (uint64_t i = 0; i < state.editor.propertyDisplays.size(); i++) {
 		PropertyDisplay& display = state.editor.propertyDisplays[i];
@@ -608,8 +647,6 @@ void _compileTree(State& state)
 		}
 	}
 
-	std::vector<PipelineComponent> pipelineComponents;
-
 	// Then pipelines
 	for (uint64_t i = 0; i < state.editor.propertyDisplays.size(); i++) {
 		PropertyDisplay& display = state.editor.propertyDisplays[i];
@@ -617,12 +654,66 @@ void _compileTree(State& state)
 
 		if (state.registry.hasComponent<PipelineComponent>(entity)) {
 			state.registry.updateComponent<PipelineComponent>(entity, getValue(display.pipeline));
-			pipelineComponents.push_back(state.registry.getComponent<PipelineComponent>(entity));
+		}
+	}
+}
+
+// Now.. we look at each entity that has a component, and we update the entry with the component's value
+void _updateEntryValues(State& state)
+{
+	for (uint64_t i = 0; i < state.editor.propertyDisplays.size(); i++) {
+		PropertyDisplay& display = state.editor.propertyDisplays[i];
+		Entity entity = display.entity;
+
+		if (state.registry.hasComponent<BufferComponent>(entity)) {
+			loadValue(display.buffer, state.registry.getComponent<BufferComponent>(entity), state.guiContext);
+		}
+
+		if (state.registry.hasComponent<ShaderComponent>(entity)) {
+			loadValue(display.shader, state.registry.getComponent<ShaderComponent>(entity), state.guiContext);
+		}
+
+		if (state.registry.hasComponent<BufferLayoutComponent>(entity)) {
+			loadValue(display.bufferLayout, state.registry.getComponent<BufferLayoutComponent>(entity), state.guiContext);
+		}
+
+		if (state.registry.hasComponent<DescriptorLayoutComponent>(entity)) {
+			loadValue(display.descriptorLayout, state.registry.getComponent<DescriptorLayoutComponent>(entity), state.guiContext);
 		}
 	}
 
-	// All values up to date, now grab every entity with a pipeline component and serialise it
-	// TODO: bad, but easier than looping entities again
+	// TODO: no need to order these anymore?
+	// Then descriptor sets
+	for (uint64_t i = 0; i < state.editor.propertyDisplays.size(); i++) {
+		PropertyDisplay& display = state.editor.propertyDisplays[i];
+		Entity entity = display.entity;
+
+		if (state.registry.hasComponent<DescriptorSetComponent>(entity)) {
+			loadValue(display.descriptor, state.registry.getComponent<DescriptorSetComponent>(entity), state.guiContext);
+		}
+	}
+
+	// Then pipelines
+	for (uint64_t i = 0; i < state.editor.propertyDisplays.size(); i++) {
+		PropertyDisplay& display = state.editor.propertyDisplays[i];
+		Entity entity = display.entity;
+
+		if (state.registry.hasComponent<PipelineComponent>(entity)) {
+			loadValue(display.pipeline, state.registry.getComponent<PipelineComponent>(entity), state.guiContext);
+		}
+	}
+}
+
+void _compileTree(State& state)
+{
+	// TODO: We somewhat want a reverse index from entity -> property display
+	//	but this doesn't exactly exist
+
+	// For each display, we want to compile all buffer, shader, buffer layout, and descriptor layout components first
+	_updateComponentValues(state);
+
+	// TODO: Here, we want to serialise just enough for the runtime to get by
+	//	this means only serialising certain components on certain entities
 
 	// TODO: want to serialise the registry, not the pipelines
 	SerialiserFileInterface fileInterface;
@@ -666,4 +757,63 @@ void _compileTree(State& state)
 	fileInterface.end();
 
 	VIVIUM_LOG(LogSeverity::DEBUG, "Finished writing to gen.dat");
+}
+
+void _saveState(State& state, std::string_view filename)
+{
+	// Ensure all values are loaded/updated before write
+	_updateComponentValues(state);
+
+	SerialiserFileInterface store;
+	store.begin(std::string(filename), false);
+
+	// Write the registry
+	serialiseWrite(state.registry, store);
+	serialiseWrite(state.editor.entityView.entities, store);
+	// Write the structure of, and entities in the entity tree
+	// TODO: not very safe at all
+	// serialiseWrite(state.editor.entityView.entityTree, store);
+
+	store.end();
+}
+
+void _loadState(State& state, std::string_view filename)
+{
+	SerialiserFileInterface store;
+	store.begin(std::string(filename), true);
+
+	// TODO: clear registry, entities, etc.?
+
+	// Write the registry
+	serialiseRead(&state.registry, store);
+	serialiseRead(&state.editor.entityView.entities, store);
+	// Write the structure of, and entities in the entity tree
+	// TODO: not very safe at all
+	// TODO: re-create GUI children relationships
+	// TreeContainer oldRelations;
+	// serialiseRead(&oldRelations, store);
+
+	// We assume we've already created the entity tree, so now we need to re-arrange it by the id
+	// No point in making this actually functional since we have to rework tree containers
+	//	and even the GUI anyway
+	// So don't save the hierarchy of relationships
+	for (uint64_t i = 0; i < state.editor.entityView.entities.size(); i++) {
+		Entity e = state.editor.entityView.entities[i];
+
+		// Enable the relevant container
+		// TODO: use PanelIndex component on Entity
+		TreeContainer* container = getContainerByPanel(e, state.editor.entityView.entityTree);
+		
+		VIVIUM_ASSERT(container != nullptr, "Couldn't get container for new panel");
+		VIVIUM_LOG(LogSeverity::DEBUG, "Enabling panel by id {}", e);
+		
+		container->enabled = true;
+
+		// Set the entity for the property display
+		state.editor.propertyDisplays[e].entity = e;
+	}
+
+	store.end();
+
+	_updateEntryValues(state);
 }

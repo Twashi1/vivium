@@ -86,6 +86,9 @@ namespace Vivium {
 		uint64_t arraySize = 0;
 		store.readBytes(sizeof(uint64_t), &arraySize);
 
+		// Placement new a std::vector... might cause issues tho
+		//	as other functions don't assume placement new
+		new (data) std::vector<T>();
 		data->resize(arraySize);
 
 		for (uint64_t i = 0; i < data->size(); i++) {

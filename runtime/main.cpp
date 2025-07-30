@@ -62,10 +62,6 @@ void testing_ecs() {
 }
 
 int main(int argc, char* argv[]) {
-	testing_ecs();
-
-	return NULL;
-
 	if (argc > 1) {
 		// Attempt to run the inputted program
 		char const* bytecodeFile = argv[2];
