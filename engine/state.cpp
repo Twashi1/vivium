@@ -717,42 +717,43 @@ void _compileTree(State& state)
 
 	// TODO: want to serialise the registry, not the pipelines
 	SerialiserFileInterface fileInterface;
-	fileInterface.begin("vivium4/res/gen.dat", false);
+	fileInterface.begin("gen.dat", false);
 
-	serialiseWrite(state.editor.entityView.entities.size(), fileInterface);
+	serialiseWrite(state.editor.entityView.entities, fileInterface);
+	serialiseWrite(state.registry, fileInterface);
 
-	for (Entity entity : state.editor.entityView.entities) {
-		serialiseWrite(entity, fileInterface);
-		// TODO: need to write the signature of the entity somehow
-		// Write all components on the entity
-		if (state.registry.hasComponent<BufferComponent>(entity)) {
-			serialiseWrite(VulkanComponent::BUFFER, fileInterface);
-			serialiseWrite(state.registry.getComponent<BufferComponent>(entity), fileInterface);
-		}
-		if (state.registry.hasComponent<ShaderComponent>(entity)) {
-			serialiseWrite(VulkanComponent::SHADER, fileInterface);
-			serialiseWrite(state.registry.getComponent<ShaderComponent>(entity), fileInterface);
-		}
-		if (state.registry.hasComponent<BufferLayoutComponent>(entity)) {
-			serialiseWrite(VulkanComponent::BUFFER_LAYOUT, fileInterface);
-			serialiseWrite(state.registry.getComponent<BufferLayoutComponent>(entity), fileInterface);
-		}
-		if (state.registry.hasComponent<DescriptorLayoutComponent>(entity)) {
-			serialiseWrite(VulkanComponent::DESCRIPTOR_LAYOUT, fileInterface);
-			serialiseWrite(state.registry.getComponent<DescriptorLayoutComponent>(entity), fileInterface);
-		}
-		if (state.registry.hasComponent<DescriptorSetComponent>(entity)) {
-			serialiseWrite(VulkanComponent::DESCRIPTOR_SET, fileInterface);
-			serialiseWrite(state.registry.getComponent<DescriptorSetComponent>(entity), fileInterface);
-		}
-		if (state.registry.hasComponent<PipelineComponent>(entity)) {
-			serialiseWrite(VulkanComponent::PIPELINE, fileInterface);
-			serialiseWrite(state.registry.getComponent<PipelineComponent>(entity), fileInterface);
-		}
-		// Write an end component
-		// TODO: using ENTER_COMPONENT is a bit ugly
-		serialiseWrite(VulkanComponent::ENTER_COMPONENT, fileInterface);
-	}
+	//for (Entity entity : state.editor.entityView.entities) {
+	//	serialiseWrite(entity, fileInterface);
+	//	// TODO: need to write the signature of the entity somehow
+	//	// Write all components on the entity
+	//	if (state.registry.hasComponent<BufferComponent>(entity)) {
+	//		serialiseWrite(VulkanComponent::BUFFER, fileInterface);
+	//		serialiseWrite(state.registry.getComponent<BufferComponent>(entity), fileInterface);
+	//	}
+	//	if (state.registry.hasComponent<ShaderComponent>(entity)) {
+	//		serialiseWrite(VulkanComponent::SHADER, fileInterface);
+	//		serialiseWrite(state.registry.getComponent<ShaderComponent>(entity), fileInterface);
+	//	}
+	//	if (state.registry.hasComponent<BufferLayoutComponent>(entity)) {
+	//		serialiseWrite(VulkanComponent::BUFFER_LAYOUT, fileInterface);
+	//		serialiseWrite(state.registry.getComponent<BufferLayoutComponent>(entity), fileInterface);
+	//	}
+	//	if (state.registry.hasComponent<DescriptorLayoutComponent>(entity)) {
+	//		serialiseWrite(VulkanComponent::DESCRIPTOR_LAYOUT, fileInterface);
+	//		serialiseWrite(state.registry.getComponent<DescriptorLayoutComponent>(entity), fileInterface);
+	//	}
+	//	if (state.registry.hasComponent<DescriptorSetComponent>(entity)) {
+	//		serialiseWrite(VulkanComponent::DESCRIPTOR_SET, fileInterface);
+	//		serialiseWrite(state.registry.getComponent<DescriptorSetComponent>(entity), fileInterface);
+	//	}
+	//	if (state.registry.hasComponent<PipelineComponent>(entity)) {
+	//		serialiseWrite(VulkanComponent::PIPELINE, fileInterface);
+	//		serialiseWrite(state.registry.getComponent<PipelineComponent>(entity), fileInterface);
+	//	}
+	//	// Write an end component
+	//	// TODO: using ENTER_COMPONENT is a bit ugly
+	//	serialiseWrite(VulkanComponent::ENTER_COMPONENT, fileInterface);
+	//}
 
 	fileInterface.end();
 

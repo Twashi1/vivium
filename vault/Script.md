@@ -2,6 +2,9 @@
 
 `vEntity`
 `vBuffer`
+`vTexture`
+
+`vComponentType`
 ## Vivium functions
 
 `vCreateEntity() -> Entity`

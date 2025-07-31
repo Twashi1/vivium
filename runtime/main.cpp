@@ -61,6 +61,8 @@ void testing_ecs() {
 	delete registry;
 }
 
+#define TMP_EDITOR 0
+
 int main(int argc, char* argv[]) {
 	if (argc > 1) {
 		// Attempt to run the inputted program
@@ -75,12 +77,21 @@ int main(int argc, char* argv[]) {
 	}
 	// Default to running editor
 	else {
+#if TMP_EDITOR
 		::State* state = new State();
 		::initialise(*state);
 		::gameloop(*state);
 		::terminate(*state);
 
 		delete state;
+#else
+		Runtime::State* state = new Runtime::State();
+		Runtime::init(*state, "gen.dat");
+		Runtime::run(*state);
+		Runtime::drop(*state);
+
+		delete state;
+#endif
 	}
 
 	return NULL;

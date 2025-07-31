@@ -4,6 +4,7 @@ namespace Runtime {
 	void _submit(State& state)
 	{
 		_loadRegistry(state);
+		state.luaContext.registry = &state.registry;
 
 		for (ScriptMetadata& metadata : state.scripts) {
 			_runScriptFunction(state, metadata.submitRef);
@@ -24,19 +25,19 @@ namespace Runtime {
 		state.registry = Registry();
 
 		// Begin loading in entities
-		size_t numEntities = 0;
-		serialiseRead(&numEntities, state.store);
+		std::vector<Entity> entities;
+		serialiseRead(&entities, state.store);
 
-		for (size_t i = 0; i < numEntities; i++) {
+		for (size_t i = 0; i < entities.size(); i++) {
 			Entity left = state.registry.create();
 
-			Entity right;
-			serialiseRead(&right, state.store);
+			Entity right = entities[i];
 
 			state.entityMap.insert({ right, left });
 
+			/*
 			VulkanComponent component;
-			
+
 			do {
 				serialiseRead(&component, state.store);
 
@@ -88,8 +89,10 @@ namespace Runtime {
 					VIVIUM_LOG(LogSeverity::ERROR, "Received unknown vulkan component when reading entity; badly formatted data?");
 					break;
 				}
-			} while (component != VulkanComponent::ENTER_COMPONENT);
+			} while (component != VulkanComponent::ENTER_COMPONENT);*/
 		}
+
+		serialiseRead(&state.registry, state.store);
 	}
 
 	PipelineInstance _pipelineInstanceFromComponent(State& state, PipelineComponent const& component)
@@ -382,6 +385,9 @@ namespace Runtime {
 
 		Input::init(state.window);
 
+		_loadScripts(state);
+		_loadLuaObjects(state);
+
 		_submit(state);
 		allocateManager(state.manager, state.engine);
 	
@@ -391,14 +397,23 @@ namespace Runtime {
 
 	void run(State& state)
 	{
-		Input::update(state.window);
-		_update(state);
+		while (windowIsOpen(state.window, state.engine)) {
+			engineBeginFrame(state.engine, state.context);
 
-		engineBeginFrame(state.engine, state.context);
+			Input::update(state.window);
 
-		_draw(state);
-		
-		engineEndFrame(state.engine);
+			_update(state);
+
+			windowBeginFrame(state.window, state.context, state.engine);
+			windowBeginRender(state.window);
+
+			_draw(state);
+
+			windowEndRender(state.window);
+			windowEndFrame(state.window, state.engine);
+
+			engineEndFrame(state.engine);
+		}
 	}
 
 	void drop(State& state)
@@ -440,5 +455,107 @@ namespace Runtime {
 		dropEngine(state.engine);
 
 		_fontTerminate();
+	}
+
+	void _pushLuaFunction(State& state, lua_CFunction function, std::string_view name)
+	{
+		lua_pushlightuserdata(state.L, &state.luaContext);
+		lua_pushcclosure(state.L, function, 1);
+		lua_setglobal(state.L, name.data());
+	}
+	
+	void _loadLuaObjects(State& state)
+	{
+		_loadLuaEntity(state);
+
+		_pushLuaFunction(state, _luaCreateEntity, "vCreateEntity");
+
+	/*	lua_pushlightuserdata(state.L, &state.luaContext);
+		lua_pushcclosure(state.L, _luaGetEntityByName, 1);
+		lua_setglobal(state.L, "vGetEntityByName");*/
+	}
+
+	void _loadLuaEntity(State& state)
+	{
+		// Guard against multiple initialisations
+		if (luaL_newmetatable(state.L, ENTITY_TABLE_NAME)) {
+			lua_pushcfunction(state.L, _luaBlock);
+			lua_setfield(state.L, -2, "__index");
+
+			lua_pushcfunction(state.L, _luaBlock);
+			lua_setfield(state.L, -2, "__newindex");
+
+			lua_pushcfunction(state.L, _luaEntityString);
+			lua_setfield(state.L, -2, "__tostring");
+
+			// Garbage collection function
+			lua_pushcfunction(state.L, _luaEntityDrop);
+			lua_setfield(state.L, -2, "__gc");
+
+			// Protect metatable
+			lua_pushstring(state.L, "Metatable access denied");
+			lua_setfield(state.L, -2, "__metatable");
+		}
+
+		lua_pop(state.L, 1);
+	}
+
+	void _loadLuaComponentsEnum(State& state)
+	{
+		lua_pushinteger(state.L, static_cast<uint32_t>(VulkanComponent::BUFFER));
+		lua_setglobal(state.L, "vBUFFER");
+
+		lua_pushinteger(state.L, static_cast<uint32_t>(VulkanComponent::BUFFER_LAYOUT));
+		lua_setglobal(state.L, "vBUFFER_LAYOUT");
+
+		lua_pushinteger(state.L, static_cast<uint32_t>(VulkanComponent::DESCRIPTOR_LAYOUT));
+		lua_setglobal(state.L, "vDESCRIPTOR_LAYOUT");
+
+		lua_pushinteger(state.L, static_cast<uint32_t>(VulkanComponent::SHADER));
+		lua_setglobal(state.L, "vSHADER");
+
+		lua_pushinteger(state.L, static_cast<uint32_t>(VulkanComponent::DESCRIPTOR_SET));
+		lua_setglobal(state.L, "vDESCRIPTOR_SET");
+
+		lua_pushinteger(state.L, static_cast<uint32_t>(VulkanComponent::PIPELINE));
+		lua_setglobal(state.L, "vPIPELINE");
+	}
+
+	int _luaBlock(lua_State* L)
+	{
+		return luaL_error(L, "Vivium access denied");
+	}
+
+	int _luaCreateEntity(lua_State* L)
+	{
+		LuaContext* context = static_cast<LuaContext*>(lua_touserdata(L, lua_upvalueindex(1)));
+		VIVIUM_ASSERT(context != nullptr, "Missing lua context");
+
+		// TODO: we can't access the registry from here
+		Entity newLuaEntity = context->registry->create();
+
+		void* userdata = lua_newuserdata(L, sizeof(Entity));
+		Entity* entity = new (userdata) Entity;
+		*entity = newLuaEntity;
+
+		luaL_getmetatable(L, ENTITY_TABLE_NAME);
+		lua_setmetatable(L, -2);
+
+		return 1;
+	}
+	
+	int _luaEntityDrop(lua_State* L)
+	{
+		// No-op for now
+		return 0;
+	}
+	
+	int _luaEntityString(lua_State* L)
+	{
+		Entity entity = *static_cast<Entity*>(luaL_checkudata(L, 1, ENTITY_TABLE_NAME));
+		std::string representation = std::format("<Entity: id={}>", static_cast<uint32_t>(entity));
+		lua_pushlstring(L, representation.c_str(), representation.length());
+
+		return 1;
 	}
 }

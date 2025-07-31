@@ -104,7 +104,9 @@ namespace Vivium {
 	template <OwnershipTag... WrappedTypes>
 	View<WrappedTypes...>::ViewIterator View<WrappedTypes...>::begin()
 	{
-		return ViewIterator(registry, ownedEntityArray, groupMetadata, 0, ownedEntityArray[0]);
+		Entity entity = ECS_ENTITY_DEAD;
+		if (ownedEntityArray != nullptr) { entity = ownedEntityArray[0]; }
+		return ViewIterator(registry, ownedEntityArray, groupMetadata, 0, entity);
 	}
 	
 	template <OwnershipTag... WrappedTypes>

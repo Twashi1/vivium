@@ -54,6 +54,10 @@ namespace Runtime {
 		int dropRef;
 	};
 
+	struct LuaContext {
+		Registry* registry;
+	};
+
 	struct State {
 		Engine engine;
 		Window window;
@@ -76,6 +80,7 @@ namespace Runtime {
 		std::unordered_map<Entity, Entity> entityMap;
 
 		lua_State* L;
+		LuaContext luaContext;
 	};
 
 	void _submit(State& state);
@@ -94,4 +99,17 @@ namespace Runtime {
 	void init(State& state, std::string bytecodeFilename);
 	void run(State& state);
 	void drop(State& state);
+
+	void _pushLuaFunction(State& state, lua_CFunction function, std::string_view name);
+	void _loadLuaObjects(State& state);
+	void _loadLuaEntity(State& state);
+	void _loadLuaComponentsEnum(State& state);
+
+	int _luaBlock(lua_State* L);
+
+	inline constexpr char const* ENTITY_TABLE_NAME = "EntityMeta";
+
+	int _luaCreateEntity(lua_State* state);
+	int _luaEntityDrop(lua_State* state);
+	int _luaEntityString(lua_State* state);
 }

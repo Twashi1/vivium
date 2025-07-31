@@ -9,14 +9,18 @@
 - we allow multiple imports of vivium to avoid some useless shared middleman header
 - we need the scroll bar
 
+- can implement as both light userdata and full userdata
+	- if we find limited interoperability with light userdata we will switch?
+
+Currently reading from different structure in runtime
+- 
+
 Big note for serialiser
 - in some places, we assume the passed pointer points to nothing, so we can just treat it as store for memory for us to create
 - or, we create the assumption the pointer always points to some valid memory for the object, and thus we use assignment to delete the old object/replace it at that pointer
 - potential issues with std::vector and std::string... really difficult to find memory leak?
 
 Need to rework tree containers
-
-TODO: buffer entry not working?
 
 Serialisation format changes
 - serialise function for c-array?
