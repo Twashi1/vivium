@@ -5,6 +5,8 @@ namespace Runtime {
 	{
 		_loadRegistry(state);
 		state.luaContext.registry = &state.registry;
+		state.luaContext.stage = Stage::SUBMIT;
+		state.luaContext.entityMap = &state.entityMap;
 
 		for (ScriptMetadata& metadata : state.scripts) {
 			_runScriptFunction(state, metadata.submitRef);
@@ -16,7 +18,7 @@ namespace Runtime {
 		for (auto const& viewElement : state.pipelineComponents) {
 			PipelineComponent const& pipeline = viewElement.get<PipelineComponent>();
 
-			state.pipelineInstances.push_back(_pipelineInstanceFromComponent(state, pipeline));
+			state.pipelineInstances.push_back(_pipelineInstanceFromComponent(state, pipeline, viewElement.entity));
 		}
 	}
 
@@ -34,68 +36,12 @@ namespace Runtime {
 			Entity right = entities[i];
 
 			state.entityMap.insert({ right, left });
-
-			/*
-			VulkanComponent component;
-
-			do {
-				serialiseRead(&component, state.store);
-
-				switch (component) {
-				case VulkanComponent::BUFFER:
-				{
-					BufferComponent data;
-					serialiseRead(&data, state.store);
-					state.registry.addComponent(left, std::move(data));
-					break;
-				}
-				case VulkanComponent::SHADER:
-				{
-					ShaderComponent data;
-					serialiseRead(&data, state.store);
-					state.registry.addComponent(left, std::move(data));
-					break;
-				}
-				case VulkanComponent::BUFFER_LAYOUT:
-				{
-					BufferLayoutComponent data;
-					serialiseRead(&data, state.store);
-					state.registry.addComponent(left, std::move(data));
-					break;
-				}
-				case VulkanComponent::DESCRIPTOR_LAYOUT:
-				{
-					DescriptorLayout data;
-					serialiseRead(&data, state.store);
-					state.registry.addComponent(left, std::move(data));
-					break;
-				}
-				case VulkanComponent::DESCRIPTOR_SET:
-				{
-					DescriptorSet data;
-					serialiseRead(&data, state.store);
-					state.registry.addComponent(left, std::move(data));
-					break;
-				}
-				case VulkanComponent::PIPELINE:
-				{
-					Pipeline data;
-					serialiseRead(&data, state.store);
-					state.registry.addComponent(left, std::move(data));
-					break;
-				}
-				case VulkanComponent::ENTER_COMPONENT: break;
-				default:
-					VIVIUM_LOG(LogSeverity::ERROR, "Received unknown vulkan component when reading entity; badly formatted data?");
-					break;
-				}
-			} while (component != VulkanComponent::ENTER_COMPONENT);*/
 		}
 
 		serialiseRead(&state.registry, state.store);
 	}
 
-	PipelineInstance _pipelineInstanceFromComponent(State& state, PipelineComponent const& component)
+	PipelineInstance _pipelineInstanceFromComponent(State& state, PipelineComponent const& component, Entity entity)
 	{
 		// TODO
 		PipelineInstance instance;
@@ -129,13 +75,14 @@ namespace Runtime {
 		DescriptorSetComponent const& descriptorSet = state.registry.getComponent<DescriptorSetComponent>(instance.component.descriptorSet);
 		DescriptorLayoutComponent const& descriptorLayout = state.registry.getComponent<DescriptorLayoutComponent>(instance.component.descriptorLayout);
 
-		for (Entity const& item : descriptorSet.bindingData) {
+		for (Entity const item : descriptorSet.bindingData) {
 			// TODO: switch on correct part
 			DescriptorSetObjects object;
 
 			// TODO: assumption...?
 			//	need additional information to distinsguish uniform/storage/etc...
 			object.type = UniformType::UNIFORM_BUFFER;
+			object.entity = item;
 
 			BufferComponent const& bufferPart = state.registry.getComponent<BufferComponent>(item);
 
@@ -155,8 +102,21 @@ namespace Runtime {
 		submitResource(state.manager, &instance.descriptor.reference, std::vector<DescriptorSetSpecification>({
 			DescriptorSetSpecification(instance.layout.reference, uniformData)
 		}));
+
+		BufferLayout bufferLayout = BufferLayout::fromTypes(state.registry.getComponent<BufferLayoutComponent>(component.bufferLayout).types);
+
+		submitResource(state.manager, &instance.pipeline.reference, std::vector<PipelineSpecification>({
+			PipelineSpecification::fromWindow(
+				std::vector<ShaderReference>({ instance.vertexShader.reference, instance.fragmentShader.reference }),
+				bufferLayout,
+				std::vector<DescriptorLayoutReference>({ instance.layout.reference }),
+				std::vector<PushConstant>({ PushConstant(ShaderStage::VERTEX, 0, sizeof(Perspective)) }),
+				state.window
+			)
+		}));
 		
-		instance.indexCount = indexBuffer.numElements;
+		// TODO: this is the single place we need the number of elements...
+		instance.indexCount = 6;
 
 		return instance;
 	}
@@ -261,6 +221,8 @@ namespace Runtime {
 
 	void _setup(State& state)
 	{
+		state.luaContext.stage = Stage::SETUP;
+
 		for (PipelineInstance& pipeline : state.pipelineInstances) {
 			convertResourceReference(state.manager, pipeline.vertexBuffer);
 			convertResourceReference(state.manager, pipeline.indexBuffer);
@@ -317,6 +279,37 @@ namespace Runtime {
 			contextEndTransfer(state.context, state.engine);
 
 			_cmdFreeTransientStagingBuffer(state.engine, stagingBuffer, temporaryMemory);
+
+			// Drop shaders since no longer needed
+			// TODO: could drop descriptor layout maybe? look deeper
+			dropShader(pipeline.vertexShader.resource, state.engine);
+			dropShader(pipeline.fragmentShader.resource, state.engine);
+
+			// Upload the vulkan version of objects
+			state.registry.addComponent<Buffer>(pipeline.component.indexBuffer, pipeline.indexBuffer.resource);
+			state.registry.addComponent<Buffer>(pipeline.component.vertexBuffer, pipeline.vertexBuffer.resource);
+			state.registry.addComponent<DescriptorSet>(pipeline.component.descriptorSet, pipeline.descriptor.resource);
+			state.registry.addComponent<Pipeline>(pipeline.entity, pipeline.pipeline.resource);
+			// Note we don't add shaders because we drop them
+			//	and we don't add descriptor layouts because there isn't a good use case for them?
+
+			// TODO: descriptor set objects
+			for (DescriptorSetObjects& object : pipeline.descriptorObjects) {
+				switch (object.type) {
+				case UniformType::UNIFORM_BUFFER:
+				case UniformType::STORAGE_BUFFER:
+				case UniformType::DYNAMIC_UNIFORM_BUFFER:
+					state.registry.addComponent<Buffer>(object.entity, object.buffer.resource);
+					break;
+				case UniformType::TEXTURE:
+					state.registry.addComponent<Texture>(object.entity, object.texture.resource);
+					break;
+				// TODO: framebuffer might be more difficult to control?
+				case UniformType::FRAMEBUFFER:
+					state.registry.addComponent<Framebuffer>(object.entity, object.framebuffer.resource);
+					break;
+				}
+			}
 		}
 
 		for (ScriptMetadata& metadata : state.scripts) {
@@ -327,6 +320,8 @@ namespace Runtime {
 
 	void _update(State& state)
 	{
+		state.luaContext.stage = Stage::UPDATE;
+
 		// Upload any buffer data
 		for (PipelineInstance& instance : state.pipelineInstances) {
 			for (DescriptorSetObjects& object : instance.descriptorObjects) {
@@ -353,6 +348,8 @@ namespace Runtime {
 
 	void _draw(State& state)
 	{
+		state.luaContext.stage = Stage::DRAW;
+
 		Perspective perspective = orthogonalPerspective2D(windowDimensions(state.window), F32x2(0.0f), 0.0f, 1.0f);
 
 		// TODO: don't draw any pipeline by default? make draw schedule it?
@@ -418,6 +415,8 @@ namespace Runtime {
 
 	void drop(State& state)
 	{
+		state.luaContext.stage = Stage::DROP;
+
 		for (ScriptMetadata& metadata : state.scripts) {
 			_runScriptFunction(state, metadata.dropRef);
 			_clearScriptFunctionReference(state, metadata.dropRef);
@@ -445,6 +444,7 @@ namespace Runtime {
 				}
 			}
 
+			dropDescriptorLayout(instance.layout.resource, state.engine);
 			dropPipeline(instance.pipeline.resource, state.engine);
 		}
 
@@ -466,13 +466,14 @@ namespace Runtime {
 	
 	void _loadLuaObjects(State& state)
 	{
+		_loadLuaComponentsEnum(state);
+		_loadLuaDataTypesEnum(state);
 		_loadLuaEntity(state);
 
 		_pushLuaFunction(state, _luaCreateEntity, "vCreateEntity");
-
-	/*	lua_pushlightuserdata(state.L, &state.luaContext);
-		lua_pushcclosure(state.L, _luaGetEntityByName, 1);
-		lua_setglobal(state.L, "vGetEntityByName");*/
+		_pushLuaFunction(state, _luaGetComponent, "vGetComponent");
+		_pushLuaFunction(state, _luaSetBufferData, "vSetBufferData");
+		_pushLuaFunction(state, _luaEntityID, "vGetEntityByID");
 	}
 
 	void _loadLuaEntity(State& state)
@@ -521,6 +522,27 @@ namespace Runtime {
 		lua_setglobal(state.L, "vPIPELINE");
 	}
 
+	void _loadLuaDataTypesEnum(State& state)
+	{
+		lua_pushinteger(state.L, static_cast<uint32_t>(LuaDataType::UINT8));
+		lua_setglobal(state.L, "vUINT8");
+
+		lua_pushinteger(state.L, static_cast<uint32_t>(LuaDataType::UINT16));
+		lua_setglobal(state.L, "vUINT16");
+
+		lua_pushinteger(state.L, static_cast<uint32_t>(LuaDataType::UINT32));
+		lua_setglobal(state.L, "vUINT32");
+
+		lua_pushinteger(state.L, static_cast<uint32_t>(LuaDataType::FLOAT));
+		lua_setglobal(state.L, "vFLOAT");
+
+		lua_pushinteger(state.L, static_cast<uint32_t>(LuaDataType::VEC2));
+		lua_setglobal(state.L, "vVEC2");
+
+		lua_pushinteger(state.L, static_cast<uint32_t>(LuaDataType::VEC3));
+		lua_setglobal(state.L, "vVEC3");
+	}
+
 	int _luaBlock(lua_State* L)
 	{
 		return luaL_error(L, "Vivium access denied");
@@ -557,5 +579,133 @@ namespace Runtime {
 		lua_pushlstring(L, representation.c_str(), representation.length());
 
 		return 1;
+	}
+
+	int _luaEntityID(lua_State* L)
+	{
+		LuaContext* context = static_cast<LuaContext*>(lua_touserdata(L, lua_upvalueindex(1)));
+		VIVIUM_ASSERT(context != nullptr, "Missing lua context");
+
+		Entity lookup = static_cast<Entity>(luaL_checkinteger(L, 1));
+		Entity result = context->entityMap->at(lookup);
+
+		void* userdata = lua_newuserdata(L, sizeof(Entity));
+		Entity* entity = new (userdata) Entity;
+		*entity = result;
+
+		luaL_getmetatable(L, ENTITY_TABLE_NAME);
+		lua_setmetatable(L, -2);
+
+		return 1;
+	}
+
+	int _luaGetComponent(lua_State* L)
+	{
+		LuaContext* context = static_cast<LuaContext*>(lua_touserdata(L, lua_upvalueindex(1)));
+		VIVIUM_ASSERT(context != nullptr, "Missing lua context");
+
+		VulkanComponent componentType = static_cast<VulkanComponent>(luaL_checkinteger(L, 1));
+
+		Entity* entity = static_cast<Entity*>(luaL_checkudata(L, 2, ENTITY_TABLE_NAME));
+		VIVIUM_ASSERT(entity != nullptr, "Expected entity as second argument");
+
+		// TODO: get component
+		//	and then for each type, we have a function to wrap it into a lua context?
+		switch (componentType) {
+		case VulkanComponent::BUFFER:
+			break;
+		case VulkanComponent::SHADER:
+			break;
+		case VulkanComponent::BUFFER_LAYOUT:
+			break;
+		case VulkanComponent::DESCRIPTOR_LAYOUT:
+			break;
+		case VulkanComponent::DESCRIPTOR_SET:
+			break;
+		case VulkanComponent::PIPELINE:
+			break;
+		default: VIVIUM_LOG(LogSeverity::FATAL, "Received invalid component type"); break;
+		}
+
+		// TODO: temporary just send them a random number
+		lua_pushinteger(L, 5);
+
+		return 1;
+	}
+	
+	int _luaSetBufferData(lua_State* L)
+	{
+		LuaContext* context = static_cast<LuaContext*>(lua_touserdata(L, lua_upvalueindex(1)));
+		VIVIUM_ASSERT(context != nullptr, "Missing lua context");
+
+		luaL_checktype(L, 1, LUA_TTABLE);
+
+		LuaDataType dataType = static_cast<LuaDataType>(luaL_checkinteger(L, 2));
+
+		Entity* entity = static_cast<Entity*>(luaL_checkudata(L, 3, ENTITY_TABLE_NAME));
+		VIVIUM_ASSERT(entity != nullptr, "Expected entity as third argument");
+
+		std::vector<uint8_t> newBufferData;
+
+		// Get length of array of lua table
+		lua_Integer len = luaL_len(L, 1);
+
+		for (lua_Integer i = 1; i <= len; i++) {
+			// Push value to stack
+			lua_geti(L, 1, i);
+
+			if (lua_isnumber(L, -1)) {
+				// TODO: relies on assumption that this is large enough
+				//	to store any type
+				uint8_t elementData[16];
+				uint64_t typeSize;
+
+				// TODO: really error prone and ugly
+				switch (dataType) {
+				case LuaDataType::UINT8:
+					*reinterpret_cast<uint8_t*>(elementData) = static_cast<uint8_t>(lua_tointeger(L, -1));
+					typeSize = sizeof(uint8_t);
+					break;
+				case LuaDataType::UINT16:
+					*reinterpret_cast<uint16_t*>(elementData) = static_cast<uint16_t>(lua_tointeger(L, -1));
+					typeSize = sizeof(uint16_t);
+					break;
+				case LuaDataType::UINT32:
+					*reinterpret_cast<uint32_t*>(elementData) = static_cast<uint32_t>(lua_tointeger(L, -1));
+					typeSize = sizeof(uint32_t);
+					break;
+				case LuaDataType::FLOAT:
+					*reinterpret_cast<float*>(elementData) = static_cast<float>(lua_tonumber(L, -1));
+					typeSize = sizeof(float);
+					break;
+				case LuaDataType::VEC2: break;
+				case LuaDataType::VEC3: break;
+				default: break;
+				}
+
+				// TODO: bad code... same reason as above
+				newBufferData.resize(newBufferData.size() + typeSize);
+				memcpy(newBufferData.data() + newBufferData.size() - typeSize, elementData, typeSize);
+			}
+
+			lua_pop(L, 1);
+		}
+
+		// TODO: lots of code
+		// 1. if we're in the submit phase, just change the buffer data and number of elements (count?)
+		// 2. if we're in a phase after, we ensure we have the same number of elements and length of data
+		//	then we change the buffer data
+		if (context->stage == Stage::SUBMIT) {
+			// Get the buffer component and modify buffer data/number of elements
+			BufferComponent& buffer = context->registry->getComponent<BufferComponent>(*entity);
+
+			buffer.data = std::move(newBufferData);
+		}
+		else if (context->stage == Stage::SETUP || context->stage == Stage::UPDATE || context->stage == Stage::DRAW) {
+			// TODO: behaviour for other valid states, behaviour for invalid states
+
+		}
+
+		return 0;
 	}
 }

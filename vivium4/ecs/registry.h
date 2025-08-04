@@ -59,7 +59,13 @@ namespace Vivium {
 		void addComponent(Entity entity, T&& component);
 
 		template <ValidComponent T>
+		void addComponent(Entity entity, T const& component);
+
+		template <ValidComponent T>
 		void updateComponent(Entity entity, T&& component);
+
+		template <ValidComponent T>
+		void updateComponent(Entity entity, T const& component);
 
 		template <ValidComponent T>
 		void removeComponent(Entity entity);

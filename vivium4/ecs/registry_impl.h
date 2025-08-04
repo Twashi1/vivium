@@ -100,10 +100,30 @@ namespace Vivium {
 	}
 
 	template <ValidComponent T>
+	void Registry::addComponent(Entity entity, T const& component) {
+		ComponentArray* arr = _getPoolOrCreate<T>();
+
+		arr->push<T>(entity, component);
+
+		Signature& signature = signatures.index(getIdentifier(entity));
+		uint8_t componentID = _getTypeIndex<T>();
+		signature.set(componentID);
+
+		if (arr->owner != nullptr && arr->owner->ownsSignature(signature)) {
+			moveEntityIntoOwningGroup(entity, signature);
+		}
+	}
+
+	template <ValidComponent T>
 	void Registry::updateComponent(Entity entity, T&& component) {
 		// TODO: cleanup? undefined behaviour probably? ...
 		//	might not be dropping the existing entity correctly...
 		getComponent<T>(entity) = std::move(component);
+	}
+
+	template <ValidComponent T>
+	void Registry::updateComponent(Entity entity, T const& component) {
+		getComponent<T>(entity) = component;
 	}
 
 	template <ValidComponent T>
@@ -146,6 +166,13 @@ namespace Vivium {
 
 	template <OwnershipTag... Components>
 	View<Components...> Registry::createView() {
+		// Register all components
+		([this] {
+			if (!this->_isRegistered<typename Components::type>()) {
+				this->registerComponent<typename Components::type>();
+			}
+			} (), ...);
+
 		GroupMetadata* metadata = new GroupMetadata;
 		metadata->registry = this;
 		groups.push_back(metadata);
@@ -223,6 +250,7 @@ namespace Vivium {
 
 		uint64_t validKeyCount = 0;
 
+		// TODO: include pools of 0 size, pools which haven't been deserialised
 		for (auto const& [key, index] : registry.typeIndexMap) {
 			if (registry.componentPools[index] == nullptr) continue;
 			if (registry.componentPools[index]->size == 0) continue;

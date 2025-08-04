@@ -5,25 +5,40 @@
 `vTexture`
 
 `vComponentType`
+`vDataType`
 ## Vivium functions
 
-`vCreateEntity() -> Entity`
+`vCreateEntity() -> vEntity`
 > Create an entity
 > `SUBMIT`
 
-`vGetEntityByName(string name) -> vEntity`
-> Get an entity by name
-> `SUBMIT`
-
-`vGetComponent(vBUFFER, vEntity entity) -> vBuffer`
-> Get a component on an entity
+`vGetEntityByID(uint32) -> vEntity`
+> Get entity by ID (should be removed later)
 > `ANY`
 
-`vSetComponent(vBuffer buffer, vEntity entity) -> nil`
-> Set a component, or add a component to an entity if it doesn't already have it
+`vGetEntityByName(string name) -> vEntity`
+> Get an entity by name
+> `ANY`
+
+`vGetComponent(vComponentType, vEntity entity) -> ?`
+> Get a component on an entity
+> TODO: not necessary with how API is shaping up to be other than for debug/print purposes?
+> `ANY`
+
+`vSetBufferData(table arrayData, vDataType elementType, vEntity entity) -> nil`
+> Modify the data passed as arrayData
+> We assume arrayData starts at index 1 at can be incrementally indexed
+> `SUBMIT, SETUP, UPDATE`, privileged in `SUBMIT`
+
+`vSetBufferUsage(vBufferUsage, vEntity entity) -> nil`
+> Set the usage of a buffer
+> `SUBMIT`
+
+`vAddComponent(vComponentType, vEntity entity) -> nil`
+> Add a component to an entity if it doesn't already have it
 > `SUBMIT, SETUP, UPDATE`
 
-`vUploadBuffer(vBuffer buffer) -> nil`
+`vUploadBuffer(vEntity entity) -> nil`
 > Update/transfer the given buffer to GPU memory
 > `SETUP, UPDATE`
 

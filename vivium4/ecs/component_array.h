@@ -88,6 +88,26 @@ namespace Vivium {
 		}
 
 		template <ValidComponent T>
+		void push(Entity entity, T const& component) {
+			if (sparse.get(getIdentifier(entity)) != ECS_ENTITY_DEAD) {
+				VIVIUM_LOG(LogSeverity::FATAL, "Entity already had component");
+
+				return;
+			}
+
+			uint32_t index = size;
+			sparse.index(getIdentifier(entity)) = index;
+
+			_allocateForIndex(index);
+
+			entities[index] = entity;
+
+			manager.copyFunction(&component, &dense[index * manager.typeSize]);
+
+			++size;
+		}
+
+		template <ValidComponent T>
 		T& get(Entity entity) {
 			uint32_t index = sparse.index(getIdentifier(entity));
 
@@ -119,9 +139,18 @@ namespace Vivium {
 		SerialiserMemoryInterface memoryInterface;
 		memoryInterface.begin(componentArray.size * componentArray.manager.typeSize);
 
-		for (uint64_t i = 0; i < componentArray.size; i++) {
-			void* componentData = componentArray.dense + componentArray.manager.getOffset(i);
-			componentArray.manager.writeFunction(componentData, memoryInterface);
+		// Regular read in
+		if (!componentArray.requiresDeserialise) {
+			for (uint64_t i = 0; i < componentArray.size; i++) {
+				void* componentData = componentArray.dense + componentArray.manager.getOffset(i);
+				componentArray.manager.writeFunction(componentData, memoryInterface);
+			}
+		}
+		// We never deserialised this component array
+		//	so just write it back in as-is
+		else {
+			// Capacity stores number of bytes
+			memoryInterface.writeBytes(componentArray.capacity, componentArray.dense);
 		}
 
 		// Write memory interface to regular interface

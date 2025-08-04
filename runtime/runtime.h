@@ -5,11 +5,21 @@
 
 using namespace Vivium;
 
+// TODO: use these?
 constexpr char const* SCRIPT_FUNCTION_NAME_SUBMIT = "vSubmit";
 constexpr char const* SCRIPT_FUNCTION_NAME_SETUP = "vSetup";
 constexpr char const* SCRIPT_FUNCTION_NAME_UPDATE = "vUpdate";
 constexpr char const* SCRIPT_FUNCTION_NAME_DRAW = "vDraw";
 constexpr char const* SCRIPT_FUNCTION_NAME_DROP = "vDrop";
+
+enum LuaDataType {
+	UINT8,
+	UINT16,
+	UINT32,
+	FLOAT,
+	VEC2,
+	VEC3
+};
 
 namespace Runtime {
 	// TODO: terrible names on all of these
@@ -19,6 +29,7 @@ namespace Runtime {
 		Ref<Buffer> buffer;
 		Ref<Framebuffer> framebuffer;  // TODO
 		Ref<Texture> texture;		   // TODO
+		Entity entity;
 
 		BufferComponent bufferComponent;
 	};
@@ -33,6 +44,8 @@ namespace Runtime {
 		Ref<DescriptorSet> descriptor;
 		Ref<DescriptorLayout> layout;
 
+		// Store the entity we're on
+		Entity entity;
 		uint16_t indexCount;
 
 		// TODO: in future we need to upload data to the descriptor set buffers/framebuffers?
@@ -54,8 +67,19 @@ namespace Runtime {
 		int dropRef;
 	};
 
+	enum Stage {
+		SUBMIT = 0x1,
+		SETUP = 0x2,
+		UPDATE = 0x4,
+		DRAW = 0x8,
+		DROP = 0x10,
+	};
+
 	struct LuaContext {
 		Registry* registry;
+		std::unordered_map<Entity, Entity>* entityMap;
+		// TODO: store state (submit/setup/etc.) in here so we can check function usage is valid
+		Stage stage;
 	};
 
 	struct State {
@@ -89,7 +113,7 @@ namespace Runtime {
 	void _draw(State& state);
 
 	void _loadRegistry(State& state);
-	PipelineInstance _pipelineInstanceFromComponent(State& state, PipelineComponent const& component);
+	PipelineInstance _pipelineInstanceFromComponent(State& state, PipelineComponent const& component, Entity entity);
 
 	void _loadScripts(State& state);
 	ScriptMetadata _loadScript(State& state, std::string path);
@@ -104,12 +128,17 @@ namespace Runtime {
 	void _loadLuaObjects(State& state);
 	void _loadLuaEntity(State& state);
 	void _loadLuaComponentsEnum(State& state);
+	void _loadLuaDataTypesEnum(State& state);
 
 	int _luaBlock(lua_State* L);
 
+	// TODO: move to the other constexpr at top of file
 	inline constexpr char const* ENTITY_TABLE_NAME = "EntityMeta";
 
-	int _luaCreateEntity(lua_State* state);
-	int _luaEntityDrop(lua_State* state);
-	int _luaEntityString(lua_State* state);
+	int _luaCreateEntity(lua_State* L);
+	int _luaEntityDrop(lua_State* L);
+	int _luaEntityString(lua_State* L);
+	int _luaEntityID(lua_State* L);
+	int _luaGetComponent(lua_State* L);
+	int _luaSetBufferData(lua_State* L);
 }

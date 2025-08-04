@@ -130,7 +130,7 @@ struct DescriptorLayoutEntry {
 struct BufferComponent {
 	std::vector<uint8_t> data;
 	BufferUsage usage;
-	uint64_t numElements;
+	uint64_t numElements; // TODO: never needed
 };
 
 struct BufferEntry {

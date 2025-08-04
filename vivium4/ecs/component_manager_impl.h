@@ -5,12 +5,26 @@
 namespace Vivium {
 	template <ValidComponent T>
 	void defaultMoveComponent(void* source, void* dest) {
+		// TODO: priority order...
+		//	this prioritises the slower copy construction
 		if constexpr (std::is_trivial_v<T> || std::is_copy_constructible_v<T>) {
 			new (dest) T(*reinterpret_cast<T*>(source));
 		}
 		else if constexpr (std::is_move_constructible_v<T>) {
 			new (dest) T(std::move(*reinterpret_cast<T*>(source)));
 		}
+		else {
+			// TODO: assertion failed too much?
+			// static_assert(false && "Failed to specialise move component");
+			int x = 5;
+		}
+		// TODO: test this assertion fails
+	}
+
+	template<ValidComponent T>
+	void defaultCopyComponent(void const* source, void* dest)
+	{
+		new (dest) T(*reinterpret_cast<T const*>(source));
 	}
 
 	template <ValidComponent T>
@@ -49,6 +63,7 @@ namespace Vivium {
 		ComponentManager manager;
 
 		manager.moveFunction = defaultMoveComponent<T>;
+		manager.copyFunction = defaultCopyComponent<T>;
 		manager.reallocFunction = defaultReallocComponent<T>;
 		manager.destroyFunction = defaultDestroyComponent<T>;
 		manager.swapFunction = defaultSwapComponent<T>;

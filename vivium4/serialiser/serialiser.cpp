@@ -3,7 +3,7 @@
 namespace Vivium {
 	void SerialiserFileInterface::begin(std::string fileLocation, bool readMode)
 	{
-		auto flags = std::ios::binary | (readMode ? (std::ios::in) : (std::ios::app | std::ios::out));
+		auto flags = std::ios::binary | (readMode ? (std::ios::in) : (std::ios::trunc | std::ios::out));
 
 		file.open(fileLocation, flags);
 

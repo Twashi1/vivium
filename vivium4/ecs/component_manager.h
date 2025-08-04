@@ -15,6 +15,9 @@ namespace Vivium {
 	void defaultMoveComponent(void* source, void* dest);
 
 	template <ValidComponent T>
+	void defaultCopyComponent(void const* source, void* dest);
+
+	template <ValidComponent T>
 	void defaultReallocComponent(void* source, void* dest, uint64_t count);
 
 	template <ValidComponent T>
@@ -31,6 +34,7 @@ namespace Vivium {
 
 	struct ComponentManager {
 		typedef void(*MoveFunction)(void* src, void* dst);
+		typedef void(*CopyFunction)(void const* src, void* dst);
 		typedef void(*SerialiseWrite)(void const* src, SerialiserMemoryInterface& store);
 		typedef void(*SerialiseRead)(void* src, SerialiserMemoryInterface& store);
 		typedef void(*ReallocFunction)(void* src, void* dst, uint64_t);
@@ -38,6 +42,7 @@ namespace Vivium {
 		typedef void(*SwapFunction)(void*, void*);
 
 		MoveFunction moveFunction = nullptr;
+		CopyFunction copyFunction = nullptr;
 		SerialiseWrite writeFunction = nullptr;
 		SerialiseRead readFunction = nullptr;
 		ReallocFunction reallocFunction = nullptr;

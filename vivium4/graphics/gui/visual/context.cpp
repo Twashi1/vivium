@@ -57,7 +57,7 @@ namespace Vivium {
 				std::vector<ShaderReference>({ guiContext.text.fragmentShader.reference, guiContext.text.vertexShader.reference }),
 				guiContext.text.bufferLayout,
 				std::vector<DescriptorLayoutReference>({ guiContext.text.descriptorLayout.reference }),
-				std::vector<PushConstant>({ PushConstant(ShaderStage::VERTEX, 0, sizeof(Perspective))}),
+				std::vector<PushConstant>({ PushConstant(ShaderStage::VERTEX, 0, sizeof(Perspective)) }),
 				window
 			)
 		}));

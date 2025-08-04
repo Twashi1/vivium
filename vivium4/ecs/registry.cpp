@@ -12,7 +12,8 @@ namespace Vivium {
 	Registry::~Registry()
 	{
 		for (ComponentArray* pool : componentPools) {
-			delete pool;
+			if (pool != nullptr && !pool->requiresDeserialise)
+				delete pool;
 		}
 	}
 
@@ -29,6 +30,7 @@ namespace Vivium {
 		++availableEntities;
 		// Build implicit list
 		Entity& destroyedEntity = entities[getIdentifier(entity)];
+		// TODO: should use the constants
 		// Increment version number
 		destroyedEntity += (1 << 20);
 		std::swap(destroyedEntity, nextEntity);

@@ -1,19 +1,26 @@
 ## Next
 
-- scripting language
-	1. we need implementations of each of the relevant commands laid out in [[Script]]
-		- we need to preserve information about the entity tree so we can accurately reference entities
-		- thus we need an arbitrary way to store entities and their components (serialiser)
-		- we also need to be able to rename entities (change entity tree to use entry boxes?)
+- big problem: we try to save some components, but we haven't ever deserialised
+	- we can just write it back in?
+
+- can we create a pipeline without a descriptor set/layout
+
+- we also need to be able to rename entities (change entity tree to use entry boxes?)
 - need to be able to re-open a project in the editor (save/load functionality)
 - we allow multiple imports of vivium to avoid some useless shared middleman header
 - we need the scroll bar
 
 - can implement as both light userdata and full userdata
-	- if we find limited interoperability with light userdata we will switch?
+- instead of iterating pipelines in submit/setup, we should iterate all buffers, then all shaders, then etc.
 
-Currently reading from different structure in runtime
-- 
+- figure out what the API looks like more in-depth?
+- some abstraction on getting lua context
+- some notable problems with using lua as the scripting language
+	- difficult to create structs of some strict size, and deal with them in buffers
+	- no types
+- after some buffer/component-changing function, we need to update the actual vulkan object
+	- `vUpdateBuffer` only knows the component, it doesn't know the buffer associated with that component
+	- easiest solution is to just also upload the vulkan `Buffer` to the same entity, then we can easily grab it for commands
 
 Big note for serialiser
 - in some places, we assume the passed pointer points to nothing, so we can just treat it as store for memory for us to create
@@ -232,7 +239,7 @@ An entity passes to descriptor set can have both a buffer/texture/framebuffer, a
 - `T const&` a lot of things
 - `BufferReference::memoryIndex` should be an enum
 - Vulkan still prints sometimes
-
+- random thought, but could vulkan performance potentially be worse across very large device memory blocks, where its better to split up the blocks a little smaller? (relevant for static allocation)
 ## Possible
 
 - Consider a less literal usage of `const`, where `const` does apply to objects whose GPU/host memory is being modified
