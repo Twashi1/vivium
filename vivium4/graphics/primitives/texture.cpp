@@ -22,6 +22,8 @@ namespace Vivium {
 		}
 
 		uint8_t* data = stbi_load(imageFile, &specification.width, &specification.height, &specification.channels, stbi_format);
+		VIVIUM_ASSERT(data != nullptr, "Couldn't load image file {}", imageFile);
+
 		uint64_t imageSize = static_cast<uint64_t>(specification.width)
 			* static_cast<uint64_t>(specification.height)
 			* static_cast<uint64_t>(specification.channels);
@@ -89,6 +91,15 @@ namespace Vivium {
 	TextureSpecification TextureSpecification::fromImage(Image image, TextureFilter imageFilter)
 	{
 		return TextureSpecification::fromData(image.data, image.size, image.format, imageFilter);
+	}
+
+	std::string getString(TextureFilter filter)
+	{
+		switch (filter) {
+		case TextureFilter::NEAREST: return "Nearest";
+		case TextureFilter::LINEAR: return "Linear";
+		default: return "Unknown";
+		}
 	}
 
 	void dropTexture(Texture& texture, Engine& engine) {

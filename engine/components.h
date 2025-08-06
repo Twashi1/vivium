@@ -43,6 +43,7 @@ enum VulkanComponent : uint32_t {
 	SHADER,
 	BUFFER,
 	DESCRIPTOR_SET,
+	TEXTURE,
 	ENTER_COMPONENT
 };
 
@@ -144,6 +145,23 @@ struct BufferEntry {
 	EntrySpecification<FloatTextEntry>* entrySpec;
 };
 
+struct TextureComponent {
+	std::string filename;
+	TextureFormat format;
+	TextureFilter filter;
+};
+
+struct TextureEntry {
+	using ValueType = TextureComponent;
+
+	GUIElementReference base;
+
+	Container container;
+	StringTextEntry filename;
+	ObjectEntry<TextureFormat> format;
+	ObjectEntry<TextureFilter> filter;
+};
+
 struct DescriptorSetComponent {
 	std::vector<Entity> bindingData;
 };
@@ -184,6 +202,9 @@ struct EntrySpecification<DescriptorSetEntry> {
 	Registry* registry;
 	Entity** heldItemPointer;
 };
+
+template <>
+struct EntrySpecification<TextureEntry> {};
 
 UniformBinding getValue(UniformBindingEntry const& entry);
 UniformBindingEntry submitEntry(EntrySpecification<UniformBindingEntry> const& spec, GUIContext& guiContext, ResourceManager& resourceManager);
@@ -240,6 +261,14 @@ void updateEntry(DescriptorSetEntry& entry, GUIContext& guiContext, Engine& engi
 void submitEntries(std::span<DescriptorSetEntry*> const entries, GUIContext& guiContext);
 void dropEntry(DescriptorSetEntry& entry, Engine& engine, GUIContext& guiContext);
 void loadValue(DescriptorSetEntry& entry, DescriptorSetComponent const& descriptor, GUIContext& guiContext);
+
+TextureComponent getValue(TextureEntry const& entry);
+TextureEntry submitEntry(EntrySpecification<TextureEntry> const& spec, GUIContext& guiContext, ResourceManager& resourceManager);
+void setupEntry(TextureEntry& entry, ResourceManager& manager, Engine& engine, CommandContext& context, GUIContext& guiContext);
+void updateEntry(TextureEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context);
+void submitEntries(std::span<TextureEntry*> const entries, GUIContext& guiContext);
+void dropEntry(TextureEntry& entry, Engine& engine, GUIContext& guiContext);
+void loadValue(TextureEntry& entry, TextureComponent const& descriptor, GUIContext& guiContext);
 
 struct ComponentHeaderBlueprint {
 	VulkanComponent component;
@@ -312,6 +341,19 @@ namespace Vivium {
 
 		dispatchSerialiseWrite(head, store);
 		dispatchSerialiseWrite(component.bindingData, store);
+	}
+
+	template <SerialiserInterface T>
+	void serialiseWrite(TextureComponent const& component, T& store)
+	{
+		ComponentHeaderBlueprint head;
+		head.component = VulkanComponent::TEXTURE;
+
+		dispatchSerialiseWrite(head, store);
+
+		dispatchSerialiseWrite(component.filename, store);
+		dispatchSerialiseWrite(component.filter, store);
+		dispatchSerialiseWrite(component.format, store);
 	}
 
 	template <SerialiserInterface T>
@@ -411,5 +453,19 @@ namespace Vivium {
 		dispatchSerialiseRead(&component->bufferLayout, store);
 		dispatchSerialiseRead(&component->descriptorLayout, store);
 		dispatchSerialiseRead(&component->descriptorSet, store);
+	}
+
+	template <SerialiserInterface T>
+	void serialiseRead(TextureComponent* component, T& store)
+	{
+		ComponentHeaderBlueprint head;
+
+		dispatchSerialiseRead(&head, store);
+		// TODO: enum strings for logging
+		VIVIUM_ASSERT(head.component == VulkanComponent::TEXTURE, "Read incorrect component type");
+
+		dispatchSerialiseRead(&component->filename, store);
+		dispatchSerialiseRead(&component->filter, store);
+		dispatchSerialiseRead(&component->format, store);
 	}
 }

@@ -10,4 +10,6 @@ namespace Vivium {
 
 	int getTextureFormatStride(TextureFormat format);
 	int getTextureFormatChannels(TextureFormat format);
+	
+	std::string getString(TextureFormat format);
 }

@@ -47,6 +47,7 @@ namespace Runtime {
 		// Store the entity we're on
 		Entity entity;
 		uint16_t indexCount;
+		uint64_t instanceCount;
 
 		// TODO: in future we need to upload data to the descriptor set buffers/framebuffers?
 		//	we also need to know what data to upload to them, so we need the permanent component reference
@@ -78,6 +79,7 @@ namespace Runtime {
 	struct LuaContext {
 		Registry* registry;
 		std::unordered_map<Entity, Entity>* entityMap;
+		std::vector<PipelineInstance>* pipelineInstances;
 		// TODO: store state (submit/setup/etc.) in here so we can check function usage is valid
 		Stage stage;
 	};
@@ -141,4 +143,5 @@ namespace Runtime {
 	int _luaEntityID(lua_State* L);
 	int _luaGetComponent(lua_State* L);
 	int _luaSetBufferData(lua_State* L);
+	int _luaDrawIndex(lua_State* L);
 }

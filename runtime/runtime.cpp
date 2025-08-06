@@ -7,6 +7,7 @@ namespace Runtime {
 		state.luaContext.registry = &state.registry;
 		state.luaContext.stage = Stage::SUBMIT;
 		state.luaContext.entityMap = &state.entityMap;
+		state.luaContext.pipelineInstances = &state.pipelineInstances;
 
 		for (ScriptMetadata& metadata : state.scripts) {
 			_runScriptFunction(state, metadata.submitRef);
@@ -46,6 +47,8 @@ namespace Runtime {
 		// TODO
 		PipelineInstance instance;
 		instance.component = component;
+		instance.instanceCount = 1;
+		instance.entity = entity;
 
 		BufferComponent const& indexBuffer = state.registry.getComponent<BufferComponent>(instance.component.indexBuffer);
 		BufferComponent const& vertexBuffer = state.registry.getComponent<BufferComponent>(instance.component.vertexBuffer);
@@ -79,18 +82,41 @@ namespace Runtime {
 			// TODO: switch on correct part
 			DescriptorSetObjects object;
 
-			// TODO: assumption...?
-			//	need additional information to distinsguish uniform/storage/etc...
-			object.type = UniformType::UNIFORM_BUFFER;
 			object.entity = item;
 
-			BufferComponent const& bufferPart = state.registry.getComponent<BufferComponent>(item);
+			// Figure out if we have a buffer/texture/etc.
+			if (state.registry.hasComponent<BufferComponent>(item)) {
+				BufferComponent const& bufferPart = state.registry.getComponent<BufferComponent>(item);
 
-			submitResource(state.manager, &object.buffer.reference, MemoryType::UNIFORM, std::vector<BufferSpecification>({
-				BufferSpecification(bufferPart.data.size(), bufferPart.usage)
-			}));
+				// TODO: cannot distinguish dynamic uniform buffer
+				if (bufferPart.usage == BufferUsage::STORAGE) {
+					object.type = UniformType::STORAGE_BUFFER;
+				}
+				else {
+					object.type = UniformType::UNIFORM_BUFFER;
+				}
 
-			uniformData.push_back(UniformData::fromBuffer(object.buffer.reference, bufferPart.data.size(), 0));
+				submitResource(state.manager, &object.buffer.reference, MemoryType::UNIFORM, std::vector<BufferSpecification>({
+					BufferSpecification(bufferPart.data.size(), bufferPart.usage)
+				}));
+
+				uniformData.push_back(UniformData::fromBuffer(object.buffer.reference, bufferPart.data.size(), 0));
+			}
+			else if (state.registry.hasComponent<TextureComponent>(item)) {
+				TextureComponent const& texturePart = state.registry.getComponent<TextureComponent>(item);
+
+				// TODO: Some management/resource system to de-duplicate textures
+				submitResource(state.manager, &object.texture.reference, std::vector<TextureSpecification>({
+					TextureSpecification::fromImageFile(texturePart.filename.c_str(), texturePart.format, texturePart.filter)
+				}));
+
+				object.type = UniformType::TEXTURE;
+
+				uniformData.push_back(UniformData::fromTexture(object.texture.reference));
+			}
+			else {
+				VIVIUM_LOG(LogSeverity::ERROR, "Failed to detect valid descriptor item on entity {}", static_cast<uint32_t>(item));
+			}
 
 			instance.descriptorObjects.push_back(object);
 		}
@@ -232,7 +258,18 @@ namespace Runtime {
 
 			for (DescriptorSetObjects& object : pipeline.descriptorObjects) {
 				// TODO: switch on type
-				convertResourceReference(state.manager, object.buffer);
+				switch (object.type) {
+				case UniformType::UNIFORM_BUFFER:
+				case UniformType::DYNAMIC_UNIFORM_BUFFER:
+				case UniformType::STORAGE_BUFFER:
+					convertResourceReference(state.manager, object.buffer); break;
+				case UniformType::TEXTURE:
+					convertResourceReference(state.manager, object.texture); break;
+				case UniformType::FRAMEBUFFER:
+					convertResourceReference(state.manager, object.framebuffer); break;
+				default:
+					VIVIUM_LOG(LogSeverity::ERROR, "Invalid descriptor uniform type"); break;
+				}
 			}
 
 			convertResourceReference(state.manager, pipeline.layout);
@@ -359,7 +396,7 @@ namespace Runtime {
 			cmdBindIndexBuffer(state.context, instance.indexBuffer.resource);
 			cmdBindDescriptorSet(state.context, instance.descriptor.resource, instance.pipeline.resource);
 			cmdWritePushConstants(state.context, &perspective, sizeof(Perspective), 0, ShaderStage::VERTEX, instance.pipeline.resource);
-			cmdDrawIndexed(state.context, instance.indexCount, 1);
+			cmdDrawIndexed(state.context, instance.indexCount, instance.instanceCount);
 		}
 
 		for (ScriptMetadata& metadata : state.scripts) {
@@ -438,6 +475,9 @@ namespace Runtime {
 				case UniformType::DYNAMIC_UNIFORM_BUFFER:
 					dropBuffer(item.buffer.resource, state.engine);
 					break;
+				case UniformType::TEXTURE:
+					dropTexture(item.texture.resource, state.engine);
+					break;
 				default:
 					VIVIUM_LOG(LogSeverity::FATAL, "Unsupported item type");
 					break;
@@ -474,6 +514,7 @@ namespace Runtime {
 		_pushLuaFunction(state, _luaGetComponent, "vGetComponent");
 		_pushLuaFunction(state, _luaSetBufferData, "vSetBufferData");
 		_pushLuaFunction(state, _luaEntityID, "vGetEntityByID");
+		_pushLuaFunction(state, _luaDrawIndex, "vDrawIndex");
 	}
 
 	void _loadLuaEntity(State& state)
@@ -517,6 +558,9 @@ namespace Runtime {
 
 		lua_pushinteger(state.L, static_cast<uint32_t>(VulkanComponent::DESCRIPTOR_SET));
 		lua_setglobal(state.L, "vDESCRIPTOR_SET");
+
+		lua_pushinteger(state.L, static_cast<uint32_t>(VulkanComponent::TEXTURE));
+		lua_setglobal(state.L, "vTEXTURE");
 
 		lua_pushinteger(state.L, static_cast<uint32_t>(VulkanComponent::PIPELINE));
 		lua_setglobal(state.L, "vPIPELINE");
@@ -703,8 +747,39 @@ namespace Runtime {
 		}
 		else if (context->stage == Stage::SETUP || context->stage == Stage::UPDATE || context->stage == Stage::DRAW) {
 			// TODO: behaviour for other valid states, behaviour for invalid states
-
+			// Update the Buffer itself with the data
+			Buffer& buffer = context->registry->getComponent<Buffer>(*entity);
+			setBuffer(buffer, 0, newBufferData.data(), newBufferData.size());
 		}
+
+		return 0;
+	}
+	
+	int _luaDrawIndex(lua_State* L)
+	{
+		LuaContext* context = static_cast<LuaContext*>(lua_touserdata(L, lua_upvalueindex(1)));
+		VIVIUM_ASSERT(context != nullptr, "Missing lua context");
+
+		Entity* entity = static_cast<Entity*>(luaL_checkudata(L, 1, ENTITY_TABLE_NAME));
+		VIVIUM_ASSERT(entity != nullptr, "Expected entity as first argument");
+
+		uint64_t instanceCount = static_cast<uint64_t>(luaL_checkinteger(L, 2));
+
+		VIVIUM_ASSERT(context->stage == Stage::DRAW, "Not in draw stage");
+		VIVIUM_ASSERT(context->registry->hasComponent<Pipeline>(*entity), "Entity isn't a rendering pipeline");
+
+		// TODO: somehow grab the pipeline instance
+		//	draw the pipeline instance
+		bool foundPipeline = false;
+
+		for (PipelineInstance& instance : *(context->pipelineInstances)) {
+			if (instance.entity == *entity) {
+				instance.instanceCount = instanceCount;
+				foundPipeline = true;
+			}
+		}
+
+		VIVIUM_ASSERT(foundPipeline, "Couldn't find pipeline instance for entity {}", *entity);
 
 		return 0;
 	}

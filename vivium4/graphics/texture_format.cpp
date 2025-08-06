@@ -19,4 +19,13 @@ namespace Vivium {
 		default: return -1;
 		}
 	}
+	
+	std::string getString(TextureFormat format)
+	{
+		switch (format) {
+		case TextureFormat::RGBA: return "RGBA";
+		case TextureFormat::MONOCHROME: return "Monochrome";
+		default: return "Unknown";
+		}
+	}
 }

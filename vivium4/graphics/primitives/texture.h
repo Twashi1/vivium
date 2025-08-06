@@ -12,6 +12,8 @@ namespace Vivium {
 		LINEAR = VK_FILTER_LINEAR
 	};
 
+	std::string getString(TextureFilter filter);
+
 	struct Texture {
 		VkImage image;
 		VkImageView view;

@@ -20,6 +20,7 @@ void _submitEditor(State& state)
 		std::vector<VulkanComponent>({
 			VulkanComponent::BUFFER,
 			VulkanComponent::BUFFER_LAYOUT,
+			VulkanComponent::TEXTURE,
 			VulkanComponent::SHADER,
 			VulkanComponent::DESCRIPTOR_LAYOUT,
 			VulkanComponent::DESCRIPTOR_SET,
@@ -255,6 +256,9 @@ void _update(State& state)
 			case VulkanComponent::PIPELINE:
 				state.registry.addComponent<PipelineComponent>(state.editor.entityView.lastClicked, PipelineComponent{});
 				break;
+			case VulkanComponent::TEXTURE:
+				state.registry.addComponent<TextureComponent>(state.editor.entityView.lastClicked, TextureComponent{});
+				break;
 			}
 		}
 
@@ -463,13 +467,15 @@ PropertyDisplay _submitPropertyDisplay(State& state, Entity entity, Registry* re
 
 	display.buffer = submitEntry(EntrySpecification<BufferEntry>(), state.guiContext, state.manager);
 	display.shader = submitEntry(EntrySpecification<ShaderEntry>(), state.guiContext, state.manager);
+	display.texture = submitEntry(EntrySpecification<TextureEntry>(), state.guiContext, state.manager);
 	display.bufferLayout = submitEntry(EntrySpecification<BufferLayoutEntry>(), state.guiContext, state.manager);
 	display.descriptorLayout = submitEntry(EntrySpecification<DescriptorLayoutEntry>(), state.guiContext, state.manager);
 	display.descriptor = submitEntry(EntrySpecification<DescriptorSetEntry>(&state.registry, &state.editor.entityView.heldEntityPtr), state.guiContext, state.manager);
 	display.pipeline = submitEntry(EntrySpecification<PipelineEntry>(&state.registry, &state.editor.entityView.heldEntityPtr), state.guiContext, state.manager);
-	
+
 	setAsleep(display.buffer.base, state.guiContext, true);
 	setAsleep(display.shader.base, state.guiContext, true);
+	setAsleep(display.texture.base, state.guiContext, true);
 	setAsleep(display.bufferLayout.base, state.guiContext, true);
 	setAsleep(display.descriptorLayout.base, state.guiContext, true);
 	setAsleep(display.descriptor.base, state.guiContext, true);
@@ -477,6 +483,7 @@ PropertyDisplay _submitPropertyDisplay(State& state, Entity entity, Registry* re
 
 	addChild(display.container.base, { &display.buffer.base, 1 }, state.guiContext);
 	addChild(display.container.base, { &display.shader.base, 1 }, state.guiContext);
+	addChild(display.container.base, { &display.texture.base, 1 }, state.guiContext);
 	addChild(display.container.base, { &display.bufferLayout.base, 1 }, state.guiContext);
 	addChild(display.container.base, { &display.descriptorLayout.base, 1 }, state.guiContext);
 	addChild(display.container.base, { &display.descriptor.base, 1 }, state.guiContext);
@@ -489,6 +496,7 @@ void _setupPropertyDisplay(State& state, PropertyDisplay& display)
 {
 	setupEntry(display.buffer, state.manager, state.engine, state.context, state.guiContext);
 	setupEntry(display.shader, state.manager, state.engine, state.context, state.guiContext);
+	setupEntry(display.texture, state.manager, state.engine, state.context, state.guiContext);
 	setupEntry(display.bufferLayout, state.manager, state.engine, state.context, state.guiContext);
 	setupEntry(display.descriptorLayout, state.manager, state.engine, state.context, state.guiContext);
 	setupEntry(display.descriptor, state.manager, state.engine, state.context, state.guiContext);
@@ -496,6 +504,7 @@ void _setupPropertyDisplay(State& state, PropertyDisplay& display)
 
 	properties(display.buffer, state.guiContext).dimensions = F32x2(1.0f, 0.04f);
 	properties(display.shader, state.guiContext).dimensions = F32x2(1.0f, 0.04f);
+	properties(display.texture, state.guiContext).dimensions = F32x2(1.0f, 0.04f);
 	properties(display.bufferLayout, state.guiContext).dimensions = F32x2(1.0f, 0.04f);
 	properties(display.descriptorLayout, state.guiContext).dimensions = F32x2(1.0f, 0.04f);
 	properties(display.descriptor, state.guiContext).dimensions = F32x2(1.0f, 0.04f);
@@ -503,6 +512,7 @@ void _setupPropertyDisplay(State& state, PropertyDisplay& display)
 
 	properties(display.buffer, state.guiContext).anchorY = GUIAnchor::TOP;
 	properties(display.shader, state.guiContext).anchorY = GUIAnchor::TOP;
+	properties(display.texture, state.guiContext).anchorY = GUIAnchor::TOP;
 	properties(display.bufferLayout, state.guiContext).anchorY = GUIAnchor::TOP;
 	properties(display.descriptorLayout, state.guiContext).anchorY = GUIAnchor::TOP;
 	properties(display.descriptor, state.guiContext).anchorY = GUIAnchor::TOP;
@@ -510,6 +520,7 @@ void _setupPropertyDisplay(State& state, PropertyDisplay& display)
 
 	properties(display.buffer, state.guiContext).centerY = GUIAnchor::TOP;
 	properties(display.shader, state.guiContext).centerY = GUIAnchor::TOP;
+	properties(display.texture, state.guiContext).centerY = GUIAnchor::TOP;
 	properties(display.bufferLayout, state.guiContext).centerY = GUIAnchor::TOP;
 	properties(display.descriptorLayout, state.guiContext).centerY = GUIAnchor::TOP;
 	properties(display.descriptor, state.guiContext).centerY = GUIAnchor::TOP;
@@ -520,6 +531,7 @@ void _updatePropertyDisplay(State& state, PropertyDisplay& display)
 {
 	updateEntry(display.buffer, state.guiContext, state.engine, state.context);
 	updateEntry(display.shader, state.guiContext, state.engine, state.context);
+	updateEntry(display.texture, state.guiContext, state.engine, state.context);
 	updateEntry(display.bufferLayout, state.guiContext, state.engine, state.context);
 	updateEntry(display.descriptorLayout, state.guiContext, state.engine, state.context);
 	updateEntry(display.descriptor, state.guiContext, state.engine, state.context);
@@ -532,6 +544,10 @@ void _updatePropertyDisplay(State& state, PropertyDisplay& display)
 
 	if (display.registry->hasComponent<ShaderComponent>(display.entity)) {
 		setAsleep(display.shader.base, state.guiContext, false);
+	}
+
+	if (display.registry->hasComponent<TextureComponent>(display.entity)) {
+		setAsleep(display.texture.base, state.guiContext, false);
 	}
 
 	if (display.registry->hasComponent<BufferLayoutComponent>(display.entity)) {
@@ -563,6 +579,11 @@ void _renderPropertyDisplay(State& state, PropertyDisplay& display)
 		submitEntries(entry, state.guiContext);
 	}
 
+	if (display.registry->hasComponent<TextureComponent>(display.entity)) {
+		TextureEntry* entry[] = { &display.texture };
+		submitEntries(entry, state.guiContext);
+	}
+
 	if (display.registry->hasComponent<BufferLayoutComponent>(display.entity)) {
 		BufferLayoutEntry* entry[] = { &display.bufferLayout };
 		submitEntries(entry, state.guiContext);
@@ -588,6 +609,7 @@ void _dropPropertyDisplay(State& state, PropertyDisplay& display)
 {
 	dropEntry(display.buffer, state.engine, state.guiContext);
 	dropEntry(display.shader, state.engine, state.guiContext);
+	dropEntry(display.texture, state.engine, state.guiContext);
 	dropEntry(display.bufferLayout, state.engine, state.guiContext);
 	dropEntry(display.descriptorLayout, state.engine, state.guiContext);
 	dropEntry(display.descriptor, state.engine, state.guiContext);
@@ -627,6 +649,10 @@ void _updateComponentValues(State& state)
 			state.registry.updateComponent<ShaderComponent>(entity, getValue(display.shader));
 		}
 
+		if (state.registry.hasComponent<TextureComponent>(entity)) {
+			state.registry.updateComponent<TextureComponent>(entity, getValue(display.texture));
+		}
+
 		if (state.registry.hasComponent<BufferLayoutComponent>(entity)) {
 			state.registry.updateComponent<BufferLayoutComponent>(entity, getValue(display.bufferLayout));
 		}
@@ -658,7 +684,7 @@ void _updateComponentValues(State& state)
 	}
 }
 
-// Now.. we look at each entity that has a component, and we update the entry with the component's value
+// Look at each entity that has a component, and update the entry with the component's value
 void _updateEntryValues(State& state)
 {
 	for (uint64_t i = 0; i < state.editor.propertyDisplays.size(); i++) {
@@ -671,6 +697,10 @@ void _updateEntryValues(State& state)
 
 		if (state.registry.hasComponent<ShaderComponent>(entity)) {
 			loadValue(display.shader, state.registry.getComponent<ShaderComponent>(entity), state.guiContext);
+		}
+
+		if (state.registry.hasComponent<TextureComponent>(entity)) {
+			loadValue(display.texture, state.registry.getComponent<TextureComponent>(entity), state.guiContext);
 		}
 
 		if (state.registry.hasComponent<BufferLayoutComponent>(entity)) {

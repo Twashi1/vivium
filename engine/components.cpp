@@ -6,6 +6,7 @@ std::string getString(VulkanComponent component) {
 	case VulkanComponent::BUFFER_LAYOUT: return "Buffer Layout";
 	case VulkanComponent::DESCRIPTOR_LAYOUT: return "Descriptor Layout";
 	case VulkanComponent::SHADER: return "Shader";
+	case VulkanComponent::TEXTURE: return "Texture";
 	case VulkanComponent::BUFFER: return "Buffer";
 	case VulkanComponent::DESCRIPTOR_SET: return "Descriptor Set";
 	case VulkanComponent::ENTER_COMPONENT: return "Enter component";
@@ -561,6 +562,9 @@ DescriptorSetComponent getValue(DescriptorSetEntry const& entry)
 		if (entry.registry->hasComponent<BufferComponent>(entity)) {
 			set.bindingData.push_back(entity);
 		}
+		else if (entry.registry->hasComponent<TextureComponent>(entity)) {
+			set.bindingData.push_back(entity);
+		}
 		else {
 			VIVIUM_LOG(LogSeverity::ERROR, "Passed entity {} to descriptor set, but had no compatible/implemented type", entity);
 		}
@@ -615,4 +619,99 @@ void dropEntry(DescriptorSetEntry& entry, Engine& engine, GUIContext& guiContext
 void loadValue(DescriptorSetEntry& entry, DescriptorSetComponent const& descriptor, GUIContext& guiContext)
 {
 	loadValue(entry.uniformData, descriptor.bindingData, guiContext);
+}
+
+TextureComponent getValue(TextureEntry const& entry)
+{
+	TextureComponent component;
+	component.filename = getValue(entry.filename);
+	component.filter = getValue(entry.filter);
+	component.format = getValue(entry.format);
+
+	return component;
+}
+
+TextureEntry submitEntry(EntrySpecification<TextureEntry> const& spec, GUIContext& guiContext, ResourceManager& resourceManager)
+{
+	TextureEntry entry;
+
+	entry.container = createContainer(guiContext, ContainerSpecification(
+		nullGUIParent(),
+		ContainerOrdering::VERTICAL,
+		OffsetMethod::EXTENT
+	));
+	entry.base = entry.container.base;
+
+	entry.filename = submitEntry(EntrySpecification<StringTextEntry>("Enter filename"), guiContext, resourceManager);
+	entry.filter = submitEntry(EntrySpecification<ObjectEntry<TextureFilter>>(
+		TextureFilter::LINEAR,
+		std::vector<TextureFilter>({
+			TextureFilter::LINEAR,
+			TextureFilter::NEAREST
+		})
+	), guiContext, resourceManager);
+	entry.format = submitEntry(EntrySpecification<ObjectEntry<TextureFormat>>(
+		TextureFormat::RGBA,
+		std::vector<TextureFormat>({
+			TextureFormat::RGBA,
+			TextureFormat::MONOCHROME
+			})
+	), guiContext, resourceManager);
+
+	addChild(entry.base, { &entry.filename.base, 1 }, guiContext);
+	addChild(entry.base, { &entry.filter.base, 1 }, guiContext);
+	addChild(entry.base, { &entry.format.base, 1 }, guiContext);
+
+	return entry;
+}
+
+void setupEntry(TextureEntry& entry, ResourceManager& manager, Engine& engine, CommandContext& context, GUIContext& guiContext)
+{
+	setupEntry(entry.filename, manager, engine, context, guiContext);
+	setupEntry(entry.filter, manager, engine, context, guiContext);
+	setupEntry(entry.format, manager, engine, context, guiContext);
+
+	properties(entry.filename.base, guiContext).anchorY = GUIAnchor::TOP;
+	properties(entry.filename.base, guiContext).centerY = GUIAnchor::TOP;
+
+	properties(entry.filter.base, guiContext).anchorY = GUIAnchor::TOP;
+	properties(entry.filter.base, guiContext).centerY = GUIAnchor::TOP;
+
+	properties(entry.format.base, guiContext).anchorY = GUIAnchor::TOP;
+	properties(entry.format.base, guiContext).centerY = GUIAnchor::TOP;
+}
+
+void updateEntry(TextureEntry& entry, GUIContext& guiContext, Engine& engine, CommandContext& context)
+{
+	updateEntry(entry.filename, guiContext, engine, context);
+	updateEntry(entry.filter, guiContext, engine, context);
+	updateEntry(entry.format, guiContext, engine, context);
+}
+
+void submitEntries(std::span<TextureEntry*> const entries, GUIContext& guiContext)
+{
+	for (TextureEntry* entry : entries) {
+		StringTextEntry* filenames[] = { &entry->filename };
+		submitEntries(filenames, guiContext);
+
+		ObjectEntry<TextureFilter>* filters[] = { &entry->filter };
+		submitEntries<TextureFilter>(filters, guiContext);
+
+		ObjectEntry<TextureFormat>* formats[] = { &entry->format };
+		submitEntries<TextureFormat>(formats, guiContext);
+	}
+}
+
+void dropEntry(TextureEntry& entry, Engine& engine, GUIContext& guiContext)
+{
+	dropEntry(entry.filename, engine, guiContext);
+	dropEntry(entry.filter, engine, guiContext);
+	dropEntry(entry.format, engine, guiContext);
+}
+
+void loadValue(TextureEntry& entry, TextureComponent const& component, GUIContext& guiContext)
+{
+	loadValue(entry.filename, component.filename, guiContext);
+	loadValue(entry.filter, component.filter, guiContext);
+	loadValue(entry.format, component.format, guiContext);
 }

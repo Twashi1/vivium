@@ -34,6 +34,7 @@ struct PropertyDisplay {
 	DescriptorLayoutEntry descriptorLayout;
 	DescriptorSetEntry descriptor;
 	BufferEntry buffer;
+	TextureEntry texture;
 	ShaderEntry shader;
 };
 

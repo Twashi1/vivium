@@ -1,12 +1,12 @@
 ## Classes
 
 `vEntity`
-`vBuffer`
-`vTexture`
 
 `vComponentType`
 `vDataType`
 ## Vivium functions
+
+### Implemented
 
 `vCreateEntity() -> vEntity`
 > Create an entity
@@ -16,6 +16,14 @@
 > Get entity by ID (should be removed later)
 > `ANY`
 
+### Partial functionality
+
+`vSetBufferData(table arrayData, vDataType elementType, vEntity entity) -> nil`
+> Modify the data passed as arrayData
+> We assume arrayData starts at index 1 at can be incrementally indexed
+> `SUBMIT, SETUP, UPDATE`, privileged in `SUBMIT`
+### TODO
+
 `vGetEntityByName(string name) -> vEntity`
 > Get an entity by name
 > `ANY`
@@ -24,11 +32,6 @@
 > Get a component on an entity
 > TODO: not necessary with how API is shaping up to be other than for debug/print purposes?
 > `ANY`
-
-`vSetBufferData(table arrayData, vDataType elementType, vEntity entity) -> nil`
-> Modify the data passed as arrayData
-> We assume arrayData starts at index 1 at can be incrementally indexed
-> `SUBMIT, SETUP, UPDATE`, privileged in `SUBMIT`
 
 `vSetBufferUsage(vBufferUsage, vEntity entity) -> nil`
 > Set the usage of a buffer
@@ -45,6 +48,10 @@
 `vDraw(vPipeline) -> nil`
 > Set a pipeline to be drawn next frame
 > `DRAW`
+
+`vDrawIndex(vEntity entity, int instanceCount) -> nil`
+>Draw indices with given number of instances
+>`DRAW`
 ## Special expected functions
 
 `vSubmit`
