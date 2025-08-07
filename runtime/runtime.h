@@ -144,4 +144,8 @@ namespace Runtime {
 	int _luaGetComponent(lua_State* L);
 	int _luaSetBufferData(lua_State* L);
 	int _luaDrawIndex(lua_State* L);
+	int _luaCursorPosition(lua_State* L);
+	int _luaIsLeftClick(lua_State* L);
+	int _luaIsRightClick(lua_State* L);
+
 }

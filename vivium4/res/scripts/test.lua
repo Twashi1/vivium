@@ -1,4 +1,11 @@
 print("Hello from lua")
+
+--[[
+on first click, the area we reveal must be an empty space
+given the click position, we must not allow a bomb in the surrounding 8 squares
+
+]]
+
 local entity0 = nil
 local entity1 = nil
 local entity2 = nil
@@ -18,6 +25,8 @@ local TILE_UNREVEALED = 0
 local TILE_FLAG = 1
 local TILE_BOMB = 2
 local TILE_ZERO = 3
+
+local hasRevealedBoard = false
 
 local ATLAS_INDICES = {
 	{3, 1}, -- 0, unrevealed
@@ -68,19 +77,24 @@ local function multiplyPairwise(v1, v2)
 	return { v1[X_COORD] * v2[X_COORD], v1[Y_COORD] * v2[Y_COORD] }
 end
 
+local function invert(v)
+	return { 1.0 / v[X_COORD], 1.0 / v[Y_COORD] }
+end
+
+local function applyPairwise(v, f)
+	return { f(v[X_COORD]), f(v[Y_COORD]) }
+end
+
+local function inspect(table)
+	local string = "{ "
+	for i, val in ipairs(table) do
+		string = string .. tostring(i) .. ": " .. tostring(val) .. ","
+	end
+	
+	return string .. "}"
+end
+
 local function atlasIndex(atlasSizePx, spriteSizePx, atlasIndex)
-	--[[
-		// Vertical flip here
-		atlasIndex.bottom = top * inverseHeight * spriteSize.y;
-		atlasIndex.top = bottom * inverseHeight * spriteSize.y;
-
-		atlasIndex.translation = F32x2(atlasIndex.left, atlasIndex.top);
-		atlasIndex.scale = F32x2(atlasIndex.right - atlasIndex.left, atlasIndex.bottom - atlasIndex.top);
-
-		return atlasIndex;
-
-	]]
-
 	local inverseWidth = 1.0 / atlasSizePx[X_COORD]
 	local inverseHeight = 1.0 / atlasSizePx[Y_COORD]
 
@@ -122,20 +136,63 @@ local function createGrid()
 	end
 end
 
-local function populateBombs(clickPosition1D)
+local function contains(table, value)
+	for _, v in ipairs(table) do
+		if v == value then
+			return true
+		end
+	end
+
+	return false
+end
+
+local function populateBombs(clickPosition2D)
 	local bombsRemaining = bombCount
+
+	local bannedPositions = {}
+	local bannedPositionCount = 0
+
+	-- Ensure all surrounding tiles of the click position are not bombs
+	for dy = -1, 1 do
+		local ny = clickPosition2D[Y_COORD] + dy
+
+		if ny <= 0 or ny >= gridHeight then
+			goto continueY
+		end
+
+		for dx = -1, 1 do
+			local nx = clickPosition2D[X_COORD] + dx
+
+			if nx <= 0 or nx >= gridWidth then
+				goto continueX
+			end
+
+			bannedPositionCount = bannedPositionCount + 1
+			bannedPositions[bannedPositionCount] = index2Dto1D({ nx, ny })
+
+			::continueX::
+		end
+
+		::continueY::
+	end
 
 	for i = 1, gridSize do
 		tileGrid[i] = TILE_ZERO
 		
+		-- TODO: messes with the randomness, can cause less bombs to spawn than normal as well
+		-- to fix, generate bombs assuming the grid to have n - #bannedPositions
+		-- then for any bomb s.t. index >= min(bannedPositions), move "around" the banned position square (difficult...)
 		if math.random(0, gridSize - i) < bombsRemaining then
-			if i ~= clickPosition1D then
+			if not contains(bannedPositions, i) then
 				bombsRemaining = bombsRemaining - 1
 
 				tileGrid[i] = TILE_BOMB
 			end
 		end
 	end
+
+	print("Before population")
+	print(inspect(tileGrid))
 
 	-- Fill in the numbers
 	for y = 1, gridHeight do
@@ -145,13 +202,25 @@ local function populateBombs(clickPosition1D)
 			for dy = -1, 1 do
 				local ny = y + dy
 
+				if ny <= 0 or ny > gridHeight then
+					goto continue
+				end
+
 				for dx = -1, 1 do
 					local nx = x + dx
+
+					if nx <= 0 or nx > gridWidth then
+						goto continue2
+					end
 
 					if tileGrid[index2Dto1D({nx, ny})] == TILE_BOMB then
 						numBombs = numBombs + 1
 					end
+
+					::continue2::
 				end
+
+				::continue::
 			end
 
 			if tileGrid[index2Dto1D({x, y})] ~= TILE_BOMB then
@@ -159,6 +228,9 @@ local function populateBombs(clickPosition1D)
 			end
 		end
 	end
+
+	print("After population")
+	print(inspect(tileGrid))
 end
 
 local function populateStorageBuffer()
@@ -170,7 +242,7 @@ local function populateStorageBuffer()
 			local tileScale = TILE_SIZE_PX
 
 			-- TODO: use render grid in future, not tile grid
-			local tileType = tileGrid[index2Dto1D({x, y})]
+			local tileType = renderGrid[index2Dto1D({x, y})]
 			-- Tile types are 0-indexed, convert to 1-indexed
 			local tileData = atlasConverted[tileType + 1]
 
@@ -197,7 +269,6 @@ end
 local function vSubmit()
 	generateAllAtlas()
 	createGrid()
-	populateBombs()
 
 	print("On submit called")
 	entity0 = vGetEntityByID(0)
@@ -225,8 +296,124 @@ local function vSubmit()
 	vSetBufferData(storageBufferData, vFLOAT, entity4)
 end
 
+local function revealZeros(index2D)
+	-- TODO: clean up some of this logic
+	local index1D = index2Dto1D(index2D)
+
+	renderGrid[index1D] = tileGrid[index1D]
+
+	if tileGrid[index1D] ~= TILE_ZERO then
+		return
+	end
+
+	for dy = -1, 1 do
+		local ny = index2D[Y_COORD] + dy
+
+		if ny <= 0 or ny > gridHeight then
+			goto continueY
+		end
+
+		for dx = -1, 1 do
+			local nx = index2D[X_COORD] + dx
+
+			if nx <= 0 or nx > gridWidth then
+				goto continueX
+			end
+
+			if dx == 0 and dy == 0 then
+				goto continueX
+			end
+
+			local neighbourIndex = index2Dto1D({ nx, ny })
+
+			if renderGrid[neighbourIndex] == TILE_UNREVEALED then
+				print("Expanding the search")
+				revealZeros({ nx, ny })
+			end
+
+			::continueX::
+		end
+
+		::continueY::
+	end
+end
+
+local function getHoveredTile2D()
+	local cursor = vCursorPosition()
+	local tilePosition = multiplyPairwise(cursor, invert(TILE_SIZE_PX))
+	local selectedTileX = math.ceil(tilePosition[X_COORD])
+	local selectedTileY = math.ceil(tilePosition[Y_COORD])
+
+	if selectedTileX <= 0 or selectedTileX > gridWidth then
+		return nil
+	end
+
+	if selectedTileY <= 0 or selectedTileY > gridHeight then
+		return nil
+	end
+
+	return { selectedTileX, selectedTileY }
+end
+
+local function handleInput()
+	local hovered = getHoveredTile2D()
+
+	if hovered == nil then
+		return
+	end
+
+	local tileIndex1D = index2Dto1D(hovered)
+
+	if vIsLeftClick() then
+		if not hasRevealedBoard then
+			hasRevealedBoard = true
+			createGrid()
+			populateBombs(hovered)
+		end
+
+		local revealedTile = tileGrid[tileIndex1D]
+		local renderedTile = renderGrid[tileIndex1D]
+
+		if revealedTile == TILE_BOMB then
+			-- TODO: have to end game, for now just reveal entire grid
+			for i = 1, gridSize do
+				-- TODO: should hightlight the bomb we clicked?
+				renderGrid[i] = tileGrid[i]
+			end
+
+			hasRevealedBoard = false
+
+			return
+		end
+
+		if renderedTile == TILE_FLAG then
+			renderGrid[tileIndex1D] = TILE_UNREVEALED
+
+			return
+		end
+
+		renderGrid[tileIndex1D] = revealedTile
+
+		-- TODO: additional floodfill logic when we find a 0
+		if revealedTile == TILE_ZERO then
+			revealZeros(hovered)
+		end
+	end
+
+	if vIsRightClick() then
+		local renderedTile = renderGrid[tileIndex1D]
+
+		if renderedTile == TILE_UNREVEALED then
+			renderGrid[tileIndex1D] = TILE_FLAG
+		elseif renderedTile == TILE_FLAG then
+			renderGrid[tileIndex1D] = TILE_UNREVEALED
+		end
+	end
+end
+
 local function vUpdate()
 	-- TODO: shouldn't do every frame, jsut when theres a change
+	handleInput()
 	populateStorageBuffer()
 	vSetBufferData(storageBufferData, vFLOAT, entity4)
 end

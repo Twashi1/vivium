@@ -209,21 +209,17 @@ void _update(State& state)
 		}
 	}
 
-	// TODO: need some extra code
-	//	- reset the entered value if one was entered
-	//	- use the value to add a component to the currently
-	//	  rendered property display
 	updateEntry(state.editor.createComponent, state.guiContext, state.engine, state.context);
 	setButtonText(state.editor.compileTree, state.engine, state.context, state.guiContext, "Compile tree");
 	setButtonText(state.editor.saveProject, state.engine, state.context, state.guiContext, "Save");
 	setButtonText(state.editor.loadProject, state.engine, state.context, state.guiContext, "Load");
 
 	if (clicked && hoverSaveProject) {
-		_saveState(state, "save_editor.dat");
+		_saveState(state, "vivium4/res/saves/editor.dat");
 	}
 
 	if (clicked && hoverLoadProject) {
-		_loadState(state, "save_editor.dat");
+		_loadState(state, "vivium4/res/saves/editor.dat");
 	}
 
 	if (clicked && pointInElement(Input::getCursor(), properties(state.editor.compileTree, state.guiContext))) {
@@ -747,7 +743,7 @@ void _compileTree(State& state)
 
 	// TODO: want to serialise the registry, not the pipelines
 	SerialiserFileInterface fileInterface;
-	fileInterface.begin("gen.dat", false);
+	fileInterface.begin("vivium4/res/saves/compiled.dat", false);
 
 	serialiseWrite(state.editor.entityView.entities, fileInterface);
 	serialiseWrite(state.registry, fileInterface);
@@ -787,7 +783,7 @@ void _compileTree(State& state)
 
 	fileInterface.end();
 
-	VIVIUM_LOG(LogSeverity::DEBUG, "Finished writing to gen.dat");
+	VIVIUM_LOG(LogSeverity::DEBUG, "Finished compilation and writing");
 }
 
 void _saveState(State& state, std::string_view filename)

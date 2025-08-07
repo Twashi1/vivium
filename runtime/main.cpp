@@ -86,7 +86,7 @@ int main(int argc, char* argv[]) {
 		delete state;
 #else
 		Runtime::State* state = new Runtime::State();
-		Runtime::init(*state, "gen.dat");
+		Runtime::init(*state, "vivium4/res/saves/compiled.dat");
 		Runtime::run(*state);
 		Runtime::drop(*state);
 

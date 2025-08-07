@@ -1,18 +1,14 @@
 ## Next
 
+- big issue, selects the wrong device on laptop (too slow?)
 - proof of concept game... minesweeper?
 - two executables, or use console commands to run editor/runtime
-- TODO: draw command
-- TODO: fix it being flipped incorrectly
-
-- we try to save some components, but we haven't ever deserialised
-	- we can just write it back in?
-	- todo: test this works (seems to)
+- draw command
+- break up the big update functions
 
 - can we create a pipeline without a descriptor set/layout
 
 - we also need to be able to rename entities (change entity tree to use entry boxes?)
-- need to be able to re-open a project in the editor (save/load functionality)
 - we allow multiple imports of vivium to avoid some useless shared middleman header
 - we need the scroll bar
 

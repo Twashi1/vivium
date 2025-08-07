@@ -511,10 +511,15 @@ namespace Runtime {
 		_loadLuaEntity(state);
 
 		_pushLuaFunction(state, _luaCreateEntity, "vCreateEntity");
+		
 		_pushLuaFunction(state, _luaGetComponent, "vGetComponent");
 		_pushLuaFunction(state, _luaSetBufferData, "vSetBufferData");
 		_pushLuaFunction(state, _luaEntityID, "vGetEntityByID");
 		_pushLuaFunction(state, _luaDrawIndex, "vDrawIndex");
+
+		_pushLuaFunction(state, _luaCursorPosition, "vCursorPosition");
+		_pushLuaFunction(state, _luaIsLeftClick, "vIsLeftClick");
+		_pushLuaFunction(state, _luaIsRightClick, "vIsRightClick");
 	}
 
 	void _loadLuaEntity(State& state)
@@ -782,5 +787,34 @@ namespace Runtime {
 		VIVIUM_ASSERT(foundPipeline, "Couldn't find pipeline instance for entity {}", *entity);
 
 		return 0;
+	}
+
+	int _luaCursorPosition(lua_State* L)
+	{
+		F32x2 cursorPos = Input::getCursor();
+
+		lua_newtable(L);
+
+		lua_pushnumber(L, cursorPos.x);
+		lua_rawseti(L, -2, 1);
+
+		lua_pushnumber(L, cursorPos.y);
+		lua_rawseti(L, -2, 2);
+
+		return 1;
+	}
+
+	int _luaIsLeftClick(lua_State* L)
+	{
+		lua_pushboolean(L, Input::get(Input::BTN_1).state == Input::RELEASE);
+
+		return 1;
+	}
+
+	int _luaIsRightClick(lua_State* L)
+	{
+		lua_pushboolean(L, Input::get(Input::BTN_2).state == Input::RELEASE);
+
+		return 1;
 	}
 }

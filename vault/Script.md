@@ -22,6 +22,18 @@
 > Modify the data passed as arrayData
 > We assume arrayData starts at index 1 at can be incrementally indexed
 > `SUBMIT, SETUP, UPDATE`, privileged in `SUBMIT`
+
+`vCursorPosition() -> { number, number }`
+> Retrieves the position of the cursor in (TODO: coordinate system?)
+> `ANY`
+
+`vIsLeftClick() -> bool`
+> Is left mouse button clicked
+> `ANY`
+
+`vIsRightClick() -> bool`
+> Is right mouse button clicked
+> `ANY`
 ### TODO
 
 `vGetEntityByName(string name) -> vEntity`
