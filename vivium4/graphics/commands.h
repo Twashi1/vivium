@@ -66,13 +66,27 @@ namespace Vivium {
 	void dropCommandContext(CommandContext& context, Engine& engine);
 
 	// TODO: allow passing region/buffer slice
+	/*! \brief Transfer a portion of a buffer to a destination buffer.
+	* Will perform the transfer in the transfer queue if possible.
+	* 
+	* \param source The source buffer.
+	* \param sourceSize The number of bytes to transfer from the source.
+	* \param sourceOffset The offset within the source to start the transfer.
+	* \param destination The destination buffer to transfer to.
+	*/
 	void cmdTransferBuffer(CommandContext& context, Buffer const& source, uint64_t sourceSize, uint64_t sourceOffset, Buffer& destination);
 
+	/*! \brief Bind the pipeline to specify the current rendering.
+	* \param handle The pipeline to bind.
+	*/
 	void cmdBindPipeline(CommandContext& context, Pipeline const& handle);
+	/*! \brief Bind the vertex buffer to the command context.
+	*/
 	void cmdBindVertexBuffer(CommandContext& context, Buffer const& handle);
 	void cmdBindIndexBuffer(CommandContext& context, Buffer const& handle);
 	void cmdBindDescriptorSet(CommandContext& context, DescriptorSet const& descriptorSet, Pipeline const& pipeline);
 
+	/*! \brief Write data for push constants. */
 	void cmdWritePushConstants(CommandContext& context, const void* data, uint64_t size, uint64_t offset, ShaderStage stage, Pipeline const& pipeline);
 
 	void cmdDrawIndexed(CommandContext& context, uint32_t indexCount, uint32_t instanceCount);

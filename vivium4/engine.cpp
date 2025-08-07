@@ -183,6 +183,7 @@ namespace Vivium {
 		std::vector<VkPhysicalDevice> devices(deviceCount);
 		vkEnumeratePhysicalDevices(engine.instance, &deviceCount, devices.data());
 
+		// TODO: scoring then sorting system is easier
 		// Select first device that has discrete GPU, then integrated GPU
 		bool isIntegrated = false;
 
@@ -206,6 +207,11 @@ namespace Vivium {
 		}
 
 		VIVIUM_ASSERT(engine.physicalDevice != VK_NULL_HANDLE, "Failed to find suitable GPU");
+
+		VkPhysicalDeviceProperties properties{};
+		vkGetPhysicalDeviceProperties(engine.physicalDevice, &properties);
+
+		VIVIUM_LOG(LogSeverity::DEBUG, "Using integrated (suboptimal) device with name: {}", properties.deviceName);
 	}
 
 	void _createLogicalDevice(Engine& engine, const std::span<const char* const> extensions, const std::span<const char* const> validationLayers)

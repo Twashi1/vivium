@@ -137,12 +137,69 @@ namespace Vivium {
 		resourceField.specifications.insert(resourceField.specifications.end(), specifications.begin(), specifications.end());
 	}
 
+	/*! \brief Submit buffer specifications to be allocated.
+	* 
+	* Schedules a list of specifications to be allocated.
+	* 
+	* \param manager The manager to allocate with.
+	* \param memory Takes a list of references to fill.
+	* \param memoryType The type of GPU memory to allocate the buffers on.
+	* \param specifications The specifications of objects to create.
+	*/
 	void submitResource(ResourceManager& manager, BufferReference* memory, MemoryType memoryType, const std::span<const BufferSpecification> specifications);
+	/*! \brief Submit texture specifications to be allocated.
+	*
+	* Schedules a list of specifications to be allocated.
+	*
+	* \param manager The manager to allocate with.
+	* \param memory Takes a list of references to fill.
+	* \param specifications The specifications of objects to create.
+	*/
 	void submitResource(ResourceManager& manager, TextureReference* memory, const std::span<const TextureSpecification> specifications);
+	/*! \brief Submit framebuffer specifications to be allocated.
+	*
+	* Schedules a list of specifications to be allocated.
+	*
+	* \param manager The manager to allocate with.
+	* \param memory Takes a list of references to fill.
+	* \param specifications The specifications of objects to create.
+	*/
 	void submitResource(ResourceManager& manager, FramebufferReference* memory, const std::span<const FramebufferSpecification> specifications);
+	/*! \brief Submit descriptor layout specifications to be allocated.
+	*
+	* Schedules a list of specifications to be allocated.
+	*
+	* \param manager The manager to allocate with.
+	* \param memory Takes a list of references to fill.
+	* \param specifications The specifications of objects to create.
+	*/
 	void submitResource(ResourceManager& manager, DescriptorLayoutReference* memory, const std::span<const DescriptorLayoutSpecification> specifications);
+	/*! \brief Submit shader specifications to be allocated.
+	*
+	* Schedules a list of specifications to be allocated.
+	*
+	* \param manager The manager to allocate with.
+	* \param memory Takes a list of references to fill.
+	* \param specifications The specifications of objects to create.
+	*/
 	void submitResource(ResourceManager& manager, ShaderReference* memory, const std::span<const ShaderSpecification> specifications);
+	/*! \brief Submit descriptor set specifications to be allocated.
+	*
+	* Schedules a list of specifications to be allocated.
+	*
+	* \param manager The manager to allocate with.
+	* \param memory Takes a list of references to fill.
+	* \param specifications The specifications of objects to create.
+	*/
 	void submitResource(ResourceManager& manager, DescriptorSetReference* memory, const std::span<const DescriptorSetSpecification> specifications);
+	/*! \brief Submit pipeline specifications to be allocated.
+	*
+	* Schedules a list of specifications to be allocated.
+	*
+	* \param manager The manager to allocate with.
+	* \param memory Takes a list of references to fill.
+	* \param specifications The specifications of objects to create.
+	*/
 	void submitResource(ResourceManager& manager, PipelineReference* memory, const std::span<const PipelineSpecification> specifications);
 
 	Buffer& _getReference(ResourceManager& manager, BufferReference reference);
@@ -153,6 +210,13 @@ namespace Vivium {
 	DescriptorSet& _getReference(ResourceManager& manager, DescriptorSetReference reference);
 	Pipeline& _getReference(ResourceManager& manager, PipelineReference reference);
 
+	/*! \brief Convert a reference to the resource itself.
+	*
+	* Index the internal arrays to get the resource itself.
+	*
+	* \param manager The manager on which the resource is allocated.
+	* \param resourceReference The reference object to get the reference from and copy the resource to.
+	*/
 	template <typename Resource>
 	void convertResourceReference(ResourceManager& manager, Ref<Resource>& resourceReference)
 	{

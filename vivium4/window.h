@@ -73,15 +73,34 @@ namespace Vivium {
 
 	void _createSyncObjects(Window& window, Engine& engine);
 
+	/*! \brief Construct a window with the given settings.
+	* 
+	* Constructs the swapchain and synchronisation objects required for rendering.
+	* 
+	* \param options Options for the window.
+	* \param engine The engine to create the window for.
+	* \return The window instance.
+	*/
 	Window createWindow(WindowOptions const& options, Engine& engine);
+	/*! \brief Free window instance and its objects.
+	* 
+	* \param window Window to free.
+	* \param engine Engine used to free objects of window.
+	*/
 	void dropWindow(Window& window, Engine& engine);
 
+	/*! \brief Get dimensions of window in pixels. */
 	I32x2 windowDimensions(Window& window);
+	/*! \brief Returns true if window has not been closed. */
 	bool windowIsOpen(Window& window, Engine& engine);
 
+	/*! \brief Begin processing of the next frame. */
 	void windowBeginFrame(Window& window, CommandContext& context, Engine& engine);
+	/*! \brief End processing of the frame. */
 	void windowEndFrame(Window& window, Engine& engine);
 
+	/*! \brief Begin rendering of the next frame */
 	void windowBeginRender(Window& window);
+	/*! \brief End rendering of the next frame */
 	void windowEndRender(Window& window);
 }

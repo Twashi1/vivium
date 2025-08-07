@@ -339,6 +339,15 @@ namespace Vivium {
 	VkPresentModeKHR _chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
 	{
 		for (const auto& availablePresentMode : availablePresentModes) {
+			// TODO: investigate more present modes, for now we're going to use immediate
+			if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
+				VIVIUM_LOG(LogSeverity::DEBUG, "Using immediate mode, could cause vertical tearing");
+
+				return availablePresentMode;
+			}
+		}
+
+		for (const auto& availablePresentMode : availablePresentModes) {
 			if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
 				return availablePresentMode;
 			}

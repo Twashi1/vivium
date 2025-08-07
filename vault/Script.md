@@ -16,13 +16,6 @@
 > Get entity by ID (should be removed later)
 > `ANY`
 
-### Partial functionality
-
-`vSetBufferData(table arrayData, vDataType elementType, vEntity entity) -> nil`
-> Modify the data passed as arrayData
-> We assume arrayData starts at index 1 at can be incrementally indexed
-> `SUBMIT, SETUP, UPDATE`, privileged in `SUBMIT`
-
 `vCursorPosition() -> { number, number }`
 > Retrieves the position of the cursor in (TODO: coordinate system?)
 > `ANY`
@@ -34,6 +27,12 @@
 `vIsRightClick() -> bool`
 > Is right mouse button clicked
 > `ANY`
+### Partial functionality
+
+`vSetBufferData(table arrayData, vDataType elementType, vEntity entity) -> nil`
+> Modify the data passed as arrayData
+> We assume arrayData starts at index 1 at can be incrementally indexed
+> `SUBMIT, SETUP, UPDATE`, privileged in `SUBMIT`
 ### TODO
 
 `vGetEntityByName(string name) -> vEntity`

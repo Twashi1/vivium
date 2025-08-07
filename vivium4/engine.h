@@ -82,10 +82,32 @@ namespace Vivium {
 	void _checkPerformance(Engine& engine);
 	void _limitFramerate(Engine& engine);
 
-	// Public methods
+	/*! \brief Create an instance of the engine.
+	* \param options Options to set framerate and poll frequency.
+	* \return An instance of the engine.
+	*/
 	Engine createEngine(EngineOptions const& options);
+	/*! \brief Free the engine once done.
+	* 
+	* Must free all other resources beforehand.
+	* 
+	* \param engine The engine instance to free.
+	*/
 	void dropEngine(Engine& engine);
 
+	/*! \brief Perform processing to begin a frame.
+	* 
+	* All subsequent relevant actions will be attached to the new frame.
+	* 
+	* \param engine The engine to begin the frame on.
+	* \param context The command context for which all frame actions will be performed on.
+	*/
 	void engineBeginFrame(Engine& engine, CommandContext& context);
+	/*! \brief Perform processing to end a frame.
+	* 
+	* Can stall to meet framerate limit.
+	* 
+	* \param engine The engine to end the frame on.
+	*/
 	void engineEndFrame(Engine& engine);
 }

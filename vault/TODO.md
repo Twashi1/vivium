@@ -1,10 +1,16 @@
 ## Next
 
-- big issue, selects the wrong device on laptop (too slow?)
 - proof of concept game... minesweeper?
 - two executables, or use console commands to run editor/runtime
 - draw command
 - break up the big update functions
+
+- we want this to be mostly a compiled game engine
+	- thus we need to move from serialising the registry and running it in a runtime
+	- to generating the relevant c++ code for creation of the objects specified
+		- we also realistically need a scripting language unless we want to convert lua logic to c++
+		- but regardless, how do we convert submit/setup/update/draw to something compiled
+		- this is why no other game engine takes this approach (minimal performance benefit)
 
 - can we create a pipeline without a descriptor set/layout
 
@@ -14,12 +20,16 @@
 
 - can implement as both light userdata and full userdata
 - instead of iterating pipelines in submit/setup, we should iterate all buffers, then all shaders, then etc.
+	- don't automatically render pipelines either
+	- create a mapping from entity to pipelineInstance, not just PipelineComponent or Pipeline
 
-- figure out what the API looks like more in-depth?
 - some abstraction on getting lua context
+- abstract checking the stage we are at
 - some notable problems with using lua as the scripting language
 	- difficult to create structs of some strict size, and deal with them in buffers
 	- no types
+	- maybe we can remedy this with custom types we provide to lua for specifying layout
+	- at this point the lua side is just more hassle than its worth
 - after some buffer/component-changing function, we need to update the actual vulkan object
 	- `vUpdateBuffer` only knows the component, it doesn't know the buffer associated with that component
 	- easiest solution is to just also upload the vulkan `Buffer` to the same entity, then we can easily grab it for commands
@@ -31,42 +41,21 @@ Big note for serialiser
 
 Need to rework tree containers
 
-Serialisation format changes
-- serialise function for c-array?
-1. we want to capture most of the entity tree (child entities and such don't matter)
-2. we want to preserve the data in the entries, not the ones in the components
-3. lua submit should be able to modify where data is gotten from by changing the entity, and also change the data entered; or fill in the date entered
-4. lua needs an easy memorable way to reference entities (names and even ids will work; but most systems use child scripts referencing their parents, or parameters entered into scripts)
-
-5. at run-time, without information of the original type, we need to be able to serialise each component pool
-	- so the component manager must define a pointer function to convert the component into binary data (by default, SerialiserWrite)
-		- we don't want the user to have to define anything other than `serialiseWrite` and `serialiseRead` for each component
-		- we cannot account for the `SerialiserInterface` argument... just give up and make it a file interface always...?
-	- ideally this pointer function can write directly to an interface?
-	- for this it needs to be cable of taking a functor which requires templating?
-	- alternatively it writes to an intermediary, which is then directly written to the serialiser
-6. at run-time, with the information of the original type, we should be able to deserialise this information as needed
-
-
-What we really want, is a way to serialise the ECS registry
-
 An entity passes to descriptor set can have both a buffer/texture/framebuffer, and thus there is ambiguity as to which should be taken as the desired data
 - also this entity-passing system seems flawed?
 - should it not instead be that the components themselves are organised in the tree structure for inheritance
 
 ## Shader planning
 
-- run-time reflection and some partial compilation on shaders
+- run-time reflection and some partial compilation/parsing on shaders
 	- checks alignment requirements
 - vertex/fragment shader merging (can look into geometry/tesselation/compile/etc. later)
 - code re-use across shaders with utility files and such
-	- c-like include structure
 
 - might as well look into building a LSP for it
 - look into debug and simulation on CPU side (would require rasterization etc.)
 ## Current tasks
 
-- Buffer component has `size` unused (should be number of elements?) also can't take arbitrary data
 - CMAKE of vivium library should be separate to CMAKE of editor/runtime
 - Comprehensive documentation of all structs/methods/etc.
 	- just use doxygen format, can build a custom tool later
@@ -274,15 +263,8 @@ addComponent; removeComponent; editComponent;
 
 ## Future
 
-> After the MVP works
-
 Is a compiled game engine actually special?
 - most interactions just devolve into writing code for a scripting language that gets compiled to bytecode and ran, just like unreal/unity?
-
-We need some sort of universal object referencing system for the Runtime
-- ECS is best approach
-- objects reference others by entity
-- we don't just store the data associated with an object, but also the vulkan object
 
 Code style is torn between attempts to be C-compatible and a data-oriented C++ style
 - We should stick to one
@@ -362,13 +344,16 @@ ultimate conclusion is that unless we want to limit GUI functionality, we should
 - grow/fit/fixed sizing
 - minimum/maximum/ideal sizing
 - rewrite GUI to work in just 2 draw calls
-	- rendering all generic panels (including borders, rounded corners, etc. customised)
+	- rendering all generic panels (including borders, rounded corners, etc. customised, even textures?)
 	- rendering all text
 - general "Style" component for most GUI objects? either `ButtonStyle`, `PanelStyle`, etc., or just a single `Style`
 - GUI should work under dynamic rendering allowing for better customisability in future
 
-## Final goal for MVP
+```c++
+GUI::Context ctx;
+GUI::Button load = GUI::Button(ctx, positioning..., style...);
 
-Editor window allows creation of a rendering pipeline through simple drag-and-drops and data entry
-- upon pressing a compile button, this data is converting into bytecode
-- add some console command that allows running of this bytecode to perform the described render pipeline
+if (GUI::click(load)) ...
+if (GUI::hover(load)) ...
+if (GUI::leftClick(load)) ...
+```

@@ -1,0 +1,4 @@
+- module import system from most languages makes most sense
+- print that works in debug by being simulated CPU-side
+- automated checks for alignment in uniforms/structs
+- 

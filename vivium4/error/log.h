@@ -14,6 +14,7 @@ namespace Vivium {
 		FATAL
 	};
 
+	/*! \brief Enum helper to get a string for the severity level. */
 	const char* getSeverityName(LogSeverity severity);
 
 	enum class LogColor {
@@ -56,6 +57,12 @@ namespace Vivium {
 		bool isColorEnabled;
 	};
 
+	/*! \brief Set a custom log callback for flexible logging.
+	* 
+	* Allows redirection of logs to file, or custom printing and format.
+	* 
+	* \param callback The function to call, expected to take a LogContext.
+	*/
 	void setLogCallback(LogCallback callback);
 
 	inline LogState _logState;

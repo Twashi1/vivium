@@ -22,7 +22,9 @@ namespace Vivium {
 	typedef uint32_t Entity;
 	typedef std::bitset<ECS_COMPONENT_MAX> Signature;
 
+	/*! \brief Get the version number of the entity as an int*/
 	uint32_t getVersion(Entity entity);
+	/*! \brief Get the identifying number of the entity as an int*/
 	uint32_t getIdentifier(Entity entity);
 
 	// TODO: use both
