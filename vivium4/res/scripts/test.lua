@@ -69,19 +69,31 @@ local function multiplyPairwise(v1, v2)
 end
 
 local function atlasIndex(atlasSizePx, spriteSizePx, atlasIndex)
+	--[[
+		// Vertical flip here
+		atlasIndex.bottom = top * inverseHeight * spriteSize.y;
+		atlasIndex.top = bottom * inverseHeight * spriteSize.y;
+
+		atlasIndex.translation = F32x2(atlasIndex.left, atlasIndex.top);
+		atlasIndex.scale = F32x2(atlasIndex.right - atlasIndex.left, atlasIndex.bottom - atlasIndex.top);
+
+		return atlasIndex;
+
+	]]
+
 	local inverseWidth = 1.0 / atlasSizePx[X_COORD]
 	local inverseHeight = 1.0 / atlasSizePx[Y_COORD]
 
 	-- Note we convert to 0 index here
-	local atlasLeft = atlasIndex[X_COORD] - 1
-	local atlasRight = atlasIndex[X_COORD]
-	local atlasBot = atlasIndex[Y_COORD] - 1
-	local atlasTop = atlasIndex[Y_COORD]
+	local atlasLeft = atlasIndex[X_COORD]
+	local atlasRight = atlasIndex[X_COORD] + 1
+	local atlasBot = atlasIndex[Y_COORD]
+	local atlasTop = atlasIndex[Y_COORD] + 1
 
 	local coordLeft = atlasLeft * inverseWidth * spriteSizePx[X_COORD]
 	local coordRight = atlasRight * inverseWidth * spriteSizePx[X_COORD]
-	local coordBot = atlasTop * inverseHeight * spriteSizePx[Y_COORD]
-	local coordTop = atlasBot * inverseHeight * spriteSizePx[Y_COORD]
+	local coordBot = atlasBot * inverseHeight * spriteSizePx[Y_COORD]
+	local coordTop = atlasTop * inverseHeight * spriteSizePx[Y_COORD]
 
 	local translation = { coordLeft, coordTop }
 	local scale = { (coordRight - coordLeft), (coordBot - coordTop) }
@@ -167,7 +179,6 @@ local function populateStorageBuffer()
 
 			storageBufferData[storageIndex + 0] = tileTranslation[X_COORD]
 			storageBufferData[storageIndex + 1] = tileTranslation[Y_COORD]
-			print(storageBufferData[storageIndex], storageBufferData[storageIndex + 1])
 
 			storageBufferData[storageIndex + 2] = textureTranslation[X_COORD]
 			storageBufferData[storageIndex + 3] = textureTranslation[Y_COORD]
@@ -198,9 +209,9 @@ local function vSubmit()
 
 	vSetBufferData({
 		0.0,	0.0,  0.0, 0.0,
-		1.0,	0.0,  0.0, 1.0,
+		1.0,	0.0,  1.0, 0.0,
 		1.0,	1.0,  1.0, 1.0,
-		0.0,	1.0,  1.0, 0.0
+		0.0,	1.0,  0.0, 1.0
 	}, vFLOAT, entity2)
 
 	vSetBufferData({

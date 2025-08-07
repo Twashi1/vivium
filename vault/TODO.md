@@ -2,8 +2,8 @@
 
 - proof of concept game... minesweeper?
 - two executables, or use console commands to run editor/runtime
-- found bug, not passing enough instances...?
 - TODO: draw command
+- TODO: fix it being flipped incorrectly
 
 - we try to save some components, but we haven't ever deserialised
 	- we can just write it back in?
