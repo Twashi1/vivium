@@ -2,6 +2,8 @@
 
 project ("vivium4")
 
+# TODO: use find_package for all?
+
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -120,31 +122,53 @@ set(VIVIUM_HEADERS
  "engine/components.h"  "runtime/runtime.h" "vivium4/ecs/type_info.h" "vivium4/ecs/group_impl.h"  "vivium4/ecs/registry_impl.h"  "vivium4/ecs/component_manager_impl.h")
 
 add_subdirectory("${CMAKE_SOURCE_DIR}/external/glfw")
+add_subdirectory("${CMAKE_SOURCE_DIR}/external/linux/freetype-2.13.3")
 
-add_executable(vivium4 ${VIVIUM_HEADERS} ${VIVIUM_SOURCES})
+add_executable(v4 ${VIVIUM_HEADERS} ${VIVIUM_SOURCES})
 
-if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET vivium4 PROPERTY CXX_STANDARD 20)
-  target_compile_features(vivium4 PUBLIC cxx_std_20)
-endif()
+set_property(TARGET v4 PROPERTY CXX_STANDARD 20)
+target_compile_features(v4 PUBLIC cxx_std_20)
 
 string(LENGTH "${CMAKE_SOURCE_DIR}/" VIVIUM_SOURCE_PATH_SIZE)
 add_definitions("-DVIVIUM_SOURCE_PATH_SIZE=${VIVIUM_SOURCE_PATH_SIZE}")
 
-target_include_directories(vivium4 PUBLIC "${CMAKE_SOURCE_DIR}/external/freetype/include")
-target_include_directories(vivium4 PUBLIC "${CMAKE_SOURCE_DIR}/external/glm")
-target_include_directories(vivium4 PUBLIC "${CMAKE_SOURCE_DIR}/external/stb_image")
-target_include_directories(vivium4 PUBLIC "${CMAKE_SOURCE_DIR}/external/vulkan/Include")
-target_include_directories(vivium4 PUBLIC "${CMAKE_SOURCE_DIR}/external/lua/include")
+# Header-only, build same regardless of system
+target_include_directories(v4 PUBLIC "${CMAKE_SOURCE_DIR}/external/glm")
+target_include_directories(v4 PUBLIC "${CMAKE_SOURCE_DIR}/external/stb_image")
 
-target_link_libraries(vivium4 PUBLIC
-glfw
-"${CMAKE_SOURCE_DIR}/external/freetype/static/vs2015-2022/win64/freetype.lib"
-"${CMAKE_SOURCE_DIR}/external/vulkan/Lib/vulkan-1.lib"
-"${CMAKE_SOURCE_DIR}/external/lua/lua54.lib"
-winmm.lib
-)
+if (WIN32)
+  target_include_directories(v4 PUBLIC "${CMAKE_SOURCE_DIR}/external/win/freetype/include")
+  target_include_directories(v4 PUBLIC "${CMAKE_SOURCE_DIR}/external/win/vulkan/Include")
+  target_include_directories(v4 PUBLIC "${CMAKE_SOURCE_DIR}/external/win/lua/include")
+
+  target_link_libraries(v4 PUBLIC
+    glfw
+    "${CMAKE_SOURCE_DIR}/external/win/freetype/static/vs2015-2022/win64/freetype.lib"
+    "${CMAKE_SOURCE_DIR}/external/win/vulkan/Lib/vulkan-1.lib"
+    "${CMAKE_SOURCE_DIR}/external/win/lua/lua54.lib"
+    winmm.lib
+  )
+else()
+  #target_include_directories(v4 PUBLIC "${CMAKE_SOURCE_DIR}/external/linux/freetype/include/freetype2")
+  #target_include_directories(v4 PRIVATE ${FREETYPE_INCLUDE_DIRS})
+  target_include_directories(v4 PUBLIC "${CMAKE_SOURCE_DIR}/external/linux/vulkan/x86_64/include")
+  target_include_directories(v4 PUBLIC "${CMAKE_SOURCE_DIR}/external/linux/lua/include")
+
+  target_link_libraries(v4 PUBLIC
+    glfw
+    freetype
+    #${FREETYPE_LIBRARIES}
+  #  "${CMAKE_SOURCE_DIR}/external/linux/freetype/lib/libfreetype.a"
+    "${CMAKE_SOURCE_DIR}/external/linux/vulkan/x86_64/lib/libvulkan.so.1.4.321"
+    "${CMAKE_SOURCE_DIR}/external/linux/lua/liblua54.a"
+  )
+endif()
 
 file(COPY "${CMAKE_SOURCE_DIR}/vivium4/res" DESTINATION "${CMAKE_BINARY_DIR}/vivium4/")
 file(COPY "${CMAKE_SOURCE_DIR}/engine/res" DESTINATION "${CMAKE_BINARY_DIR}/engine/")
-configure_file("${CMAKE_SOURCE_DIR}/external/vulkan/Bin/glslc.exe" "${CMAKE_BINARY_DIR}/external/vulkan/Bin/glslc.exe" COPYONLY)
+
+if (WIN32)
+  configure_file("${CMAKE_SOURCE_DIR}/external/win/vulkan/Bin/glslc.exe" "${CMAKE_BINARY_DIR}/external/win/vulkan/Bin/glslc.exe" COPYONLY)
+else()
+  configure_file("${CMAKE_SOURCE_DIR}/external/linux/vulkan/x86_64/bin/glslc" "${CMAKE_BINARY_DIR}/external/linux/vulkan/x86_64/bin/glslc" COPYONLY)
+endif()

@@ -16,7 +16,7 @@ namespace Vivium {
 	{
 		Perspective perspective = orthogonalPerspective2D(windowDimensions(window), F32x2(0.0f), 0.0f, 1.0f);
 
-		VIVIUM_ASSERT(guiContext.debugRect.rects.size() < guiContext.debugRect.MAX_DEBUG_RECTS, "Too many debug rects");
+		VIVIUM_ASSERT(guiContext.debugRect.rects.size() < guiContext.MAX_DEBUG_RECTS, "Too many debug rects");
 
 		setBuffer(guiContext.debugRect.storageBuffer.resource, 0, guiContext.debugRect.rects.data(), guiContext.debugRect.rects.size() * sizeof(_GUIDebugRectInstanceData));
 		cmdBindPipeline(context, guiContext.debugRect.pipeline.resource);

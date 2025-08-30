@@ -154,7 +154,7 @@ namespace Vivium {
 
 	template <ValidComponent T>
 	T& Registry::getComponent(Entity entity) {
-		return _getPoolOrCreate<T>()->get<T>(entity);
+		return _getPoolOrCreate<T>()->template get<T>(entity);
 	}
 
 	template <ValidComponent T>
@@ -188,7 +188,7 @@ namespace Vivium {
 			if constexpr (IsOwnedTag<Components>::value) {
 				ownedGroup = true;
 
-				uint32_t id = this->_getTypeIndex<Components::type>();
+				uint32_t id = this->_getTypeIndex<typename Components::type>();
 				ComponentArray* pool = this->componentPools[id];
 
 				if (pool == nullptr) return;
@@ -208,7 +208,7 @@ namespace Vivium {
 
 		if (!ownedGroup) {
 			([&iteratingArray, &iteratingSize, this] {
-				uint32_t id = this->_getTypeIndex<Components::type>();
+				uint32_t id = this->_getTypeIndex<typename Components::type>();
 				ComponentArray* pool = this->componentPools[id];
 
 				if (pool == nullptr) return;

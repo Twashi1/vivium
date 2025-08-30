@@ -66,7 +66,7 @@ namespace Vivium {
 	void _submitButtonGUIContext(GUIContext& guiContext, ResourceManager& manager, Engine& engine, Window& window)
 	{
 		submitResource(manager, &guiContext.button.storageBuffer.reference, MemoryType::UNIFORM,
-			std::vector<BufferSpecification>({ BufferSpecification(guiContext.button.MAX_BUTTONS * sizeof(_GUIButtonInstanceData), BufferUsage::STORAGE) }));
+			std::vector<BufferSpecification>({ BufferSpecification(guiContext.MAX_BUTTONS * sizeof(_GUIButtonInstanceData), BufferUsage::STORAGE) }));
 
 		submitResource(manager, &guiContext.button.descriptorLayout.reference, std::vector<DescriptorLayoutSpecification>({
 			DescriptorLayoutSpecification(std::vector<UniformBinding>({
@@ -76,7 +76,7 @@ namespace Vivium {
 
 		submitResource(manager, &guiContext.button.descriptorSet.reference, std::vector<DescriptorSetSpecification>({
 			DescriptorSetSpecification(guiContext.button.descriptorLayout.reference, std::vector<UniformData>({
-				UniformData::fromBuffer(guiContext.button.storageBuffer.reference, guiContext.button.MAX_BUTTONS * sizeof(_GUIButtonInstanceData), 0)
+				UniformData::fromBuffer(guiContext.button.storageBuffer.reference, guiContext.MAX_BUTTONS * sizeof(_GUIButtonInstanceData), 0)
 			}))
 			}));
 
@@ -103,7 +103,7 @@ namespace Vivium {
 	void _submitPanelGUIContext(GUIContext& guiContext, ResourceManager& manager, Engine& engine, Window& window)
 	{
 		submitResource(manager, &guiContext.panel.storageBuffer.reference, MemoryType::UNIFORM,
-			std::vector<BufferSpecification>({ BufferSpecification(guiContext.panel.MAX_PANELS * sizeof(_GUIPanelInstanceData), BufferUsage::STORAGE) }));
+			std::vector<BufferSpecification>({ BufferSpecification(guiContext.MAX_PANELS * sizeof(_GUIPanelInstanceData), BufferUsage::STORAGE) }));
 
 		submitResource(manager, &guiContext.panel.descriptorLayout.reference, std::vector<DescriptorLayoutSpecification>({
 			DescriptorLayoutSpecification(std::vector<UniformBinding>({
@@ -113,7 +113,7 @@ namespace Vivium {
 
 		submitResource(manager, &guiContext.panel.descriptorSet.reference, std::vector<DescriptorSetSpecification>({
 			DescriptorSetSpecification(guiContext.panel.descriptorLayout.reference, std::vector<UniformData>({
-				UniformData::fromBuffer(guiContext.panel.storageBuffer.reference, guiContext.panel.MAX_PANELS * sizeof(_GUIPanelInstanceData), 0)
+				UniformData::fromBuffer(guiContext.panel.storageBuffer.reference, guiContext.MAX_PANELS * sizeof(_GUIPanelInstanceData), 0)
 			}))
 			}));
 
@@ -140,7 +140,7 @@ namespace Vivium {
 	void _submitSliderGUIContext(GUIContext& guiContext, ResourceManager& manager, Engine& engine, Window& window)
 	{
 		submitResource(manager, &guiContext.slider.storageBuffer.reference, MemoryType::UNIFORM,
-			std::vector<BufferSpecification>({ BufferSpecification(guiContext.slider.MAX_SLIDERS * sizeof(_GUISliderInstanceData), BufferUsage::STORAGE) }));
+			std::vector<BufferSpecification>({ BufferSpecification(guiContext.MAX_SLIDERS * sizeof(_GUISliderInstanceData), BufferUsage::STORAGE) }));
 
 		submitResource(manager, &guiContext.slider.descriptorLayout.reference, std::vector<DescriptorLayoutSpecification>({
 			DescriptorLayoutSpecification(std::vector<UniformBinding>({
@@ -150,7 +150,7 @@ namespace Vivium {
 
 		submitResource(manager, &guiContext.slider.descriptorSet.reference, std::vector<DescriptorSetSpecification>({
 			DescriptorSetSpecification(guiContext.slider.descriptorLayout.reference, std::vector<UniformData>({
-				UniformData::fromBuffer(guiContext.slider.storageBuffer.reference, guiContext.slider.MAX_SLIDERS * sizeof(_GUISliderInstanceData), 0)
+				UniformData::fromBuffer(guiContext.slider.storageBuffer.reference, guiContext.MAX_SLIDERS * sizeof(_GUISliderInstanceData), 0)
 			}))
 			}));
 
@@ -177,7 +177,7 @@ namespace Vivium {
 	void _submitSpriteGUIContext(GUIContext& guiContext, ResourceManager& manager, Engine& engine, Window& window)
 	{
 		submitResource(manager, &guiContext.sprite.storageBuffer.reference, MemoryType::UNIFORM,
-			std::vector<BufferSpecification>({ BufferSpecification(guiContext.sprite.MAX_SPRITES * sizeof(_GUISpriteInstanceData), BufferUsage::STORAGE) }));
+			std::vector<BufferSpecification>({ BufferSpecification(guiContext.MAX_SPRITES * sizeof(_GUISpriteInstanceData), BufferUsage::STORAGE) }));
 
 		submitResource(manager, &guiContext.sprite.descriptorLayout.reference, std::vector<DescriptorLayoutSpecification>({
 			DescriptorLayoutSpecification(std::vector<UniformBinding>({
@@ -192,7 +192,7 @@ namespace Vivium {
 
 		submitResource(manager, &guiContext.sprite.descriptorSet.reference, std::vector<DescriptorSetSpecification>({
 			DescriptorSetSpecification(guiContext.sprite.descriptorLayout.reference, std::vector<UniformData>({
-				UniformData::fromBuffer(guiContext.sprite.storageBuffer.reference, guiContext.sprite.MAX_SPRITES * sizeof(_GUISpriteInstanceData), 0),
+				UniformData::fromBuffer(guiContext.sprite.storageBuffer.reference, guiContext.MAX_SPRITES * sizeof(_GUISpriteInstanceData), 0),
 				UniformData::fromTexture(guiContext.sprite.texture.reference)
 			}))
 			}));
@@ -220,7 +220,7 @@ namespace Vivium {
 	void _submitDebugRectGUIContext(GUIContext& guiContext, ResourceManager& manager, Engine& engine, Window& window)
 	{
 		submitResource(manager, &guiContext.debugRect.storageBuffer.reference, MemoryType::UNIFORM,
-			std::vector<BufferSpecification>({ BufferSpecification(guiContext.debugRect.MAX_DEBUG_RECTS * sizeof(_GUIDebugRectInstanceData), BufferUsage::STORAGE) }));
+			std::vector<BufferSpecification>({ BufferSpecification(guiContext.MAX_DEBUG_RECTS * sizeof(_GUIDebugRectInstanceData), BufferUsage::STORAGE) }));
 
 		submitResource(manager, &guiContext.debugRect.descriptorLayout.reference, std::vector<DescriptorLayoutSpecification>({
 			DescriptorLayoutSpecification(std::vector<UniformBinding>({
@@ -230,7 +230,7 @@ namespace Vivium {
 
 		submitResource(manager, &guiContext.debugRect.descriptorSet.reference, std::vector<DescriptorSetSpecification>({
 			DescriptorSetSpecification(guiContext.debugRect.descriptorLayout.reference, std::vector<UniformData>({
-				UniformData::fromBuffer(guiContext.debugRect.storageBuffer.reference, guiContext.debugRect.MAX_DEBUG_RECTS * sizeof(_GUIDebugRectInstanceData), 0)
+				UniformData::fromBuffer(guiContext.debugRect.storageBuffer.reference, guiContext.MAX_DEBUG_RECTS * sizeof(_GUIDebugRectInstanceData), 0)
 			}))
 			}));
 
@@ -410,10 +410,10 @@ namespace Vivium {
 
 		contextBeginTransfer(context);
 
-		std::memcpy(stagingMapping, vertexData, 8 * sizeof(float));
+		memcpy(stagingMapping, vertexData, 8 * sizeof(float));
 		cmdTransferBuffer(context, resource, 8 * sizeof(float), 0, guiContext.rectVertexBuffer.resource);
 
-		std::memcpy(reinterpret_cast<uint8_t*>(stagingMapping) + 8 * sizeof(float), indexData, 6 * sizeof(uint16_t));
+		memcpy(reinterpret_cast<uint8_t*>(stagingMapping) + 8 * sizeof(float), indexData, 6 * sizeof(uint16_t));
 		cmdTransferBuffer(context, resource, 6 * sizeof(uint16_t), 8 * sizeof(float), guiContext.rectIndexBuffer.resource);
 
 		contextEndTransfer(context, engine);

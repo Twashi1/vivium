@@ -20,6 +20,7 @@ extern "C" {
 #include <format>
 #include <iostream>
 #include <string>
+#include <cstring>
 
 #include "time/timer.h"
 #include "error/log.h"
@@ -38,7 +39,7 @@ extern "C" {
 			Vivium::LogSeverity::FATAL,						\
 			"[ASSERT] ({}): {}",					\
 			#condition,								\
-			std::format(msg, __VA_ARGS__)			\
+			std::format(msg __VA_OPT__(,) __VA_ARGS__)			\
 		)
 #define VIVIUM_VK_CHECK(command, message) \
 	if (VkResult result = command; result != VK_SUCCESS) \
@@ -54,4 +55,16 @@ extern "C" {
 // TODO: weird place for this variable
 #define VIVIUM_FRAMES_IN_FLIGHT 2
 
-#define VIVIUM_GLSLC_PATH "external/vulkan/Bin/glslc.exe"
+#if defined(_WIN32)
+  #define VIVIUM_PLATFORM_WINDOWS
+#elif defined(__linux__)
+  #define VIVIUM_PLATFORM_LINUX
+#else
+  static_assert("Unknown platform")
+#endif
+
+#if defined(VIVIUM_PLATFORM_WINDOWS)
+  #define VIVIUM_GLSLC_PATH "external/win/vulkan/Bin/glslc.exe"
+#elif defined(VIVIUM_PLATFORM_LINUX)
+  #define VIVIUM_GLSLC_PATH "external/linux/vulkan/x86_64/bin/glslc"
+#endif

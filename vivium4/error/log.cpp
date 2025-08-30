@@ -77,6 +77,10 @@ namespace Vivium {
 		), color);
 	}
 
+  LogContext::LogContext(LogSeverity severity, std::string message, uint32_t line, char const* functionSignature, char const* filename, std::chrono::system_clock::time_point time)
+    : severity(severity), message(message), line(line), functionSignature(functionSignature), filename(filename), timestamp(time)
+  {}
+
 	void setLogCallback(LogCallback callback)
 	{
 		_logState.logCallback = callback;

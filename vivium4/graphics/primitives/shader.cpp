@@ -15,11 +15,13 @@ namespace Vivium {
 
 		switch (stage) {
 		case ShaderStage::FRAGMENT:
-			stageOption = "-fs";
+			stageOption = "-fs"; break;
+    default: break;
 		}
 			 
 		// TODO: prefer CreateProcess https://learn.microsoft.com/en-us/windows/win32/procthread/creating-processes
-		std::string fullCommand = std::format("if 1==1 \"{}\" {} -o {}", VIVIUM_GLSLC_PATH, sourceFilename, destFilename);
+    // TODO: test works cross platform, prefer the dedicated unix/windows functions for starting processes
+		std::string fullCommand = std::format("\"{}\" {} -o {}", VIVIUM_GLSLC_PATH, sourceFilename, destFilename);
 		system(fullCommand.c_str());
 
 		std::ifstream shaderBinaryFile;
@@ -29,6 +31,7 @@ namespace Vivium {
 			VIVIUM_LOG(LogSeverity::FATAL, "Failed to open shader binary file");
 
 		std::string binaryCode;
+    // Get length before reading
 		shaderBinaryFile.seekg(0, std::ios::end);
 		binaryCode.resize(shaderBinaryFile.tellg());
 		shaderBinaryFile.seekg(0, std::ios::beg);
@@ -42,13 +45,13 @@ namespace Vivium {
 	uint32_t _sizeOfShaderDataType(ShaderDataType type)
 	{
 		// High 32 bits
-		return static_cast<uint32_t>(static_cast<uint64_t>(type) >> 32Ui64);
+		return static_cast<uint32_t>(static_cast<uint64_t>(type) >> 32ULL);
 	}
 			
 	VkFormat _formatOfShaderDataType(ShaderDataType type)
 	{
 		// Low 32 bits
-		return static_cast<VkFormat>(static_cast<uint64_t>(type) & ((1Ui64 << 32Ui64) - 1));
+		return static_cast<VkFormat>(static_cast<uint64_t>(type) & ((1ULL << 32ULL) - 1));
 	}
 
 	char const* getString(ShaderDataType type)

@@ -6,6 +6,14 @@
 
 #include "../time/timer.h"
 
+#if defined(__GNUC__) || defined(__GNUG__)
+  #define VIVIUM_PRETTY_FUNCTION __PRETTY_FUNCTION__
+#elif defined(_MSC_VER)
+  #define VIVIUM_PRETTY_FUNCTION __FUNCSIG__
+#else
+  static_assert("Failed to detect compiler")
+#endif
+
 namespace Vivium {
 	enum class LogSeverity {
 		DEBUG,
@@ -46,6 +54,8 @@ namespace Vivium {
 		const char* filename;
 
 		std::chrono::system_clock::time_point timestamp;
+
+    LogContext(LogSeverity severity, std::string message, uint32_t line, char const* functionSignature, char const* filename, std::chrono::system_clock::time_point time);
 	};
 
 	typedef void(*LogCallback)(LogContext const&);
@@ -74,8 +84,8 @@ namespace Vivium {
 // Use VIVIUM_SOURCE_PATH_SIZE to advance the __FILE__ pointer to cut off the source path
 #define VIVIUM_LOG(severity, message, ...) \
 	Vivium::_logState.logCallback( \
-		Vivium::LogContext{ \
-			severity, std::format(message, __VA_ARGS__), __LINE__, __FUNCSIG__, __FILE__ + VIVIUM_SOURCE_PATH_SIZE, std::chrono::system_clock::now() \
-		} \
+		Vivium::LogContext(Vivium::LogContext( \
+			severity, std::format(message __VA_OPT__(,) __VA_ARGS__), __LINE__, VIVIUM_PRETTY_FUNCTION, __FILE__ + VIVIUM_SOURCE_PATH_SIZE, std::chrono::system_clock::now() \
+    )) \
 	)
 #endif

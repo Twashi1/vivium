@@ -16,14 +16,14 @@ namespace Vivium {
 			static_cast<VkMemoryPropertyFlags>(memoryType)
 		);
 
+    // TODO: this used to have some debug information attached
+    //  but VK_CHECK doesn't take variadic arguments for printing 
 		VIVIUM_VK_CHECK(vkAllocateMemory(
 			engine.device,
 			&memoryAllocationInfo,
 			nullptr,
 			&deviceMemoryHandle.memory
-		), "Failed to allocate memory of size {} and type {}",
-			size,
-			memoryAllocationInfo.memoryTypeIndex
+		), "Failed to allocate Vulkan memory"
 		);
 
 		if (isMappable(memoryType)) {
@@ -276,7 +276,7 @@ namespace Vivium {
 			oneTimeStagingBuffers.push_back(stagingBuffer);
 			oneTimeStagingMemories.push_back(stagingMemory);
 
-			std::memcpy(stagingMapping, specification.data.data(), specification.data.size());
+			memcpy(stagingMapping, specification.data.data(), specification.data.size());
 
 			textureRegions.push_back({});
 

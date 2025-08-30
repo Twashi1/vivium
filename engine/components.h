@@ -176,35 +176,37 @@ struct DescriptorSetEntry {
 	EntrySpecification<UploadEntry<Entity>>* entrySpec;
 };
 
-template <>
-struct EntrySpecification<UniformBindingEntry> {};
+namespace Vivium {
+  template <>
+  struct EntrySpecification<UniformBindingEntry> {};
 
-template <>
-struct EntrySpecification<BufferLayoutEntry> {};
+  template <>
+  struct EntrySpecification<BufferLayoutEntry> {};
 
-template <>
-struct EntrySpecification<ShaderEntry> {};
+  template <>
+  struct EntrySpecification<ShaderEntry> {};
 
-template <>
-struct EntrySpecification<PipelineEntry> {
-	Registry* registry;
-	Entity** heldItemPointer;
-};
+  template <>
+  struct EntrySpecification<PipelineEntry> {
+	  Registry* registry;
+	  Entity** heldItemPointer;
+  };
 
-template <>
-struct EntrySpecification<DescriptorLayoutEntry> {};
+  template <>
+  struct EntrySpecification<DescriptorLayoutEntry> {};
 
-template <>
-struct EntrySpecification<BufferEntry> {};
+  template <>
+  struct EntrySpecification<BufferEntry> {};
 
-template <>
-struct EntrySpecification<DescriptorSetEntry> {
-	Registry* registry;
-	Entity** heldItemPointer;
-};
-
-template <>
-struct EntrySpecification<TextureEntry> {};
+  template <>
+  struct EntrySpecification<DescriptorSetEntry> {
+	  Registry* registry;
+	  Entity** heldItemPointer;
+  };
+  
+  template <>
+  struct EntrySpecification<TextureEntry> {};
+}
 
 UniformBinding getValue(UniformBindingEntry const& entry);
 UniformBindingEntry submitEntry(EntrySpecification<UniformBindingEntry> const& spec, GUIContext& guiContext, ResourceManager& resourceManager);

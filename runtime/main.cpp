@@ -61,7 +61,7 @@ void testing_ecs() {
 	delete registry;
 }
 
-#define TMP_EDITOR 0
+#define TMP_EDITOR 1
 
 int main(int argc, char* argv[]) {
 	if (argc > 1) {

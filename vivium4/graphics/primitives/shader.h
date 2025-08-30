@@ -9,28 +9,28 @@
 
 namespace Vivium {
 	enum class ShaderDataType : uint64_t {
-		BOOL	= (1Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R8_UINT),
-		INT		= (4Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32_SINT),
-		UINT	= (4Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32_UINT),
-		FLOAT	= (4Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32_SFLOAT),
-		DOUBLE	= (8Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R64_SFLOAT),
+		BOOL	= (1ULL << 32ULL) | static_cast<uint64_t>(VK_FORMAT_R8_UINT),
+		INT		= (4ULL << 32ULL) | static_cast<uint64_t>(VK_FORMAT_R32_SINT),
+		UINT	= (4ULL << 32ULL) | static_cast<uint64_t>(VK_FORMAT_R32_UINT),
+		FLOAT	= (4ULL << 32ULL) | static_cast<uint64_t>(VK_FORMAT_R32_SFLOAT),
+		DOUBLE	= (8ULL << 32ULL) | static_cast<uint64_t>(VK_FORMAT_R64_SFLOAT),
 
-		BVEC2	= (2Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R8G8_UINT),
-		IVEC2	= (8Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32G32_SINT),
-		UVEC2	= (8Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32G32_UINT),
-		VEC2	= (8Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32G32_SFLOAT),
-		DVEC2	= (16Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R64G64_SINT),
+		BVEC2	= (2ULL << 32ULL) | static_cast<uint64_t>(VK_FORMAT_R8G8_UINT),
+		IVEC2	= (8ULL << 32ULL) | static_cast<uint64_t>(VK_FORMAT_R32G32_SINT),
+		UVEC2	= (8ULL << 32ULL) | static_cast<uint64_t>(VK_FORMAT_R32G32_UINT),
+		VEC2	= (8ULL << 32ULL) | static_cast<uint64_t>(VK_FORMAT_R32G32_SFLOAT),
+		DVEC2	= (16ULL << 32ULL) | static_cast<uint64_t>(VK_FORMAT_R64G64_SINT),
 
-		BVEC3	= (3Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R8G8B8_UINT),
-		IVEC3	= (12Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32G32B32_SINT),
-		UVEC3	= (12Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32G32B32_UINT),
-		VEC3	= (12Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32G32B32_SFLOAT),
+		BVEC3	= (3ULL << 32ULL) | static_cast<uint64_t>(VK_FORMAT_R8G8B8_UINT),
+		IVEC3	= (12ULL << 32ULL) | static_cast<uint64_t>(VK_FORMAT_R32G32B32_SINT),
+		UVEC3	= (12ULL << 32ULL) | static_cast<uint64_t>(VK_FORMAT_R32G32B32_UINT),
+		VEC3	= (12ULL << 32ULL) | static_cast<uint64_t>(VK_FORMAT_R32G32B32_SFLOAT),
 		/* DVEC3 */
 
-		BVEC4	= (4Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R8G8B8A8_UINT),
-		IVEC4	= (16Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32G32B32A32_SINT),
-		UVEC4	= (16Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32G32B32A32_UINT),
-		VEC4	= (16Ui64 << 32Ui64) | static_cast<uint64_t>(VK_FORMAT_R32G32B32A32_SFLOAT),
+		BVEC4	= (4ULL << 32ULL) | static_cast<uint64_t>(VK_FORMAT_R8G8B8A8_UINT),
+		IVEC4	= (16ULL << 32ULL) | static_cast<uint64_t>(VK_FORMAT_R32G32B32A32_SINT),
+		UVEC4	= (16ULL << 32ULL) | static_cast<uint64_t>(VK_FORMAT_R32G32B32A32_UINT),
+		VEC4	= (16ULL << 32ULL) | static_cast<uint64_t>(VK_FORMAT_R32G32B32A32_SFLOAT),
 		/* DVEC4 */
 	};
 

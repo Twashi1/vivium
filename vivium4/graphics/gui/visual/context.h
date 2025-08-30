@@ -60,6 +60,12 @@ namespace Vivium {
 		Font consolas64;
 		Ref<Texture> consolas64Texture;
 
+    static constexpr uint64_t MAX_BUTTONS = 128;
+		static constexpr uint64_t MAX_PANELS = 128;
+		static constexpr uint64_t MAX_SLIDERS = 128;
+		static constexpr uint64_t MAX_DEBUG_RECTS = 128;
+		static constexpr uint64_t MAX_SPRITES = 128;
+
 		struct {
 			Ref<Pipeline> pipeline;
 			Ref<DescriptorLayout> descriptorLayout;
@@ -73,8 +79,6 @@ namespace Vivium {
 		} text;
 
 		struct {
-			static constexpr uint64_t MAX_BUTTONS = 128;
-
 			Ref<Shader> fragmentShader;
 			Ref<Shader> vertexShader;
 
@@ -88,8 +92,6 @@ namespace Vivium {
 		} button;
 
 		struct {
-			static constexpr uint64_t MAX_PANELS = 128;
-
 			Ref<Shader> fragmentShader;
 			Ref<Shader> vertexShader;
 
@@ -103,8 +105,6 @@ namespace Vivium {
 		} panel;
 
 		struct {
-			static constexpr uint64_t MAX_SLIDERS = 128;
-
 			Ref<Shader> fragmentShader;
 			Ref<Shader> vertexShader;
 
@@ -118,8 +118,6 @@ namespace Vivium {
 		} slider;
 
 		struct {
-			static constexpr uint64_t MAX_DEBUG_RECTS = 128;
-
 			Ref<Shader> fragmentShader;
 			Ref<Shader> vertexShader;
 
@@ -133,8 +131,6 @@ namespace Vivium {
 		} debugRect;
 
 		struct {
-			static constexpr uint64_t MAX_SPRITES = 128;
-
 			Ref<Shader> fragmentShader;
 			Ref<Shader> vertexShader;
 
