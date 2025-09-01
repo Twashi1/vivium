@@ -448,7 +448,9 @@ namespace Runtime {
 
 			engineEndFrame(state.engine);
 		}
-	}
+
+    VIVIUM_LOG(LogSeverity::DEBUG, "Window is closing now");
+	} 
 
 	void drop(State& state)
 	{
