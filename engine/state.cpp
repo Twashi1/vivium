@@ -1,846 +1,981 @@
 #include "state.h"
 
-void _submit(State& state)
-{
-	_submitEditor(state);
+void _submit(State& state) { _submitEditor(state); }
+
+void _submitEditor(State& state) {
+  state.editor.background = createPanel(
+      state.guiContext, PanelSpecification{defaultGUIParent(state.guiContext),
+                                           colorDarkGray, colorBlack, 0.0f});
+
+  state.editor.inspectorContainer = createContainer(
+      state.guiContext, ContainerSpecification(state.editor.background.base,
+                                               ContainerOrdering::VERTICAL,
+                                               OffsetMethod::EXTENT));
+
+  state.editor.createComponent = submitEntry(
+      EntrySpecification<ObjectEntry<VulkanComponent>>(
+          VulkanComponent::ENTER_COMPONENT,
+          std::vector<VulkanComponent>(
+              {VulkanComponent::BUFFER, VulkanComponent::BUFFER_LAYOUT,
+               VulkanComponent::TEXTURE, VulkanComponent::SHADER,
+               VulkanComponent::DESCRIPTOR_LAYOUT,
+               VulkanComponent::DESCRIPTOR_SET, VulkanComponent::PIPELINE})),
+      state.guiContext, state.manager);
+
+  addChild(state.editor.inspectorContainer.base,
+           {&state.editor.createComponent.base, 1}, state.guiContext);
+
+  state.editor.compileTree = submitButton(
+      state.manager, state.guiContext,
+      ButtonSpecification(state.editor.background.base, Color(0.6f, 0.0f, 0.6f),
+                          Color(0.0f, 0.0f, 0.0f)));
+
+  state.editor.saveProject = submitButton(
+      state.manager, state.guiContext,
+      ButtonSpecification(state.editor.background.base, Color(0.0f, 0.6f, 0.6f),
+                          Color(0.0f, 0.0f, 0.0f)));
+
+  state.editor.loadProject = submitButton(
+      state.manager, state.guiContext,
+      ButtonSpecification(state.editor.background.base, Color(0.0f, 0.3f, 0.3f),
+                          Color(0.0f, 0.0f, 0.0f)));
+
+  for (uint64_t i = 0; i < state.editor.propertyDisplays.size(); i++) {
+    state.editor.propertyDisplays[i] =
+        _submitPropertyDisplay(state, nullEntity, &state.registry);
+  }
+
+  _submitEntityView(state);
 }
 
-void _submitEditor(State& state)
-{
-	state.editor.background = createPanel(state.guiContext, PanelSpecification{ defaultGUIParent(state.guiContext), colorDarkGray, colorBlack, 0.0f});
+void _submitEntityView(State& state) {
+  state.editor.entityView.background = createPanel(
+      state.guiContext, PanelSpecification{state.editor.background.base,
+                                           colorDarkGray, colorBlack, 0.01f});
+  state.editor.entityView.createButton =
+      submitButton(state.manager, state.guiContext,
+                   ButtonSpecification{state.editor.entityView.background.base,
+                                       colorDarkGray, colorBlack});
+  state.editor.entityView.entityTree = createTreeContainer(
+      state.guiContext, state.editor.entityView.background.base);
+  state.editor.entityView.entityTree.enabled = true;
+  state.editor.entityView.entityTextBatch = submitTextBatch(
+      state.manager, state.guiContext,
+      TextBatchSpecification{256, &state.guiContext.consolas64,
+                             state.guiContext.consolas64Texture.reference});
+  state.editor.entityView.heldElement = nullptr;
+  state.editor.entityView.heldEntityPtr = nullptr;
+  state.editor.entityView.lastClicked = nullEntity;
 
-	state.editor.inspectorContainer = createContainer(state.guiContext, ContainerSpecification(
-		state.editor.background.base,
-		ContainerOrdering::VERTICAL,
-		OffsetMethod::EXTENT
-	));
+  for (uint32_t i = 0; i < MAX_CONCURRENT_ENTITY_PANELS; i++) {
+    state.editor.entityView.entityPanels.push_back(createPanel(
+        state.guiContext,
+        PanelSpecification(nullGUIParent(), colorDarkGray, colorBlack, 0.01f)));
+    addNewChild(state.editor.entityView.entityTree,
+                &state.editor.entityView.entityPanelIndices[i],
+                state.editor.entityView.entityPanels.back().base,
+                state.guiContext);
 
-	state.editor.createComponent = submitEntry(EntrySpecification<ObjectEntry<VulkanComponent>>(
-		VulkanComponent::ENTER_COMPONENT,
-		std::vector<VulkanComponent>({
-			VulkanComponent::BUFFER,
-			VulkanComponent::BUFFER_LAYOUT,
-			VulkanComponent::TEXTURE,
-			VulkanComponent::SHADER,
-			VulkanComponent::DESCRIPTOR_LAYOUT,
-			VulkanComponent::DESCRIPTOR_SET,
-			VulkanComponent::PIPELINE
-		})
-	), state.guiContext, state.manager);
-
-	addChild(state.editor.inspectorContainer.base, { &state.editor.createComponent.base, 1 }, state.guiContext);
-
-	state.editor.compileTree = submitButton(state.manager, state.guiContext, ButtonSpecification(
-		state.editor.background.base,
-		Color(0.6f, 0.0f, 0.6f),
-		Color(0.0f, 0.0f, 0.0f)
-	));
-
-	state.editor.saveProject = submitButton(state.manager, state.guiContext, ButtonSpecification(
-		state.editor.background.base,
-		Color(0.0f, 0.6f, 0.6f),
-		Color(0.0f, 0.0f, 0.0f)
-	));
-
-	state.editor.loadProject = submitButton(state.manager, state.guiContext, ButtonSpecification(
-		state.editor.background.base,
-		Color(0.0f, 0.3f, 0.3f),
-		Color(0.0f, 0.0f, 0.0f)
-	));
-
-	for (uint64_t i = 0; i < state.editor.propertyDisplays.size(); i++) {
-		state.editor.propertyDisplays[i] = _submitPropertyDisplay(state, nullEntity, &state.registry);
-	}
-
-	_submitEntityView(state);
+    state.editor.entityView.textObjects.push_back(createText(
+        TextSpecification{state.editor.entityView.entityPanels.back().base, "",
+                          colorCyan,
+                          calculateTextMetrics("", state.guiContext.consolas64),
+                          TextAlignment::CENTER},
+        state.guiContext));
+  }
 }
 
-void _submitEntityView(State& state)
-{
-	state.editor.entityView.background = createPanel(state.guiContext, PanelSpecification{ state.editor.background.base, colorDarkGray, colorBlack, 0.01f });
-	state.editor.entityView.createButton = submitButton(state.manager, state.guiContext, ButtonSpecification{ state.editor.entityView.background.base, colorDarkGray, colorBlack });
-	state.editor.entityView.entityTree = createTreeContainer(state.guiContext, state.editor.entityView.background.base);
-	state.editor.entityView.entityTree.enabled = true;
-	state.editor.entityView.entityTextBatch = submitTextBatch(state.manager, state.guiContext, TextBatchSpecification{ 256, &state.guiContext.consolas64, state.guiContext.consolas64Texture.reference });
-	state.editor.entityView.heldElement = nullptr;
-	state.editor.entityView.heldEntityPtr = nullptr;
-	state.editor.entityView.lastClicked = nullEntity;
+void _setup(State& state) { _setupEditor(state); }
 
-	for (uint32_t i = 0; i < MAX_CONCURRENT_ENTITY_PANELS; i++) {
-		state.editor.entityView.entityPanels.push_back(createPanel(state.guiContext, PanelSpecification(nullGUIParent(), colorDarkGray, colorBlack, 0.01f)));
-		addNewChild(state.editor.entityView.entityTree, &state.editor.entityView.entityPanelIndices[i], state.editor.entityView.entityPanels.back().base, state.guiContext);
+void _setupEditor(State& state) {
+  setupEntry(state.editor.createComponent, state.manager, state.engine,
+             state.context, state.guiContext);
+  setupButton(state.editor.compileTree, state.manager);
+  setupButton(state.editor.saveProject, state.manager);
+  setupButton(state.editor.loadProject, state.manager);
 
-		state.editor.entityView.textObjects.push_back(createText(TextSpecification{
-			state.editor.entityView.entityPanels.back().base,
-			"",
-			colorCyan,
-			calculateTextMetrics("", state.guiContext.consolas64),
-			TextAlignment::CENTER
-		}, state.guiContext));
-	}
+  properties(state.editor.compileTree, state.guiContext).dimensions =
+      F32x2(0.15f, 0.03f);
+  properties(state.editor.compileTree, state.guiContext).position =
+      F32x2(-0.2f, -0.02f);
+  properties(state.editor.compileTree, state.guiContext).anchorY =
+      GUIAnchor::TOP;
+  properties(state.editor.compileTree, state.guiContext).centerY =
+      GUIAnchor::TOP;
+
+  properties(state.editor.saveProject, state.guiContext).dimensions =
+      F32x2(0.15f, 0.03f);
+  properties(state.editor.saveProject, state.guiContext).position =
+      F32x2(0.0f, -0.02f);
+  properties(state.editor.saveProject, state.guiContext).anchorY =
+      GUIAnchor::TOP;
+  properties(state.editor.saveProject, state.guiContext).centerY =
+      GUIAnchor::TOP;
+
+  properties(state.editor.loadProject, state.guiContext).dimensions =
+      F32x2(0.15f, 0.03f);
+  properties(state.editor.loadProject, state.guiContext).position =
+      F32x2(0.2f, -0.02f);
+  properties(state.editor.loadProject, state.guiContext).anchorY =
+      GUIAnchor::TOP;
+  properties(state.editor.loadProject, state.guiContext).centerY =
+      GUIAnchor::TOP;
+
+  properties(state.editor.inspectorContainer.base, state.guiContext)
+      .dimensions = F32x2(0.2f, 1.0f);
+  properties(state.editor.inspectorContainer.base, state.guiContext).anchorX =
+      GUIAnchor::RIGHT;
+  properties(state.editor.inspectorContainer.base, state.guiContext).centerX =
+      GUIAnchor::RIGHT;
+  properties(state.editor.inspectorContainer.base, state.guiContext).anchorY =
+      GUIAnchor::TOP;
+  properties(state.editor.inspectorContainer.base, state.guiContext).centerY =
+      GUIAnchor::TOP;
+  properties(state.editor.createComponent.base, state.guiContext).dimensions =
+      F32x2(1.0f, 0.05f);
+  properties(state.editor.createComponent.base, state.guiContext).anchorY =
+      GUIAnchor::TOP;
+  properties(state.editor.createComponent.base, state.guiContext).centerY =
+      GUIAnchor::TOP;
+
+  for (PropertyDisplay& display : state.editor.propertyDisplays) {
+    _setupPropertyDisplay(state, display);
+    properties(display.base, state.guiContext).dimensions = F32x2(1.0f, 0.9f);
+    properties(display.base, state.guiContext).anchorY = GUIAnchor::TOP;
+    properties(display.base, state.guiContext).centerY = GUIAnchor::TOP;
+  }
+
+  _setupEntityView(state);
 }
 
-void _setup(State& state)
-{
-	_setupEditor(state);
+void _setupEntityView(State& state) {
+  setupButton(state.editor.entityView.createButton, state.manager);
+  setButtonText(state.editor.entityView.createButton, state.engine,
+                state.context, state.guiContext, "Create entity");
+
+  setupTextBatch(state.editor.entityView.entityTextBatch, state.manager);
+
+  properties(state.editor.entityView.createButton, state.guiContext)
+      .dimensions = F32x2(0.9f, 0.1f);
+  properties(state.editor.entityView.createButton, state.guiContext).position =
+      F32x2(0.0f, -0.01f);
+  properties(state.editor.entityView.createButton, state.guiContext).centerY =
+      GUIAnchor::TOP;
+  properties(state.editor.entityView.createButton, state.guiContext).anchorY =
+      GUIAnchor::TOP;
+  properties(state.editor.entityView.background, state.guiContext).dimensions =
+      F32x2(0.2f, 0.9f);
+  properties(state.editor.entityView.background, state.guiContext).position =
+      F32x2(0.05f, 0.0f);
+  properties(state.editor.entityView.background, state.guiContext).centerX =
+      GUIAnchor::LEFT;
+  properties(state.editor.entityView.background, state.guiContext).anchorX =
+      GUIAnchor::LEFT;
+  properties(state.editor.entityView.entityTree.root.base, state.guiContext)
+      .centerY = GUIAnchor::TOP;
+  properties(state.editor.entityView.entityTree.root.base, state.guiContext)
+      .anchorY = GUIAnchor::TOP;
+  properties(state.editor.entityView.entityTree.root.base, state.guiContext)
+      .centerX = GUIAnchor::CENTER;
+  properties(state.editor.entityView.entityTree.root.base, state.guiContext)
+      .anchorX = GUIAnchor::CENTER;
+  properties(state.editor.entityView.entityTree.root.base, state.guiContext)
+      .position = F32x2(0.0f, -0.115f);
+  properties(state.editor.entityView.entityTree.root.base, state.guiContext)
+      .dimensions = F32x2(1.0f, 1.0f);
+
+  for (uint32_t i = 0; i < MAX_CONCURRENT_ENTITY_PANELS; i++) {
+    GUIProperties& props =
+        properties(state.editor.entityView.entityPanels[i], state.guiContext);
+    props.dimensions = F32x2(0.9f, 0.05f);
+    props.position = F32x2(0.05f, -0.01f);
+    props.centerY = GUIAnchor::TOP;
+    props.anchorY = GUIAnchor::TOP;
+
+    GUIProperties& textProps =
+        properties(state.editor.entityView.textObjects[i], state.guiContext);
+    textProps.dimensions = F32x2(0.95f);
+    textProps.centerX = GUIAnchor::LEFT;
+    textProps.centerY = GUIAnchor::BOTTOM;
+    textProps.anchorX = GUIAnchor::CENTER;
+    textProps.anchorY = GUIAnchor::CENTER;
+
+    state.editor.entityView.entityPanelIndices[i] = i;
+  }
 }
 
-void _setupEditor(State& state)
-{
-	setupEntry(state.editor.createComponent, state.manager, state.engine, state.context, state.guiContext);
-	setupButton(state.editor.compileTree, state.manager);
-	setupButton(state.editor.saveProject, state.manager);
-	setupButton(state.editor.loadProject, state.manager);
+void _drop(State& state) { _dropEditor(state); }
 
-	properties(state.editor.compileTree, state.guiContext).dimensions = F32x2(0.15f, 0.03f);
-	properties(state.editor.compileTree, state.guiContext).position = F32x2(-0.2f, -0.02f);
-	properties(state.editor.compileTree, state.guiContext).anchorY = GUIAnchor::TOP;
-	properties(state.editor.compileTree, state.guiContext).centerY = GUIAnchor::TOP;
+void _dropEditor(State& state) {
+  for (PropertyDisplay& display : state.editor.propertyDisplays) {
+    _dropPropertyDisplay(state, display);
+  }
 
-	properties(state.editor.saveProject, state.guiContext).dimensions = F32x2(0.15f, 0.03f);
-	properties(state.editor.saveProject, state.guiContext).position = F32x2(0.0f, -0.02f);
-	properties(state.editor.saveProject, state.guiContext).anchorY = GUIAnchor::TOP;
-	properties(state.editor.saveProject, state.guiContext).centerY = GUIAnchor::TOP;
-
-	properties(state.editor.loadProject, state.guiContext).dimensions = F32x2(0.15f, 0.03f);
-	properties(state.editor.loadProject, state.guiContext).position = F32x2(0.2f, -0.02f);
-	properties(state.editor.loadProject, state.guiContext).anchorY = GUIAnchor::TOP;
-	properties(state.editor.loadProject, state.guiContext).centerY = GUIAnchor::TOP;
-
-	properties(state.editor.inspectorContainer.base, state.guiContext).dimensions = F32x2(0.2f, 1.0f);
-	properties(state.editor.inspectorContainer.base, state.guiContext).anchorX = GUIAnchor::RIGHT;
-	properties(state.editor.inspectorContainer.base, state.guiContext).centerX = GUIAnchor::RIGHT;
-	properties(state.editor.inspectorContainer.base, state.guiContext).anchorY = GUIAnchor::TOP;
-	properties(state.editor.inspectorContainer.base, state.guiContext).centerY = GUIAnchor::TOP;
-	properties(state.editor.createComponent.base, state.guiContext).dimensions = F32x2(1.0f, 0.05f);
-	properties(state.editor.createComponent.base, state.guiContext).anchorY = GUIAnchor::TOP;
-	properties(state.editor.createComponent.base, state.guiContext).centerY = GUIAnchor::TOP;
-
-	for (PropertyDisplay& display : state.editor.propertyDisplays) {
-		_setupPropertyDisplay(state, display);
-		properties(display.base, state.guiContext).dimensions = F32x2(1.0f, 0.9f);
-		properties(display.base, state.guiContext).anchorY = GUIAnchor::TOP;
-		properties(display.base, state.guiContext).centerY = GUIAnchor::TOP;
-	}
-
-	_setupEntityView(state);
+  dropButton(state.editor.compileTree, state.engine, state.guiContext);
+  dropButton(state.editor.saveProject, state.engine, state.guiContext);
+  dropButton(state.editor.loadProject, state.engine, state.guiContext);
+  dropEntry(state.editor.createComponent, state.engine, state.guiContext);
+  _dropEntityView(state);
 }
 
-void _setupEntityView(State& state)
-{
-	setupButton(state.editor.entityView.createButton, state.manager);
-	setButtonText(state.editor.entityView.createButton, state.engine, state.context, state.guiContext, "Create entity");
-
-	setupTextBatch(state.editor.entityView.entityTextBatch, state.manager);
-
-	properties(state.editor.entityView.createButton, state.guiContext).dimensions = F32x2(0.9f, 0.1f);
-	properties(state.editor.entityView.createButton, state.guiContext).position = F32x2(0.0f, -0.01f);
-	properties(state.editor.entityView.createButton, state.guiContext).centerY = GUIAnchor::TOP;
-	properties(state.editor.entityView.createButton, state.guiContext).anchorY = GUIAnchor::TOP;
-	properties(state.editor.entityView.background, state.guiContext).dimensions = F32x2(0.2f, 0.9f);
-	properties(state.editor.entityView.background, state.guiContext).position = F32x2(0.05f, 0.0f);
-	properties(state.editor.entityView.background, state.guiContext).centerX = GUIAnchor::LEFT;
-	properties(state.editor.entityView.background, state.guiContext).anchorX = GUIAnchor::LEFT;
-	properties(state.editor.entityView.entityTree.root.base, state.guiContext).centerY = GUIAnchor::TOP;
-	properties(state.editor.entityView.entityTree.root.base, state.guiContext).anchorY = GUIAnchor::TOP;
-	properties(state.editor.entityView.entityTree.root.base, state.guiContext).centerX = GUIAnchor::CENTER;
-	properties(state.editor.entityView.entityTree.root.base, state.guiContext).anchorX = GUIAnchor::CENTER;
-	properties(state.editor.entityView.entityTree.root.base, state.guiContext).position = F32x2(0.0f, -0.115f);
-	properties(state.editor.entityView.entityTree.root.base, state.guiContext).dimensions = F32x2(1.0f, 1.0f);
-
-	for (uint32_t i = 0; i < MAX_CONCURRENT_ENTITY_PANELS; i++) {
-		GUIProperties& props = properties(state.editor.entityView.entityPanels[i], state.guiContext);
-		props.dimensions = F32x2(0.9f, 0.05f);
-		props.position = F32x2(0.05f, -0.01f);
-		props.centerY = GUIAnchor::TOP;
-		props.anchorY = GUIAnchor::TOP;
-
-		GUIProperties& textProps = properties(state.editor.entityView.textObjects[i], state.guiContext);
-		textProps.dimensions = F32x2(0.95f);
-		textProps.centerX = GUIAnchor::LEFT;
-		textProps.centerY = GUIAnchor::BOTTOM;
-		textProps.anchorX = GUIAnchor::CENTER;
-		textProps.anchorY = GUIAnchor::CENTER;
-
-		state.editor.entityView.entityPanelIndices[i] = i;
-	}
+void _dropEntityView(State& state) {
+  dropButton(state.editor.entityView.createButton, state.engine,
+             state.guiContext);
+  dropTextBatch(state.editor.entityView.entityTextBatch, state.engine);
 }
 
-void _drop(State& state)
-{
-	_dropEditor(state);
+void _update(State& state) {
+  // TODO: does not need to be on every update...
+  setButtonText(state.editor.entityView.createButton, state.engine,
+                state.context, state.guiContext, "Entity create");
+
+  bool clicked = Input::get(Input::BTN_LEFT).state == Input::RELEASE;
+  bool hoverCreateButton = pointInElement(
+      Input::getCursor(),
+      properties(state.editor.entityView.createButton, state.guiContext));
+  bool hoverSaveProject =
+      pointInElement(Input::getCursor(),
+                     properties(state.editor.saveProject, state.guiContext));
+  bool hoverLoadProject =
+      pointInElement(Input::getCursor(),
+                     properties(state.editor.loadProject, state.guiContext));
+
+  // VIVIUM_LOG(LogSeverity::DEBUG, "Holding something: {}",
+  // state.editor.entityView.heldEntityPtr != nullptr);
+
+  // TODO: only update the selected entity or the entity we last clicked on?
+  for (PropertyDisplay& display : state.editor.propertyDisplays) {
+    if (display.entity != nullEntity &&
+        state.editor.entityView.lastClicked == display.entity) {
+      _updatePropertyDisplay(state, display);
+    }
+  }
+
+  updateEntry(state.editor.createComponent, state.guiContext, state.engine,
+              state.context);
+  setButtonText(state.editor.compileTree, state.engine, state.context,
+                state.guiContext, "Compile tree");
+  setButtonText(state.editor.saveProject, state.engine, state.context,
+                state.guiContext, "Save");
+  setButtonText(state.editor.loadProject, state.engine, state.context,
+                state.guiContext, "Load");
+
+  if (clicked && hoverSaveProject) {
+    _saveState(state, "vivium4/res/saves/editor.dat");
+  }
+
+  if (clicked && hoverLoadProject) {
+    _loadState(state, "vivium4/res/saves/editor.dat");
+  }
+
+  if (clicked &&
+      pointInElement(Input::getCursor(),
+                     properties(state.editor.compileTree, state.guiContext))) {
+    VIVIUM_LOG(LogSeverity::DEBUG, "Clicked compile button");
+
+    _compileTree(state);
+  }
+
+  if (getValue(state.editor.createComponent) !=
+      VulkanComponent::ENTER_COMPONENT) {
+    VulkanComponent toCreate = getValue(state.editor.createComponent);
+
+    // Get property display
+    if (state.editor.entityView.lastClicked != nullEntity) {
+      switch (toCreate) {
+        case VulkanComponent::BUFFER:
+          state.registry.addComponent<BufferComponent>(
+              state.editor.entityView.lastClicked, BufferComponent{});
+          break;
+        case VulkanComponent::SHADER:
+          state.registry.addComponent<ShaderComponent>(
+              state.editor.entityView.lastClicked, ShaderComponent{});
+          break;
+        case VulkanComponent::BUFFER_LAYOUT:
+          state.registry.addComponent<BufferLayoutComponent>(
+              state.editor.entityView.lastClicked, BufferLayoutComponent{});
+          break;
+        case VulkanComponent::DESCRIPTOR_LAYOUT:
+          state.registry.addComponent<DescriptorLayoutComponent>(
+              state.editor.entityView.lastClicked, DescriptorLayoutComponent{});
+          break;
+        case VulkanComponent::DESCRIPTOR_SET:
+          state.registry.addComponent<DescriptorSetComponent>(
+              state.editor.entityView.lastClicked, DescriptorSetComponent{});
+          break;
+        case VulkanComponent::PIPELINE:
+          state.registry.addComponent<PipelineComponent>(
+              state.editor.entityView.lastClicked, PipelineComponent{});
+          break;
+        case VulkanComponent::TEXTURE:
+          state.registry.addComponent<TextureComponent>(
+              state.editor.entityView.lastClicked, TextureComponent{});
+          break;
+      }
+    }
+
+    state.editor.createComponent.currentlySelected =
+        VulkanComponent::ENTER_COMPONENT;
+  }
+
+  if (clicked && hoverCreateButton) {
+    _addEntityButton(state);
+  }
+
+  if (clicked) {
+    TreeContainer* hovered =
+        getContainer(Input::getCursor(), state.editor.entityView.entityTree,
+                     state.guiContext);
+
+    VIVIUM_LOG(LogSeverity::DEBUG, "Clicked on some container");
+
+    if (hovered != nullptr && hovered->data != nullptr) {
+      int panelIndex = *(int*)hovered->data;
+
+      state.editor.entityView.lastClicked =
+          state.editor.entityView.entities[panelIndex];
+
+      // TODO: function for refreshing/re-creating inspector window
+      clearChildren(state.editor.inspectorContainer.base, state.guiContext);
+      addChild(state.editor.inspectorContainer.base,
+               {&state.editor.createComponent.base, 1}, state.guiContext);
+      addChild(state.editor.inspectorContainer.base,
+               {&state.editor.propertyDisplays[panelIndex].base, 1},
+               state.guiContext);
+
+      VIVIUM_LOG(LogSeverity::DEBUG, "Last clicked: {}",
+                 state.editor.entityView.lastClicked);
+    }
+  }
+
+  state.editor.entityView.heldElement = updateTreeContainer(
+      Input::getCursor(), state.editor.entityView.entityTree,
+      state.editor.entityView.heldElement, state.guiContext);
+
+  // Look for entity of held element
+  if (state.editor.entityView.heldElement != nullptr &&
+      state.editor.entityView.heldElement->data != nullptr) {
+    int panelIndex = *(int*)state.editor.entityView.heldElement->data;
+    // We can assume the panel index is also the index for the relevant entity
+    state.editor.entityView.heldEntity =
+        state.editor.entityView.entities[panelIndex];
+    state.editor.entityView.heldEntityPtr = &state.editor.entityView.heldEntity;
+  } else {
+    state.editor.entityView.heldEntityPtr = nullptr;
+  }
+
+  // TODO: get view from registry
+  int i = 0;
+  std::vector<Text*> textObjectsPtr;
+
+  for (Entity e : state.editor.entityView.entities) {
+    ComponentName& name = state.registry.getComponent<ComponentName>(e);
+
+    textObjectsPtr.push_back(&state.editor.entityView.textObjects[i]);
+    state.editor.entityView.textObjects[i].metrics =
+        calculateTextMetrics(name.name, state.guiContext.consolas64);
+    state.editor.entityView.textObjects[i++].characters = name.name;
+  }
+
+  calculateTextBatch(state.editor.entityView.entityTextBatch, textObjectsPtr,
+                     state.context, state.guiContext, state.engine);
 }
 
-void _dropEditor(State& state)
-{
-	for (PropertyDisplay& display : state.editor.propertyDisplays) {
-		_dropPropertyDisplay(state, display);
-	}
+void _draw(State& state) {
+  std::vector<Panel*> entityPanels;
 
-	dropButton(state.editor.compileTree, state.engine, state.guiContext);
-	dropButton(state.editor.saveProject, state.engine, state.guiContext);
-	dropButton(state.editor.loadProject, state.engine, state.guiContext);
-	dropEntry(state.editor.createComponent, state.engine, state.guiContext);
-	_dropEntityView(state);
+  entityPanels.push_back(&state.editor.background);
+  entityPanels.push_back(&state.editor.entityView.background);
+
+  // TODO: iterate the tree container
+  //	mark the relevant panels that are disabled with appropriate colour
+
+  for (int i = 0; i < std::min(MAX_CONCURRENT_ENTITY_PANELS,
+                               (int)state.editor.entityView.entities.size());
+       i++) {
+    entityPanels.push_back(&state.editor.entityView.entityPanels[i]);
+  }
+
+  submitPanels(entityPanels, state.guiContext);
+
+  Button* buttons[] = {&state.editor.entityView.createButton,
+                       &state.editor.compileTree, &state.editor.saveProject,
+                       &state.editor.loadProject};
+
+  submitButtons(buttons, state.guiContext);
+
+  ObjectEntry<VulkanComponent>* entries[] = {&state.editor.createComponent};
+  submitEntries<VulkanComponent>(entries, state.guiContext);
+
+  // TODO: only render the selected entity or the entity we last clicked on?
+  for (PropertyDisplay& display : state.editor.propertyDisplays) {
+    if (display.entity != nullEntity &&
+        state.editor.entityView.lastClicked == display.entity) {
+      _renderPropertyDisplay(state, display);
+    }
+  }
+
+  GUIProperties& props2 =
+      properties(state.editor.createComponent.base, state.guiContext);
+  debugRect(props2.minExtent, props2.maxExtent - props2.minExtent, colorCyan,
+            state.guiContext);
+
+  renderGUI(state.context, state.guiContext, state.window);
+
+  renderTextBatch(state.editor.entityView.entityTextBatch, state.context,
+                  state.guiContext,
+                  orthogonalPerspective2D(windowDimensions(state.window),
+                                          F32x2(0.0f), 0.0f, 1.0f));
 }
 
-void _dropEntityView(State& state)
-{
-	dropButton(state.editor.entityView.createButton, state.engine, state.guiContext);
-	dropTextBatch(state.editor.entityView.entityTextBatch, state.engine);
+StitchedAtlas _createSpriteAtlas(State& state) {
+  StitchedAtlasCreator creator =
+      createStitchedAtlasCreator(TextureFormat::RGBA);
+  StitchedAtlasReference img0 =
+      submitToStitchedAtlasCreator("vivium4/res/img0.png", creator);
+  StitchedAtlasReference img1 =
+      submitToStitchedAtlasCreator("vivium4/res/img1.png", creator);
+  StitchedAtlas atlas = finishAtlasCreation(creator);
+  dropAtlasCreator(creator);
+  state.editor.entityView.img0 = convertStitchedAtlasReference(img0, atlas);
+  state.editor.entityView.img1 = convertStitchedAtlasReference(img1, atlas);
+
+  return atlas;
 }
 
-void _update(State& state)
-{
-	// TODO: does not need to be on every update...
-	setButtonText(state.editor.entityView.createButton, state.engine, state.context, state.guiContext, "Entity create");
+void initialise(State& state) {
+  _logInit();  // TODO: ugly that we have to initialise this
+  _fontInit();
 
-	bool clicked = Input::get(Input::BTN_LEFT).state == Input::RELEASE;
-	bool hoverCreateButton = pointInElement(Input::getCursor(), properties(state.editor.entityView.createButton, state.guiContext));
-	bool hoverSaveProject = pointInElement(Input::getCursor(), properties(state.editor.saveProject, state.guiContext));
-	bool hoverLoadProject = pointInElement(Input::getCursor(), properties(state.editor.loadProject, state.guiContext));
+  state.engine = createEngine(EngineOptions{});
+  state.window = createWindow(WindowOptions{}, state.engine);
 
-	// VIVIUM_LOG(LogSeverity::DEBUG, "Holding something: {}", state.editor.entityView.heldEntityPtr != nullptr);
+  Input::init(state.window);
 
-	// TODO: only update the selected entity or the entity we last clicked on?
-	for (PropertyDisplay& display : state.editor.propertyDisplays) {
-		if (display.entity != nullEntity && state.editor.entityView.lastClicked == display.entity) {
-			_updatePropertyDisplay(state, display);
-		}
-	}
+  state.context = createCommandContext(state.engine);
 
-	updateEntry(state.editor.createComponent, state.guiContext, state.engine, state.context);
-	setButtonText(state.editor.compileTree, state.engine, state.context, state.guiContext, "Compile tree");
-	setButtonText(state.editor.saveProject, state.engine, state.context, state.guiContext, "Save");
-	setButtonText(state.editor.loadProject, state.engine, state.context, state.guiContext, "Load");
+  state.manager = createManager();
 
-	if (clicked && hoverSaveProject) {
-		_saveState(state, "vivium4/res/saves/editor.dat");
-	}
+  StitchedAtlas atlas = _createSpriteAtlas(state);
 
-	if (clicked && hoverLoadProject) {
-		_loadState(state, "vivium4/res/saves/editor.dat");
-	}
+  state.guiContext =
+      createGUIContext(state.manager, state.engine, state.window, &atlas);
 
-	if (clicked && pointInElement(Input::getCursor(), properties(state.editor.compileTree, state.guiContext))) {
-		VIVIUM_LOG(LogSeverity::DEBUG, "Clicked compile button");
+  _submit(state);
 
-		_compileTree(state);
-	}
+  allocateManager(state.manager, state.engine);
 
-	if (getValue(state.editor.createComponent) != VulkanComponent::ENTER_COMPONENT) {
-		VulkanComponent toCreate = getValue(state.editor.createComponent);
+  setupGUIContext(state.guiContext, state.manager, state.context, state.engine);
+  _setup(state);
 
-		// Get property display
-		if (state.editor.entityView.lastClicked != nullEntity) {
-			switch (toCreate) {
-			case VulkanComponent::BUFFER:
-				state.registry.addComponent<BufferComponent>(state.editor.entityView.lastClicked, BufferComponent{});
-				break;
-			case VulkanComponent::SHADER:
-				state.registry.addComponent<ShaderComponent>(state.editor.entityView.lastClicked, ShaderComponent{});
-				break;
-			case VulkanComponent::BUFFER_LAYOUT:
-				state.registry.addComponent<BufferLayoutComponent>(state.editor.entityView.lastClicked, BufferLayoutComponent{});
-				break;
-			case VulkanComponent::DESCRIPTOR_LAYOUT:
-				state.registry.addComponent<DescriptorLayoutComponent>(state.editor.entityView.lastClicked, DescriptorLayoutComponent{});
-				break;
-			case VulkanComponent::DESCRIPTOR_SET:
-				state.registry.addComponent<DescriptorSetComponent>(state.editor.entityView.lastClicked, DescriptorSetComponent{});
-				break;
-			case VulkanComponent::PIPELINE:
-				state.registry.addComponent<PipelineComponent>(state.editor.entityView.lastClicked, PipelineComponent{});
-				break;
-			case VulkanComponent::TEXTURE:
-				state.registry.addComponent<TextureComponent>(state.editor.entityView.lastClicked, TextureComponent{});
-				break;
-			}
-		}
-
-		state.editor.createComponent.currentlySelected = VulkanComponent::ENTER_COMPONENT;
-	}
-
-	if (clicked && hoverCreateButton) {
-		_addEntityButton(state);
-	}
-
-	if (clicked) {
-		TreeContainer* hovered = getContainer(Input::getCursor(), state.editor.entityView.entityTree, state.guiContext);
-
-		VIVIUM_LOG(LogSeverity::DEBUG, "Clicked on some container");
-
-		if (hovered != nullptr && hovered->data != nullptr) {
-			int panelIndex = *(int*)hovered->data;
-
-			state.editor.entityView.lastClicked = state.editor.entityView.entities[panelIndex];
-
-			// TODO: function for refreshing/re-creating inspector window
-			clearChildren(state.editor.inspectorContainer.base, state.guiContext);
-			addChild(state.editor.inspectorContainer.base, { &state.editor.createComponent.base, 1 }, state.guiContext);
-			addChild(state.editor.inspectorContainer.base, { &state.editor.propertyDisplays[panelIndex].base, 1 }, state.guiContext);
-
-			VIVIUM_LOG(LogSeverity::DEBUG, "Last clicked: {}", state.editor.entityView.lastClicked);
-		}
-	}
-
-	state.editor.entityView.heldElement = updateTreeContainer(Input::getCursor(), state.editor.entityView.entityTree, state.editor.entityView.heldElement, state.guiContext);
-
-	// Look for entity of held element
-	if (state.editor.entityView.heldElement != nullptr && state.editor.entityView.heldElement->data != nullptr) {
-		int panelIndex = *(int*)state.editor.entityView.heldElement->data;
-		// We can assume the panel index is also the index for the relevant entity
-		state.editor.entityView.heldEntity = state.editor.entityView.entities[panelIndex];
-		state.editor.entityView.heldEntityPtr = &state.editor.entityView.heldEntity;
-	}
-	else {
-		state.editor.entityView.heldEntityPtr = nullptr;
-	}
-
-	// TODO: get view from registry
-	int i = 0;
-	std::vector<Text*> textObjectsPtr;
-
-	for (Entity e : state.editor.entityView.entities) {
-		ComponentName& name = state.registry.getComponent<ComponentName>(e);
-
-		textObjectsPtr.push_back(&state.editor.entityView.textObjects[i]);
-		state.editor.entityView.textObjects[i].metrics = calculateTextMetrics(name.name, state.guiContext.consolas64);
-		state.editor.entityView.textObjects[i++].characters = name.name;
-	}
-
-	calculateTextBatch(state.editor.entityView.entityTextBatch, textObjectsPtr, state.context, state.guiContext, state.engine);
-}
-
-void _draw(State& state)
-{
-	std::vector<Panel*> entityPanels;
-
-	entityPanels.push_back(&state.editor.background);
-	entityPanels.push_back(&state.editor.entityView.background);
-	
-	// TODO: iterate the tree container
-	//	mark the relevant panels that are disabled with appropriate colour
-
-	for (int i = 0; i < std::min(MAX_CONCURRENT_ENTITY_PANELS, (int)state.editor.entityView.entities.size()); i++) {
-		entityPanels.push_back(&state.editor.entityView.entityPanels[i]);
-	}
-
-	submitPanels(entityPanels, state.guiContext);
-
-	Button* buttons[] = { &state.editor.entityView.createButton, &state.editor.compileTree, &state.editor.saveProject, &state.editor.loadProject };
-
-	submitButtons(buttons, state.guiContext);
-
-	ObjectEntry<VulkanComponent>* entries[] = { &state.editor.createComponent };
-	submitEntries<VulkanComponent>(entries, state.guiContext);
-
-	// TODO: only render the selected entity or the entity we last clicked on?
-	for (PropertyDisplay& display : state.editor.propertyDisplays) {
-		if (display.entity != nullEntity && state.editor.entityView.lastClicked == display.entity) {
-			_renderPropertyDisplay(state, display);
-		}
-	}
-
-	GUIProperties& props2 = properties(state.editor.createComponent.base, state.guiContext);
-	debugRect(
-		props2.minExtent,
-		props2.maxExtent - props2.minExtent,
-		colorCyan,
-		state.guiContext
-	);
-
-	renderGUI(state.context, state.guiContext, state.window);
-
-	renderTextBatch(state.editor.entityView.entityTextBatch, state.context, state.guiContext, orthogonalPerspective2D(windowDimensions(state.window), F32x2(0.0f), 0.0f, 1.0f));
-}
-
-StitchedAtlas _createSpriteAtlas(State& state)
-{
-	StitchedAtlasCreator creator = createStitchedAtlasCreator(TextureFormat::RGBA);
-	StitchedAtlasReference img0 = submitToStitchedAtlasCreator("vivium4/res/img0.png", creator);
-	StitchedAtlasReference img1 = submitToStitchedAtlasCreator("vivium4/res/img1.png", creator);
-	StitchedAtlas atlas = finishAtlasCreation(creator);
-	dropAtlasCreator(creator);
-	state.editor.entityView.img0 = convertStitchedAtlasReference(img0, atlas);
-	state.editor.entityView.img1 = convertStitchedAtlasReference(img1, atlas);
-
-	return atlas;
-}
-
-void initialise(State& state)
-{
-	_logInit(); // TODO: ugly that we have to initialise this
-	_fontInit();
-
-	state.engine = createEngine(EngineOptions{});
-	state.window = createWindow(WindowOptions{}, state.engine);
-
-	Input::init(state.window);
-
-	state.context = createCommandContext(state.engine);
-
-	state.manager = createManager();
-	
-	StitchedAtlas atlas = _createSpriteAtlas(state);
-
-	state.guiContext = createGUIContext(state.manager, state.engine, state.window, &atlas);
-
-	_submit(state);
-
-	allocateManager(state.manager, state.engine);
-
-	setupGUIContext(state.guiContext, state.manager, state.context, state.engine);
-	_setup(state);
-
-	clearManagerReferences(state.manager);
-	dropAtlas(atlas);
+  clearManagerReferences(state.manager);
+  dropAtlas(atlas);
 }
 
 void gameloop(State& state) {
-	while (windowIsOpen(state.window, state.engine)) {
-		engineBeginFrame(state.engine, state.context);
+  while (windowIsOpen(state.window, state.engine)) {
+    engineBeginFrame(state.engine, state.context);
 
-		Input::update(state.window);
+    Input::update(state.window);
 
-		updateGUI(windowDimensions(state.window), state.guiContext);
-		_update(state);
+    updateGUI(windowDimensions(state.window), state.guiContext);
+    _update(state);
 
-		windowBeginFrame(state.window, state.context, state.engine);
-		windowBeginRender(state.window);
+    windowBeginFrame(state.window, state.context, state.engine);
+    windowBeginRender(state.window);
 
-		_draw(state);
-		
-		windowEndRender(state.window);
-		windowEndFrame(state.window, state.engine);
+    _draw(state);
 
-		engineEndFrame(state.engine);
-	}
+    windowEndRender(state.window);
+    windowEndFrame(state.window, state.engine);
+
+    engineEndFrame(state.engine);
+  }
 }
 
 void terminate(State& state) {
-	dropManager(state.manager, state.engine);
-	dropCommandContext(state.context, state.engine);
-	dropGUIContext(state.guiContext, state.engine);
+  dropManager(state.manager, state.engine);
+  dropCommandContext(state.context, state.engine);
+  dropGUIContext(state.guiContext, state.engine);
 
-	_drop(state);
+  _drop(state);
 
-	dropWindow(state.window, state.engine);
-	dropEngine(state.engine);
+  dropWindow(state.window, state.engine);
+  dropEngine(state.engine);
 
-	_fontTerminate();
+  _fontTerminate();
 }
 
-TreeContainer* getContainerByPanel(int panelIndex, TreeContainer& container)
-{
-	if (container.data != nullptr) {
-		if (*(int*)container.data == panelIndex) {
-			return &container;
-		}
-	}
+TreeContainer* getContainerByPanel(int panelIndex, TreeContainer& container) {
+  if (container.data != nullptr) {
+    if (*(int*)container.data == panelIndex) {
+      return &container;
+    }
+  }
 
-	for (TreeContainer& child : container.children) {
-		TreeContainer* result = getContainerByPanel(panelIndex, child);
+  for (TreeContainer& child : container.children) {
+    TreeContainer* result = getContainerByPanel(panelIndex, child);
 
-		if (result != nullptr) return result;
-	}
+    if (result != nullptr) return result;
+  }
 
-	return nullptr;
+  return nullptr;
 }
 
-PropertyDisplay _submitPropertyDisplay(State& state, Entity entity, Registry* registry)
-{
-	PropertyDisplay display;
+PropertyDisplay _submitPropertyDisplay(State& state, Entity entity,
+                                       Registry* registry) {
+  PropertyDisplay display;
 
-	display.entity = entity;
-	display.registry = registry;
-	display.container = createContainer(state.guiContext, ContainerSpecification(
-		nullGUIParent(),
-		ContainerOrdering::VERTICAL,
-		OffsetMethod::EXTENT
-	));
-	display.base = display.container.base;
+  display.entity = entity;
+  display.registry = registry;
+  display.container = createContainer(
+      state.guiContext,
+      ContainerSpecification(nullGUIParent(), ContainerOrdering::VERTICAL,
+                             OffsetMethod::EXTENT));
+  display.base = display.container.base;
 
-	display.buffer = submitEntry(EntrySpecification<BufferEntry>(), state.guiContext, state.manager);
-	display.shader = submitEntry(EntrySpecification<ShaderEntry>(), state.guiContext, state.manager);
-	display.texture = submitEntry(EntrySpecification<TextureEntry>(), state.guiContext, state.manager);
-	display.bufferLayout = submitEntry(EntrySpecification<BufferLayoutEntry>(), state.guiContext, state.manager);
-	display.descriptorLayout = submitEntry(EntrySpecification<DescriptorLayoutEntry>(), state.guiContext, state.manager);
-	display.descriptor = submitEntry(EntrySpecification<DescriptorSetEntry>(&state.registry, &state.editor.entityView.heldEntityPtr), state.guiContext, state.manager);
-	display.pipeline = submitEntry(EntrySpecification<PipelineEntry>(&state.registry, &state.editor.entityView.heldEntityPtr), state.guiContext, state.manager);
+  display.buffer = submitEntry(EntrySpecification<BufferEntry>(),
+                               state.guiContext, state.manager);
+  display.shader = submitEntry(EntrySpecification<ShaderEntry>(),
+                               state.guiContext, state.manager);
+  display.texture = submitEntry(EntrySpecification<TextureEntry>(),
+                                state.guiContext, state.manager);
+  display.bufferLayout = submitEntry(EntrySpecification<BufferLayoutEntry>(),
+                                     state.guiContext, state.manager);
+  display.descriptorLayout =
+      submitEntry(EntrySpecification<DescriptorLayoutEntry>(), state.guiContext,
+                  state.manager);
+  display.descriptor =
+      submitEntry(EntrySpecification<DescriptorSetEntry>(
+                      &state.registry, &state.editor.entityView.heldEntityPtr),
+                  state.guiContext, state.manager);
+  display.pipeline =
+      submitEntry(EntrySpecification<PipelineEntry>(
+                      &state.registry, &state.editor.entityView.heldEntityPtr),
+                  state.guiContext, state.manager);
 
-	setAsleep(display.buffer.base, state.guiContext, true);
-	setAsleep(display.shader.base, state.guiContext, true);
-	setAsleep(display.texture.base, state.guiContext, true);
-	setAsleep(display.bufferLayout.base, state.guiContext, true);
-	setAsleep(display.descriptorLayout.base, state.guiContext, true);
-	setAsleep(display.descriptor.base, state.guiContext, true);
-	setAsleep(display.pipeline.base, state.guiContext, true);
+  setAsleep(display.buffer.base, state.guiContext, true);
+  setAsleep(display.shader.base, state.guiContext, true);
+  setAsleep(display.texture.base, state.guiContext, true);
+  setAsleep(display.bufferLayout.base, state.guiContext, true);
+  setAsleep(display.descriptorLayout.base, state.guiContext, true);
+  setAsleep(display.descriptor.base, state.guiContext, true);
+  setAsleep(display.pipeline.base, state.guiContext, true);
 
-	addChild(display.container.base, { &display.buffer.base, 1 }, state.guiContext);
-	addChild(display.container.base, { &display.shader.base, 1 }, state.guiContext);
-	addChild(display.container.base, { &display.texture.base, 1 }, state.guiContext);
-	addChild(display.container.base, { &display.bufferLayout.base, 1 }, state.guiContext);
-	addChild(display.container.base, { &display.descriptorLayout.base, 1 }, state.guiContext);
-	addChild(display.container.base, { &display.descriptor.base, 1 }, state.guiContext);
-	addChild(display.container.base, { &display.pipeline.base, 1 }, state.guiContext);
+  addChild(display.container.base, {&display.buffer.base, 1}, state.guiContext);
+  addChild(display.container.base, {&display.shader.base, 1}, state.guiContext);
+  addChild(display.container.base, {&display.texture.base, 1},
+           state.guiContext);
+  addChild(display.container.base, {&display.bufferLayout.base, 1},
+           state.guiContext);
+  addChild(display.container.base, {&display.descriptorLayout.base, 1},
+           state.guiContext);
+  addChild(display.container.base, {&display.descriptor.base, 1},
+           state.guiContext);
+  addChild(display.container.base, {&display.pipeline.base, 1},
+           state.guiContext);
 
-	return display;
+  return display;
 }
 
-void _setupPropertyDisplay(State& state, PropertyDisplay& display)
-{
-	setupEntry(display.buffer, state.manager, state.engine, state.context, state.guiContext);
-	setupEntry(display.shader, state.manager, state.engine, state.context, state.guiContext);
-	setupEntry(display.texture, state.manager, state.engine, state.context, state.guiContext);
-	setupEntry(display.bufferLayout, state.manager, state.engine, state.context, state.guiContext);
-	setupEntry(display.descriptorLayout, state.manager, state.engine, state.context, state.guiContext);
-	setupEntry(display.descriptor, state.manager, state.engine, state.context, state.guiContext);
-	setupEntry(display.pipeline, state.manager, state.engine, state.context, state.guiContext);
+void _setupPropertyDisplay(State& state, PropertyDisplay& display) {
+  setupEntry(display.buffer, state.manager, state.engine, state.context,
+             state.guiContext);
+  setupEntry(display.shader, state.manager, state.engine, state.context,
+             state.guiContext);
+  setupEntry(display.texture, state.manager, state.engine, state.context,
+             state.guiContext);
+  setupEntry(display.bufferLayout, state.manager, state.engine, state.context,
+             state.guiContext);
+  setupEntry(display.descriptorLayout, state.manager, state.engine,
+             state.context, state.guiContext);
+  setupEntry(display.descriptor, state.manager, state.engine, state.context,
+             state.guiContext);
+  setupEntry(display.pipeline, state.manager, state.engine, state.context,
+             state.guiContext);
 
-	properties(display.buffer, state.guiContext).dimensions = F32x2(1.0f, 0.04f);
-	properties(display.shader, state.guiContext).dimensions = F32x2(1.0f, 0.04f);
-	properties(display.texture, state.guiContext).dimensions = F32x2(1.0f, 0.04f);
-	properties(display.bufferLayout, state.guiContext).dimensions = F32x2(1.0f, 0.04f);
-	properties(display.descriptorLayout, state.guiContext).dimensions = F32x2(1.0f, 0.04f);
-	properties(display.descriptor, state.guiContext).dimensions = F32x2(1.0f, 0.04f);
-	properties(display.pipeline, state.guiContext).dimensions = F32x2(1.0f, 0.04f);
+  properties(display.buffer, state.guiContext).dimensions = F32x2(1.0f, 0.04f);
+  properties(display.shader, state.guiContext).dimensions = F32x2(1.0f, 0.04f);
+  properties(display.texture, state.guiContext).dimensions = F32x2(1.0f, 0.04f);
+  properties(display.bufferLayout, state.guiContext).dimensions =
+      F32x2(1.0f, 0.04f);
+  properties(display.descriptorLayout, state.guiContext).dimensions =
+      F32x2(1.0f, 0.04f);
+  properties(display.descriptor, state.guiContext).dimensions =
+      F32x2(1.0f, 0.04f);
+  properties(display.pipeline, state.guiContext).dimensions =
+      F32x2(1.0f, 0.04f);
 
-	properties(display.buffer, state.guiContext).anchorY = GUIAnchor::TOP;
-	properties(display.shader, state.guiContext).anchorY = GUIAnchor::TOP;
-	properties(display.texture, state.guiContext).anchorY = GUIAnchor::TOP;
-	properties(display.bufferLayout, state.guiContext).anchorY = GUIAnchor::TOP;
-	properties(display.descriptorLayout, state.guiContext).anchorY = GUIAnchor::TOP;
-	properties(display.descriptor, state.guiContext).anchorY = GUIAnchor::TOP;
-	properties(display.pipeline, state.guiContext).anchorY = GUIAnchor::TOP;
+  properties(display.buffer, state.guiContext).anchorY = GUIAnchor::TOP;
+  properties(display.shader, state.guiContext).anchorY = GUIAnchor::TOP;
+  properties(display.texture, state.guiContext).anchorY = GUIAnchor::TOP;
+  properties(display.bufferLayout, state.guiContext).anchorY = GUIAnchor::TOP;
+  properties(display.descriptorLayout, state.guiContext).anchorY =
+      GUIAnchor::TOP;
+  properties(display.descriptor, state.guiContext).anchorY = GUIAnchor::TOP;
+  properties(display.pipeline, state.guiContext).anchorY = GUIAnchor::TOP;
 
-	properties(display.buffer, state.guiContext).centerY = GUIAnchor::TOP;
-	properties(display.shader, state.guiContext).centerY = GUIAnchor::TOP;
-	properties(display.texture, state.guiContext).centerY = GUIAnchor::TOP;
-	properties(display.bufferLayout, state.guiContext).centerY = GUIAnchor::TOP;
-	properties(display.descriptorLayout, state.guiContext).centerY = GUIAnchor::TOP;
-	properties(display.descriptor, state.guiContext).centerY = GUIAnchor::TOP;
-	properties(display.pipeline, state.guiContext).centerY = GUIAnchor::TOP;
+  properties(display.buffer, state.guiContext).centerY = GUIAnchor::TOP;
+  properties(display.shader, state.guiContext).centerY = GUIAnchor::TOP;
+  properties(display.texture, state.guiContext).centerY = GUIAnchor::TOP;
+  properties(display.bufferLayout, state.guiContext).centerY = GUIAnchor::TOP;
+  properties(display.descriptorLayout, state.guiContext).centerY =
+      GUIAnchor::TOP;
+  properties(display.descriptor, state.guiContext).centerY = GUIAnchor::TOP;
+  properties(display.pipeline, state.guiContext).centerY = GUIAnchor::TOP;
 }
 
-void _updatePropertyDisplay(State& state, PropertyDisplay& display)
-{
-	updateEntry(display.buffer, state.guiContext, state.engine, state.context);
-	updateEntry(display.shader, state.guiContext, state.engine, state.context);
-	updateEntry(display.texture, state.guiContext, state.engine, state.context);
-	updateEntry(display.bufferLayout, state.guiContext, state.engine, state.context);
-	updateEntry(display.descriptorLayout, state.guiContext, state.engine, state.context);
-	updateEntry(display.descriptor, state.guiContext, state.engine, state.context);
-	updateEntry(display.pipeline, state.guiContext, state.engine, state.context);
+void _updatePropertyDisplay(State& state, PropertyDisplay& display) {
+  updateEntry(display.buffer, state.guiContext, state.engine, state.context);
+  updateEntry(display.shader, state.guiContext, state.engine, state.context);
+  updateEntry(display.texture, state.guiContext, state.engine, state.context);
+  updateEntry(display.bufferLayout, state.guiContext, state.engine,
+              state.context);
+  updateEntry(display.descriptorLayout, state.guiContext, state.engine,
+              state.context);
+  updateEntry(display.descriptor, state.guiContext, state.engine,
+              state.context);
+  updateEntry(display.pipeline, state.guiContext, state.engine, state.context);
 
-	// Figure out which are enabled
-	if (display.registry->hasComponent<BufferComponent>(display.entity)) {
-		setAsleep(display.buffer.base, state.guiContext, false);
-	}
+  // Figure out which are enabled
+  if (display.registry->hasComponent<BufferComponent>(display.entity)) {
+    setAsleep(display.buffer.base, state.guiContext, false);
+  }
 
-	if (display.registry->hasComponent<ShaderComponent>(display.entity)) {
-		setAsleep(display.shader.base, state.guiContext, false);
-	}
+  if (display.registry->hasComponent<ShaderComponent>(display.entity)) {
+    setAsleep(display.shader.base, state.guiContext, false);
+  }
 
-	if (display.registry->hasComponent<TextureComponent>(display.entity)) {
-		setAsleep(display.texture.base, state.guiContext, false);
-	}
+  if (display.registry->hasComponent<TextureComponent>(display.entity)) {
+    setAsleep(display.texture.base, state.guiContext, false);
+  }
 
-	if (display.registry->hasComponent<BufferLayoutComponent>(display.entity)) {
-		setAsleep(display.bufferLayout.base, state.guiContext, false);
-	}
+  if (display.registry->hasComponent<BufferLayoutComponent>(display.entity)) {
+    setAsleep(display.bufferLayout.base, state.guiContext, false);
+  }
 
-	if (display.registry->hasComponent<DescriptorLayoutComponent>(display.entity)) {
-		setAsleep(display.descriptorLayout.base, state.guiContext, false);
-	}
+  if (display.registry->hasComponent<DescriptorLayoutComponent>(
+          display.entity)) {
+    setAsleep(display.descriptorLayout.base, state.guiContext, false);
+  }
 
-	if (display.registry->hasComponent<DescriptorSetComponent>(display.entity)) {
-		setAsleep(display.descriptor.base, state.guiContext, false);
-	}
+  if (display.registry->hasComponent<DescriptorSetComponent>(display.entity)) {
+    setAsleep(display.descriptor.base, state.guiContext, false);
+  }
 
-	if (display.registry->hasComponent<PipelineComponent>(display.entity)) {
-		setAsleep(display.pipeline.base, state.guiContext, false);
-	}
+  if (display.registry->hasComponent<PipelineComponent>(display.entity)) {
+    setAsleep(display.pipeline.base, state.guiContext, false);
+  }
 }
 
-void _renderPropertyDisplay(State& state, PropertyDisplay& display)
-{
-	if (display.registry->hasComponent<BufferComponent>(display.entity)) {
-		BufferEntry* entry[] = { &display.buffer };
-		submitEntries(entry, state.guiContext);
-	}
+void _renderPropertyDisplay(State& state, PropertyDisplay& display) {
+  if (display.registry->hasComponent<BufferComponent>(display.entity)) {
+    BufferEntry* entry[] = {&display.buffer};
+    submitEntries(entry, state.guiContext);
+  }
 
-	if (display.registry->hasComponent<ShaderComponent>(display.entity)) {
-		ShaderEntry* entry[] = { &display.shader };
-		submitEntries(entry, state.guiContext);
-	}
+  if (display.registry->hasComponent<ShaderComponent>(display.entity)) {
+    ShaderEntry* entry[] = {&display.shader};
+    submitEntries(entry, state.guiContext);
+  }
 
-	if (display.registry->hasComponent<TextureComponent>(display.entity)) {
-		TextureEntry* entry[] = { &display.texture };
-		submitEntries(entry, state.guiContext);
-	}
+  if (display.registry->hasComponent<TextureComponent>(display.entity)) {
+    TextureEntry* entry[] = {&display.texture};
+    submitEntries(entry, state.guiContext);
+  }
 
-	if (display.registry->hasComponent<BufferLayoutComponent>(display.entity)) {
-		BufferLayoutEntry* entry[] = { &display.bufferLayout };
-		submitEntries(entry, state.guiContext);
-	}
+  if (display.registry->hasComponent<BufferLayoutComponent>(display.entity)) {
+    BufferLayoutEntry* entry[] = {&display.bufferLayout};
+    submitEntries(entry, state.guiContext);
+  }
 
-	if (display.registry->hasComponent<DescriptorLayoutComponent>(display.entity)) {
-		DescriptorLayoutEntry* entry[] = { &display.descriptorLayout };
-		submitEntries(entry, state.guiContext);
-	}
+  if (display.registry->hasComponent<DescriptorLayoutComponent>(
+          display.entity)) {
+    DescriptorLayoutEntry* entry[] = {&display.descriptorLayout};
+    submitEntries(entry, state.guiContext);
+  }
 
-	if (display.registry->hasComponent<DescriptorSetComponent>(display.entity)) {
-		DescriptorSetEntry* entry[] = { &display.descriptor };
-		submitEntries(entry, state.guiContext);
-	}
+  if (display.registry->hasComponent<DescriptorSetComponent>(display.entity)) {
+    DescriptorSetEntry* entry[] = {&display.descriptor};
+    submitEntries(entry, state.guiContext);
+  }
 
-	if (display.registry->hasComponent<PipelineComponent>(display.entity)) {
-		PipelineEntry* entry[] = { &display.pipeline };
-		submitEntries(entry, state.guiContext);
-	}
+  if (display.registry->hasComponent<PipelineComponent>(display.entity)) {
+    PipelineEntry* entry[] = {&display.pipeline};
+    submitEntries(entry, state.guiContext);
+  }
 }
 
-void _dropPropertyDisplay(State& state, PropertyDisplay& display)
-{
-	dropEntry(display.buffer, state.engine, state.guiContext);
-	dropEntry(display.shader, state.engine, state.guiContext);
-	dropEntry(display.texture, state.engine, state.guiContext);
-	dropEntry(display.bufferLayout, state.engine, state.guiContext);
-	dropEntry(display.descriptorLayout, state.engine, state.guiContext);
-	dropEntry(display.descriptor, state.engine, state.guiContext);
-	dropEntry(display.pipeline, state.engine, state.guiContext);
+void _dropPropertyDisplay(State& state, PropertyDisplay& display) {
+  dropEntry(display.buffer, state.engine, state.guiContext);
+  dropEntry(display.shader, state.engine, state.guiContext);
+  dropEntry(display.texture, state.engine, state.guiContext);
+  dropEntry(display.bufferLayout, state.engine, state.guiContext);
+  dropEntry(display.descriptorLayout, state.engine, state.guiContext);
+  dropEntry(display.descriptor, state.engine, state.guiContext);
+  dropEntry(display.pipeline, state.engine, state.guiContext);
 }
 
-void _addEntityButton(State& state)
-{
-	Entity newEntity = state.registry.create();
-	state.registry.addComponent<ComponentName>(newEntity, ComponentName{ std::format("Entity {}", newEntity & ECS_ENTITY_MASK) });
+void _addEntityButton(State& state) {
+  Entity newEntity = state.registry.create();
+  state.registry.addComponent<ComponentName>(
+      newEntity,
+      ComponentName{std::format("Entity {}", newEntity & ECS_ENTITY_MASK)});
 
-	state.editor.entityView.entities.push_back(newEntity);
-	// Enable the relevant container
-	TreeContainer* container = getContainerByPanel(state.editor.entityView.entities.size() - 1, state.editor.entityView.entityTree);
+  state.editor.entityView.entities.push_back(newEntity);
+  // Enable the relevant container
+  TreeContainer* container =
+      getContainerByPanel(state.editor.entityView.entities.size() - 1,
+                          state.editor.entityView.entityTree);
 
-	VIVIUM_ASSERT(container != nullptr, "Couldn't get container for new panel");
+  VIVIUM_ASSERT(container != nullptr, "Couldn't get container for new panel");
 
-	VIVIUM_LOG(LogSeverity::DEBUG, "Enabling panel by id {}", state.editor.entityView.entities.size() - 1);
+  VIVIUM_LOG(LogSeverity::DEBUG, "Enabling panel by id {}",
+             state.editor.entityView.entities.size() - 1);
 
-	container->enabled = true;
+  container->enabled = true;
 
-	// Set the entity for the property display
-	state.editor.propertyDisplays[state.editor.entityView.entities.size() - 1].entity = newEntity;
+  // Set the entity for the property display
+  state.editor.propertyDisplays[state.editor.entityView.entities.size() - 1]
+      .entity = newEntity;
 }
 
-void _updateComponentValues(State& state)
-{
-	for (uint64_t i = 0; i < state.editor.propertyDisplays.size(); i++) {
-		PropertyDisplay& display = state.editor.propertyDisplays[i];
-		Entity entity = display.entity;
+void _updateComponentValues(State& state) {
+  for (uint64_t i = 0; i < state.editor.propertyDisplays.size(); i++) {
+    PropertyDisplay& display = state.editor.propertyDisplays[i];
+    Entity entity = display.entity;
 
-		if (state.registry.hasComponent<BufferComponent>(entity)) {
-			state.registry.updateComponent<BufferComponent>(entity, getValue(display.buffer));
-		}
+    if (state.registry.hasComponent<BufferComponent>(entity)) {
+      state.registry.updateComponent<BufferComponent>(entity,
+                                                      getValue(display.buffer));
+    }
 
-		if (state.registry.hasComponent<ShaderComponent>(entity)) {
-			state.registry.updateComponent<ShaderComponent>(entity, getValue(display.shader));
-		}
+    if (state.registry.hasComponent<ShaderComponent>(entity)) {
+      state.registry.updateComponent<ShaderComponent>(entity,
+                                                      getValue(display.shader));
+    }
 
-		if (state.registry.hasComponent<TextureComponent>(entity)) {
-			state.registry.updateComponent<TextureComponent>(entity, getValue(display.texture));
-		}
+    if (state.registry.hasComponent<TextureComponent>(entity)) {
+      state.registry.updateComponent<TextureComponent>(
+          entity, getValue(display.texture));
+    }
 
-		if (state.registry.hasComponent<BufferLayoutComponent>(entity)) {
-			state.registry.updateComponent<BufferLayoutComponent>(entity, getValue(display.bufferLayout));
-		}
+    if (state.registry.hasComponent<BufferLayoutComponent>(entity)) {
+      state.registry.updateComponent<BufferLayoutComponent>(
+          entity, getValue(display.bufferLayout));
+    }
 
-		if (state.registry.hasComponent<DescriptorLayoutComponent>(entity)) {
-			state.registry.updateComponent<DescriptorLayoutComponent>(entity, getValue(display.descriptorLayout));
-		}
-	}
+    if (state.registry.hasComponent<DescriptorLayoutComponent>(entity)) {
+      state.registry.updateComponent<DescriptorLayoutComponent>(
+          entity, getValue(display.descriptorLayout));
+    }
+  }
 
-	// TODO: no need to order these anymore?
-	// Then descriptor sets
-	for (uint64_t i = 0; i < state.editor.propertyDisplays.size(); i++) {
-		PropertyDisplay& display = state.editor.propertyDisplays[i];
-		Entity entity = display.entity;
+  // TODO: no need to order these anymore?
+  // Then descriptor sets
+  for (uint64_t i = 0; i < state.editor.propertyDisplays.size(); i++) {
+    PropertyDisplay& display = state.editor.propertyDisplays[i];
+    Entity entity = display.entity;
 
-		if (state.registry.hasComponent<DescriptorSetComponent>(entity)) {
-			state.registry.updateComponent<DescriptorSetComponent>(entity, getValue(display.descriptor));
-		}
-	}
+    if (state.registry.hasComponent<DescriptorSetComponent>(entity)) {
+      state.registry.updateComponent<DescriptorSetComponent>(
+          entity, getValue(display.descriptor));
+    }
+  }
 
-	// Then pipelines
-	for (uint64_t i = 0; i < state.editor.propertyDisplays.size(); i++) {
-		PropertyDisplay& display = state.editor.propertyDisplays[i];
-		Entity entity = display.entity;
+  // Then pipelines
+  for (uint64_t i = 0; i < state.editor.propertyDisplays.size(); i++) {
+    PropertyDisplay& display = state.editor.propertyDisplays[i];
+    Entity entity = display.entity;
 
-		if (state.registry.hasComponent<PipelineComponent>(entity)) {
-			state.registry.updateComponent<PipelineComponent>(entity, getValue(display.pipeline));
-		}
-	}
+    if (state.registry.hasComponent<PipelineComponent>(entity)) {
+      state.registry.updateComponent<PipelineComponent>(
+          entity, getValue(display.pipeline));
+    }
+  }
 }
 
-// Look at each entity that has a component, and update the entry with the component's value
-void _updateEntryValues(State& state)
-{
-	for (uint64_t i = 0; i < state.editor.propertyDisplays.size(); i++) {
-		PropertyDisplay& display = state.editor.propertyDisplays[i];
-		Entity entity = display.entity;
+// Look at each entity that has a component, and update the entry with the
+// component's value
+void _updateEntryValues(State& state) {
+  for (uint64_t i = 0; i < state.editor.propertyDisplays.size(); i++) {
+    PropertyDisplay& display = state.editor.propertyDisplays[i];
+    Entity entity = display.entity;
 
-		if (state.registry.hasComponent<BufferComponent>(entity)) {
-			loadValue(display.buffer, state.registry.getComponent<BufferComponent>(entity), state.guiContext);
-		}
+    if (state.registry.hasComponent<BufferComponent>(entity)) {
+      loadValue(display.buffer,
+                state.registry.getComponent<BufferComponent>(entity),
+                state.guiContext);
+    }
 
-		if (state.registry.hasComponent<ShaderComponent>(entity)) {
-			loadValue(display.shader, state.registry.getComponent<ShaderComponent>(entity), state.guiContext);
-		}
+    if (state.registry.hasComponent<ShaderComponent>(entity)) {
+      loadValue(display.shader,
+                state.registry.getComponent<ShaderComponent>(entity),
+                state.guiContext);
+    }
 
-		if (state.registry.hasComponent<TextureComponent>(entity)) {
-			loadValue(display.texture, state.registry.getComponent<TextureComponent>(entity), state.guiContext);
-		}
+    if (state.registry.hasComponent<TextureComponent>(entity)) {
+      loadValue(display.texture,
+                state.registry.getComponent<TextureComponent>(entity),
+                state.guiContext);
+    }
 
-		if (state.registry.hasComponent<BufferLayoutComponent>(entity)) {
-			loadValue(display.bufferLayout, state.registry.getComponent<BufferLayoutComponent>(entity), state.guiContext);
-		}
+    if (state.registry.hasComponent<BufferLayoutComponent>(entity)) {
+      loadValue(display.bufferLayout,
+                state.registry.getComponent<BufferLayoutComponent>(entity),
+                state.guiContext);
+    }
 
-		if (state.registry.hasComponent<DescriptorLayoutComponent>(entity)) {
-			loadValue(display.descriptorLayout, state.registry.getComponent<DescriptorLayoutComponent>(entity), state.guiContext);
-		}
-	}
+    if (state.registry.hasComponent<DescriptorLayoutComponent>(entity)) {
+      loadValue(display.descriptorLayout,
+                state.registry.getComponent<DescriptorLayoutComponent>(entity),
+                state.guiContext);
+    }
+  }
 
-	// TODO: no need to order these anymore?
-	// Then descriptor sets
-	for (uint64_t i = 0; i < state.editor.propertyDisplays.size(); i++) {
-		PropertyDisplay& display = state.editor.propertyDisplays[i];
-		Entity entity = display.entity;
+  // TODO: no need to order these anymore?
+  // Then descriptor sets
+  for (uint64_t i = 0; i < state.editor.propertyDisplays.size(); i++) {
+    PropertyDisplay& display = state.editor.propertyDisplays[i];
+    Entity entity = display.entity;
 
-		if (state.registry.hasComponent<DescriptorSetComponent>(entity)) {
-			loadValue(display.descriptor, state.registry.getComponent<DescriptorSetComponent>(entity), state.guiContext);
-		}
-	}
+    if (state.registry.hasComponent<DescriptorSetComponent>(entity)) {
+      loadValue(display.descriptor,
+                state.registry.getComponent<DescriptorSetComponent>(entity),
+                state.guiContext);
+    }
+  }
 
-	// Then pipelines
-	for (uint64_t i = 0; i < state.editor.propertyDisplays.size(); i++) {
-		PropertyDisplay& display = state.editor.propertyDisplays[i];
-		Entity entity = display.entity;
+  // Then pipelines
+  for (uint64_t i = 0; i < state.editor.propertyDisplays.size(); i++) {
+    PropertyDisplay& display = state.editor.propertyDisplays[i];
+    Entity entity = display.entity;
 
-		if (state.registry.hasComponent<PipelineComponent>(entity)) {
-			loadValue(display.pipeline, state.registry.getComponent<PipelineComponent>(entity), state.guiContext);
-		}
-	}
+    if (state.registry.hasComponent<PipelineComponent>(entity)) {
+      loadValue(display.pipeline,
+                state.registry.getComponent<PipelineComponent>(entity),
+                state.guiContext);
+    }
+  }
 }
 
-void _compileTree(State& state)
-{
-	// TODO: We somewhat want a reverse index from entity -> property display
-	//	but this doesn't exactly exist
+void _compileTree(State& state) {
+  // TODO: We somewhat want a reverse index from entity -> property display
+  //	but this doesn't exactly exist
 
-	// For each display, we want to compile all buffer, shader, buffer layout, and descriptor layout components first
-	_updateComponentValues(state);
+  // For each display, we want to compile all buffer, shader, buffer layout, and
+  // descriptor layout components first
+  _updateComponentValues(state);
 
-	// TODO: Here, we want to serialise just enough for the runtime to get by
-	//	this means only serialising certain components on certain entities
+  // TODO: Here, we want to serialise just enough for the runtime to get by
+  //	this means only serialising certain components on certain entities
 
-	// TODO: want to serialise the registry, not the pipelines
-	SerialiserFileInterface fileInterface;
-	fileInterface.begin("vivium4/res/saves/compiled.dat", false);
+  // TODO: want to serialise the registry, not the pipelines
+  SerialiserFileInterface fileInterface;
+  fileInterface.begin("vivium4/res/saves/compiled.dat", false);
 
-	serialiseWrite(state.editor.entityView.entities, fileInterface);
-	serialiseWrite(state.registry, fileInterface);
+  serialiseWrite(state.editor.entityView.entities, fileInterface);
+  serialiseWrite(state.registry, fileInterface);
 
-	//for (Entity entity : state.editor.entityView.entities) {
-	//	serialiseWrite(entity, fileInterface);
-	//	// TODO: need to write the signature of the entity somehow
-	//	// Write all components on the entity
-	//	if (state.registry.hasComponent<BufferComponent>(entity)) {
-	//		serialiseWrite(VulkanComponent::BUFFER, fileInterface);
-	//		serialiseWrite(state.registry.getComponent<BufferComponent>(entity), fileInterface);
-	//	}
-	//	if (state.registry.hasComponent<ShaderComponent>(entity)) {
-	//		serialiseWrite(VulkanComponent::SHADER, fileInterface);
-	//		serialiseWrite(state.registry.getComponent<ShaderComponent>(entity), fileInterface);
-	//	}
-	//	if (state.registry.hasComponent<BufferLayoutComponent>(entity)) {
-	//		serialiseWrite(VulkanComponent::BUFFER_LAYOUT, fileInterface);
-	//		serialiseWrite(state.registry.getComponent<BufferLayoutComponent>(entity), fileInterface);
-	//	}
-	//	if (state.registry.hasComponent<DescriptorLayoutComponent>(entity)) {
-	//		serialiseWrite(VulkanComponent::DESCRIPTOR_LAYOUT, fileInterface);
-	//		serialiseWrite(state.registry.getComponent<DescriptorLayoutComponent>(entity), fileInterface);
-	//	}
-	//	if (state.registry.hasComponent<DescriptorSetComponent>(entity)) {
-	//		serialiseWrite(VulkanComponent::DESCRIPTOR_SET, fileInterface);
-	//		serialiseWrite(state.registry.getComponent<DescriptorSetComponent>(entity), fileInterface);
-	//	}
-	//	if (state.registry.hasComponent<PipelineComponent>(entity)) {
-	//		serialiseWrite(VulkanComponent::PIPELINE, fileInterface);
-	//		serialiseWrite(state.registry.getComponent<PipelineComponent>(entity), fileInterface);
-	//	}
-	//	// Write an end component
-	//	// TODO: using ENTER_COMPONENT is a bit ugly
-	//	serialiseWrite(VulkanComponent::ENTER_COMPONENT, fileInterface);
-	//}
+  // for (Entity entity : state.editor.entityView.entities) {
+  //	serialiseWrite(entity, fileInterface);
+  //	// TODO: need to write the signature of the entity somehow
+  //	// Write all components on the entity
+  //	if (state.registry.hasComponent<BufferComponent>(entity)) {
+  //		serialiseWrite(VulkanComponent::BUFFER, fileInterface);
+  //		serialiseWrite(state.registry.getComponent<BufferComponent>(entity),
+  // fileInterface);
+  //	}
+  //	if (state.registry.hasComponent<ShaderComponent>(entity)) {
+  //		serialiseWrite(VulkanComponent::SHADER, fileInterface);
+  //		serialiseWrite(state.registry.getComponent<ShaderComponent>(entity),
+  // fileInterface);
+  //	}
+  //	if (state.registry.hasComponent<BufferLayoutComponent>(entity)) {
+  //		serialiseWrite(VulkanComponent::BUFFER_LAYOUT, fileInterface);
+  //		serialiseWrite(state.registry.getComponent<BufferLayoutComponent>(entity),
+  // fileInterface);
+  //	}
+  //	if (state.registry.hasComponent<DescriptorLayoutComponent>(entity)) {
+  //		serialiseWrite(VulkanComponent::DESCRIPTOR_LAYOUT, fileInterface);
+  //		serialiseWrite(state.registry.getComponent<DescriptorLayoutComponent>(entity),
+  // fileInterface);
+  //	}
+  //	if (state.registry.hasComponent<DescriptorSetComponent>(entity)) {
+  //		serialiseWrite(VulkanComponent::DESCRIPTOR_SET, fileInterface);
+  //		serialiseWrite(state.registry.getComponent<DescriptorSetComponent>(entity),
+  // fileInterface);
+  //	}
+  //	if (state.registry.hasComponent<PipelineComponent>(entity)) {
+  //		serialiseWrite(VulkanComponent::PIPELINE, fileInterface);
+  //		serialiseWrite(state.registry.getComponent<PipelineComponent>(entity),
+  // fileInterface);
+  //	}
+  //	// Write an end component
+  //	// TODO: using ENTER_COMPONENT is a bit ugly
+  //	serialiseWrite(VulkanComponent::ENTER_COMPONENT, fileInterface);
+  // }
 
-	fileInterface.end();
+  fileInterface.end();
 
-	VIVIUM_LOG(LogSeverity::DEBUG, "Finished compilation and writing");
+  VIVIUM_LOG(LogSeverity::DEBUG, "Finished compilation and writing");
 }
 
-void _saveState(State& state, std::string_view filename)
-{
-	// Ensure all values are loaded/updated before write
-	_updateComponentValues(state);
+void _saveState(State& state, std::string_view filename) {
+  // Ensure all values are loaded/updated before write
+  _updateComponentValues(state);
 
-	SerialiserFileInterface store;
-	store.begin(std::string(filename), false);
+  SerialiserFileInterface store;
+  store.begin(std::string(filename), false);
 
-	// Write the registry
-	serialiseWrite(state.registry, store);
-	serialiseWrite(state.editor.entityView.entities, store);
-	// Write the structure of, and entities in the entity tree
-	// TODO: not very safe at all
-	// serialiseWrite(state.editor.entityView.entityTree, store);
+  // Write the registry
+  serialiseWrite(state.registry, store);
+  serialiseWrite(state.editor.entityView.entities, store);
+  // Write the structure of, and entities in the entity tree
+  // TODO: not very safe at all
+  // serialiseWrite(state.editor.entityView.entityTree, store);
 
-	store.end();
+  store.end();
 }
 
-void _loadState(State& state, std::string_view filename)
-{
-	SerialiserFileInterface store;
-	store.begin(std::string(filename), true);
+void _loadState(State& state, std::string_view filename) {
+  SerialiserFileInterface store;
+  store.begin(std::string(filename), true);
 
-	// TODO: clear registry, entities, etc.?
+  // TODO: clear registry, entities, etc.?
 
-	// Write the registry
-	serialiseRead(&state.registry, store);
-	serialiseRead(&state.editor.entityView.entities, store);
-	// Write the structure of, and entities in the entity tree
-	// TODO: not very safe at all
-	// TODO: re-create GUI children relationships
-	// TreeContainer oldRelations;
-	// serialiseRead(&oldRelations, store);
+  // Write the registry
+  serialiseRead(&state.registry, store);
+  serialiseRead(&state.editor.entityView.entities, store);
+  // Write the structure of, and entities in the entity tree
+  // TODO: not very safe at all
+  // TODO: re-create GUI children relationships
+  // TreeContainer oldRelations;
+  // serialiseRead(&oldRelations, store);
 
-	// We assume we've already created the entity tree, so now we need to re-arrange it by the id
-	// No point in making this actually functional since we have to rework tree containers
-	//	and even the GUI anyway
-	// So don't save the hierarchy of relationships
-	for (uint64_t i = 0; i < state.editor.entityView.entities.size(); i++) {
-		Entity e = state.editor.entityView.entities[i];
+  // We assume we've already created the entity tree, so now we need to
+  // re-arrange it by the id No point in making this actually functional since
+  // we have to rework tree containers
+  //	and even the GUI anyway
+  // So don't save the hierarchy of relationships
+  for (uint64_t i = 0; i < state.editor.entityView.entities.size(); i++) {
+    Entity e = state.editor.entityView.entities[i];
 
-		// Enable the relevant container
-		// TODO: use PanelIndex component on Entity
-		TreeContainer* container = getContainerByPanel(e, state.editor.entityView.entityTree);
-		
-		VIVIUM_ASSERT(container != nullptr, "Couldn't get container for new panel");
-		VIVIUM_LOG(LogSeverity::DEBUG, "Enabling panel by id {}", e);
-		
-		container->enabled = true;
+    // Enable the relevant container
+    // TODO: use PanelIndex component on Entity
+    TreeContainer* container =
+        getContainerByPanel(e, state.editor.entityView.entityTree);
 
-		// Set the entity for the property display
-		state.editor.propertyDisplays[e].entity = e;
-	}
+    VIVIUM_ASSERT(container != nullptr, "Couldn't get container for new panel");
+    VIVIUM_LOG(LogSeverity::DEBUG, "Enabling panel by id {}", e);
 
-	store.end();
+    container->enabled = true;
 
-	_updateEntryValues(state);
+    // Set the entity for the property display
+    state.editor.propertyDisplays[e].entity = e;
+  }
+
+  store.end();
+
+  _updateEntryValues(state);
 }

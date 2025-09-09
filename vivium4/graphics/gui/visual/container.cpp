@@ -1,13 +1,15 @@
 #include "container.h"
 
 namespace Vivium {
-	Container createContainer(GUIContext& guiContext, ContainerSpecification specification)
-	{
-		Container container;
+Container createContainer(GUIContext& guiContext,
+                          ContainerSpecification specification) {
+  Container container;
 
-		container.base = createGUIElement(guiContext, _ContainerUpdateData(specification.ordering, specification.offsetMethod));
-		addChild(specification.parent, { &container.base, 1 }, guiContext);
+  container.base = createGUIElement(
+      guiContext,
+      _ContainerUpdateData(specification.ordering, specification.offsetMethod));
+  addChild(specification.parent, {&container.base, 1}, guiContext);
 
-		return container;
-	}
+  return container;
 }
+}  // namespace Vivium

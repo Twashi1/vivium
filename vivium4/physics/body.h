@@ -7,7 +7,7 @@
 namespace Vivium {
 	namespace Physics {
 		struct Body {
-			F32x2 position, velocity, force;
+  		F32x2 position, velocity, force;
 			float angle, angularVelocity, torque;
 			float inverseInertia, inverseMass;
 

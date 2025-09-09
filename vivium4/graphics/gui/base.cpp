@@ -1,259 +1,314 @@
 #include "base.h"
-#include "visual/context.h"
+
 #include "visual/container.h"
+#include "visual/context.h"
 
 namespace Vivium {
-	bool pointInElement(F32x2 point, GUIProperties const& properties)
-	{
-		return pointInAABB(point, properties.truePosition, properties.truePosition + properties.trueDimensions);
-	}
-
-	bool pointInExtent(F32x2 point, GUIProperties const& properties)
-	{
-		return pointInAABB(point, properties.minExtent, properties.maxExtent);
-	}
-
-	bool operator==(GUIElementReference const& a, GUIElementReference const& b)
-	{
-		return a.index == b.index;
-	}
-
-	void _updateContainer(GUIElementReference reference, _ContainerUpdateData containerData, F32x2 windowDimensions, GUIContext& context)
-	{
-		F32x2 totalOffset = F32x2(0.0f);
-
-		// TODO: some method to grab reference to object
-		GUIElement& element = context.guiElements[reference.index];
-
-		// Super hacky fix
-		element.properties.minExtent = F32x2::inf();
-		element.properties.maxExtent = -F32x2::inf();
-
-		for (GUIElementReference child : element.children)
-		{
-			updateGUIElement(child, reference, windowDimensions, context);
-
-			F32x2 offset = F32x2(0.0f);
-
-			if (containerData.offsetMethod == OffsetMethod::EXTENT) {
-				GUIProperties& childProps = properties(child, context);
-
-				if (childProps.minExtent == F32x2::inf()) {
-					offset = F32x2(0.0f);
-				}
-				else {
-					offset = childProps.maxExtent - childProps.minExtent;
-				}
-			}
-			else {
-				offset = properties(reference, context).trueDimensions + properties(reference, context).truePosition - properties(child, context).truePosition;
-				VIVIUM_LOG(LogSeverity::DEBUG, "Offset [old] : {}", offset.y);
-				offset = properties(child, context).trueDimensions;
-				VIVIUM_LOG(LogSeverity::DEBUG, "Offset [new] : {}", offset.y);
-			}
-
-			if (containerData.ordering == ContainerOrdering::VERTICAL) { offset.x = 0.0f; }
-			if (containerData.ordering == ContainerOrdering::HORIZONTAL) { offset.y = 0.0f; }
-
-			properties(reference, context).truePosition -= offset;
-			totalOffset += offset;
-
-			element.properties.minExtent.x = std::min(element.properties.minExtent.x, properties(child, context).minExtent.x);
-			element.properties.minExtent.y = std::min(element.properties.minExtent.y, properties(child, context).minExtent.y);
-			element.properties.maxExtent.x = std::max(element.properties.maxExtent.x, properties(child, context).maxExtent.x);
-			element.properties.maxExtent.y = std::max(element.properties.maxExtent.y, properties(child, context).maxExtent.y);
-		}
-
-		properties(reference, context).truePosition += totalOffset;
-	}
-
-	void updateGUIElement(GUIElementReference const element, GUIElementReference const parent, F32x2 windowDimensions, GUIContext& context)
-	{
-		// If we have no parent, resort to using window as a pseudo-parent
-		F32x2 parentDimensions = parent.index == NULL ? windowDimensions : context.guiElements[parent.index].properties.trueDimensions;
-		F32x2 parentPosition = parent.index == NULL ? F32x2(0.0f) : context.guiElements[parent.index].properties.truePosition;
-
-		F32x2 multiplier = F32x2(0.0f);
-
-		GUIElement& object = context.guiElements[element.index];
-
-		// Quit update
-		// TODO: sleep code
-		if (object.asleep) {
-			object.properties.trueDimensions = F32x2(0.0f);
-			object.properties.minExtent = F32x2::inf();
-			object.properties.maxExtent = -F32x2::inf();
-
-			return;
-		}
-
-		switch (object.properties.unitsType) {
-		case GUIUnits::PIXELS:		multiplier = F32x2(1.0f); break;
-		case GUIUnits::VIEWPORT:	multiplier = windowDimensions; break;
-		case GUIUnits::RELATIVE:	multiplier = parentDimensions; break;
-		default: VIVIUM_LOG(LogSeverity::FATAL, "Invalid scale type"); break;
-		}
-
-		object.properties.trueDimensions = object.properties.dimensions * multiplier;
-		object.properties.truePosition = object.properties.position * multiplier;
-
-		if (object.properties.positionType == GUIPositionType::RELATIVE) {
-			object.properties.truePosition += parentPosition;
-
-			switch (object.properties.anchorX) {
-			case GUIAnchor::LEFT: break;
-			case GUIAnchor::RIGHT:
-				object.properties.truePosition.x += parentDimensions.x; break;
-			case GUIAnchor::CENTER:
-				object.properties.truePosition.x += 0.5f * parentDimensions.x; break;
-			default:
-				VIVIUM_LOG(LogSeverity::FATAL, "Invalid anchor for horizontal direction"); break;
-			}
-
-			switch (object.properties.anchorY) {
-			case GUIAnchor::BOTTOM: break;
-			case GUIAnchor::TOP:
-				object.properties.truePosition.y += parentDimensions.y; break;
-			case GUIAnchor::CENTER:
-				object.properties.truePosition.y += 0.5f * parentDimensions.y; break;
-			default:
-				VIVIUM_LOG(LogSeverity::FATAL, "Invalid anchor for vertical direction"); break;
-			}
-
-			switch (object.properties.centerX) {
-			case GUIAnchor::LEFT: break;
-			case GUIAnchor::RIGHT:
-				object.properties.truePosition.x -= object.properties.trueDimensions.x;
-				break;
-			case GUIAnchor::CENTER:
-				object.properties.truePosition.x -= object.properties.trueDimensions.x * 0.5f;
-				break;
-			default:
-				VIVIUM_LOG(LogSeverity::FATAL, "Invalid anchor for horizontal direction"); break;
-			}
-
-			switch (object.properties.centerY) {
-			case GUIAnchor::BOTTOM: break;
-			case GUIAnchor::TOP:
-				object.properties.truePosition.y -= object.properties.trueDimensions.y;
-				break;
-			case GUIAnchor::CENTER:
-				object.properties.truePosition.y -= object.properties.trueDimensions.y * 0.5f;
-				break;
-			default:
-				VIVIUM_LOG(LogSeverity::FATAL, "Invalid anchor for vertical direction"); break;
-			}
-		}
-
-		object.properties.minExtent = object.properties.truePosition;
-		object.properties.maxExtent = object.properties.truePosition + object.properties.trueDimensions;
-
-		// Look for any required special treatment
-		switch (object.type) {
-		case GUIElementType::CARDINAL_CONTAINER: return _updateContainer(element, object.data.container, windowDimensions, context);
-		default: break;
-		}
-
-		// We only update children if its not some special container
-		for (GUIElementReference child : object.children)
-		{
-			updateGUIElement(child, element, windowDimensions, context);
-			object.properties.minExtent.x = std::min(object.properties.minExtent.x, properties(child, context).minExtent.x);
-			object.properties.minExtent.y = std::min(object.properties.minExtent.y, properties(child, context).minExtent.y);
-			object.properties.maxExtent.x = std::max(object.properties.maxExtent.x, properties(child, context).maxExtent.x);
-			object.properties.maxExtent.y = std::max(object.properties.maxExtent.y, properties(child, context).maxExtent.y);
-		}
-	}
-			
-	GUIProperties& properties(GUIElementReference const objectHandle, GUIContext& guiContext)
-	{
-		return guiContext.guiElements[objectHandle.index].properties;
-	}
-
-	void setAsleep(GUIElementReference const objectHandle, GUIContext& guiContext, bool isAsleep)
-	{
-		guiContext.guiElements[objectHandle.index].asleep = isAsleep;
-	}
-
-	uint64_t getChildPosition(GUIElementReference const parent, GUIElementReference const child, GUIContext& guiContext)
-	{
-		GUIElement& parentObject = guiContext.guiElements[parent.index];
-
-		return std::distance(parentObject.children.begin(), std::find(parentObject.children.begin(), parentObject.children.end(), child));
-	}
-
-	void insertChild(GUIElementReference const parent, std::span<GUIElementReference const> children, uint64_t position, GUIContext& guiContext)
-	{
-		if (parent == nullGUIParent()) return;
-
-		GUIElement& parentObject = guiContext.guiElements[parent.index];
-
-		parentObject.children.insert(parentObject.children.begin() + position, children.begin(), children.end());
-	}
-
-	void addChild(GUIElementReference const parent, std::span<GUIElementReference const> children, GUIContext& guiContext)
-	{
-		if (parent == nullGUIParent()) return;
-
-		GUIElement& parentObject = guiContext.guiElements[parent.index];
-
-		parentObject.children.insert(parentObject.children.end(), children.begin(), children.end());
-	}
-
-	// TODO: O(n^2) algorithm
-	void removeChild(GUIElementReference const parent, std::span<GUIElementReference const> children, GUIContext& guiContext)
-	{
-		if (parent == nullGUIParent()) return;
-
-		GUIElement& parentObject = guiContext.guiElements[parent.index];
-
-		// TODO: should use std::remove
-		for (GUIElementReference const reference : children) {
-			parentObject.children.erase(std::find(parentObject.children.begin(), parentObject.children.end(), reference));
-		}
-	}
-
-	void rotateChild(GUIElementReference const parent, uint64_t src, uint64_t mid, uint64_t dest, GUIContext& guiContext)
-	{
-		if (parent == nullGUIParent()) return;
-
-		GUIElement& parentObject = guiContext.guiElements[parent.index];
-
-		std::rotate(parentObject.children.begin() + src, parentObject.children.begin() + mid, parentObject.children.begin() + dest);
-	}
-
-	void swapChildren(GUIElementReference const parent, uint64_t a, uint64_t b, GUIContext& guiContext)
-	{
-		if (parent == nullGUIParent()) return;
-
-		GUIElement& parentObject = guiContext.guiElements[parent.index];
-
-		std::swap(parentObject.children[a], parentObject.children[b]);
-	}
-
-	std::vector<GUIElementReference> const& getChildren(GUIElementReference const parent, GUIContext& guiContext)
-	{
-		if (parent == nullGUIParent()) return {};
-
-		GUIElement const& parentObject = guiContext.guiElements[parent.index];
-
-		return parentObject.children;
-	}
-
-	void clearChildren(GUIElementReference const parent, GUIContext& guiContext)
-	{
-		if (parent == nullGUIParent()) return;
-
-		guiContext.guiElements[parent.index].children.clear();
-	}
-
-	GUIElement const& _getGUIElement(GUIElementReference const reference, GUIContext const& guiContext)
-	{
-		return guiContext.guiElements[reference.index];
-	}
-	
-	void updateGUI(F32x2 windowDimensions, GUIContext& guiContext)
-	{
-		updateGUIElement(guiContext.defaultParent, guiContext.defaultParent, windowDimensions, guiContext);
-	}
+bool pointInElement(F32x2 point, GUIProperties const& properties) {
+  return pointInAABB(point, properties.truePosition,
+                     properties.truePosition + properties.trueDimensions);
 }
+
+bool pointInExtent(F32x2 point, GUIProperties const& properties) {
+  return pointInAABB(point, properties.minExtent, properties.maxExtent);
+}
+
+bool operator==(GUIElementReference const& a, GUIElementReference const& b) {
+  return a.index == b.index;
+}
+
+void _updateContainer(GUIElementReference reference,
+                      _ContainerUpdateData containerData,
+                      F32x2 windowDimensions, GUIContext& context) {
+  F32x2 totalOffset = F32x2(0.0f);
+
+  // TODO: some method to grab reference to object
+  GUIElement& element = context.guiElements[reference.index];
+
+  // Super hacky fix
+  element.properties.minExtent = F32x2::inf();
+  element.properties.maxExtent = -F32x2::inf();
+
+  for (GUIElementReference child : element.children) {
+    updateGUIElement(child, reference, windowDimensions, context);
+
+    F32x2 offset = F32x2(0.0f);
+
+    if (containerData.offsetMethod == OffsetMethod::EXTENT) {
+      GUIProperties& childProps = properties(child, context);
+
+      if (childProps.minExtent == F32x2::inf()) {
+        offset = F32x2(0.0f);
+      } else {
+        offset = childProps.maxExtent - childProps.minExtent;
+      }
+    } else {
+      offset = properties(reference, context).trueDimensions +
+               properties(reference, context).truePosition -
+               properties(child, context).truePosition;
+      VIVIUM_LOG(LogSeverity::DEBUG, "Offset [old] : {}", offset.y);
+      offset = properties(child, context).trueDimensions;
+      VIVIUM_LOG(LogSeverity::DEBUG, "Offset [new] : {}", offset.y);
+    }
+
+    if (containerData.ordering == ContainerOrdering::VERTICAL) {
+      offset.x = 0.0f;
+    }
+    if (containerData.ordering == ContainerOrdering::HORIZONTAL) {
+      offset.y = 0.0f;
+    }
+
+    properties(reference, context).truePosition -= offset;
+    totalOffset += offset;
+
+    element.properties.minExtent.x = std::min(
+        element.properties.minExtent.x, properties(child, context).minExtent.x);
+    element.properties.minExtent.y = std::min(
+        element.properties.minExtent.y, properties(child, context).minExtent.y);
+    element.properties.maxExtent.x = std::max(
+        element.properties.maxExtent.x, properties(child, context).maxExtent.x);
+    element.properties.maxExtent.y = std::max(
+        element.properties.maxExtent.y, properties(child, context).maxExtent.y);
+  }
+
+  properties(reference, context).truePosition += totalOffset;
+}
+
+void updateGUIElement(GUIElementReference const element,
+                      GUIElementReference const parent, F32x2 windowDimensions,
+                      GUIContext& context) {
+  // If we have no parent, resort to using window as a pseudo-parent
+  F32x2 parentDimensions =
+      parent.index == NULL
+          ? windowDimensions
+          : context.guiElements[parent.index].properties.trueDimensions;
+  F32x2 parentPosition =
+      parent.index == NULL
+          ? F32x2(0.0f)
+          : context.guiElements[parent.index].properties.truePosition;
+
+  F32x2 multiplier = F32x2(0.0f);
+
+  GUIElement& object = context.guiElements[element.index];
+
+  // Quit update
+  // TODO: sleep code
+  if (object.asleep) {
+    object.properties.trueDimensions = F32x2(0.0f);
+    object.properties.minExtent = F32x2::inf();
+    object.properties.maxExtent = -F32x2::inf();
+
+    return;
+  }
+
+  switch (object.properties.unitsType) {
+    case GUIUnits::PIXELS:
+      multiplier = F32x2(1.0f);
+      break;
+    case GUIUnits::VIEWPORT:
+      multiplier = windowDimensions;
+      break;
+    case GUIUnits::RELATIVE:
+      multiplier = parentDimensions;
+      break;
+    default:
+      VIVIUM_LOG(LogSeverity::FATAL, "Invalid scale type");
+      break;
+  }
+
+  object.properties.trueDimensions = object.properties.dimensions * multiplier;
+  object.properties.truePosition = object.properties.position * multiplier;
+
+  if (object.properties.positionType == GUIPositionType::RELATIVE) {
+    object.properties.truePosition += parentPosition;
+
+    switch (object.properties.anchorX) {
+      case GUIAnchor::LEFT:
+        break;
+      case GUIAnchor::RIGHT:
+        object.properties.truePosition.x += parentDimensions.x;
+        break;
+      case GUIAnchor::CENTER:
+        object.properties.truePosition.x += 0.5f * parentDimensions.x;
+        break;
+      default:
+        VIVIUM_LOG(LogSeverity::FATAL,
+                   "Invalid anchor for horizontal direction");
+        break;
+    }
+
+    switch (object.properties.anchorY) {
+      case GUIAnchor::BOTTOM:
+        break;
+      case GUIAnchor::TOP:
+        object.properties.truePosition.y += parentDimensions.y;
+        break;
+      case GUIAnchor::CENTER:
+        object.properties.truePosition.y += 0.5f * parentDimensions.y;
+        break;
+      default:
+        VIVIUM_LOG(LogSeverity::FATAL, "Invalid anchor for vertical direction");
+        break;
+    }
+
+    switch (object.properties.centerX) {
+      case GUIAnchor::LEFT:
+        break;
+      case GUIAnchor::RIGHT:
+        object.properties.truePosition.x -= object.properties.trueDimensions.x;
+        break;
+      case GUIAnchor::CENTER:
+        object.properties.truePosition.x -=
+            object.properties.trueDimensions.x * 0.5f;
+        break;
+      default:
+        VIVIUM_LOG(LogSeverity::FATAL,
+                   "Invalid anchor for horizontal direction");
+        break;
+    }
+
+    switch (object.properties.centerY) {
+      case GUIAnchor::BOTTOM:
+        break;
+      case GUIAnchor::TOP:
+        object.properties.truePosition.y -= object.properties.trueDimensions.y;
+        break;
+      case GUIAnchor::CENTER:
+        object.properties.truePosition.y -=
+            object.properties.trueDimensions.y * 0.5f;
+        break;
+      default:
+        VIVIUM_LOG(LogSeverity::FATAL, "Invalid anchor for vertical direction");
+        break;
+    }
+  }
+
+  object.properties.minExtent = object.properties.truePosition;
+  object.properties.maxExtent =
+      object.properties.truePosition + object.properties.trueDimensions;
+
+  // Look for any required special treatment
+  switch (object.type) {
+    case GUIElementType::CARDINAL_CONTAINER:
+      return _updateContainer(element, object.data.container, windowDimensions,
+                              context);
+    default:
+      break;
+  }
+
+  // We only update children if its not some special container
+  for (GUIElementReference child : object.children) {
+    updateGUIElement(child, element, windowDimensions, context);
+    object.properties.minExtent.x = std::min(
+        object.properties.minExtent.x, properties(child, context).minExtent.x);
+    object.properties.minExtent.y = std::min(
+        object.properties.minExtent.y, properties(child, context).minExtent.y);
+    object.properties.maxExtent.x = std::max(
+        object.properties.maxExtent.x, properties(child, context).maxExtent.x);
+    object.properties.maxExtent.y = std::max(
+        object.properties.maxExtent.y, properties(child, context).maxExtent.y);
+  }
+}
+
+GUIProperties& properties(GUIElementReference const objectHandle,
+                          GUIContext& guiContext) {
+  return guiContext.guiElements[objectHandle.index].properties;
+}
+
+void setAsleep(GUIElementReference const objectHandle, GUIContext& guiContext,
+               bool isAsleep) {
+  guiContext.guiElements[objectHandle.index].asleep = isAsleep;
+}
+
+uint64_t getChildPosition(GUIElementReference const parent,
+                          GUIElementReference const child,
+                          GUIContext& guiContext) {
+  GUIElement& parentObject = guiContext.guiElements[parent.index];
+
+  return std::distance(parentObject.children.begin(),
+                       std::find(parentObject.children.begin(),
+                                 parentObject.children.end(), child));
+}
+
+void insertChild(GUIElementReference const parent,
+                 std::span<GUIElementReference const> children,
+                 uint64_t position, GUIContext& guiContext) {
+  if (parent == nullGUIParent()) return;
+
+  GUIElement& parentObject = guiContext.guiElements[parent.index];
+
+  parentObject.children.insert(parentObject.children.begin() + position,
+                               children.begin(), children.end());
+}
+
+void addChild(GUIElementReference const parent,
+              std::span<GUIElementReference const> children,
+              GUIContext& guiContext) {
+  if (parent == nullGUIParent()) return;
+
+  GUIElement& parentObject = guiContext.guiElements[parent.index];
+
+  parentObject.children.insert(parentObject.children.end(), children.begin(),
+                               children.end());
+}
+
+// TODO: O(n^2) algorithm
+void removeChild(GUIElementReference const parent,
+                 std::span<GUIElementReference const> children,
+                 GUIContext& guiContext) {
+  if (parent == nullGUIParent()) return;
+
+  GUIElement& parentObject = guiContext.guiElements[parent.index];
+
+  // TODO: should use std::remove
+  for (GUIElementReference const reference : children) {
+    parentObject.children.erase(std::find(
+        parentObject.children.begin(), parentObject.children.end(), reference));
+  }
+}
+
+void rotateChild(GUIElementReference const parent, uint64_t src, uint64_t mid,
+                 uint64_t dest, GUIContext& guiContext) {
+  if (parent == nullGUIParent()) return;
+
+  GUIElement& parentObject = guiContext.guiElements[parent.index];
+
+  std::rotate(parentObject.children.begin() + src,
+              parentObject.children.begin() + mid,
+              parentObject.children.begin() + dest);
+}
+
+void swapChildren(GUIElementReference const parent, uint64_t a, uint64_t b,
+                  GUIContext& guiContext) {
+  if (parent == nullGUIParent()) return;
+
+  GUIElement& parentObject = guiContext.guiElements[parent.index];
+
+  std::swap(parentObject.children[a], parentObject.children[b]);
+}
+
+std::vector<GUIElementReference> const& getChildren(
+    GUIElementReference const parent, GUIContext& guiContext) {
+  if (parent == nullGUIParent()) return {};
+
+  GUIElement const& parentObject = guiContext.guiElements[parent.index];
+
+  return parentObject.children;
+}
+
+void clearChildren(GUIElementReference const parent, GUIContext& guiContext) {
+  if (parent == nullGUIParent()) return;
+
+  guiContext.guiElements[parent.index].children.clear();
+}
+
+GUIElement const& _getGUIElement(GUIElementReference const reference,
+                                 GUIContext const& guiContext) {
+  return guiContext.guiElements[reference.index];
+}
+
+void updateGUI(F32x2 windowDimensions, GUIContext& guiContext) {
+  updateGUIElement(guiContext.defaultParent, guiContext.defaultParent,
+                   windowDimensions, guiContext);
+}
+}  // namespace Vivium

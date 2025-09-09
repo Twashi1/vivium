@@ -1,22 +1,20 @@
-#include "state.h"
 #include "ecstest.h"
+#include "state.h"
 
 void editor() {
-	State* state = new State();
+  State* state = new State();
 
-	initialise(*state);
-	gameloop(*state);
-	terminate(*state);
+  initialise(*state);
+  gameloop(*state);
+  terminate(*state);
 
-	delete state;
+  delete state;
 }
 
-void ecs() {
-	groupTest();
-}
+void ecs() { groupTest(); }
 
 int main_old(void) {
-	editor();
+  editor();
 
-	return NULL;
+  return NULL;
 }
