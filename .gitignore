@@ -3,3 +3,4 @@ out/
 build/
 .obsidian/
 .cache/
+_deps/

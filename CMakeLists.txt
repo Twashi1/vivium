@@ -1,13 +1,94 @@
-﻿cmake_minimum_required (VERSION 3.12)
+﻿cmake_minimum_required (VERSION 3.24)
 
 project ("vivium4")
 
-# TODO: use find_package for all?
+# TODO: don't know if required
+include(FetchContent)
 
-set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
+
+set(GLFW3_VERSION 3.4)
+set(VULKAN_VERSION v1.4.321)
+set(FREETYPE_VERSION VER-2-13-3)
+set(LUA_VERSION v5.4.8)
+
+find_package(glfw3 ${GLFW3_VERSION} QUIET)
+if (NOT glfw3_FOUND)
+  message(STATUS "Fetching GLFW3")
+
+  FetchContent_Declare(
+    glfw3
+    GIT_REPOSITORY https://github.com/glfw/glfw.git
+    GIT_TAG ${GLFW3_VERSION}
+    GIT_SHALLOW TRUE
+    GIT_PROGRESS TRUE
+  )
+
+  set(GLFW_INSTALL OFF)
+  set(BUILD_SHARED_LIBS ON)
+  set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+  set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+  set(GLFW_BUILD_WAYLAND OFF)
+  set(GLFW_BUILD_COCOA OFF)
+  set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+
+  FetchContent_MakeAvailable(glfw3)
+endif()
+
+# TODO: use find_package for all?
+find_package(Vulkan COMPONENTS glslc)
+if (NOT Vulkan_FOUND)
+  message(STATUS "Fetching Vulkan")
+
+  FetchContent_Declare(
+    vulkanheaders
+    GIT_REPOSITORY https://github.com/KhronosGroup/Vulkan-Headers.git
+    GIT_TAG ${VULKAN_VERSION}
+    GIT_SHALLOW TRUE
+    GIT_PROGRESS TRUE
+  )
+
+  set(PROJECT_IS_TOP_LEVEL OFF)
+
+  FetchContent_MakeAvailable(vulkanheaders)
+endif()
+
+find_package(Freetype)
+if (NOT Freetype_FOUND)
+  message(STATUS "Fetching Freetype")
+
+  FetchContent_Declare(
+    Freetype
+    GIT_REPOSITORY https://github.com/freetype/freetype.git
+    GIT_TAG ${FREETYPE_VERSION}
+    GIT_SHALLOW TRUE
+    GIT_PROGRESS TRUE
+  )
+
+  FetchContent_MakeAvailable(Freetype)
+endif()
+
+find_package(Lua)
+if (NOT Lua_FOUND)
+  message(STATUS "Fetching Lua")
+
+  FetchContent_Declare(
+    Lua
+    GIT_REPOSITORY https://github.com/lua/lua.git
+    GIT_TAG ${LUA_VERSION}
+    GIT_SHALLOW TRUE
+    GIT_PROGRESS TRUE
+  )
+
+  # TODO: probably shouldn't have this? lua doesn't have cmakelists
+  FetchContent_MakeAvailable(Lua)
+endif()
+
+add_library(Lua::Lua INTERFACE IMPORTED)
+set_target_properties(Lua::Lua PROPERTIES
+  INTERFACE_INCLUDE_DIRECTORIES "${LUA_INCLUDE_DIR}"
+  INTERFACE_LINK_LIBRARIES "${LUA_LIBRARIES}"
+)
 
 set(VIVIUM_SOURCES
   "vivium4/core.cpp"
@@ -122,9 +203,6 @@ set(VIVIUM_HEADERS
   "vivium4/input_string.h"
  "engine/components.h"  "runtime/runtime.h" "vivium4/ecs/type_info.h" "vivium4/ecs/group_impl.h"  "vivium4/ecs/registry_impl.h"  "vivium4/ecs/component_manager_impl.h")
 
-add_subdirectory("${CMAKE_SOURCE_DIR}/external/glfw")
-add_subdirectory("${CMAKE_SOURCE_DIR}/external/linux/freetype-2.13.3")
-
 add_executable(v4 ${VIVIUM_HEADERS} ${VIVIUM_SOURCES})
 
 set_property(TARGET v4 PROPERTY CXX_STANDARD 20)
@@ -137,37 +215,17 @@ add_definitions("-DVIVIUM_SOURCE_PATH_SIZE=${VIVIUM_SOURCE_PATH_SIZE}")
 target_include_directories(v4 PUBLIC "${CMAKE_SOURCE_DIR}/external/glm")
 target_include_directories(v4 PUBLIC "${CMAKE_SOURCE_DIR}/external/stb_image")
 
-if (WIN32)
-  target_include_directories(v4 PUBLIC "${CMAKE_SOURCE_DIR}/external/win/freetype/include")
-  target_include_directories(v4 PUBLIC "${CMAKE_SOURCE_DIR}/external/win/vulkan/Include")
-  target_include_directories(v4 PUBLIC "${CMAKE_SOURCE_DIR}/external/win/lua/include")
+target_link_libraries(v4 PRIVATE Vulkan::Vulkan)
+target_link_libraries(v4 PRIVATE Freetype::Freetype)
+target_link_libraries(v4 PRIVATE glfw)
+target_link_libraries(v4 PRIVATE Lua::Lua)
 
-  target_link_libraries(v4 PUBLIC
-    glfw
-    "${CMAKE_SOURCE_DIR}/external/win/freetype/static/vs2015-2022/win64/freetype.lib"
-    "${CMAKE_SOURCE_DIR}/external/win/vulkan/Lib/vulkan-1.lib"
-    "${CMAKE_SOURCE_DIR}/external/win/lua/lua54.lib"
-    winmm.lib
-  )
-else()
-  #target_include_directories(v4 PUBLIC "${CMAKE_SOURCE_DIR}/external/linux/freetype/include/freetype2")
-  #target_include_directories(v4 PRIVATE ${FREETYPE_INCLUDE_DIRS})
-  target_include_directories(v4 PUBLIC "${CMAKE_SOURCE_DIR}/external/linux/vulkan/x86_64/include")
-  target_include_directories(v4 PUBLIC "${CMAKE_SOURCE_DIR}/external/linux/lua/include")
-
-  target_link_libraries(v4 PUBLIC
-    glfw
-    freetype
-    #${FREETYPE_LIBRARIES}
-  #  "${CMAKE_SOURCE_DIR}/external/linux/freetype/lib/libfreetype.a"
-    "${CMAKE_SOURCE_DIR}/external/linux/vulkan/x86_64/lib/libvulkan.so.1.4.321"
-    "${CMAKE_SOURCE_DIR}/external/linux/lua/liblua54.a"
-  )
-endif()
 
 file(COPY "${CMAKE_SOURCE_DIR}/vivium4/res" DESTINATION "${CMAKE_BINARY_DIR}/vivium4/")
 file(COPY "${CMAKE_SOURCE_DIR}/engine/res" DESTINATION "${CMAKE_BINARY_DIR}/engine/")
 
+# TODO: need to redo-this and find the glslc binaries from the correct location
+# Probably need to redo this
 if (WIN32)
   configure_file("${CMAKE_SOURCE_DIR}/external/win/vulkan/Bin/glslc.exe" "${CMAKE_BINARY_DIR}/external/win/vulkan/Bin/glslc.exe" COPYONLY)
 else()
