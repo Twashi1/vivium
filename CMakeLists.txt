@@ -8,7 +8,7 @@ include(FetchContent)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
 
 set(GLFW3_VERSION 3.4)
-set(VULKAN_VERSION v1.4.321)
+set(VULKAN_VERSION v1.4.326)
 set(FREETYPE_VERSION VER-2-13-3)
 set(LUA_VERSION v5.4.8)
 
@@ -38,19 +38,7 @@ endif()
 # TODO: use find_package for all?
 find_package(Vulkan COMPONENTS glslc)
 if (NOT Vulkan_FOUND)
-  message(STATUS "Fetching Vulkan")
-
-  FetchContent_Declare(
-    vulkanheaders
-    GIT_REPOSITORY https://github.com/KhronosGroup/Vulkan-Headers.git
-    GIT_TAG ${VULKAN_VERSION}
-    GIT_SHALLOW TRUE
-    GIT_PROGRESS TRUE
-  )
-
-  set(PROJECT_IS_TOP_LEVEL OFF)
-
-  FetchContent_MakeAvailable(vulkanheaders)
+  message(FATAL_ERROR "Failed to find Vulkan, install the SDK following README.md")
 endif()
 
 find_package(Freetype)
@@ -226,6 +214,7 @@ file(COPY "${CMAKE_SOURCE_DIR}/engine/res" DESTINATION "${CMAKE_BINARY_DIR}/engi
 
 # TODO: need to redo-this and find the glslc binaries from the correct location
 # Probably need to redo this
+# Vulkan_GLSLC_EXECUTABLE
 if (WIN32)
   configure_file("${CMAKE_SOURCE_DIR}/external/win/vulkan/Bin/glslc.exe" "${CMAKE_BINARY_DIR}/external/win/vulkan/Bin/glslc.exe" COPYONLY)
 else()
