@@ -122,13 +122,23 @@ set(VIVIUM_SOURCES
   "vivium4/ecs/group.cpp"
   "vivium4/graphics/gui/visual/container.cpp"
   "vivium4/graphics/gui/visual/slider.cpp"
- "vivium4/graphics/gui/visual/sprite.cpp"
- "vivium4/math/atlas.cpp"
- "vivium4/graphics/texture_format.cpp"
- "vivium4/graphics/image_load.cpp"
- "engine/tree_container.cpp"
- "vivium4/graphics/gui/visual/debugrect.cpp"
- "vivium4/graphics/gui/visual/entry.cpp" "engine/components.cpp" "vivium4/serialiser/serialiser.cpp" "runtime/main.cpp" "runtime/runtime.cpp" "vivium4/ecs/component_manager.cpp")
+  "vivium4/graphics/gui/visual/sprite.cpp"
+  "vivium4/math/atlas.cpp"
+  "vivium4/graphics/texture_format.cpp"
+  "vivium4/graphics/image_load.cpp"
+  "engine/tree_container.cpp"
+  "vivium4/graphics/gui/visual/debugrect.cpp"
+  "vivium4/graphics/gui/visual/entry.cpp"
+  "engine/components.cpp"
+  "vivium4/serialiser/serialiser.cpp"
+  "runtime/main.cpp"
+  "runtime/runtime.cpp"
+  "vivium4/ecs/component_manager.cpp"
+  "vivium4/lang/guif/ast.cpp"
+  "vivium4/lang/guif/interpreter.cpp"
+  "vivium4/lang/guif/lexer.cpp"
+  "vivium4/lang/guif/parser.cpp"
+)
 set(VIVIUM_HEADERS
   "vivium4/error/result.h"
   "vivium4/graphics/primitives/buffer.h"
@@ -180,16 +190,26 @@ set(VIVIUM_HEADERS
   "engine/ecstest.h"
   "vivium4/graphics/gui/visual/container.h"
   "vivium4/graphics/gui/visual/slider.h"
-"vivium4/graphics/gui/visual/sprite.h"
-"vivium4/math/atlas.h"
-"vivium4/graphics/texture_format.h"
-"vivium4/graphics/image_load.h"
+  "vivium4/graphics/gui/visual/sprite.h"
+  "vivium4/math/atlas.h"
+  "vivium4/graphics/texture_format.h"
+  "vivium4/graphics/image_load.h"
   "engine/tree_container.h"
   "engine/engine.h"
   "vivium4/graphics/gui/visual/debugrect.h"
   "vivium4/graphics/gui/visual/entry.h"
   "vivium4/input_string.h"
- "engine/components.h"  "runtime/runtime.h" "vivium4/ecs/type_info.h" "vivium4/ecs/group_impl.h"  "vivium4/ecs/registry_impl.h"  "vivium4/ecs/component_manager_impl.h")
+  "engine/components.h"
+  "runtime/runtime.h"
+  "vivium4/ecs/type_info.h"
+  "vivium4/ecs/group_impl.h"
+  "vivium4/ecs/registry_impl.h"
+  "vivium4/ecs/component_manager_impl.h"
+  "vivium4/lang/guif/ast.h"
+  "vivium4/lang/guif/interpreter.h"
+  "vivium4/lang/guif/lexer.h"
+  "vivium4/lang/guif/parser.h"
+)
 
 add_executable(v4 ${VIVIUM_HEADERS} ${VIVIUM_SOURCES})
 
@@ -197,6 +217,7 @@ set_property(TARGET v4 PROPERTY CXX_STANDARD 20)
 target_compile_features(v4 PUBLIC cxx_std_20)
 
 string(LENGTH "${CMAKE_SOURCE_DIR}/" VIVIUM_SOURCE_PATH_SIZE)
+message(VIVIUM_SOURCE_PATH_SIZE="${VIVIUM_SOURCE_PATH_SIZE}")
 add_definitions("-DVIVIUM_SOURCE_PATH_SIZE=${VIVIUM_SOURCE_PATH_SIZE}")
 
 # Header-only, build same regardless of system

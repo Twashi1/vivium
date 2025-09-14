@@ -8,7 +8,13 @@ LexerContext createLexer(std::string_view text) {
   context.code = text;
   context.pos = 0;
   context.line = 0;
+  context.currentChar = '\0';
   context.allocator = createBlockAllocator(TOKEN_BLOCK_SIZE);
+  context.currentToken = createToken(context, TokenType::UNKNOWN, nullptr);
+
+  if (context.code.length() > 0) {
+    context.currentChar = context.code[0];
+  }
 
   return context;
 }
@@ -68,11 +74,11 @@ Token readNumber(LexerContext& context) {
 
   if (!isDecimal) {
     int64_t value = std::stoll(std::string(number));
-    return createToken(TokenType::INTEGER, &value);
+    return createToken(context, TokenType::INTEGER, &value);
   }
 
   double value = std::stod(std::string(number));
-  return createToken(TokenType::FLOATING, &value);
+  return createToken(context, TokenType::FLOATING, &value);
 }
 
 Token readIdentifier(LexerContext& context) {
@@ -86,12 +92,23 @@ Token readIdentifier(LexerContext& context) {
 
   std::string identifier =
       std::string(context.code.substr(startIndex, endIndex));
-  return createToken(TokenType::IDENTIFIER, &identifier);
+
+  return createToken(context, TokenType::IDENTIFIER, &identifier);
 }
 
 Token advanceToken(LexerContext& context) {
+  context.currentToken = _getNextToken(context);
+  return context.currentToken;
+}
+
+Token _getNextToken(LexerContext& context) {
   // TODO: implement
   while (context.currentChar) {
+    if (std::isspace(context.currentChar) || context.currentChar == '\n') {
+      advanceCharacter(context);
+      continue;
+    }
+
     // Identifier
     if (std::isalpha(context.currentChar)) {
       return readIdentifier(context);
@@ -103,33 +120,38 @@ Token advanceToken(LexerContext& context) {
 
     if (context.currentChar == '+') {
       advanceCharacter(context);
-      return createToken(TokenType::PLUS, nullptr);
+      return createToken(context, TokenType::PLUS, nullptr);
     }
 
     if (context.currentChar == '-') {
       advanceCharacter(context);
-      return createToken(TokenType::SUBTRACT, nullptr);
+      return createToken(context, TokenType::SUBTRACT, nullptr);
     }
 
     if (context.currentChar == '*') {
       advanceCharacter(context);
-      return createToken(TokenType::MULTIPLY, nullptr);
+      return createToken(context, TokenType::MULTIPLY, nullptr);
     }
 
     if (context.currentChar == '/') {
       advanceCharacter(context);
-      return createToken(TokenType::DIVIDE, nullptr);
+      return createToken(context, TokenType::DIVIDE, nullptr);
     }
 
-    context.currentChar = advanceCharacter(context);
+    VIVIUM_LOG(LogSeverity::ERROR,
+               "Unknown token on line {} at pos {}, character {}", context.line,
+               context.pos, context.currentChar);
+
+    return createToken(context, TokenType::UNKNOWN, nullptr);
   }
 
-  return createToken(TokenType::UNKNOWN, nullptr);
+  return createToken(context, TokenType::END_OF_FILE, nullptr);
 }
 
 char advanceCharacter(LexerContext& context) {
   if (context.pos + 1 >= context.code.length()) {
-    return '\0';
+    context.currentChar = '\0';
+    return context.currentChar;
   }
 
   if (context.currentChar == '\n') {
@@ -139,7 +161,7 @@ char advanceCharacter(LexerContext& context) {
   context.pos += 1;
   context.currentChar = context.code[context.pos];
 
-  return '\0';
+  return context.currentChar;
 }
 
 char peekCharacter(LexerContext const& context) {
@@ -160,12 +182,9 @@ Token expectToken(LexerContext& context, TokenType type) {
   return token;
 }
 
-Token createToken(TokenType type, void* data) {
+Token createToken(LexerContext& context, TokenType type, void* data) {
   Token token;
   token.type = type;
-
-  int64_t* a = nullptr;
-  uint64_t* my_ptr = reinterpret_cast<uint64_t*>(a);
 
   switch (type) {
     case TokenType::SQUARE_RIGHT:
@@ -180,19 +199,28 @@ Token createToken(TokenType type, void* data) {
     case TokenType::SUBTRACT:
     case TokenType::MULTIPLY:
     case TokenType::DIVIDE:
+    case TokenType::END_OF_FILE:
       token.address = nullptr;
       break;
     case TokenType::INTEGER:
-      *token.inplace = *reinterpret_cast<uint64_t*>(data);
+      new (token.inplace) int64_t(*reinterpret_cast<int64_t*>(data));
       break;
     case TokenType::FLOATING:
-      *token.inplace = *reinterpret_cast<double*>(data);
+      new (token.inplace) double(*reinterpret_cast<double*>(data));
       break;
     case TokenType::IDENTIFIER:
-      *token.inplace = *reinterpret_cast<std::string*>(data);
+      // Need to make a copy of the std::string and construct
+      //  a std::string object in place
+      new (token.inplace) std::string(*reinterpret_cast<std::string*>(data));
+      break;
+    case TokenType::UNKNOWN:
+      token.address = nullptr;
       break;
     default:
       token.address = nullptr;
+      VIVIUM_LOG(LogSeverity::ERROR,
+                 "Unknown token type passed to create token, value: {}",
+                 static_cast<uint64_t>(type));
       break;
   }
 

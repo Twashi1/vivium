@@ -64,12 +64,16 @@ void testing_ecs() {
   delete registry;
 }
 
-#define TMP_EDITOR 1
+#define TMP_EDITOR 0
+#define TMP_RUNTIME 0
+#define TMP_GUIF 1
 
 int main(int argc, char* argv[]) {
   if (argc > 1) {
     // Attempt to run the inputted program
     char const* bytecodeFile = argv[2];
+
+    VIVIUM_LOG(LogSeverity::DEBUG, "More than one argument?");
 
     Runtime::State* state = new Runtime::State();
     Runtime::init(*state, bytecodeFile);
@@ -80,22 +84,43 @@ int main(int argc, char* argv[]) {
   }
   // Default to running editor
   else {
-#if TMP_EDITOR
-    ::State* state = new State();
-    ::initialise(*state);
-    ::gameloop(*state);
-    ::terminate(*state);
-
-    delete state;
-#else
-    Runtime::State* state = new Runtime::State();
-    Runtime::init(*state, "vivium4/res/saves/compiled.dat");
-    Runtime::run(*state);
-    Runtime::drop(*state);
-
-    delete state;
-#endif
   }
+#if TMP_EDITOR
+  ::State* state = new State();
+  ::initialise(*state);
+  ::gameloop(*state);
+  ::terminate(*state);
+
+  delete state;
+#elif TMP_RUNTIME
+  Runtime::State* state = new Runtime::State();
+  Runtime::init(*state, "vivium4/res/saves/compiled.dat");
+  Runtime::run(*state);
+  Runtime::drop(*state);
+
+  delete state;
+#elif TMP_GUIF
+  std::string exampleCode = "51 + 3 - 2 * 4";
+
+  _logInit();
+
+  VIVIUM_LOG(LogSeverity::DEBUG, "Starting...");
+
+  GUIF::LexerContext lex = GUIF::createLexer(exampleCode);
+  GUIF::ASTContext ast = GUIF::createASTContext(4096);
+  GUIF::ParserContext parser = GUIF::createParserContext(lex, ast);
+
+  VIVIUM_LOG(LogSeverity::DEBUG, "About to parse");
+
+  GUIF::ASTNode node = GUIF::parse(parser);
+  std::string tree = GUIF::printTree(node);
+
+  VIVIUM_LOG(LogSeverity::DEBUG, "Parser tree is ---\n {}\n", tree);
+
+  GUIF::dropLexer(lex);
+  GUIF::dropASTContext(ast);
+  GUIF::dropParserContext(parser);
+#endif
 
   return NULL;
 }

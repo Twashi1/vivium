@@ -1,0 +1,135 @@
+#include "parser.h"
+
+#include "ast.h"
+
+namespace Vivium {
+namespace GUIF {
+ParserContext createParserContext(LexerContext lexer, ASTContext ast) {
+  ParserContext parser;
+  parser.lexer = lexer;
+  parser.astContext = ast;
+
+  return parser;
+}
+
+void dropParserContext(ParserContext& parser) {}
+
+ASTNode parse(ParserContext& context) {
+  advanceToken(context.lexer);
+
+  ASTNode root = _parseExpression(context, PrecedenceOrder::EXPRESSION);
+
+  return root;
+}
+
+PrecedenceOrder _advancePrecedence(PrecedenceOrder order) {
+  return static_cast<PrecedenceOrder>(static_cast<uint32_t>(order) - 1);
+}
+
+ASTNode _parseExpression(ParserContext& context, PrecedenceOrder order) {
+  // Recursive base case
+  if (order == PrecedenceOrder::VALUE) {
+    return _parseValue(context);
+  }
+
+  ASTNode lhs = _parseExpression(context, _advancePrecedence(order));
+
+  if (context.lexer.currentToken.type == TokenType::END_OF_FILE) {
+    return lhs;
+  }
+
+  // TODO: we get stuck in an infinite loop here
+  //  if we do not find the current token is applicable to this
+  //  precedence level, we should return
+  switch (order) {
+    case PrecedenceOrder::VALUE:
+      break;  // This arm is never reached
+    case PrecedenceOrder::ADD_SUB:
+      return _parseAddSub(context, lhs);
+    case PrecedenceOrder::MUL_DIV:
+      return _parseMulDiv(context, lhs);
+    case PrecedenceOrder::EXPRESSION:
+      return lhs;
+    default:
+      VIVIUM_LOG(LogSeverity::FATAL, "Invalid precedence value of {}",
+                 static_cast<uint32_t>(order));
+      break;
+  }
+
+  VIVIUM_LOG(LogSeverity::ERROR,
+             "Unknown node or precedence value encountered");
+  return createASTNode(context.astContext, ASTNodeType::UNKNOWN, nullptr);
+}
+
+ASTNode _parseValue(ParserContext& context) {
+  switch (context.lexer.currentToken.type) {
+    case TokenType::FLOATING:
+    case TokenType::INTEGER:
+      NodeNumber number;
+      number.value = context.lexer.currentToken;
+      advanceToken(context.lexer);
+
+      return createASTNode(context.astContext, ASTNodeType::NUMBER, &number);
+    default:
+      VIVIUM_LOG(LogSeverity::ERROR, "Expected a value, but got token {}",
+                 tokenTypeString(context.lexer.currentToken.type));
+      break;
+  }
+}
+
+ASTNode _parseAddSub(ParserContext& context, ASTNode left) {
+  while (context.lexer.currentToken.type != TokenType::END_OF_FILE) {
+    switch (context.lexer.currentToken.type) {
+      case TokenType::PLUS:
+      case TokenType::SUBTRACT: {
+        NodeBinaryOp binaryOp;
+        binaryOp.left = left;
+
+        ASTNodeType nodeType =
+            context.lexer.currentToken.type == TokenType::PLUS
+                ? ASTNodeType::ADD_OP
+                : ASTNodeType::SUB_OP;
+
+        advanceToken(context.lexer);
+        binaryOp.right = _parseExpression(
+            context, _advancePrecedence(PrecedenceOrder::ADD_SUB));
+
+        left = createASTNode(context.astContext, nodeType, &binaryOp);
+        break;
+      }
+      default:
+        return left;
+    }
+  }
+  return left;
+}
+
+ASTNode _parseMulDiv(ParserContext& context, ASTNode left) {
+  while (context.lexer.currentToken.type != TokenType::END_OF_FILE) {
+    switch (context.lexer.currentToken.type) {
+      case TokenType::MULTIPLY:
+      case TokenType::DIVIDE: {
+        NodeBinaryOp binaryOp;
+        binaryOp.left = left;
+
+        ASTNodeType nodeType =
+            context.lexer.currentToken.type == TokenType::MULTIPLY
+                ? ASTNodeType::MUL_OP
+                : ASTNodeType::DIV_OP;
+
+        advanceToken(context.lexer);
+        binaryOp.right = _parseExpression(
+            context, _advancePrecedence(PrecedenceOrder::MUL_DIV));
+
+        left = createASTNode(context.astContext, nodeType, &binaryOp);
+        break;
+      }
+      default:
+        return left;
+    }
+  }
+
+  return left;
+}
+}  // namespace GUIF
+}  // namespace Vivium

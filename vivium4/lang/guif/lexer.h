@@ -24,7 +24,8 @@ enum class TokenType {
   PLUS,
   SUBTRACT,
   MULTIPLY,
-  DIVIDE
+  DIVIDE,
+  END_OF_FILE
 };
 
 constexpr uint64_t inplaceTokenSize =
@@ -50,6 +51,8 @@ struct LexerContext {
 LexerContext createLexer(std::string_view text);
 void dropLexer(LexerContext& context);
 
+std::string tokenTypeString(TokenType type);
+Token _getNextToken(LexerContext& context);
 Token advanceToken(LexerContext& context);
 char advanceCharacter(LexerContext& context);
 char peekCharacter(LexerContext const& context);
@@ -60,6 +63,6 @@ Token readIdentifier(LexerContext& context);
 Token expectToken(LexerContext& context, TokenType type);
 
 // Assumes data to be move-able
-Token createToken(TokenType type, void* data);
+Token createToken(LexerContext& context, TokenType type, void* data);
 }  // namespace GUIF
 }  // namespace Vivium
