@@ -16,6 +16,8 @@ enum class ASTNodeType {
   ASSIGN_OP,
   VAR,
   NUMBER,
+  FUNCTION_DEFINITION,
+  FUNCTION_CALL,
   UNKNOWN
 };
 
@@ -37,6 +39,19 @@ struct ASTNode {
     uint8_t inplace[_astNodeMinimumInplace];
     void* data;
   };
+};
+
+struct NodeFunctionDefinition {
+  std::string name;
+  ASTNode returnType;
+  ASTNode body;
+  std::vector<ASTNode> parameters;
+};
+
+struct NodeFunctionCall {
+  std::string name;
+  ASTNode returnType;
+  std::vector<ASTNode> arguments;
 };
 
 struct NodeBinaryOp {

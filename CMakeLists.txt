@@ -141,6 +141,7 @@ set(VIVIUM_SOURCES
 )
 set(VIVIUM_HEADERS
   "vivium4/error/result.h"
+  "vivium4/utility/type_names.h"
   "vivium4/graphics/primitives/buffer.h"
   "vivium4/core.h"
   "vivium4/graphics/primitives/memory_type.h"
@@ -207,6 +208,7 @@ set(VIVIUM_HEADERS
   "vivium4/ecs/component_manager_impl.h"
   "vivium4/lang/guif/ast.h"
   "vivium4/lang/guif/interpreter.h"
+  "vivium4/lang/guif/interpreter_impl.h"
   "vivium4/lang/guif/lexer.h"
   "vivium4/lang/guif/parser.h"
 )

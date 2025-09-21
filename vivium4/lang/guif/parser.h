@@ -17,8 +17,16 @@ struct ParserContext {
 // the right, and then add/sub the result
 //  if we don't see add/sub, we recurse down a level
 
+//  TODO: parenthesis
+
 // Higher precedence implies the operation is performed first
-enum class PrecedenceOrder : uint32_t { VALUE, MUL_DIV, ADD_SUB, EXPRESSION };
+enum class PrecedenceOrder : uint32_t {
+  VALUE,
+  MUL_DIV,
+  ADD_SUB,
+  ASSIGN,
+  EXPRESSION
+};
 
 ParserContext createParserContext(LexerContext lexer, ASTContext ast);
 // TODO: ambiguity whether parser context should be free-ing its members
@@ -29,6 +37,11 @@ ASTNode _parseValue(ParserContext& context);
 ASTNode _parseExpression(ParserContext& context, PrecedenceOrder order);
 ASTNode _parseAddSub(ParserContext& context, ASTNode left);
 ASTNode _parseMulDiv(ParserContext& context, ASTNode left);
+ASTNode _parseAssignment(ParserContext& context, ASTNode left);
+ASTNode _parseFunctionCall(ParserContext& context, ASTNode name);
+ASTNode _parseFunctionDefinition(ParserContext& context);
+ASTNode _parseCompoundStatement(ParserContext& context);
+ASTNode _parseStatement(ParserContext& context);
 ASTNode parse(ParserContext& context);
 }  // namespace GUIF
 }  // namespace Vivium

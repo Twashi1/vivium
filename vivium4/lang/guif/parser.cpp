@@ -44,6 +44,8 @@ ASTNode _parseExpression(ParserContext& context, PrecedenceOrder order) {
   switch (order) {
     case PrecedenceOrder::VALUE:
       break;  // This arm is never reached
+    case PrecedenceOrder::ASSIGN:
+      return _parseAssignment(context, lhs);
     case PrecedenceOrder::ADD_SUB:
       return _parseAddSub(context, lhs);
     case PrecedenceOrder::MUL_DIV:
@@ -70,11 +72,28 @@ ASTNode _parseValue(ParserContext& context) {
       advanceToken(context.lexer);
 
       return createASTNode(context.astContext, ASTNodeType::NUMBER, &number);
+    case TokenType::PAREN_LEFT: {
+      expectToken(context.lexer, TokenType::PAREN_LEFT);
+      ASTNode inner = _parseExpression(context, PrecedenceOrder::EXPRESSION);
+      expectToken(context.lexer, TokenType::PAREN_RIGHT);
+
+      return inner;
+    }
+    case TokenType::IDENTIFIER: {
+      NodeVar variable;
+      variable.name =
+          *reinterpret_cast<std::string*>(context.lexer.currentToken.inplace);
+      advanceToken(context.lexer);
+
+      return createASTNode(context.astContext, ASTNodeType::VAR, &variable);
+    }
     default:
       VIVIUM_LOG(LogSeverity::ERROR, "Expected a value, but got token {}",
                  tokenTypeString(context.lexer.currentToken.type));
       break;
   }
+
+  return createASTNode(context.astContext, ASTNodeType::UNKNOWN, nullptr);
 }
 
 ASTNode _parseAddSub(ParserContext& context, ASTNode left) {
@@ -102,6 +121,24 @@ ASTNode _parseAddSub(ParserContext& context, ASTNode left) {
     }
   }
   return left;
+}
+ASTNode _parseAssignment(ParserContext& context, ASTNode left) {
+  if (context.lexer.currentToken.type != TokenType::EQUAL) {
+    return left;
+  }
+
+  VIVIUM_ASSERT(left.type == ASTNodeType::VAR,
+                "Expected variable on left of assignment");
+
+  expectToken(context.lexer, TokenType::EQUAL);
+
+  ASTNode right = _parseExpression(context, PrecedenceOrder::EXPRESSION);
+
+  NodeBinaryOp assign;
+  assign.left = left;
+  assign.right = right;
+
+  return createASTNode(context.astContext, ASTNodeType::ASSIGN_OP, &assign);
 }
 
 ASTNode _parseMulDiv(ParserContext& context, ASTNode left) {

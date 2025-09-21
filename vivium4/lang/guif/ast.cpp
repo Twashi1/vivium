@@ -23,16 +23,20 @@ ASTNode createASTNode(ASTContext& context, ASTNodeType type, void* data) {
     case ASTNodeType::SUB_OP:
     case ASTNodeType::MUL_OP:
     case ASTNodeType::DIV_OP:
+    case ASTNodeType::ASSIGN_OP:
       node.data = allocate(context.allocator, sizeof(NodeBinaryOp));
       new (node.data) NodeBinaryOp(*reinterpret_cast<NodeBinaryOp*>(data));
       break;
     case ASTNodeType::NUMBER:
       new (node.inplace) NodeNumber(*reinterpret_cast<NodeNumber*>(data));
       break;
-    case ASTNodeType::ASSIGN_OP:
-      break;
     case ASTNodeType::VAR:
       new (node.inplace) NodeVar(*reinterpret_cast<NodeVar*>(data));
+      break;
+    case ASTNodeType::FUNCTION_DEFINITION:
+      node.data = allocate(context.allocator, sizeof(NodeFunctionDefinition));
+      new (node.data) NodeFunctionDefinition(
+          *reinterpret_cast<NodeFunctionDefinition*>(data));
       break;
     case ASTNodeType::UNKNOWN:
       break;
@@ -61,8 +65,12 @@ std::string nodeTypeString(ASTNodeType type) {
       return "VAR";
     case ASTNodeType::NUMBER:
       return "NUMBER";
+    case ASTNodeType::FUNCTION_DEFINITION:
+      return "FUNCTION_DEFINTION";
     case ASTNodeType::UNKNOWN:
       return "UNKNOWN";
+    default:
+      return "InvalidNodeString";
   }
 }
 }  // namespace GUIF

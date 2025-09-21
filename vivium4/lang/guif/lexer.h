@@ -14,6 +14,8 @@ enum class TokenType {
   INTEGER,
   FLOATING,
   COLON,
+  COMMA,
+  SEMICOLON,
   EQUAL,
   CURLY_LEFT,
   CURLY_RIGHT,
@@ -63,6 +65,6 @@ Token readIdentifier(LexerContext& context);
 Token expectToken(LexerContext& context, TokenType type);
 
 // Assumes data to be move-able
-Token createToken(LexerContext& context, TokenType type, void* data);
+Token createToken(BlockAllocator& allocator, TokenType type, void const* data);
 }  // namespace GUIF
 }  // namespace Vivium

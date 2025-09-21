@@ -10,7 +10,8 @@ LexerContext createLexer(std::string_view text) {
   context.line = 0;
   context.currentChar = '\0';
   context.allocator = createBlockAllocator(TOKEN_BLOCK_SIZE);
-  context.currentToken = createToken(context, TokenType::UNKNOWN, nullptr);
+  context.currentToken =
+      createToken(context.allocator, TokenType::UNKNOWN, nullptr);
 
   if (context.code.length() > 0) {
     context.currentChar = context.code[0];
@@ -74,11 +75,11 @@ Token readNumber(LexerContext& context) {
 
   if (!isDecimal) {
     int64_t value = std::stoll(std::string(number));
-    return createToken(context, TokenType::INTEGER, &value);
+    return createToken(context.allocator, TokenType::INTEGER, &value);
   }
 
   double value = std::stod(std::string(number));
-  return createToken(context, TokenType::FLOATING, &value);
+  return createToken(context.allocator, TokenType::FLOATING, &value);
 }
 
 Token readIdentifier(LexerContext& context) {
@@ -93,7 +94,7 @@ Token readIdentifier(LexerContext& context) {
   std::string identifier =
       std::string(context.code.substr(startIndex, endIndex));
 
-  return createToken(context, TokenType::IDENTIFIER, &identifier);
+  return createToken(context.allocator, TokenType::IDENTIFIER, &identifier);
 }
 
 Token advanceToken(LexerContext& context) {
@@ -109,8 +110,15 @@ Token _getNextToken(LexerContext& context) {
       continue;
     }
 
+    // Line comment
+    if (context.currentChar == '#') {
+      while (context.currentChar != '\n') {
+        advanceCharacter(context);
+      }
+    }
+
     // Identifier
-    if (std::isalpha(context.currentChar)) {
+    if (std::isalpha(context.currentChar) || context.currentChar == '_') {
       return readIdentifier(context);
     }
 
@@ -118,34 +126,58 @@ Token _getNextToken(LexerContext& context) {
       return readNumber(context);
     }
 
-    if (context.currentChar == '+') {
-      advanceCharacter(context);
-      return createToken(context, TokenType::PLUS, nullptr);
-    }
-
-    if (context.currentChar == '-') {
-      advanceCharacter(context);
-      return createToken(context, TokenType::SUBTRACT, nullptr);
-    }
-
-    if (context.currentChar == '*') {
-      advanceCharacter(context);
-      return createToken(context, TokenType::MULTIPLY, nullptr);
-    }
-
-    if (context.currentChar == '/') {
-      advanceCharacter(context);
-      return createToken(context, TokenType::DIVIDE, nullptr);
+    switch (context.currentChar) {
+      case '+':
+        advanceCharacter(context);
+        return createToken(context.allocator, TokenType::PLUS, nullptr);
+      case '-':
+        advanceCharacter(context);
+        return createToken(context.allocator, TokenType::SUBTRACT, nullptr);
+      case '*':
+        advanceCharacter(context);
+        return createToken(context.allocator, TokenType::MULTIPLY, nullptr);
+      case '/':
+        advanceCharacter(context);
+        return createToken(context.allocator, TokenType::DIVIDE, nullptr);
+      case ',':
+        advanceCharacter(context);
+        return createToken(context.allocator, TokenType::COMMA, nullptr);
+      case ':':
+        advanceCharacter(context);
+        return createToken(context.allocator, TokenType::COLON, nullptr);
+      case '(':
+        advanceCharacter(context);
+        return createToken(context.allocator, TokenType::PAREN_LEFT, nullptr);
+      case ')':
+        advanceCharacter(context);
+        return createToken(context.allocator, TokenType::PAREN_RIGHT, nullptr);
+      case '{':
+        advanceCharacter(context);
+        return createToken(context.allocator, TokenType::CURLY_LEFT, nullptr);
+      case '}':
+        advanceCharacter(context);
+        return createToken(context.allocator, TokenType::CURLY_RIGHT, nullptr);
+      case '[':
+        advanceCharacter(context);
+        return createToken(context.allocator, TokenType::SQUARE_LEFT, nullptr);
+      case ']':
+        advanceCharacter(context);
+        return createToken(context.allocator, TokenType::SQUARE_RIGHT, nullptr);
+      case ';':
+        advanceCharacter(context);
+        return createToken(context.allocator, TokenType::SEMICOLON, nullptr);
+      default:
+        break;
     }
 
     VIVIUM_LOG(LogSeverity::ERROR,
                "Unknown token on line {} at pos {}, character {}", context.line,
                context.pos, context.currentChar);
 
-    return createToken(context, TokenType::UNKNOWN, nullptr);
+    return createToken(context.allocator, TokenType::UNKNOWN, nullptr);
   }
 
-  return createToken(context, TokenType::END_OF_FILE, nullptr);
+  return createToken(context.allocator, TokenType::END_OF_FILE, nullptr);
 }
 
 char advanceCharacter(LexerContext& context) {
@@ -182,7 +214,7 @@ Token expectToken(LexerContext& context, TokenType type) {
   return token;
 }
 
-Token createToken(LexerContext& context, TokenType type, void* data) {
+Token createToken(BlockAllocator& allocator, TokenType type, void const* data) {
   Token token;
   token.type = type;
 
@@ -203,15 +235,16 @@ Token createToken(LexerContext& context, TokenType type, void* data) {
       token.address = nullptr;
       break;
     case TokenType::INTEGER:
-      new (token.inplace) int64_t(*reinterpret_cast<int64_t*>(data));
+      new (token.inplace) int64_t(*reinterpret_cast<int64_t const*>(data));
       break;
     case TokenType::FLOATING:
-      new (token.inplace) double(*reinterpret_cast<double*>(data));
+      new (token.inplace) double(*reinterpret_cast<double const*>(data));
       break;
     case TokenType::IDENTIFIER:
       // Need to make a copy of the std::string and construct
       //  a std::string object in place
-      new (token.inplace) std::string(*reinterpret_cast<std::string*>(data));
+      new (token.inplace)
+          std::string(*reinterpret_cast<std::string const*>(data));
       break;
     case TokenType::UNKNOWN:
       token.address = nullptr;
