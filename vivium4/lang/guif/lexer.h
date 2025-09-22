@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cctype>
+#include <unordered_map>
 
 #include "../../storage.h"
 
@@ -27,6 +28,11 @@ enum class TokenType {
   SUBTRACT,
   MULTIPLY,
   DIVIDE,
+  IF,
+  ELSE,
+  AS,
+  WHILE,
+  FOR,
   END_OF_FILE
 };
 
@@ -48,6 +54,7 @@ struct LexerContext {
   char currentChar;
   BlockAllocator allocator;
   Token currentToken;
+  std::unordered_map<std::string, TokenType> keywords;
 };
 
 LexerContext createLexer(std::string_view text);

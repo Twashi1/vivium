@@ -44,39 +44,11 @@ struct InterpreterContext {
   BlockAllocator allocator;
 };
 
-template <typename LeftType, typename RightType>
-struct PreferredType {
-  using type = void;
-};
+template <typename T, BinaryOpType operation>
+Token executeBinaryOp(InterpreterContext& interp,
+                      std::vector<Token> const& tokens);
 
-template <typename LeftType, typename RightType>
-typename PreferredType<LeftType, RightType>::type _add(LeftType const left,
-                                                       LeftType const right);
-template <typename LeftType, typename RightType>
-typename PreferredType<LeftType, RightType>::type _sub(LeftType const left,
-                                                       LeftType const right);
-template <typename LeftType, typename RightType>
-typename PreferredType<LeftType, RightType>::type _mul(LeftType const left,
-                                                       LeftType const right);
-template <typename LeftType, typename RightType>
-typename PreferredType<LeftType, RightType>::type _div(LeftType const left,
-                                                       LeftType const right);
-
-template <typename LeftType, typename RightType>
-using BinaryOperationFunction =
-    typename PreferredType<LeftType, RightType>::type (*)(LeftType const,
-                                                          RightType const);
-
-template <typename LeftType, typename RightType>
-Token performBinaryOp(InterpreterContext& interp, Token const& left,
-                      Token const& right,
-                      BinaryOperationFunction<LeftType, RightType> function);
-
-template <typename LeftType, typename RightType, BinaryOpType operation>
-Token templateBinaryOp(InterpreterContext& interp,
-                       std::vector<Token> const& tokens);
-
-template <typename LeftType, typename RightType, BinaryOpType operation>
+template <typename T, BinaryOpType operation>
 FunctionSymbol _makeSymbolBinaryBuiltin();
 template <typename T>
 TypeSymbol _makeTypeSymbolBuiltin();
@@ -85,14 +57,20 @@ TypeSymbol _makeTypeSymbolBuiltin();
 Token _createTokenFromNumericalType(BlockAllocator& allocator,
                                     double const value);
 Token _createTokenFromNumericalType(BlockAllocator& allocator,
-                                    uint64_t const value);
+                                    int64_t const value);
 
 void _registerBuiltinFunctions(InterpreterContext& context);
 void _registerFunction(InterpreterContext& context, FunctionSymbol symbol,
                        LanguageFunction function);
 
-template <typename LeftType, typename RightType, BinaryOpType operation>
+template <typename T, BinaryOpType operation>
 void _registerBinaryFunction(InterpreterContext& context);
+LanguageFunction lookupFunction(InterpreterContext& context,
+                                std::string_view functionName,
+                                std::vector<TypeSymbol> const& parameters);
+std::vector<TypeSymbol> _tokensToTypeSymbols(
+    std::vector<Token> const& parameters);
+TypeSymbol _tokenToTypeSymbol(Token const& token);
 
 InterpreterContext createInterpreter(uint64_t blockSize);
 void dropInterpreter(InterpreterContext& context);
@@ -107,6 +85,8 @@ ASTNode visitSubOp(InterpreterContext& context, NodeBinaryOp* binary);
 ASTNode visitMulOp(InterpreterContext& context, NodeBinaryOp* binary);
 ASTNode visitDivOp(InterpreterContext& context, NodeBinaryOp* binary);
 ASTNode visitAssignOp(InterpreterContext& context, NodeBinaryOp* binary);
+ASTNode visitBinaryOp(InterpreterContext& context, NodeBinaryOp* binary,
+                      std::string_view functionName);
 std::string printTree(ASTNode root);
 
 }  // namespace GUIF

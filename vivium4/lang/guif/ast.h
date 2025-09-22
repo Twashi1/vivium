@@ -65,7 +65,7 @@ struct ASTContext {
 
 ASTContext createASTContext(uint64_t blockSize);
 void dropASTContext(ASTContext& context);
-ASTNode createASTNode(ASTContext& context, ASTNodeType type, void* data);
+ASTNode createASTNode(BlockAllocator& allocator, ASTNodeType type, void* data);
 std::string nodeTypeString(ASTNodeType type);
 }  // namespace GUIF
 }  // namespace Vivium

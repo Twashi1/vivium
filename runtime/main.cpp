@@ -115,11 +115,19 @@ int main(int argc, char* argv[]) {
   GUIF::ASTNode node = GUIF::parse(parser);
   std::string tree = GUIF::printTree(node);
 
+  GUIF::InterpreterContext interp = GUIF::createInterpreter(4096);
+
   VIVIUM_LOG(LogSeverity::DEBUG, "Parser tree is ---\n {}\n", tree);
+
+  GUIF::ASTNode result = GUIF::evaluate(interp, node);
+  std::string resultText = GUIF::printTree(result);
+
+  VIVIUM_LOG(LogSeverity::DEBUG, "Result is {}", resultText);
 
   GUIF::dropLexer(lex);
   GUIF::dropASTContext(ast);
   GUIF::dropParserContext(parser);
+  GUIF::dropInterpreter(interp);
 #endif
 
   return NULL;

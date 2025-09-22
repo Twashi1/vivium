@@ -17,6 +17,12 @@ LexerContext createLexer(std::string_view text) {
     context.currentChar = context.code[0];
   }
 
+  context.keywords.insert({"if", TokenType::IF});
+  context.keywords.insert({"else", TokenType::ELSE});
+  context.keywords.insert({"as", TokenType::AS});
+  context.keywords.insert({"while", TokenType::WHILE});
+  context.keywords.insert({"for", TokenType::FOR});
+
   return context;
 }
 
@@ -93,6 +99,11 @@ Token readIdentifier(LexerContext& context) {
 
   std::string identifier =
       std::string(context.code.substr(startIndex, endIndex));
+
+  if (context.keywords.contains(identifier)) {
+    return createToken(context.allocator, context.keywords.at(identifier),
+                       nullptr);
+  }
 
   return createToken(context.allocator, TokenType::IDENTIFIER, &identifier);
 }
@@ -232,6 +243,11 @@ Token createToken(BlockAllocator& allocator, TokenType type, void const* data) {
     case TokenType::MULTIPLY:
     case TokenType::DIVIDE:
     case TokenType::END_OF_FILE:
+    case TokenType::FOR:
+    case TokenType::WHILE:
+    case TokenType::IF:
+    case TokenType::AS:
+    case TokenType::ELSE:
       token.address = nullptr;
       break;
     case TokenType::INTEGER:

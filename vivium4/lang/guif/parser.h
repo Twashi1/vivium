@@ -24,6 +24,7 @@ enum class PrecedenceOrder : uint32_t {
   VALUE,
   MUL_DIV,
   ADD_SUB,
+  AS,
   ASSIGN,
   EXPRESSION
 };
@@ -38,6 +39,7 @@ ASTNode _parseExpression(ParserContext& context, PrecedenceOrder order);
 ASTNode _parseAddSub(ParserContext& context, ASTNode left);
 ASTNode _parseMulDiv(ParserContext& context, ASTNode left);
 ASTNode _parseAssignment(ParserContext& context, ASTNode left);
+ASTNode _parseAs(ParserContext& context, ASTNode left);
 ASTNode _parseFunctionCall(ParserContext& context, ASTNode name);
 ASTNode _parseFunctionDefinition(ParserContext& context);
 ASTNode _parseCompoundStatement(ParserContext& context);

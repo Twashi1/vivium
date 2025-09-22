@@ -60,7 +60,8 @@ ASTNode _parseExpression(ParserContext& context, PrecedenceOrder order) {
 
   VIVIUM_LOG(LogSeverity::ERROR,
              "Unknown node or precedence value encountered");
-  return createASTNode(context.astContext, ASTNodeType::UNKNOWN, nullptr);
+  return createASTNode(context.astContext.allocator, ASTNodeType::UNKNOWN,
+                       nullptr);
 }
 
 ASTNode _parseValue(ParserContext& context) {
@@ -71,7 +72,8 @@ ASTNode _parseValue(ParserContext& context) {
       number.value = context.lexer.currentToken;
       advanceToken(context.lexer);
 
-      return createASTNode(context.astContext, ASTNodeType::NUMBER, &number);
+      return createASTNode(context.astContext.allocator, ASTNodeType::NUMBER,
+                           &number);
     case TokenType::PAREN_LEFT: {
       expectToken(context.lexer, TokenType::PAREN_LEFT);
       ASTNode inner = _parseExpression(context, PrecedenceOrder::EXPRESSION);
@@ -85,7 +87,8 @@ ASTNode _parseValue(ParserContext& context) {
           *reinterpret_cast<std::string*>(context.lexer.currentToken.inplace);
       advanceToken(context.lexer);
 
-      return createASTNode(context.astContext, ASTNodeType::VAR, &variable);
+      return createASTNode(context.astContext.allocator, ASTNodeType::VAR,
+                           &variable);
     }
     default:
       VIVIUM_LOG(LogSeverity::ERROR, "Expected a value, but got token {}",
@@ -93,7 +96,8 @@ ASTNode _parseValue(ParserContext& context) {
       break;
   }
 
-  return createASTNode(context.astContext, ASTNodeType::UNKNOWN, nullptr);
+  return createASTNode(context.astContext.allocator, ASTNodeType::UNKNOWN,
+                       nullptr);
 }
 
 ASTNode _parseAddSub(ParserContext& context, ASTNode left) {
@@ -113,7 +117,7 @@ ASTNode _parseAddSub(ParserContext& context, ASTNode left) {
         binaryOp.right = _parseExpression(
             context, _advancePrecedence(PrecedenceOrder::ADD_SUB));
 
-        left = createASTNode(context.astContext, nodeType, &binaryOp);
+        left = createASTNode(context.astContext.allocator, nodeType, &binaryOp);
         break;
       }
       default:
@@ -138,7 +142,8 @@ ASTNode _parseAssignment(ParserContext& context, ASTNode left) {
   assign.left = left;
   assign.right = right;
 
-  return createASTNode(context.astContext, ASTNodeType::ASSIGN_OP, &assign);
+  return createASTNode(context.astContext.allocator, ASTNodeType::ASSIGN_OP,
+                       &assign);
 }
 
 ASTNode _parseMulDiv(ParserContext& context, ASTNode left) {
@@ -158,7 +163,7 @@ ASTNode _parseMulDiv(ParserContext& context, ASTNode left) {
         binaryOp.right = _parseExpression(
             context, _advancePrecedence(PrecedenceOrder::MUL_DIV));
 
-        left = createASTNode(context.astContext, nodeType, &binaryOp);
+        left = createASTNode(context.astContext.allocator, nodeType, &binaryOp);
         break;
       }
       default:

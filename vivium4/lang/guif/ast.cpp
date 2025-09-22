@@ -13,7 +13,7 @@ void dropASTContext(ASTContext& context) {
   dropBlockAllocator(context.allocator);
 }
 
-ASTNode createASTNode(ASTContext& context, ASTNodeType type, void* data) {
+ASTNode createASTNode(BlockAllocator& allocator, ASTNodeType type, void* data) {
   ASTNode node;
   node.type = type;
   node.data = nullptr;
@@ -24,7 +24,7 @@ ASTNode createASTNode(ASTContext& context, ASTNodeType type, void* data) {
     case ASTNodeType::MUL_OP:
     case ASTNodeType::DIV_OP:
     case ASTNodeType::ASSIGN_OP:
-      node.data = allocate(context.allocator, sizeof(NodeBinaryOp));
+      node.data = allocate(allocator, sizeof(NodeBinaryOp));
       new (node.data) NodeBinaryOp(*reinterpret_cast<NodeBinaryOp*>(data));
       break;
     case ASTNodeType::NUMBER:
@@ -34,7 +34,7 @@ ASTNode createASTNode(ASTContext& context, ASTNodeType type, void* data) {
       new (node.inplace) NodeVar(*reinterpret_cast<NodeVar*>(data));
       break;
     case ASTNodeType::FUNCTION_DEFINITION:
-      node.data = allocate(context.allocator, sizeof(NodeFunctionDefinition));
+      node.data = allocate(allocator, sizeof(NodeFunctionDefinition));
       new (node.data) NodeFunctionDefinition(
           *reinterpret_cast<NodeFunctionDefinition*>(data));
       break;
