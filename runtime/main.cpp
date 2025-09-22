@@ -100,7 +100,7 @@ int main(int argc, char* argv[]) {
 
   delete state;
 #elif TMP_GUIF
-  std::string exampleCode = "51 + 3 - 2 * 4";
+  std::string exampleCode = "{ x = 51 + 3 - 2 * 4; }";
 
   _logInit();
 

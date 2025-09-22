@@ -2,6 +2,60 @@
 
 namespace Vivium {
 namespace GUIF {
+Token copyToken(BlockAllocator& allocator, Token const token) {
+  switch (token.type) {
+    case TokenType::IDENTIFIER: {
+      Token copyToken;
+      copyToken.type = token.type;
+      new (copyToken.inplace)
+          std::string(*reinterpret_cast<std::string const*>(token.inplace));
+
+      VIVIUM_LOG(LogSeverity::DEBUG, "Copied token to have {}, original {}",
+                 *reinterpret_cast<std::string const*>(copyToken.inplace),
+                 *reinterpret_cast<std::string const*>(token.inplace));
+
+      return copyToken;
+    }
+    case TokenType::INTEGER: {
+      Token copyToken;
+      copyToken.type = token.type;
+      new (copyToken.inplace)
+          int64_t(*reinterpret_cast<int64_t const*>(token.inplace));
+
+      return copyToken;
+    }
+    case TokenType::FLOATING: {
+      Token copyToken;
+      copyToken.type = token.type;
+      new (copyToken.inplace) double(
+          *reinterpret_cast<double const*>(token.inplace));
+
+      return copyToken;
+    }
+    case TokenType::UNKNOWN:
+    case TokenType::COLON:
+    case TokenType::COMMA:
+    case TokenType::SEMICOLON:
+    case TokenType::EQUAL:
+    case TokenType::CURLY_LEFT:
+    case TokenType::CURLY_RIGHT:
+    case TokenType::PAREN_LEFT:
+    case TokenType::PAREN_RIGHT:
+    case TokenType::SQUARE_LEFT:
+    case TokenType::SQUARE_RIGHT:
+    case TokenType::PLUS:
+    case TokenType::SUBTRACT:
+    case TokenType::MULTIPLY:
+    case TokenType::DIVIDE:
+    case TokenType::IF:
+    case TokenType::ELSE:
+    case TokenType::AS:
+    case TokenType::WHILE:
+    case TokenType::FOR:
+    case TokenType::END_OF_FILE:
+      return token;
+  }
+}
 
 LexerContext createLexer(std::string_view text) {
   LexerContext context;
@@ -90,15 +144,18 @@ Token readNumber(LexerContext& context) {
 
 Token readIdentifier(LexerContext& context) {
   uint64_t startIndex = context.pos;
-  uint64_t endIndex = context.pos + 1;
+  uint64_t endIndex = context.pos;
 
   while (std::isalnum(context.currentChar) || context.currentChar == '_') {
-    endIndex += 1;
+    ++endIndex;
     advanceCharacter(context);
   }
 
   std::string identifier =
-      std::string(context.code.substr(startIndex, endIndex));
+      std::string(context.code.substr(startIndex, endIndex - startIndex));
+
+  VIVIUM_LOG(LogSeverity::DEBUG, "Got identifier: [{}], indexing {} to {}",
+             identifier, startIndex, endIndex);
 
   if (context.keywords.contains(identifier)) {
     return createToken(context.allocator, context.keywords.at(identifier),
@@ -150,6 +207,9 @@ Token _getNextToken(LexerContext& context) {
       case '/':
         advanceCharacter(context);
         return createToken(context.allocator, TokenType::DIVIDE, nullptr);
+      case '=':
+        advanceCharacter(context);
+        return createToken(context.allocator, TokenType::EQUAL, nullptr);
       case ',':
         advanceCharacter(context);
         return createToken(context.allocator, TokenType::COMMA, nullptr);
@@ -208,19 +268,27 @@ char advanceCharacter(LexerContext& context) {
 }
 
 char peekCharacter(LexerContext const& context) {
-  if (context.pos + 1 < context.code.length()) {
-    return context.code[context.pos + 1];
+  uint64_t index = context.pos + 1;
+
+  while (index < context.code.length() &&
+         (std::isspace(context.code[index]) || context.code[index] == '\n')) {
+    ++index;
+  }
+
+  if (index < context.code.length()) {
+    return context.code[index];
   }
 
   return '\0';
 }
 
 Token expectToken(LexerContext& context, TokenType type) {
-  Token token = advanceToken(context);
-
-  VIVIUM_ASSERT(token.type == type,
+  VIVIUM_ASSERT(context.currentToken.type == type,
                 "Invalid token, expected type {} but got {}",
-                tokenTypeString(type), tokenTypeString(token.type));
+                tokenTypeString(type),
+                tokenTypeString(context.currentToken.type));
+
+  Token token = advanceToken(context);
 
   return token;
 }
@@ -248,6 +316,7 @@ Token createToken(BlockAllocator& allocator, TokenType type, void const* data) {
     case TokenType::IF:
     case TokenType::AS:
     case TokenType::ELSE:
+    case TokenType::SEMICOLON:
       token.address = nullptr;
       break;
     case TokenType::INTEGER:
@@ -261,6 +330,9 @@ Token createToken(BlockAllocator& allocator, TokenType type, void const* data) {
       //  a std::string object in place
       new (token.inplace)
           std::string(*reinterpret_cast<std::string const*>(data));
+      VIVIUM_LOG(LogSeverity::DEBUG, "Created token from string {}, read as {}",
+                 *reinterpret_cast<std::string const*>(data),
+                 *reinterpret_cast<std::string const*>(token.inplace));
       break;
     case TokenType::UNKNOWN:
       token.address = nullptr;

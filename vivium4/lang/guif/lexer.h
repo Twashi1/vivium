@@ -42,8 +42,8 @@ constexpr uint64_t inplaceTokenSize =
 struct Token {
   TokenType type;
   union {
-    std::byte* address;
-    std::byte inplace[inplaceTokenSize];
+    void* address;
+    uint8_t inplace[inplaceTokenSize];
   };
 };
 
@@ -70,6 +70,7 @@ Token readNumber(LexerContext& context);
 Token readIdentifier(LexerContext& context);
 
 Token expectToken(LexerContext& context, TokenType type);
+Token copyToken(BlockAllocator& allocator, Token const token);
 
 // Assumes data to be move-able
 Token createToken(BlockAllocator& allocator, TokenType type, void const* data);

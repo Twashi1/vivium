@@ -17,7 +17,7 @@ void dropParserContext(ParserContext& parser) {}
 ASTNode parse(ParserContext& context) {
   advanceToken(context.lexer);
 
-  ASTNode root = _parseExpression(context, PrecedenceOrder::EXPRESSION);
+  ASTNode root = _parseCompoundStatement(context);
 
   return root;
 }
@@ -172,6 +172,81 @@ ASTNode _parseMulDiv(ParserContext& context, ASTNode left) {
   }
 
   return left;
+}
+
+ASTNode _parseCompoundStatement(ParserContext& context) {
+  expectToken(context.lexer, TokenType::CURLY_LEFT);
+
+  std::vector<ASTNode> statements;
+
+  while (context.lexer.currentToken.type != TokenType::CURLY_RIGHT) {
+    VIVIUM_LOG(LogSeverity::DEBUG, "Grabbing statement...");
+
+    ASTNode statement = _parseStatement(context);
+    statements.push_back(statement);
+    // TODO: maybe should be inside the parse statement?
+    expectToken(context.lexer, TokenType::SEMICOLON);
+  }
+
+  expectToken(context.lexer, TokenType::CURLY_RIGHT);
+
+  NodeCompound compound;
+  compound.nodes = statements;
+
+  return createASTNode(context.astContext.allocator, ASTNodeType::COMPOUND,
+                       &compound);
+}
+
+ASTNode _parseStatement(ParserContext& context) {
+  switch (context.lexer.currentToken.type) {
+    // function call or assignment
+    case TokenType::IDENTIFIER: {
+      Token identifier =
+          copyToken(context.lexer.allocator, context.lexer.currentToken);
+
+      return _parseStatementIdentifier(context, identifier);
+    }
+    default:
+      return _parseExpression(context, PrecedenceOrder::EXPRESSION);
+  }
+}
+
+ASTNode _parseStatementIdentifier(ParserContext& context,
+                                  Token lastIdentifier) {
+  expectToken(context.lexer, TokenType::IDENTIFIER);
+
+  switch (context.lexer.currentToken.type) {
+    case TokenType::PAREN_LEFT:
+      return _parseFunctionCall(context, lastIdentifier);
+    case TokenType::EQUAL: {
+      NodeVar left;
+      left.name = *reinterpret_cast<std::string*>(lastIdentifier.inplace);
+      ASTNode leftVar =
+          createASTNode(context.astContext.allocator, ASTNodeType::VAR, &left);
+
+      return _parseAssignment(context, leftVar);
+    }
+    default:
+      VIVIUM_LOG(LogSeverity::ERROR,
+                 "Malformed expression, expected function call or assignment "
+                 "after identifier, instead had {}",
+                 tokenTypeString(context.lexer.currentToken.type));
+      return createASTNode(context.astContext.allocator, ASTNodeType::UNKNOWN,
+                           nullptr);
+  }
+}
+
+ASTNode _parseFunctionCall(ParserContext& context, Token name) {
+  expectToken(context.lexer, TokenType::PAREN_LEFT);
+
+  NodeFunctionCall call;
+  call.name = *reinterpret_cast<std::string*>(name.inplace);
+  // TODO: fill out and parse other parameters
+
+  expectToken(context.lexer, TokenType::PAREN_RIGHT);
+
+  return createASTNode(context.astContext.allocator, ASTNodeType::FUNCTION_CALL,
+                       &call);
 }
 }  // namespace GUIF
 }  // namespace Vivium

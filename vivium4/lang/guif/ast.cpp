@@ -38,6 +38,10 @@ ASTNode createASTNode(BlockAllocator& allocator, ASTNodeType type, void* data) {
       new (node.data) NodeFunctionDefinition(
           *reinterpret_cast<NodeFunctionDefinition*>(data));
       break;
+    case ASTNodeType::COMPOUND:
+      node.data = allocate(allocator, sizeof(NodeCompound));
+      new (node.data) NodeCompound(*reinterpret_cast<NodeCompound*>(data));
+      break;
     case ASTNodeType::UNKNOWN:
       break;
     default:
@@ -67,6 +71,10 @@ std::string nodeTypeString(ASTNodeType type) {
       return "NUMBER";
     case ASTNodeType::FUNCTION_DEFINITION:
       return "FUNCTION_DEFINTION";
+    case ASTNodeType::FUNCTION_CALL:
+      return "FUNCTION_CALL";
+    case ASTNodeType::COMPOUND:
+      return "COMPOUND";
     case ASTNodeType::UNKNOWN:
       return "UNKNOWN";
     default:

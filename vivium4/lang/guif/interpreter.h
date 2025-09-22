@@ -87,6 +87,9 @@ ASTNode visitDivOp(InterpreterContext& context, NodeBinaryOp* binary);
 ASTNode visitAssignOp(InterpreterContext& context, NodeBinaryOp* binary);
 ASTNode visitBinaryOp(InterpreterContext& context, NodeBinaryOp* binary,
                       std::string_view functionName);
+ASTNode visitVar(InterpreterContext& context, NodeVar* var);
+ASTNode visitCompound(InterpreterContext& context, NodeCompound* compound);
+ASTNode copyNode(InterpreterContext& context, ASTNode node);
 std::string printTree(ASTNode root);
 
 }  // namespace GUIF

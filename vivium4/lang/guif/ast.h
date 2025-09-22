@@ -18,6 +18,7 @@ enum class ASTNodeType {
   NUMBER,
   FUNCTION_DEFINITION,
   FUNCTION_CALL,
+  COMPOUND,
   UNKNOWN
 };
 
@@ -57,6 +58,10 @@ struct NodeFunctionCall {
 struct NodeBinaryOp {
   ASTNode left;
   ASTNode right;
+};
+
+struct NodeCompound {
+  std::vector<ASTNode> nodes;
 };
 
 struct ASTContext {

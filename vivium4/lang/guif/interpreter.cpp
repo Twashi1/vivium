@@ -1,5 +1,6 @@
 #include "interpreter.h"
 
+#include "ast.h"
 #include "interpreter_impl.h"
 
 namespace Vivium {
@@ -16,9 +17,11 @@ ASTNode evaluate(InterpreterContext& context, ASTNode root) {
       return visitDivOp(context, reinterpret_cast<NodeBinaryOp*>(root.data));
     case ASTNodeType::ASSIGN_OP:
       return visitAssignOp(context, reinterpret_cast<NodeBinaryOp*>(root.data));
+    case ASTNodeType::COMPOUND:
+      return visitCompound(context, reinterpret_cast<NodeCompound*>(root.data));
     case ASTNodeType::VAR:
       // TODO: should look up the value and return it?
-      return root;
+      return visitVar(context, reinterpret_cast<NodeVar*>(root.inplace));
     case ASTNodeType::NUMBER:
       return root;
     case ASTNodeType::UNKNOWN:
@@ -122,7 +125,19 @@ ASTNode visitDivOp(InterpreterContext& context, NodeBinaryOp* binary) {
 }
 ASTNode visitAssignOp(InterpreterContext& context, NodeBinaryOp* binary) {
   // TODO: implementation
-  return createASTNode(context.allocator, ASTNodeType::UNKNOWN, nullptr);
+  VIVIUM_ASSERT(binary->left.type == ASTNodeType::VAR,
+                "Expected variable on left of assignment");
+
+  NodeVar* var = reinterpret_cast<NodeVar*>(binary->left.inplace);
+  ASTNode right = evaluate(context, binary->right);
+
+  if (context.variableMap.contains(var->name)) {
+    context.variableMap.at(var->name) = right;
+  } else {
+    context.variableMap.insert({var->name, right});
+  }
+
+  return right;
 }
 
 ASTNode visitBinaryOp(InterpreterContext& context, NodeBinaryOp* binary,
@@ -150,6 +165,63 @@ ASTNode visitBinaryOp(InterpreterContext& context, NodeBinaryOp* binary,
 
   // TODO: assumes result is a number
   return createASTNode(context.allocator, ASTNodeType::NUMBER, &result);
+}
+
+ASTNode visitVar(InterpreterContext& context, NodeVar* var) {
+  if (!context.variableMap.contains(var->name)) {
+    VIVIUM_LOG(LogSeverity::ERROR, "Couldn't find variable {}", var->name);
+
+    return createASTNode(context.allocator, ASTNodeType::UNKNOWN, nullptr);
+  }
+
+  return copyNode(context, context.variableMap.at(var->name));
+}
+
+ASTNode visitCompound(InterpreterContext& context, NodeCompound* compound) {
+  // TODO: null ast node value?
+  ASTNode lastResult =
+      createASTNode(context.allocator, ASTNodeType::UNKNOWN, nullptr);
+
+  for (ASTNode child : compound->nodes) {
+    lastResult = evaluate(context, child);
+  }
+
+  return lastResult;
+}
+
+ASTNode copyNode(InterpreterContext& context, ASTNode node) {
+  switch (node.type) {
+    case ASTNodeType::ADD_OP:
+    case ASTNodeType::SUB_OP:
+    case ASTNodeType::MUL_OP:
+    case ASTNodeType::DIV_OP:
+    case ASTNodeType::ASSIGN_OP: {
+      NodeBinaryOp operationCopy;
+      NodeBinaryOp* operation = reinterpret_cast<NodeBinaryOp*>(node.data);
+      operationCopy.left = copyNode(context, operation->left);
+      operationCopy.right = copyNode(context, operation->right);
+
+      return createASTNode(context.allocator, node.type, &operationCopy);
+    }
+    case ASTNodeType::FUNCTION_DEFINITION:
+    case ASTNodeType::FUNCTION_CALL:
+    case ASTNodeType::UNKNOWN:
+      return node;
+    case ASTNodeType::VAR: {
+      NodeVar* var = reinterpret_cast<NodeVar*>(node.inplace);
+      NodeVar varCopy;
+      varCopy.name = var->name;
+
+      return createASTNode(context.allocator, node.type, &varCopy);
+    }
+    case ASTNodeType::NUMBER: {
+      NodeNumber* number = reinterpret_cast<NodeNumber*>(node.inplace);
+      NodeNumber numberCopy;
+      numberCopy.value = copyToken(context.allocator, number->value);
+
+      return createASTNode(context.allocator, node.type, &numberCopy);
+    }
+  }
 }
 
 Token _createTokenFromNumericalType(BlockAllocator& allocator,
@@ -245,22 +317,20 @@ std::string printTree(ASTNode root) {
       // TODO: print value from context as well
       return std::format("[VAR {} VALUE?]", var->name);
     }
-    case ASTNodeType::NUMBER:
-      // TODO: unsure on the usage here
-      {
-        NodeNumber* number = reinterpret_cast<NodeNumber*>(root.inplace);
+    case ASTNodeType::NUMBER: {
+      NodeNumber* number = reinterpret_cast<NodeNumber*>(root.inplace);
 
-        switch (number->value.type) {
-          case TokenType::INTEGER:
-            return std::format(
-                "{}", *reinterpret_cast<int64_t*>(number->value.inplace));
-          case TokenType::FLOATING:
-            return std::format(
-                "{}", *reinterpret_cast<double*>(number->value.inplace));
-          default:
-            break;
-        }
+      switch (number->value.type) {
+        case TokenType::INTEGER:
+          return std::format(
+              "{}", *reinterpret_cast<int64_t*>(number->value.inplace));
+        case TokenType::FLOATING:
+          return std::format("{}",
+                             *reinterpret_cast<double*>(number->value.inplace));
+        default:
+          break;
       }
+    }
 
       return "INVALID_NUMBER";
     case ASTNodeType::FUNCTION_CALL:
@@ -269,9 +339,22 @@ std::string printTree(ASTNode root) {
     case ASTNodeType::FUNCTION_DEFINITION:
       // TODO: more printign
       return "FUNCTION_DEFINITION";
+    case ASTNodeType::COMPOUND: {
+      NodeCompound* compound = reinterpret_cast<NodeCompound*>(root.data);
+
+      std::ostringstream ss;
+
+      for (ASTNode child : compound->nodes) {
+        ss << printTree(child) << ",";
+      }
+
+      return std::format("[COMPOUND {}]", ss.str());
+    }
     case ASTNodeType::UNKNOWN:
+      return "UNKNOWN";
     default:
-      return "Unknown";
+      return std::format("Unhandled node type with value {}",
+                         static_cast<uint64_t>(root.type));
   }
 }
 }  // namespace GUIF
