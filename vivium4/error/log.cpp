@@ -58,6 +58,43 @@ void _defaultLogCallback(LogContext const& context) {
   if (context.severity == LogSeverity::FATAL) std::terminate();
 }
 
+std::string getHexDump(void const* ptr, uint64_t n) {
+  if (ptr == nullptr) {
+    return "";
+  }
+
+  uint8_t const* addr = reinterpret_cast<uint8_t const*>(ptr);
+  std::string out;
+
+  uint64_t bytesPerLine = 16;
+
+  for (uint64_t i = 0; i < n; i += bytesPerLine) {
+    out += std::format("{:08x}  ", i + reinterpret_cast<uintptr_t>(addr));
+
+    for (uint64_t j = 0; j < bytesPerLine; j++) {
+      if (i + j < n) {
+        out += std::format("{:02x} ", addr[i + j]);
+      } else {
+        out += "   ";  // 3 spaces
+      }
+
+      // Space between groups of 8
+      if (j == 7) out += " ";
+    }
+
+    out += "  | ";
+
+    for (uint64_t j = 0; j < bytesPerLine; j++) {
+      unsigned char c = addr[i + j];
+      out += (std::isprint(c) ? static_cast<char>(c) : '.');
+    }
+
+    out += "  \n";
+  }
+
+  return out;
+}
+
 std::string _defaultFormatLog(LogContext const& context) {
   LogColor color = LogColor::NONE;
 

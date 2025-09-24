@@ -20,8 +20,7 @@ ASTNode evaluate(InterpreterContext& context, ASTNode root) {
     case ASTNodeType::COMPOUND:
       return visitCompound(context, reinterpret_cast<NodeCompound*>(root.data));
     case ASTNodeType::VAR:
-      // TODO: should look up the value and return it?
-      return visitVar(context, reinterpret_cast<NodeVar*>(root.inplace));
+      return visitVar(context, reinterpret_cast<NodeVar*>(root.data));
     case ASTNodeType::NUMBER:
       return root;
     case ASTNodeType::UNKNOWN:
@@ -124,11 +123,10 @@ ASTNode visitDivOp(InterpreterContext& context, NodeBinaryOp* binary) {
   return visitBinaryOp(context, binary, "__div");
 }
 ASTNode visitAssignOp(InterpreterContext& context, NodeBinaryOp* binary) {
-  // TODO: implementation
   VIVIUM_ASSERT(binary->left.type == ASTNodeType::VAR,
                 "Expected variable on left of assignment");
 
-  NodeVar* var = reinterpret_cast<NodeVar*>(binary->left.inplace);
+  NodeVar* var = reinterpret_cast<NodeVar*>(binary->left.data);
   ASTNode right = evaluate(context, binary->right);
 
   if (context.variableMap.contains(var->name)) {
@@ -137,7 +135,7 @@ ASTNode visitAssignOp(InterpreterContext& context, NodeBinaryOp* binary) {
     context.variableMap.insert({var->name, right});
   }
 
-  return right;
+  return copyNode(context, right);
 }
 
 ASTNode visitBinaryOp(InterpreterContext& context, NodeBinaryOp* binary,
@@ -151,8 +149,8 @@ ASTNode visitBinaryOp(InterpreterContext& context, NodeBinaryOp* binary,
   VIVIUM_ASSERT(right.type == ASTNodeType::NUMBER,
                 "Expected right of add to resolve to number");
 
-  NodeNumber* leftNum = reinterpret_cast<NodeNumber*>(left.inplace);
-  NodeNumber* rightNum = reinterpret_cast<NodeNumber*>(right.inplace);
+  NodeNumber* leftNum = reinterpret_cast<NodeNumber*>(left.data);
+  NodeNumber* rightNum = reinterpret_cast<NodeNumber*>(right.data);
 
   std::vector<Token> parameters =
       std::vector<Token>({leftNum->value, rightNum->value});
@@ -161,6 +159,7 @@ ASTNode visitBinaryOp(InterpreterContext& context, NodeBinaryOp* binary,
 
   LanguageFunction function =
       lookupFunction(context, functionName, parameterTypes);
+  // Assuming we take ownership here, so no need to copy
   Token result = function(context, parameters);
 
   // TODO: assumes result is a number
@@ -203,21 +202,23 @@ ASTNode copyNode(InterpreterContext& context, ASTNode node) {
 
       return createASTNode(context.allocator, node.type, &operationCopy);
     }
+    // TODO: incorrect handling of these cases
     case ASTNodeType::FUNCTION_DEFINITION:
     case ASTNodeType::FUNCTION_CALL:
+    case ASTNodeType::COMPOUND:
     case ASTNodeType::UNKNOWN:
       return node;
     case ASTNodeType::VAR: {
-      NodeVar* var = reinterpret_cast<NodeVar*>(node.inplace);
+      NodeVar* var = reinterpret_cast<NodeVar*>(node.data);
       NodeVar varCopy;
       varCopy.name = var->name;
 
       return createASTNode(context.allocator, node.type, &varCopy);
     }
     case ASTNodeType::NUMBER: {
-      NodeNumber* number = reinterpret_cast<NodeNumber*>(node.inplace);
+      NodeNumber* number = reinterpret_cast<NodeNumber*>(node.data);
       NodeNumber numberCopy;
-      numberCopy.value = copyToken(context.allocator, number->value);
+      numberCopy.value = copyToken(number->value);
 
       return createASTNode(context.allocator, node.type, &numberCopy);
     }
@@ -313,20 +314,20 @@ std::string printTree(ASTNode root) {
                          printTree(binary->right));
     }
     case ASTNodeType::VAR: {
-      NodeVar* var = reinterpret_cast<NodeVar*>(root.inplace);
+      NodeVar* var = reinterpret_cast<NodeVar*>(root.data);
       // TODO: print value from context as well
       return std::format("[VAR {} VALUE?]", var->name);
     }
     case ASTNodeType::NUMBER: {
-      NodeNumber* number = reinterpret_cast<NodeNumber*>(root.inplace);
+      NodeNumber* number = reinterpret_cast<NodeNumber*>(root.data);
 
       switch (number->value.type) {
         case TokenType::INTEGER:
           return std::format(
-              "{}", *reinterpret_cast<int64_t*>(number->value.inplace));
+              "{}", *reinterpret_cast<int64_t*>(number->value.memory.data()));
         case TokenType::FLOATING:
-          return std::format("{}",
-                             *reinterpret_cast<double*>(number->value.inplace));
+          return std::format(
+              "{}", *reinterpret_cast<double*>(number->value.memory.data()));
         default:
           break;
       }

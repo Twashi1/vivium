@@ -4,10 +4,10 @@
 // TODO: every resource allocated should be tracked in debug mode
 
 #include <algorithm>
-#include <cstdint>
-#include <cstddef>
-#include <type_traits>
 #include <concepts>
+#include <cstddef>
+#include <cstdint>
+#include <type_traits>
 #include <vector>
 
 #include "core.h"
@@ -23,8 +23,8 @@ struct Arena {
 Arena createArena(uint64_t capacity);
 void dropArena(Arena& arena);
 
-bool fits(Arena& arena, uint64_t size);
-std::byte* allocate(Arena& arena, uint64_t size);
+bool fits(Arena& arena, uint64_t size, uint64_t alignment);
+std::byte* allocate(Arena& arena, uint64_t size, uint64_t alignment);
 
 struct BlockAllocator {
   std::vector<Arena> arenas;
@@ -34,5 +34,5 @@ struct BlockAllocator {
 BlockAllocator createBlockAllocator(uint64_t blockSize);
 void dropBlockAllocator(BlockAllocator& block);
 
-std::byte* allocate(BlockAllocator& block, uint64_t size);
-}
+std::byte* allocate(BlockAllocator& block, uint64_t size, uint64_t alignment);
+}  // namespace Vivium

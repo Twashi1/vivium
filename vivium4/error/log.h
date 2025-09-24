@@ -58,6 +58,7 @@ struct LogContext {
 typedef void (*LogCallback)(LogContext const&);
 void _defaultLogCallback(LogContext const& context);
 std::string _defaultFormatLog(LogContext const& context);
+std::string getHexDump(void const* ptr, uint64_t n);
 
 struct LogState {
   LogCallback logCallback;

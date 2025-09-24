@@ -69,7 +69,7 @@ ASTNode _parseValue(ParserContext& context) {
     case TokenType::FLOATING:
     case TokenType::INTEGER:
       NodeNumber number;
-      number.value = context.lexer.currentToken;
+      number.value = copyToken(context.lexer.currentToken);
       advanceToken(context.lexer);
 
       return createASTNode(context.astContext.allocator, ASTNodeType::NUMBER,
@@ -83,8 +83,8 @@ ASTNode _parseValue(ParserContext& context) {
     }
     case TokenType::IDENTIFIER: {
       NodeVar variable;
-      variable.name =
-          *reinterpret_cast<std::string*>(context.lexer.currentToken.inplace);
+      variable.name = *reinterpret_cast<std::string*>(
+          context.lexer.currentToken.memory.data());
       advanceToken(context.lexer);
 
       return createASTNode(context.astContext.allocator, ASTNodeType::VAR,
@@ -113,6 +113,7 @@ ASTNode _parseAddSub(ParserContext& context, ASTNode left) {
                 ? ASTNodeType::ADD_OP
                 : ASTNodeType::SUB_OP;
 
+        // Advance operation
         advanceToken(context.lexer);
         binaryOp.right = _parseExpression(
             context, _advancePrecedence(PrecedenceOrder::ADD_SUB));
@@ -175,7 +176,17 @@ ASTNode _parseMulDiv(ParserContext& context, ASTNode left) {
 }
 
 ASTNode _parseCompoundStatement(ParserContext& context) {
+  VIVIUM_LOG(LogSeverity::DEBUG, "About to parse compound");
+
   expectToken(context.lexer, TokenType::CURLY_LEFT);
+
+  VIVIUM_LOG(LogSeverity::DEBUG,
+             "Current token before parsing statement: type {} [{}]",
+             tokenTypeString(context.lexer.currentToken.type),
+             getTokenString(*reinterpret_cast<TokenIdentifier*>(
+                 context.lexer.currentToken.memory.data())));
+  VIVIUM_LOG(LogSeverity::DEBUG, "Hexdump:\n{}",
+             getHexDump(&context.lexer.currentToken, sizeof(Token)));
 
   std::vector<ASTNode> statements;
 
@@ -201,8 +212,10 @@ ASTNode _parseStatement(ParserContext& context) {
   switch (context.lexer.currentToken.type) {
     // function call or assignment
     case TokenType::IDENTIFIER: {
-      Token identifier =
-          copyToken(context.lexer.allocator, context.lexer.currentToken);
+      VIVIUM_LOG(LogSeverity::DEBUG, "Current token has value: [{}]",
+                 getTokenString(*reinterpret_cast<TokenIdentifier*>(
+                     context.lexer.currentToken.memory.data())));
+      Token identifier = copyToken(context.lexer.currentToken);
 
       return _parseStatementIdentifier(context, identifier);
     }
@@ -220,7 +233,8 @@ ASTNode _parseStatementIdentifier(ParserContext& context,
       return _parseFunctionCall(context, lastIdentifier);
     case TokenType::EQUAL: {
       NodeVar left;
-      left.name = *reinterpret_cast<std::string*>(lastIdentifier.inplace);
+      left.name = getTokenString(
+          *reinterpret_cast<TokenIdentifier*>(lastIdentifier.memory.data()));
       ASTNode leftVar =
           createASTNode(context.astContext.allocator, ASTNodeType::VAR, &left);
 
@@ -240,7 +254,8 @@ ASTNode _parseFunctionCall(ParserContext& context, Token name) {
   expectToken(context.lexer, TokenType::PAREN_LEFT);
 
   NodeFunctionCall call;
-  call.name = *reinterpret_cast<std::string*>(name.inplace);
+  call.name =
+      getTokenString(*reinterpret_cast<TokenIdentifier*>(name.memory.data()));
   // TODO: fill out and parse other parameters
 
   expectToken(context.lexer, TokenType::PAREN_RIGHT);

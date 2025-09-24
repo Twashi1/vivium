@@ -15,16 +15,26 @@ Arena createArena(uint64_t capacity) {
 
 void dropArena(Arena& arena) { free(arena.address); }
 
-bool fits(Arena& arena, uint64_t size) {
-  return arena.offset + size < arena.size;
+bool fits(Arena& arena, uint64_t size, uint64_t alignment) {
+  uint64_t aligned = nearestMultiple(
+      reinterpret_cast<uintptr_t>(arena.address + arena.offset) + size,
+      alignment);
+  uint64_t newOffset =
+      aligned - reinterpret_cast<uint64_t>(arena.address) + size;
+  return newOffset <= size;
 }
 
-std::byte* allocate(Arena& arena, uint64_t size) {
-  VIVIUM_ASSERT(arena.offset + size < arena.size,
+std::byte* allocate(Arena& arena, uint64_t size, uint64_t alignment) {
+  uint64_t nextAddress = nearestMultiple(
+      reinterpret_cast<uintptr_t>(arena.address + arena.offset), alignment);
+  uint64_t newOffset =
+      nextAddress - reinterpret_cast<uint64_t>(arena.address) + size;
+
+  VIVIUM_ASSERT(newOffset < arena.size,
                 "Allocation {} was beyond arena size {}", size, arena.size);
 
-  std::byte* location = arena.address + arena.offset;
-  arena.offset += size;
+  std::byte* location = arena.address + newOffset;
+  arena.offset = newOffset;
 
   return location;
 }
@@ -44,11 +54,11 @@ void dropBlockAllocator(BlockAllocator& block) {
   block.arenas.clear();
 }
 
-std::byte* allocate(BlockAllocator& block, uint64_t size) {
+std::byte* allocate(BlockAllocator& block, uint64_t size, uint64_t alignment) {
   Arena* bestArena = nullptr;
 
   for (Arena& arena : block.arenas) {
-    if (!fits(arena, size)) {
+    if (!fits(arena, size, alignment)) {
       continue;
     }
 
@@ -57,10 +67,11 @@ std::byte* allocate(BlockAllocator& block, uint64_t size) {
   }
 
   if (bestArena == nullptr) {
-    block.arenas.push_back(createArena(std::max(block.blockSize, size)));
+    block.arenas.push_back(
+        createArena(std::max(block.blockSize, size + alignment)));
     bestArena = &block.arenas.back();
   }
 
-  return allocate(*bestArena, size);
+  return allocate(*bestArena, size, alignment);
 }
 }  // namespace Vivium

@@ -2,33 +2,38 @@
 
 namespace Vivium {
 namespace GUIF {
-Token copyToken(BlockAllocator& allocator, Token const token) {
+Token copyToken(Token const token) {
   switch (token.type) {
     case TokenType::IDENTIFIER: {
       Token copyToken;
       copyToken.type = token.type;
-      new (copyToken.inplace)
-          std::string(*reinterpret_cast<std::string const*>(token.inplace));
+      TokenIdentifier* identifier =
+          new (copyToken.memory.data()) TokenIdentifier();
+      *identifier = copyTokenString(
+          *reinterpret_cast<TokenIdentifier const*>(token.memory.data()));
 
-      VIVIUM_LOG(LogSeverity::DEBUG, "Copied token to have {}, original {}",
-                 *reinterpret_cast<std::string const*>(copyToken.inplace),
-                 *reinterpret_cast<std::string const*>(token.inplace));
+      // TODO: assumes TokenIdentifier is equivalent to std::string
+      VIVIUM_LOG(LogSeverity::DEBUG, "Copied token to have [{}], original [{}]",
+                 getTokenString(*reinterpret_cast<TokenIdentifier const*>(
+                     copyToken.memory.data())),
+                 getTokenString(*reinterpret_cast<TokenIdentifier const*>(
+                     token.memory.data())));
 
       return copyToken;
     }
     case TokenType::INTEGER: {
       Token copyToken;
       copyToken.type = token.type;
-      new (copyToken.inplace)
-          int64_t(*reinterpret_cast<int64_t const*>(token.inplace));
+      new (copyToken.memory.data())
+          int64_t(*reinterpret_cast<int64_t const*>(token.memory.data()));
 
       return copyToken;
     }
     case TokenType::FLOATING: {
       Token copyToken;
       copyToken.type = token.type;
-      new (copyToken.inplace) double(
-          *reinterpret_cast<double const*>(token.inplace));
+      new (copyToken.memory.data()) double(
+          *reinterpret_cast<double const*>(token.memory.data()));
 
       return copyToken;
     }
@@ -57,6 +62,55 @@ Token copyToken(BlockAllocator& allocator, Token const token) {
   }
 }
 
+TokenString createTokenString(std::string_view string) {
+  TokenString tokenString;
+  tokenString.size = string.size();
+
+  if (string.size() < tokenString.sso.size()) {
+    tokenString.address = reinterpret_cast<char*>(tokenString.sso.data());
+  } else {
+    tokenString.address = new char[string.size() + 1];
+  }
+
+  std::memcpy(tokenString.address, string.data(),
+              string.size() * sizeof(uint8_t));
+  // Write null termination character
+  tokenString.address[string.size()] = '\0';
+
+  return tokenString;
+}
+
+void dropTokenString(TokenString const& string) {
+  VIVIUM_LOG(LogSeverity::DEBUG, "Destroying token string");
+
+  if (string.size >= string.sso.size()) {
+    VIVIUM_LOG(LogSeverity::DEBUG,
+               "Destroying token string that was heap allocated");
+    delete[] string.address;
+  }
+}
+
+TokenString copyTokenString(TokenString const& string) {
+  // TODO: mostly hoping compiler fixes all the extra,
+  //  but we should implement this more efficiently ourselves
+  return createTokenString(getTokenString(string));
+}
+
+std::string getTokenString(TokenString const& string) {
+  // Tricky line of code
+  //  if we do a member-by-member copy, the address field points
+  //  to the SSO of the other string
+  //  So we need to update it
+  //    essentially we can't trust the address field
+  char const* address = string.address;
+
+  if (string.size < string.sso.size()) {
+    address = reinterpret_cast<char const*>(string.sso.data());
+  }
+
+  return std::string(address, string.size);
+}
+
 LexerContext createLexer(std::string_view text) {
   LexerContext context;
   context.code = text;
@@ -80,7 +134,10 @@ LexerContext createLexer(std::string_view text) {
   return context;
 }
 
-void dropLexer(LexerContext& context) { dropBlockAllocator(context.allocator); }
+void dropLexer(LexerContext& context) {
+  destroyToken(context.currentToken);
+  dropBlockAllocator(context.allocator);
+}
 
 std::string tokenTypeString(TokenType type) {
   switch (type) {
@@ -165,9 +222,25 @@ Token readIdentifier(LexerContext& context) {
   return createToken(context.allocator, TokenType::IDENTIFIER, &identifier);
 }
 
-Token advanceToken(LexerContext& context) {
-  context.currentToken = _getNextToken(context);
-  return context.currentToken;
+void advanceToken(LexerContext& context) {
+  // TODO: this means when we advance token, we destroy the old one,
+  // invalidating memory
+  //  potentially dangerous
+  destroyToken(context.currentToken);
+  // TODO: do we need to copy token?
+  context.currentToken = copyToken(_getNextToken(context));
+
+  VIVIUM_LOG(LogSeverity::DEBUG, "Next token is of type: {}",
+             tokenTypeString(context.currentToken.type));
+
+  VIVIUM_LOG(LogSeverity::DEBUG, "Memory at current token:\n{}",
+             getHexDump(&context.currentToken, sizeof(Token)));
+
+  if (context.currentToken.type == TokenType::IDENTIFIER) {
+    VIVIUM_LOG(LogSeverity::DEBUG, "Next token is an identifier of value [{}]",
+               getTokenString(*reinterpret_cast<TokenIdentifier*>(
+                   context.currentToken.memory.data())));
+  }
 }
 
 Token _getNextToken(LexerContext& context) {
@@ -282,20 +355,24 @@ char peekCharacter(LexerContext const& context) {
   return '\0';
 }
 
-Token expectToken(LexerContext& context, TokenType type) {
+void expectToken(LexerContext& context, TokenType type) {
   VIVIUM_ASSERT(context.currentToken.type == type,
                 "Invalid token, expected type {} but got {}",
                 tokenTypeString(type),
                 tokenTypeString(context.currentToken.type));
 
-  Token token = advanceToken(context);
+  VIVIUM_LOG(LogSeverity::DEBUG, "Expected token of type {} correctly",
+             tokenTypeString(context.currentToken.type));
 
-  return token;
+  advanceToken(context);
 }
 
 Token createToken(BlockAllocator& allocator, TokenType type, void const* data) {
   Token token;
   token.type = type;
+
+  VIVIUM_LOG(LogSeverity::DEBUG, "Creating token of type {}, data at {}",
+             tokenTypeString(type), data);
 
   switch (type) {
     case TokenType::SQUARE_RIGHT:
@@ -317,28 +394,30 @@ Token createToken(BlockAllocator& allocator, TokenType type, void const* data) {
     case TokenType::AS:
     case TokenType::ELSE:
     case TokenType::SEMICOLON:
-      token.address = nullptr;
-      break;
-    case TokenType::INTEGER:
-      new (token.inplace) int64_t(*reinterpret_cast<int64_t const*>(data));
-      break;
-    case TokenType::FLOATING:
-      new (token.inplace) double(*reinterpret_cast<double const*>(data));
-      break;
-    case TokenType::IDENTIFIER:
-      // Need to make a copy of the std::string and construct
-      //  a std::string object in place
-      new (token.inplace)
-          std::string(*reinterpret_cast<std::string const*>(data));
-      VIVIUM_LOG(LogSeverity::DEBUG, "Created token from string {}, read as {}",
-                 *reinterpret_cast<std::string const*>(data),
-                 *reinterpret_cast<std::string const*>(token.inplace));
-      break;
     case TokenType::UNKNOWN:
-      token.address = nullptr;
       break;
+    case TokenType::INTEGER: {
+      new (token.memory.data())
+          TokenInteger(*reinterpret_cast<int64_t const*>(data));
+      break;
+    }
+    case TokenType::FLOATING: {
+      new (token.memory.data())
+          TokenFloating(*reinterpret_cast<double const*>(data));
+      break;
+    }
+    case TokenType::IDENTIFIER: {
+      TokenIdentifier* identifier = new (token.memory.data()) TokenIdentifier();
+      *identifier =
+          createTokenString(*reinterpret_cast<std::string const*>(data));
+
+      VIVIUM_LOG(LogSeverity::DEBUG, "Token memory created, now reads: [{}]",
+                 getTokenString(
+                     *reinterpret_cast<TokenIdentifier*>(token.memory.data())));
+
+      break;
+    }
     default:
-      token.address = nullptr;
       VIVIUM_LOG(LogSeverity::ERROR,
                  "Unknown token type passed to create token, value: {}",
                  static_cast<uint64_t>(type));
@@ -346,6 +425,28 @@ Token createToken(BlockAllocator& allocator, TokenType type, void const* data) {
   }
 
   return token;
+}
+
+void destroyToken(Token& token) {
+  VIVIUM_LOG(LogSeverity::DEBUG, "Destroying token of type {}",
+             tokenTypeString(token.type));
+
+  switch (token.type) {
+    case TokenType::INTEGER:
+      reinterpret_cast<TokenInteger*>(token.memory.data())->~TokenInteger();
+      break;
+    case TokenType::FLOATING:
+      reinterpret_cast<TokenFloating*>(token.memory.data())->~TokenFloating();
+      break;
+    case TokenType::IDENTIFIER:
+      // TODO: when we destroy this token identifier, it causes big issues?
+      dropTokenString(*reinterpret_cast<TokenIdentifier*>(token.memory.data()));
+      reinterpret_cast<TokenIdentifier*>(token.memory.data())
+          ->~TokenIdentifier();
+      break;
+    default:
+      break;
+  }
 }
 }  // namespace GUIF
 }  // namespace Vivium

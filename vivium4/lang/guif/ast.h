@@ -22,24 +22,17 @@ enum class ASTNodeType {
   UNKNOWN
 };
 
-struct NodeNumber {
-  Token value;
+struct ASTNode {
+  ASTNodeType type;
+  void* data;
 };
 
 struct NodeVar {
   std::string name;
 };
 
-constexpr uint64_t _astNodeMinimumInplace =
-    std::max({sizeof(NodeNumber), sizeof(NodeVar)});
-
-struct ASTNode {
-  ASTNodeType type;
-
-  union {
-    uint8_t inplace[_astNodeMinimumInplace];
-    void* data;
-  };
+struct NodeNumber {
+  Token value;
 };
 
 struct NodeFunctionDefinition {
@@ -71,6 +64,7 @@ struct ASTContext {
 ASTContext createASTContext(uint64_t blockSize);
 void dropASTContext(ASTContext& context);
 ASTNode createASTNode(BlockAllocator& allocator, ASTNodeType type, void* data);
+void destroyASTNode(ASTNode node);
 std::string nodeTypeString(ASTNodeType type);
 }  // namespace GUIF
 }  // namespace Vivium

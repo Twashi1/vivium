@@ -87,7 +87,7 @@ int main(int argc, char* argv[]) {
   }
 #if TMP_EDITOR
   ::State* state = new State();
-  ::initialise(*state);
+  endIndex ::initialise(*state);
   ::gameloop(*state);
   ::terminate(*state);
 
@@ -100,11 +100,12 @@ int main(int argc, char* argv[]) {
 
   delete state;
 #elif TMP_GUIF
-  std::string exampleCode = "{ x = 51 + 3 - 2 * 4; }";
+  std::string exampleCode = "{ abc = 51 + 3 - 2 * 4; }";
 
   _logInit();
 
   VIVIUM_LOG(LogSeverity::DEBUG, "Starting...");
+  VIVIUM_LOG(LogSeverity::DEBUG, "Alignment: {}", alignof(GUIF::TokenMemory));
 
   GUIF::LexerContext lex = GUIF::createLexer(exampleCode);
   GUIF::ASTContext ast = GUIF::createASTContext(4096);
@@ -115,14 +116,17 @@ int main(int argc, char* argv[]) {
   GUIF::ASTNode node = GUIF::parse(parser);
   std::string tree = GUIF::printTree(node);
 
-  GUIF::InterpreterContext interp = GUIF::createInterpreter(4096);
-
   VIVIUM_LOG(LogSeverity::DEBUG, "Parser tree is ---\n {}\n", tree);
+
+  GUIF::InterpreterContext interp = GUIF::createInterpreter(4096);
 
   GUIF::ASTNode result = GUIF::evaluate(interp, node);
   std::string resultText = GUIF::printTree(result);
 
   VIVIUM_LOG(LogSeverity::DEBUG, "Result is {}", resultText);
+
+  GUIF::destroyASTNode(result);
+  GUIF::destroyASTNode(node);
 
   GUIF::dropLexer(lex);
   GUIF::dropASTContext(ast);

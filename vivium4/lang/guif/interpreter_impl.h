@@ -5,8 +5,8 @@ namespace GUIF {
 template <typename T, BinaryOpType operation>
 Token executeBinaryOp(InterpreterContext& interp,
                       std::vector<Token> const& tokens) {
-  T const& left = *reinterpret_cast<T const*>(tokens[0].inplace);
-  T const& right = *reinterpret_cast<T const*>(tokens[1].inplace);
+  T const& left = *reinterpret_cast<T const*>(tokens[0].memory.data());
+  T const& right = *reinterpret_cast<T const*>(tokens[1].memory.data());
   T result;
 
   if constexpr (operation == BinaryOpType::ADD) {

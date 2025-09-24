@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cctype>
 #include <unordered_map>
 
@@ -9,7 +10,7 @@ namespace Vivium {
 namespace GUIF {
 inline constexpr uint64_t TOKEN_BLOCK_SIZE = 4096;
 
-enum class TokenType {
+enum class TokenType : uint16_t {
   UNKNOWN,
   IDENTIFIER,
   INTEGER,
@@ -36,15 +37,75 @@ enum class TokenType {
   END_OF_FILE
 };
 
-constexpr uint64_t inplaceTokenSize =
-    std::max({sizeof(uint64_t), sizeof(double), sizeof(std::string)});
+struct LoudString {
+  std::string value;
+
+  operator std::string() { return value; }
+
+  LoudString(std::string const& other) : value(other) {
+    VIVIUM_LOG(LogSeverity::DEBUG, "Copy constructing from regular string {}",
+               other);
+  }
+
+  LoudString& operator=(LoudString const& other) {
+    value = other.value;
+
+    VIVIUM_LOG(LogSeverity::DEBUG, "Copy assigning value {}", value);
+
+    return *this;
+  }
+
+  LoudString& operator=(LoudString&& other) {
+    value = std::move(other.value);
+
+    VIVIUM_LOG(LogSeverity::DEBUG, "Move assigning with value {}", value);
+
+    return *this;
+  }
+
+  LoudString() : value("") {
+    VIVIUM_LOG(LogSeverity::DEBUG, "Creating string with value {}", value);
+  }
+
+  LoudString(LoudString const& other) : value(other.value) {
+    VIVIUM_LOG(LogSeverity::DEBUG, "Copying loud string with value {}",
+               other.value);
+  }
+
+  LoudString(LoudString&& other) : value(std::move(other.value)) {
+    VIVIUM_LOG(LogSeverity::DEBUG, "Moving loud string with value {}",
+               other.value);
+  }
+
+  ~LoudString() {
+    VIVIUM_LOG(LogSeverity::DEBUG, "Destroying string with value {}", value);
+  }
+};
+
+struct TokenString {
+  char* address;
+  uint64_t size;
+  std::array<uint8_t, 16> sso;
+};
+
+TokenString createTokenString(std::string_view string);
+void dropTokenString(TokenString const& string);
+TokenString copyTokenString(TokenString const& string);
+std::string getTokenString(TokenString const& string);
+
+using TokenIdentifier = TokenString;
+using TokenInteger = int64_t;
+using TokenFloating = double;
+
+union TokenMemory {
+  TokenIdentifier identifier;
+  TokenInteger integer;
+  TokenFloating floating;
+};
 
 struct Token {
   TokenType type;
-  union {
-    void* address;
-    uint8_t inplace[inplaceTokenSize];
-  };
+  alignas(TokenMemory) std::array<uint8_t, sizeof(TokenMemory)> memory;
 };
 
 struct LexerContext {
@@ -62,17 +123,18 @@ void dropLexer(LexerContext& context);
 
 std::string tokenTypeString(TokenType type);
 Token _getNextToken(LexerContext& context);
-Token advanceToken(LexerContext& context);
+void advanceToken(LexerContext& context);
 char advanceCharacter(LexerContext& context);
 char peekCharacter(LexerContext const& context);
 
 Token readNumber(LexerContext& context);
 Token readIdentifier(LexerContext& context);
 
-Token expectToken(LexerContext& context, TokenType type);
-Token copyToken(BlockAllocator& allocator, Token const token);
+void expectToken(LexerContext& context, TokenType type);
+Token copyToken(Token const token);
 
 // Assumes data to be move-able
 Token createToken(BlockAllocator& allocator, TokenType type, void const* data);
+void destroyToken(Token& token);
 }  // namespace GUIF
 }  // namespace Vivium

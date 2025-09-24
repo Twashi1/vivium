@@ -13,6 +13,69 @@ void dropASTContext(ASTContext& context) {
   dropBlockAllocator(context.allocator);
 }
 
+void destroyASTNode(ASTNode node) {
+  switch (node.type) {
+    case ASTNodeType::ADD_OP:
+    case ASTNodeType::SUB_OP:
+    case ASTNodeType::MUL_OP:
+    case ASTNodeType::DIV_OP:
+    case ASTNodeType::ASSIGN_OP: {
+      NodeBinaryOp* binary = reinterpret_cast<NodeBinaryOp*>(node.data);
+      destroyASTNode(binary->left);
+      destroyASTNode(binary->right);
+      binary->~NodeBinaryOp();
+      break;
+    }
+    case ASTNodeType::VAR: {
+      NodeVar* var = reinterpret_cast<NodeVar*>(node.data);
+      var->~NodeVar();
+      break;
+    }
+    case ASTNodeType::NUMBER: {
+      NodeNumber* number = reinterpret_cast<NodeNumber*>(node.data);
+      destroyToken(number->value);
+      number->~NodeNumber();
+      break;
+    }
+    case ASTNodeType::FUNCTION_DEFINITION: {
+      NodeFunctionDefinition* definition =
+          reinterpret_cast<NodeFunctionDefinition*>(node.data);
+      destroyASTNode(definition->body);
+      destroyASTNode(definition->returnType);
+
+      for (ASTNode child : definition->parameters) {
+        destroyASTNode(child);
+      }
+
+      definition->~NodeFunctionDefinition();
+      break;
+    }
+    case ASTNodeType::FUNCTION_CALL: {
+      NodeFunctionCall* call = reinterpret_cast<NodeFunctionCall*>(node.data);
+      destroyASTNode(call->returnType);
+
+      for (ASTNode child : call->arguments) {
+        destroyASTNode(child);
+      }
+
+      call->~NodeFunctionCall();
+      break;
+    }
+    case ASTNodeType::COMPOUND: {
+      NodeCompound* compound = reinterpret_cast<NodeCompound*>(node.data);
+
+      for (ASTNode child : compound->nodes) {
+        destroyASTNode(child);
+      }
+
+      compound->~NodeCompound();
+      break;
+    }
+    case ASTNodeType::UNKNOWN:
+      break;
+  }
+}
+
 ASTNode createASTNode(BlockAllocator& allocator, ASTNodeType type, void* data) {
   ASTNode node;
   node.type = type;
@@ -24,22 +87,27 @@ ASTNode createASTNode(BlockAllocator& allocator, ASTNodeType type, void* data) {
     case ASTNodeType::MUL_OP:
     case ASTNodeType::DIV_OP:
     case ASTNodeType::ASSIGN_OP:
-      node.data = allocate(allocator, sizeof(NodeBinaryOp));
+      node.data =
+          allocate(allocator, sizeof(NodeBinaryOp), alignof(NodeBinaryOp));
       new (node.data) NodeBinaryOp(*reinterpret_cast<NodeBinaryOp*>(data));
       break;
     case ASTNodeType::NUMBER:
-      new (node.inplace) NodeNumber(*reinterpret_cast<NodeNumber*>(data));
+      node.data = allocate(allocator, sizeof(NodeNumber), alignof(NodeNumber));
+      new (node.data) NodeNumber(*reinterpret_cast<NodeNumber*>(data));
       break;
     case ASTNodeType::VAR:
-      new (node.inplace) NodeVar(*reinterpret_cast<NodeVar*>(data));
+      node.data = allocate(allocator, sizeof(NodeVar), alignof(NodeVar));
+      new (node.data) NodeVar(*reinterpret_cast<NodeVar*>(data));
       break;
     case ASTNodeType::FUNCTION_DEFINITION:
-      node.data = allocate(allocator, sizeof(NodeFunctionDefinition));
+      node.data = allocate(allocator, sizeof(NodeFunctionDefinition),
+                           alignof(NodeFunctionDefinition));
       new (node.data) NodeFunctionDefinition(
           *reinterpret_cast<NodeFunctionDefinition*>(data));
       break;
     case ASTNodeType::COMPOUND:
-      node.data = allocate(allocator, sizeof(NodeCompound));
+      node.data =
+          allocate(allocator, sizeof(NodeCompound), alignof(NodeCompound));
       new (node.data) NodeCompound(*reinterpret_cast<NodeCompound*>(data));
       break;
     case ASTNodeType::UNKNOWN:

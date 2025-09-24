@@ -40,11 +40,12 @@ ASTNode _parseAddSub(ParserContext& context, ASTNode left);
 ASTNode _parseMulDiv(ParserContext& context, ASTNode left);
 ASTNode _parseAssignment(ParserContext& context, ASTNode name);
 ASTNode _parseAs(ParserContext& context, ASTNode left);
-ASTNode _parseFunctionCall(ParserContext& context, Token name);
+ASTNode _parseFunctionCall(ParserContext& context, Token const name);
 ASTNode _parseFunctionDefinition(ParserContext& context);
 ASTNode _parseCompoundStatement(ParserContext& context);
 ASTNode _parseStatement(ParserContext& context);
-ASTNode _parseStatementIdentifier(ParserContext& context, Token lastIdentifier);
+ASTNode _parseStatementIdentifier(ParserContext& context,
+                                  Token const lastIdentifier);
 ASTNode parse(ParserContext& context);
 }  // namespace GUIF
 }  // namespace Vivium
