@@ -129,10 +129,12 @@ ASTNode visitAssignOp(InterpreterContext& context, NodeBinaryOp* binary) {
   NodeVar* var = reinterpret_cast<NodeVar*>(binary->left.data);
   ASTNode right = evaluate(context, binary->right);
 
-  if (context.variableMap.contains(var->name)) {
-    context.variableMap.at(var->name) = right;
+  std::string name = getTokenString(var->name);
+
+  if (context.variableMap.contains(name)) {
+    context.variableMap.at(name) = right;
   } else {
-    context.variableMap.insert({var->name, right});
+    context.variableMap.insert({name, right});
   }
 
   return copyNode(context, right);
@@ -167,13 +169,14 @@ ASTNode visitBinaryOp(InterpreterContext& context, NodeBinaryOp* binary,
 }
 
 ASTNode visitVar(InterpreterContext& context, NodeVar* var) {
-  if (!context.variableMap.contains(var->name)) {
-    VIVIUM_LOG(LogSeverity::ERROR, "Couldn't find variable {}", var->name);
+  if (!context.variableMap.contains(getTokenString(var->name))) {
+    VIVIUM_LOG(LogSeverity::ERROR, "Couldn't find variable {}",
+               getTokenString(var->name));
 
     return createASTNode(context.allocator, ASTNodeType::UNKNOWN, nullptr);
   }
 
-  return copyNode(context, context.variableMap.at(var->name));
+  return copyNode(context, context.variableMap.at(getTokenString(var->name)));
 }
 
 ASTNode visitCompound(InterpreterContext& context, NodeCompound* compound) {
@@ -316,7 +319,7 @@ std::string printTree(ASTNode root) {
     case ASTNodeType::VAR: {
       NodeVar* var = reinterpret_cast<NodeVar*>(root.data);
       // TODO: print value from context as well
-      return std::format("[VAR {} VALUE?]", var->name);
+      return std::format("[VAR {} VALUE?]", getTokenString(var->name));
     }
     case ASTNodeType::NUMBER: {
       NodeNumber* number = reinterpret_cast<NodeNumber*>(root.data);

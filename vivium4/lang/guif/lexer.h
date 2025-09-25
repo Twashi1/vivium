@@ -124,6 +124,8 @@ void dropLexer(LexerContext& context);
 std::string tokenTypeString(TokenType type);
 Token _getNextToken(LexerContext& context);
 void advanceToken(LexerContext& context);
+// NOTE: very expensive method
+Token peekToken(LexerContext const context);
 char advanceCharacter(LexerContext& context);
 char peekCharacter(LexerContext const& context);
 

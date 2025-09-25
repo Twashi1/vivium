@@ -1,6 +1,7 @@
 #include "parser.h"
 
 #include "ast.h"
+#include "lexer.h"
 
 namespace Vivium {
 namespace GUIF {
@@ -50,6 +51,8 @@ ASTNode _parseExpression(ParserContext& context, PrecedenceOrder order) {
       return _parseAddSub(context, lhs);
     case PrecedenceOrder::MUL_DIV:
       return _parseMulDiv(context, lhs);
+    case PrecedenceOrder::FUNCTION_CALL:
+      return _parseFunctionCall(context, lhs);
     case PrecedenceOrder::EXPRESSION:
       return lhs;
     default:
@@ -83,8 +86,11 @@ ASTNode _parseValue(ParserContext& context) {
     }
     case TokenType::IDENTIFIER: {
       NodeVar variable;
-      variable.name = *reinterpret_cast<std::string*>(
-          context.lexer.currentToken.memory.data());
+      // TODO: this was probably the real issue, without much need for us to
+      // actually
+      //  use a token string in a node variable
+      variable.name = copyTokenString(*reinterpret_cast<TokenIdentifier*>(
+          context.lexer.currentToken.memory.data()));
       advanceToken(context.lexer);
 
       return createASTNode(context.astContext.allocator, ASTNodeType::VAR,
@@ -175,6 +181,18 @@ ASTNode _parseMulDiv(ParserContext& context, ASTNode left) {
   return left;
 }
 
+ASTNode _parseFunctionCall(ParserContext& context, ASTNode left) {
+  while (context.lexer.currentToken.type == TokenType::PAREN_LEFT) {
+    expectToken(context.lexer, TokenType::PAREN_LEFT);
+
+    // TODO: parse parameters and others
+    // correctly pass off to lower precedence as well
+    expectToken(context.lexer, TokenType::PAREN_RIGHT);
+  }
+
+  return left;
+}
+
 ASTNode _parseCompoundStatement(ParserContext& context) {
   VIVIUM_LOG(LogSeverity::DEBUG, "About to parse compound");
 
@@ -226,42 +244,30 @@ ASTNode _parseStatement(ParserContext& context) {
 
 ASTNode _parseStatementIdentifier(ParserContext& context,
                                   Token lastIdentifier) {
-  expectToken(context.lexer, TokenType::IDENTIFIER);
+  // TODO: destroy this token?
+  // Token nextToken = peekToken(context.lexer);
+  // expectToken(context.lexer, TokenType::IDENTIFIER);
 
   switch (context.lexer.currentToken.type) {
-    case TokenType::PAREN_LEFT:
-      return _parseFunctionCall(context, lastIdentifier);
-    case TokenType::EQUAL: {
-      NodeVar left;
-      left.name = getTokenString(
-          *reinterpret_cast<TokenIdentifier*>(lastIdentifier.memory.data()));
-      ASTNode leftVar =
-          createASTNode(context.astContext.allocator, ASTNodeType::VAR, &left);
-
-      return _parseAssignment(context, leftVar);
-    }
+      // TODO: is this even necessary?
+      // case TokenType::EQUAL: {
+      // expectToken(context.lexer, TokenType::IDENTIFIER);
+      // destroyToken(nextToken);
+      // NodeVar left;
+      // left.name = getTokenString(
+      // *reinterpret_cast<TokenIdentifier*>(lastIdentifier.memory.data()));
+      // ASTNode leftVar =
+      // createASTNode(context.astContext.allocator, ASTNodeType::VAR, &left);
+      //
+      // return _parseAssignment(context, leftVar);
+    // }
     default:
-      VIVIUM_LOG(LogSeverity::ERROR,
-                 "Malformed expression, expected function call or assignment "
-                 "after identifier, instead had {}",
-                 tokenTypeString(context.lexer.currentToken.type));
-      return createASTNode(context.astContext.allocator, ASTNodeType::UNKNOWN,
-                           nullptr);
+      // TODO: this expression has no idea about the previous context
+      //  that there was an identifier before, how to deal with this?
+      //  peek token method seems only viable approach
+      // destroyToken(nextToken);
+      return _parseExpression(context, PrecedenceOrder::EXPRESSION);
   }
-}
-
-ASTNode _parseFunctionCall(ParserContext& context, Token name) {
-  expectToken(context.lexer, TokenType::PAREN_LEFT);
-
-  NodeFunctionCall call;
-  call.name =
-      getTokenString(*reinterpret_cast<TokenIdentifier*>(name.memory.data()));
-  // TODO: fill out and parse other parameters
-
-  expectToken(context.lexer, TokenType::PAREN_RIGHT);
-
-  return createASTNode(context.astContext.allocator, ASTNodeType::FUNCTION_CALL,
-                       &call);
 }
 }  // namespace GUIF
 }  // namespace Vivium

@@ -243,6 +243,25 @@ void advanceToken(LexerContext& context) {
   }
 }
 
+Token peekToken(LexerContext const context) {
+  LexerContext copy;
+  copy.currentChar = context.currentChar;
+  // TODO: not necessary
+  copy.currentToken = copyToken(context.currentToken);
+  copy.allocator = createBlockAllocator(4096);
+  copy.code = context.code;
+  copy.keywords = context.keywords;
+  copy.line = context.line;
+  copy.pos = context.pos;
+
+  advanceToken(copy);
+
+  // TODO: note anything using this block allocator will die with it
+  dropBlockAllocator(copy.allocator);
+
+  return copyToken(copy.currentToken);
+}
+
 Token _getNextToken(LexerContext& context) {
   // TODO: implement
   while (context.currentChar) {

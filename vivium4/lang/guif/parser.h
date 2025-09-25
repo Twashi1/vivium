@@ -22,6 +22,7 @@ struct ParserContext {
 // Higher precedence implies the operation is performed first
 enum class PrecedenceOrder : uint32_t {
   VALUE,
+  FUNCTION_CALL,
   MUL_DIV,
   ADD_SUB,
   // AS,
@@ -38,9 +39,9 @@ ASTNode _parseValue(ParserContext& context);
 ASTNode _parseExpression(ParserContext& context, PrecedenceOrder order);
 ASTNode _parseAddSub(ParserContext& context, ASTNode left);
 ASTNode _parseMulDiv(ParserContext& context, ASTNode left);
+ASTNode _parseFunctionCall(ParserContext& context, ASTNode left);
 ASTNode _parseAssignment(ParserContext& context, ASTNode name);
 ASTNode _parseAs(ParserContext& context, ASTNode left);
-ASTNode _parseFunctionCall(ParserContext& context, Token const name);
 ASTNode _parseFunctionDefinition(ParserContext& context);
 ASTNode _parseCompoundStatement(ParserContext& context);
 ASTNode _parseStatement(ParserContext& context);

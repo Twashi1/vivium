@@ -28,7 +28,8 @@ struct ASTNode {
 };
 
 struct NodeVar {
-  std::string name;
+  // TODO: possible that SSO is interfering with this as well...?
+  TokenString name;
 };
 
 struct NodeNumber {

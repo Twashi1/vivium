@@ -5,6 +5,9 @@ namespace GUIF {
 template <typename T, BinaryOpType operation>
 Token executeBinaryOp(InterpreterContext& interp,
                       std::vector<Token> const& tokens) {
+  // TODO: not necessarily safe?
+  //  e.g. strings will fail this, and reallocation of a vector will fail
+  //  unless types are trivially moveable
   T const& left = *reinterpret_cast<T const*>(tokens[0].memory.data());
   T const& right = *reinterpret_cast<T const*>(tokens[1].memory.data());
   T result;

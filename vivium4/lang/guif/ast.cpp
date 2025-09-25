@@ -95,10 +95,13 @@ ASTNode createASTNode(BlockAllocator& allocator, ASTNodeType type, void* data) {
       node.data = allocate(allocator, sizeof(NodeNumber), alignof(NodeNumber));
       new (node.data) NodeNumber(*reinterpret_cast<NodeNumber*>(data));
       break;
-    case ASTNodeType::VAR:
+    case ASTNodeType::VAR: {
       node.data = allocate(allocator, sizeof(NodeVar), alignof(NodeVar));
-      new (node.data) NodeVar(*reinterpret_cast<NodeVar*>(data));
+      NodeVar* dataVar = reinterpret_cast<NodeVar*>(data);
+      NodeVar* newVar = new (node.data) NodeVar();
+      newVar->name = copyTokenString(dataVar->name);
       break;
+    }
     case ASTNodeType::FUNCTION_DEFINITION:
       node.data = allocate(allocator, sizeof(NodeFunctionDefinition),
                            alignof(NodeFunctionDefinition));
