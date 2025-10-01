@@ -12,7 +12,6 @@ Token copyToken(Token const token) {
       *identifier = copyTokenString(
           *reinterpret_cast<TokenIdentifier const*>(token.memory.data()));
 
-      // TODO: assumes TokenIdentifier is equivalent to std::string
       VIVIUM_LOG(LogSeverity::DEBUG, "Copied token to have [{}], original [{}]",
                  getTokenString(*reinterpret_cast<TokenIdentifier const*>(
                      copyToken.memory.data())),
@@ -37,27 +36,7 @@ Token copyToken(Token const token) {
 
       return copyToken;
     }
-    case TokenType::UNKNOWN:
-    case TokenType::COLON:
-    case TokenType::COMMA:
-    case TokenType::SEMICOLON:
-    case TokenType::EQUAL:
-    case TokenType::CURLY_LEFT:
-    case TokenType::CURLY_RIGHT:
-    case TokenType::PAREN_LEFT:
-    case TokenType::PAREN_RIGHT:
-    case TokenType::SQUARE_LEFT:
-    case TokenType::SQUARE_RIGHT:
-    case TokenType::PLUS:
-    case TokenType::SUBTRACT:
-    case TokenType::MULTIPLY:
-    case TokenType::DIVIDE:
-    case TokenType::IF:
-    case TokenType::ELSE:
-    case TokenType::AS:
-    case TokenType::WHILE:
-    case TokenType::FOR:
-    case TokenType::END_OF_FILE:
+    default:
       return token;
   }
 }
@@ -130,6 +109,9 @@ LexerContext createLexer(std::string_view text) {
   context.keywords.insert({"as", TokenType::AS});
   context.keywords.insert({"while", TokenType::WHILE});
   context.keywords.insert({"for", TokenType::FOR});
+  context.keywords.insert({"class", TokenType::CLASS});
+  context.keywords.insert({"fn", TokenType::FUNCTION});
+  context.keywords.insert({"override", TokenType::FUNCTION});
 
   return context;
 }
@@ -141,28 +123,36 @@ void dropLexer(LexerContext& context) {
 
 std::string tokenTypeString(TokenType type) {
   switch (type) {
-    case TokenType::SQUARE_RIGHT:
-      return "SQUARE_RIGHT";
-    case TokenType::SQUARE_LEFT:
-      return "SQUARE_LEFT";
-    case TokenType::PAREN_LEFT:
-      return "PAREN_LEFT";
-    case TokenType::PAREN_RIGHT:
-      return "PAREN_RIGHT";
-    case TokenType::CURLY_LEFT:
-      return "CURLY_LEFT";
-    case TokenType::CURLY_RIGHT:
-      return "CURLY_RIGHT";
-    case TokenType::EQUAL:
-      return "EQUAL";
-    case TokenType::COLON:
-      return "COLON";
+    case TokenType::UNKNOWN:
+      return "UNKNOWN";
+    case TokenType::IDENTIFIER:
+      return "IDENTIFIER";
     case TokenType::INTEGER:
       return "INTEGER";
     case TokenType::FLOATING:
       return "FLOATING";
-    case TokenType::IDENTIFIER:
-      return "IDENTIFIER";
+    case TokenType::COLON:
+      return "COLON";
+    case TokenType::COMMA:
+      return "COMMA";
+    case TokenType::SEMICOLON:
+      return "SEMICOLON";
+    case TokenType::EQUAL:
+      return "EQUAL";
+    case TokenType::CURLY_LEFT:
+      return "CURLY_LEFT";
+    case TokenType::CURLY_RIGHT:
+      return "CURLY_RIGHT";
+    case TokenType::PAREN_LEFT:
+      return "PAREN_LEFT";
+    case TokenType::PAREN_RIGHT:
+      return "PAREN_RIGHT";
+    case TokenType::SQUARE_LEFT:
+      return "SQUARE_LEFT";
+    case TokenType::SQUARE_RIGHT:
+      return "SQUARE_RIGHT";
+    case TokenType::DOLLAR:
+      return "DOLLAR";
     case TokenType::PLUS:
       return "PLUS";
     case TokenType::SUBTRACT:
@@ -171,8 +161,24 @@ std::string tokenTypeString(TokenType type) {
       return "MULTIPLY";
     case TokenType::DIVIDE:
       return "DIVIDE";
-    default:
-      return "UNKNOWN";
+    case TokenType::IF:
+      return "IF";
+    case TokenType::ELSE:
+      return "ELSE";
+    case TokenType::AS:
+      return "AS";
+    case TokenType::WHILE:
+      return "WHILE";
+    case TokenType::FOR:
+      return "FOR";
+    case TokenType::CLASS:
+      return "CLASS";
+    case TokenType::FUNCTION:
+      return "FUNCTION";
+    case TokenType::OVERRIDE:
+      return "OVERRIDE";
+    case TokenType::END_OF_FILE:
+      return "END_OF_FILE";
   }
 }
 
@@ -223,9 +229,7 @@ Token readIdentifier(LexerContext& context) {
 }
 
 void advanceToken(LexerContext& context) {
-  // TODO: this means when we advance token, we destroy the old one,
-  // invalidating memory
-  //  potentially dangerous
+  // Note we invalidate the memory of the last token with this
   destroyToken(context.currentToken);
   // TODO: do we need to copy token?
   context.currentToken = copyToken(_getNextToken(context));
@@ -296,6 +300,9 @@ Token _getNextToken(LexerContext& context) {
       case '*':
         advanceCharacter(context);
         return createToken(context.allocator, TokenType::MULTIPLY, nullptr);
+      case '$':
+        advanceCharacter(context);
+        return createToken(context.allocator, TokenType::DOLLAR, nullptr);
       case '/':
         advanceCharacter(context);
         return createToken(context.allocator, TokenType::DIVIDE, nullptr);
@@ -414,6 +421,11 @@ Token createToken(BlockAllocator& allocator, TokenType type, void const* data) {
     case TokenType::ELSE:
     case TokenType::SEMICOLON:
     case TokenType::UNKNOWN:
+    case TokenType::COMMA:
+    case TokenType::OVERRIDE:
+    case TokenType::FUNCTION:
+    case TokenType::CLASS:
+    case TokenType::DOLLAR:
       break;
     case TokenType::INTEGER: {
       new (token.memory.data())
@@ -436,11 +448,6 @@ Token createToken(BlockAllocator& allocator, TokenType type, void const* data) {
 
       break;
     }
-    default:
-      VIVIUM_LOG(LogSeverity::ERROR,
-                 "Unknown token type passed to create token, value: {}",
-                 static_cast<uint64_t>(type));
-      break;
   }
 
   return token;
@@ -458,7 +465,6 @@ void destroyToken(Token& token) {
       reinterpret_cast<TokenFloating*>(token.memory.data())->~TokenFloating();
       break;
     case TokenType::IDENTIFIER:
-      // TODO: when we destroy this token identifier, it causes big issues?
       dropTokenString(*reinterpret_cast<TokenIdentifier*>(token.memory.data()));
       reinterpret_cast<TokenIdentifier*>(token.memory.data())
           ->~TokenIdentifier();

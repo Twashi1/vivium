@@ -87,8 +87,7 @@ ASTNode _parseValue(ParserContext& context) {
     case TokenType::IDENTIFIER: {
       NodeVar variable;
       // TODO: this was probably the real issue, without much need for us to
-      // actually
-      //  use a token string in a node variable
+      // actually use a token string in a node variable
       variable.name = copyTokenString(*reinterpret_cast<TokenIdentifier*>(
           context.lexer.currentToken.memory.data()));
       advanceToken(context.lexer);

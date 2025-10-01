@@ -18,12 +18,24 @@ void destroyASTNode(ASTNode node) {
     case ASTNodeType::ADD_OP:
     case ASTNodeType::SUB_OP:
     case ASTNodeType::MUL_OP:
-    case ASTNodeType::DIV_OP:
-    case ASTNodeType::ASSIGN_OP: {
+    case ASTNodeType::DIV_OP: {
       NodeBinaryOp* binary = reinterpret_cast<NodeBinaryOp*>(node.data);
       destroyASTNode(binary->left);
       destroyASTNode(binary->right);
       binary->~NodeBinaryOp();
+      break;
+    }
+    case ASTNodeType::ASSIGN_OP: {
+      NodeAssignOp* assign = reinterpret_cast<NodeAssignOp*>(node.data);
+      destroyASTNode(assign->var);
+      destroyASTNode(assign->type);
+      destroyASTNode(assign->right);
+      assign->~NodeAssignOp();
+      break;
+    }
+    case ASTNodeType::TYPE: {
+      NodeType* type = reinterpret_cast<NodeType*>(node.data);
+      type->~NodeType();
       break;
     }
     case ASTNodeType::VAR: {
@@ -86,10 +98,16 @@ ASTNode createASTNode(BlockAllocator& allocator, ASTNodeType type, void* data) {
     case ASTNodeType::SUB_OP:
     case ASTNodeType::MUL_OP:
     case ASTNodeType::DIV_OP:
-    case ASTNodeType::ASSIGN_OP:
       node.data =
           allocate(allocator, sizeof(NodeBinaryOp), alignof(NodeBinaryOp));
       new (node.data) NodeBinaryOp(*reinterpret_cast<NodeBinaryOp*>(data));
+      break;
+    case ASTNodeType::ASSIGN_OP:
+      // TODO: a member-by-member copy is not necessarily valid?
+      //  we need to create a deep copy of the passed object
+      node.data =
+          allocate(allocator, sizeof(NodeAssignOp), alignof(NodeAssignOp));
+      new (node.data) NodeAssignOp(*reinterpret_cast<NodeAssignOp*>(data));
       break;
     case ASTNodeType::NUMBER:
       node.data = allocate(allocator, sizeof(NodeNumber), alignof(NodeNumber));

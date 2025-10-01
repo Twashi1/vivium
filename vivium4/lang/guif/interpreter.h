@@ -15,6 +15,7 @@ struct InterpreterContext;
 using LanguageFunction = Token (*)(InterpreterContext&,
                                    std::vector<Token> const&);
 
+// TODO: move all of this to AST because we need TypeSymbols
 // TODO: semantic analysis,
 //  custom hash function
 //  assuming we're movign to some sort of bytecode?
@@ -22,6 +23,8 @@ enum class BinaryOpType { ADD, SUB, MUL, DIV };
 
 template <BinaryOpType opType>
 std::string_view binaryOpTypeString();
+
+// TODO: generic ObjectSymbol? links to some sort of registry ig?
 
 struct TypeSymbol {
   std::string name;

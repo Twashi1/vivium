@@ -25,6 +25,7 @@ enum class TokenType : uint16_t {
   PAREN_RIGHT,
   SQUARE_LEFT,
   SQUARE_RIGHT,
+  DOLLAR,
   PLUS,
   SUBTRACT,
   MULTIPLY,
@@ -34,52 +35,10 @@ enum class TokenType : uint16_t {
   AS,
   WHILE,
   FOR,
+  CLASS,
+  FUNCTION,
+  OVERRIDE,
   END_OF_FILE
-};
-
-struct LoudString {
-  std::string value;
-
-  operator std::string() { return value; }
-
-  LoudString(std::string const& other) : value(other) {
-    VIVIUM_LOG(LogSeverity::DEBUG, "Copy constructing from regular string {}",
-               other);
-  }
-
-  LoudString& operator=(LoudString const& other) {
-    value = other.value;
-
-    VIVIUM_LOG(LogSeverity::DEBUG, "Copy assigning value {}", value);
-
-    return *this;
-  }
-
-  LoudString& operator=(LoudString&& other) {
-    value = std::move(other.value);
-
-    VIVIUM_LOG(LogSeverity::DEBUG, "Move assigning with value {}", value);
-
-    return *this;
-  }
-
-  LoudString() : value("") {
-    VIVIUM_LOG(LogSeverity::DEBUG, "Creating string with value {}", value);
-  }
-
-  LoudString(LoudString const& other) : value(other.value) {
-    VIVIUM_LOG(LogSeverity::DEBUG, "Copying loud string with value {}",
-               other.value);
-  }
-
-  LoudString(LoudString&& other) : value(std::move(other.value)) {
-    VIVIUM_LOG(LogSeverity::DEBUG, "Moving loud string with value {}",
-               other.value);
-  }
-
-  ~LoudString() {
-    VIVIUM_LOG(LogSeverity::DEBUG, "Destroying string with value {}", value);
-  }
 };
 
 struct TokenString {

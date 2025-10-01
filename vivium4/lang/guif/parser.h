@@ -17,8 +17,6 @@ struct ParserContext {
 // the right, and then add/sub the result
 //  if we don't see add/sub, we recurse down a level
 
-//  TODO: parenthesis
-
 // Higher precedence implies the operation is performed first
 enum class PrecedenceOrder : uint32_t {
   VALUE,

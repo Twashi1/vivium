@@ -14,6 +14,7 @@ enum class ASTNodeType {
   MUL_OP,
   DIV_OP,
   ASSIGN_OP,
+  TYPE,
   VAR,
   NUMBER,
   FUNCTION_DEFINITION,
@@ -52,6 +53,16 @@ struct NodeFunctionCall {
 struct NodeBinaryOp {
   ASTNode left;
   ASTNode right;
+};
+
+struct NodeAssignOp {
+  ASTNode var;
+  ASTNode type;
+  ASTNode right;
+};
+
+struct NodeType {
+  TypeSymbol type;
 };
 
 struct NodeCompound {
