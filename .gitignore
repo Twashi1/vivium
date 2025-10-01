@@ -4,3 +4,4 @@ build/
 .obsidian/
 .cache/
 _deps/
+__pycache__/
