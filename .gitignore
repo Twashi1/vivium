@@ -5,3 +5,4 @@ build/
 .cache/
 _deps/
 __pycache__/
+external/vulkansdk/

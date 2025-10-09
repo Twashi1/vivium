@@ -16,6 +16,22 @@ VULKAN_VERSION = "1.4.321.1"
 VULKAN_MAJOR_MINIMUM = 1
 VULKAN_MINOR_MINIMUM = 4
 
+def validateGLSLC():
+    # Validate GLSLC exists
+    try:
+        subprocess.run(
+            ["glslc", "--version"],
+            check=True
+        )
+
+        print("GLSLC Validated")
+        return True
+
+    except Exception as e:
+        print(f"GLSLC is not installed or not in PATH {e}")
+        # TODO: can try to install properly
+        return False
+
 def validateVulkanSDK():
     try:
         result = subprocess.run(
@@ -34,16 +50,16 @@ def validateVulkanSDK():
                     print("Vulkan version validated!")
                     return True
                 else:
-                    print("Vulkan version too old, expected at least {VULKAN_MAJOR_MINIMUM}.{VULKAN_MINOR_MINIMUM}, but got {major}.{minor}")
-                    return False
+                    print(f"Vulkan version too old, expected at least {VULKAN_MAJOR_MINIMUM}.{VULKAN_MINOR_MINIMUM}, but got {major}.{minor}")
+                    return installVulkanSDK() 
 
+        print("Very old Vulkan version/vulkaninfo format changed?")
         return False
+        
     except Exception as e:
         print("Got error {e}, vulkan not installed correctly?")
 
         return installVulkanSDK()
-
-    # TODO: validate that we can get glslc
 
 def installWindows(installer):
     print("Running installer")
@@ -63,23 +79,25 @@ def installLinux(tarball, location):
     with tarfile.open(tarball, "r:xz") as tar:
         tar.extractall(location)
 
+    os.remove(tarball)
+    print(f"Cleaned up tarball")
+
     sdkPath = os.path.abspath(os.path.join(location, VULKAN_VERSION, "x86_64"))
 
     config = f"""
 export VULKAN_SDK={sdkPath}
 export PATH=$VULKAN_SDK/bin:$PATH
 export LD_LIBRARY_PATH=$VULKAN_SDK/lib:$LD_LIBRARY_PATH
-export VK_LAYER_PATH=$VULKAN_SDK/etc/vulkan/explicit_layer.d
+export VK_LAYER_PATH=$VULKAN_SDK/share/vulkan/explicit_layer.d
 """
 
-    bashrcPath = os.path.join(os.path.expanduser("~"), ".bashrc")
-
+    bashrcPath = os.path.expanduser("~/.bashrc")
     with open(bashrcPath, "a") as f:
         f.write(config)
 
-    # Refresh terminal
-    subprocess.run(["bash", "-c", f"source {bashrcPath}"], check=True)
+    print(f"Setting environment variables: \n{config}")
 
+    print(f"Reload bashrc with source ~/.bashrc for to complete installation")
     print("Installed Vulkan SDK for linux")
 
 def installVulkanSDK():
@@ -99,7 +117,6 @@ def installVulkanSDK():
 
     platformName = platform.system().lower()
 
-    # TODO: switch between windows/linux install url
     if platformName == "windows":
         # NOTE: assumes x64
         vulkanInstallerName = f"vulkansdk-{platformName}-X64-{VULKAN_VERSION}.exe"
@@ -118,8 +135,6 @@ def installVulkanSDK():
         # TODO: /external should be set as a global variable
         installLinux(vulkanPath, os.path.abspath("./external/vulkansdk/"))
 
-    # TODO: delete the tarball
-    
     print("Re-run to validate")
     
     return True
@@ -127,6 +142,8 @@ def installVulkanSDK():
 if __name__ == "__main__":
     if not validateVulkanSDK():
         print("Couldn't verify vulkan SDK, may cause issues")
+    elif not validateGLSLC():
+        print("Couldn't find GLSLC, may cause issues")
     else:
-        print("Vulkan SDK installed/validated")
+        print("Vulkan SDK, and GLSLC installed/validated")
 

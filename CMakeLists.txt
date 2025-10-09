@@ -1,6 +1,6 @@
 ﻿cmake_minimum_required (VERSION 3.24)
 
-project ("vivium4")
+project ("vivium4" LANGUAGES C CXX)
 
 # TODO: don't know if required
 include(FetchContent)
@@ -11,6 +11,7 @@ set(GLFW3_VERSION 3.4)
 set(VULKAN_VERSION v1.4.326)
 set(FREETYPE_VERSION VER-2-13-3)
 set(LUA_VERSION v5.4.8)
+set(LUA_VERSION_MIN 5.4)
 
 find_package(glfw3 ${GLFW3_VERSION} QUIET)
 if (NOT glfw3_FOUND)
@@ -56,27 +57,31 @@ if (NOT Freetype_FOUND)
   FetchContent_MakeAvailable(Freetype)
 endif()
 
-find_package(Lua)
-if (NOT Lua_FOUND)
+# TODO: pretty sure if LUA is found, this wont run correctly
+#find_package(Lua ${LUA_VERSION_MIN}) 
+if (TRUE)
   message(STATUS "Fetching Lua")
 
   FetchContent_Declare(
-    Lua
+    lua    
     GIT_REPOSITORY https://github.com/lua/lua.git
     GIT_TAG ${LUA_VERSION}
-    GIT_SHALLOW TRUE
     GIT_PROGRESS TRUE
   )
 
-  # TODO: probably shouldn't have this? lua doesn't have cmakelists
-  FetchContent_MakeAvailable(Lua)
-endif()
+  FetchContent_MakeAvailable(lua)
 
-add_library(Lua::Lua INTERFACE IMPORTED)
-set_target_properties(Lua::Lua PROPERTIES
-  INTERFACE_INCLUDE_DIRECTORIES "${LUA_INCLUDE_DIR}"
-  INTERFACE_LINK_LIBRARIES "${LUA_LIBRARIES}"
-)
+  file(GLOB LUA_SOURCES "${lua_SOURCE_DIR}/*.c")
+  list(FILTER LUA_SOURCES EXCLUDE REGEX ".*/onelua\\.c$")
+  add_library(lua STATIC ${LUA_SOURCES})
+  target_include_directories(lua PUBLIC ${lua_SOURCE_DIR})
+
+  if (MSVC)
+    target_compile_definitions(lua PRIVATE _CRT_SECURE_NO_WARNINGS)
+  else()
+    target_compile_options(lua PRIVATE -O3)
+  endif()
+endif()
 
 set(VIVIUM_SOURCES
   "vivium4/core.cpp"
@@ -229,8 +234,7 @@ target_include_directories(v4 PUBLIC "${CMAKE_SOURCE_DIR}/external/stb_image")
 target_link_libraries(v4 PRIVATE Vulkan::Vulkan)
 target_link_libraries(v4 PRIVATE Freetype::Freetype)
 target_link_libraries(v4 PRIVATE glfw)
-target_link_libraries(v4 PRIVATE Lua::Lua)
-
+target_link_libraries(v4 PRIVATE lua)
 
 file(COPY "${CMAKE_SOURCE_DIR}/vivium4/res" DESTINATION "${CMAKE_BINARY_DIR}/vivium4/")
 file(COPY "${CMAKE_SOURCE_DIR}/engine/res" DESTINATION "${CMAKE_BINARY_DIR}/engine/")
@@ -241,5 +245,6 @@ file(COPY "${CMAKE_SOURCE_DIR}/engine/res" DESTINATION "${CMAKE_BINARY_DIR}/engi
 if (WIN32)
   configure_file("${CMAKE_SOURCE_DIR}/external/win/vulkan/Bin/glslc.exe" "${CMAKE_BINARY_DIR}/external/win/vulkan/Bin/glslc.exe" COPYONLY)
 else()
-  configure_file("${CMAKE_SOURCE_DIR}/external/linux/vulkan/x86_64/bin/glslc" "${CMAKE_BINARY_DIR}/external/linux/vulkan/x86_64/bin/glslc" COPYONLY)
+  # NOTE: not required on linux anymore, but update code to reflect that
+  # configure_file("${CMAKE_SOURCE_DIR}/external/linux/vulkan/x86_64/bin/glslc" "${CMAKE_BINARY_DIR}/external/linux/vulkan/x86_64/bin/glslc" COPYONLY)
 endif()

@@ -62,7 +62,8 @@ struct NodeAssignOp {
 };
 
 struct NodeType {
-  TypeSymbol type;
+  // TypeSymbol type;
+  int placeholder;
 };
 
 struct NodeCompound {
