@@ -13,7 +13,7 @@ void editor() {
 
 void ecs() { groupTest(); }
 
-int main_old(void) {
+int main(void) {
   editor();
 
   return NULL;

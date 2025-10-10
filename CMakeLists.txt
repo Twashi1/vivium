@@ -118,8 +118,6 @@ set(VIVIUM_SOURCES
   "vivium4/graphics/gui/visual/button.cpp" 
   "vivium4/graphics/primitives/framebuffer.cpp"
   "vivium4/graphics/gui/visual/context.cpp"
-  "engine/main.cpp"
-  "engine/state.cpp"
   "vivium4/graphics/gui/visual/panel.cpp"
   "vivium4/ecs/defines.cpp"
   "vivium4/ecs/component_array.cpp"
@@ -131,19 +129,16 @@ set(VIVIUM_SOURCES
   "vivium4/math/atlas.cpp"
   "vivium4/graphics/texture_format.cpp"
   "vivium4/graphics/image_load.cpp"
-  "engine/tree_container.cpp"
   "vivium4/graphics/gui/visual/debugrect.cpp"
   "vivium4/graphics/gui/visual/entry.cpp"
-  "engine/components.cpp"
   "vivium4/serialiser/serialiser.cpp"
-  "runtime/main.cpp"
-  "runtime/runtime.cpp"
   "vivium4/ecs/component_manager.cpp"
   "vivium4/lang/guif/ast.cpp"
   "vivium4/lang/guif/interpreter.cpp"
   "vivium4/lang/guif/lexer.cpp"
   "vivium4/lang/guif/parser.cpp"
 )
+
 set(VIVIUM_HEADERS
   "vivium4/error/result.h"
   "vivium4/utility/type_names.h"
@@ -182,7 +177,6 @@ set(VIVIUM_HEADERS
   "vivium4/math/mat2x2.h"
   "vivium4/graphics/gui/visual/button.h"
   "vivium4/graphics/color.h"
-  "engine/state.h"
   "vivium4/graphics/primitives/framebuffer.h" 
   "vivium4/graphics/gui/visual/context.h"
   "vivium4/ecs/registry.h"
@@ -193,20 +187,15 @@ set(VIVIUM_HEADERS
   "vivium4/ecs/defines.h"
   "vivium4/ecs/paged_array.h"
   "vivium4/ecs/group.h" 
-  "engine/ecstest.h"
   "vivium4/graphics/gui/visual/container.h"
   "vivium4/graphics/gui/visual/slider.h"
   "vivium4/graphics/gui/visual/sprite.h"
   "vivium4/math/atlas.h"
   "vivium4/graphics/texture_format.h"
   "vivium4/graphics/image_load.h"
-  "engine/tree_container.h"
-  "engine/engine.h"
   "vivium4/graphics/gui/visual/debugrect.h"
   "vivium4/graphics/gui/visual/entry.h"
   "vivium4/input_string.h"
-  "engine/components.h"
-  "runtime/runtime.h"
   "vivium4/ecs/type_info.h"
   "vivium4/ecs/group_impl.h"
   "vivium4/ecs/registry_impl.h"
@@ -218,23 +207,54 @@ set(VIVIUM_HEADERS
   "vivium4/lang/guif/parser.h"
 )
 
-add_executable(v4 ${VIVIUM_HEADERS} ${VIVIUM_SOURCES})
+set(EDITOR_HEADERS
+  "engine/components.h"
+  "engine/ecstest.h"
+  "engine/engine.h"
+  "engine/state.h"
+  "engine/tree_container.h"
+)
 
-set_property(TARGET v4 PROPERTY CXX_STANDARD 20)
-target_compile_features(v4 PUBLIC cxx_std_20)
+set(EDITOR_SOURCES
+  "engine/components.cpp"
+  "engine/state.cpp"
+  "engine/tree_container.cpp"
+)
+
+set(RUNTIME_HEADERS
+  "runtime/runtime.h"
+)
+
+set(RUNTIME_SOURCES
+  "runtime/runtime.cpp"
+)
+
+add_executable(runtime ${VIVIUM_HEADERS} ${VIVIUM_SOURCES} ${RUNTIME_HEADERS} ${RUNTIME_SOURCES} "runtime/main.cpp")
+add_executable(editor ${VIVIUM_HEADERS} ${VIVIUM_SOURCES} ${EDITOR_HEADERS} ${EDITOR_SOURCES} "engine/main.cpp")
+
+target_compile_features(runtime PUBLIC cxx_std_20)
+target_compile_features(editor PUBLIC cxx_std_20)
 
 string(LENGTH "${CMAKE_SOURCE_DIR}/" VIVIUM_SOURCE_PATH_SIZE)
 message(VIVIUM_SOURCE_PATH_SIZE="${VIVIUM_SOURCE_PATH_SIZE}")
 add_definitions("-DVIVIUM_SOURCE_PATH_SIZE=${VIVIUM_SOURCE_PATH_SIZE}")
 
 # Header-only, build same regardless of system
-target_include_directories(v4 PUBLIC "${CMAKE_SOURCE_DIR}/external/glm")
-target_include_directories(v4 PUBLIC "${CMAKE_SOURCE_DIR}/external/stb_image")
+target_include_directories(runtime PUBLIC "${CMAKE_SOURCE_DIR}/external/glm")
+target_include_directories(runtime PUBLIC "${CMAKE_SOURCE_DIR}/external/stb_image")
 
-target_link_libraries(v4 PRIVATE Vulkan::Vulkan)
-target_link_libraries(v4 PRIVATE Freetype::Freetype)
-target_link_libraries(v4 PRIVATE glfw)
-target_link_libraries(v4 PRIVATE lua)
+target_include_directories(editor PUBLIC "${CMAKE_SOURCE_DIR}/external/glm")
+target_include_directories(editor PUBLIC "${CMAKE_SOURCE_DIR}/external/stb_image")
+
+target_link_libraries(runtime PRIVATE Vulkan::Vulkan)
+target_link_libraries(runtime PRIVATE Freetype::Freetype)
+target_link_libraries(runtime PRIVATE glfw)
+target_link_libraries(runtime PRIVATE lua)
+
+target_link_libraries(editor PRIVATE Vulkan::Vulkan)
+target_link_libraries(editor PRIVATE Freetype::Freetype)
+target_link_libraries(editor PRIVATE glfw)
+target_link_libraries(editor PRIVATE lua)
 
 file(COPY "${CMAKE_SOURCE_DIR}/vivium4/res" DESTINATION "${CMAKE_BINARY_DIR}/vivium4/")
 file(COPY "${CMAKE_SOURCE_DIR}/engine/res" DESTINATION "${CMAKE_BINARY_DIR}/engine/")

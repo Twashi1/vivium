@@ -371,7 +371,7 @@ void _setup(State& state) {
                                           pipeline.pipeline.resource);
     // Note we don't add shaders because we drop them
     //	and we don't add descriptor layouts because there isn't a good use case
-    //for them?
+    // for them?
 
     // TODO: descriptor set objects
     for (DescriptorSetObjects& object : pipeline.descriptorObjects) {
@@ -706,7 +706,7 @@ int _luaGetComponent(lua_State* L) {
 
   // TODO: get component
   //	and then for each type, we have a function to wrap it into a lua
-  //context?
+  // context?
   switch (componentType) {
     case VulkanComponent::BUFFER:
       break;

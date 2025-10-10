@@ -64,42 +64,7 @@ void testing_ecs() {
   delete registry;
 }
 
-#define TMP_EDITOR 1
-#define TMP_RUNTIME 0
-#define TMP_GUIF 0
-
-int main(int argc, char* argv[]) {
-  if (argc > 1) {
-    // Attempt to run the inputted program
-    char const* bytecodeFile = argv[2];
-
-    VIVIUM_LOG(LogSeverity::DEBUG, "More than one argument?");
-
-    Runtime::State* state = new Runtime::State();
-    Runtime::init(*state, bytecodeFile);
-    Runtime::run(*state);
-    Runtime::drop(*state);
-
-    delete state;
-  }
-  // Default to running editor
-  else {
-  }
-#if TMP_EDITOR
-  ::State* state = new State();
-  ::initialise(*state);
-  ::gameloop(*state);
-  ::terminate(*state);
-
-  delete state;
-#elif TMP_RUNTIME
-  Runtime::State* state = new Runtime::State();
-  Runtime::init(*state, "vivium4/res/saves/compiled.dat");
-  Runtime::run(*state);
-  Runtime::drop(*state);
-
-  delete state;
-#elif TMP_GUIF
+void runGUIF() {
   std::string exampleCode = "{ abc = 51 + 3 - 2 * 4; abc + 1; }";
 
   _logInit();
@@ -132,7 +97,30 @@ int main(int argc, char* argv[]) {
   GUIF::dropASTContext(ast);
   GUIF::dropParserContext(parser);
   GUIF::dropInterpreter(interp);
-#endif
+}
 
-  return NULL;
+int main(int argc, char* argv[]) {
+  if (argc > 1) {
+    // Attempt to run the inputted program
+    char const* bytecodeFile = argv[2];
+
+    VIVIUM_LOG(LogSeverity::DEBUG, "More than one argument?");
+
+    Runtime::State* state = new Runtime::State();
+    Runtime::init(*state, bytecodeFile);
+    Runtime::run(*state);
+    Runtime::drop(*state);
+
+    delete state;
+  } else {
+    // Default to running editor
+    Runtime::State* state = new Runtime::State();
+    Runtime::init(*state, "vivium4/res/saves/compiled.dat");
+    Runtime::run(*state);
+    Runtime::drop(*state);
+
+    delete state;
+  }
+
+  return 0;
 }
