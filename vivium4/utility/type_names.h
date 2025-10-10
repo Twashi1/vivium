@@ -10,6 +10,13 @@
 static_assert("Failed to detect compiler")
 #endif
 
+/*! \brief Gives the prettified type name string.
+ *
+ * Should work across platforms. Defaults to typeid on incompatible platforms or
+ * MSCV.
+ *
+ * \return The prettified type name string.
+ */
 template <typename T>
 std::string prettyTypeName() {
 #if defined(__GNUC__) || defined(__GNUG__)

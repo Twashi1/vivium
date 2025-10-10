@@ -46,8 +46,6 @@ bool nanosleep(long long nanoseconds) {
 }
 #elif defined(VIVIUM_PLATFORM_LINUX)
 // https://stackoverflow.com/questions/7684359/how-to-use-nanosleep-in-c-what-are-tim-tv-sec-and-tim-tv-nsec
-// NOTE: untested, don't have a linux machine, nor desire to build for linux
-// just yet
 bool nanosleep(long long nanoseconds) {
   timespec time;
   time.tv_nsec = nanoseconds;
