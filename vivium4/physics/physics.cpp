@@ -11,14 +11,6 @@ PenetrationManifold::PenetrationManifold()
 EdgeManifold axisOfLeastPenetration(const Polygon& a, const Polygon& b,
                                     const Transform& aTransform,
                                     const Transform& bTransform) {
-  // For each face, find the support point in the direction of the negation of
-  // the normal to that face i.e. the vertex furthest in a certain normal
-  // direction The distance from each support point to the current face gives us
-  // the signed penetration We select axis of largest signed distance -> least
-  // penetration (furthest away) This algorithm will likely break if the shapes
-  // are deeply intersecting (about more than half?), but this isn't of much
-  // concern
-
   float maximumDistance = std::numeric_limits<float>::lowest();
   uint64_t maximumIndex = 0;
 
