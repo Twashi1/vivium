@@ -6,7 +6,6 @@ bool GroupMetadata::containsID(uint8_t id) {
   return affectedComponents.test(id);
 }
 
-// Perfect match
 bool GroupMetadata::ownsSignature(Signature const& signature) {
   return (signature & ownedComponents) == ownedComponents;
 }

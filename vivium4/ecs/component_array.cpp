@@ -61,6 +61,8 @@ void ComponentArray::swap(Entity a, Entity b) {
   uint32_t& indexA = sparse.index(getIdentifier(a));
   uint32_t& indexB = sparse.index(getIdentifier(b));
 
+  // TODO: assert indexA and indexB are valid
+
   manager.swapFunction(&dense[indexA * manager.typeSize],
                        &dense[indexB * manager.typeSize]);
 
@@ -70,6 +72,8 @@ void ComponentArray::swap(Entity a, Entity b) {
 
 void ComponentArray::free(Entity entity) {
   uint32_t& index = sparse.index(getIdentifier(entity));
+
+  // TODO: assert if index invalid
 
   manager.destroyFunction(&dense[index * manager.typeSize], 1);
 

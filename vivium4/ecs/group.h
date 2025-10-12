@@ -3,115 +3,131 @@
 #include "defines.h"
 
 namespace Vivium {
-	template <typename T>
-	struct Owned { using type = T; };
-	template <typename T>
-	struct Partial { using type = T; };
+template <typename T>
+struct Owned {
+  using type = T;
+};
+template <typename T>
+struct Partial {
+  using type = T;
+};
 
-	template <typename T>
-	struct IsValidOwnershipTag : std::false_type {};
-	template <typename T>
-	struct IsValidOwnershipTag<Owned<T>> : std::true_type {};
-	template <typename T>
-	struct IsValidOwnershipTag<Partial<T>> : std::true_type {};
-	
-	template <typename T>
-	struct IsOwnedTag : std::false_type {};
-	template <typename T>
-	struct IsOwnedTag<Owned<T>> : std::true_type {};
+template <typename T>
+struct IsValidOwnershipTag : std::false_type {};
+template <typename T>
+struct IsValidOwnershipTag<Owned<T>> : std::true_type {};
+template <typename T>
+struct IsValidOwnershipTag<Partial<T>> : std::true_type {};
 
-	template <typename T>
-	struct IsPartialTag : std::false_type {};
-	template <typename T>
-	struct IsPartialTag<Partial<T>> : std::true_type {};
+template <typename T>
+struct IsOwnedTag : std::false_type {};
+template <typename T>
+struct IsOwnedTag<Owned<T>> : std::true_type {};
 
-	template <typename T>
-	concept OwnershipTag = IsValidOwnershipTag<T>::value;
-	template <typename T>
-	concept PartialTag = IsPartialTag<T>::value;
-	template <typename T>
-	concept OwnedTag = IsOwnedTag<T>::value;
+template <typename T>
+struct IsPartialTag : std::false_type {};
+template <typename T>
+struct IsPartialTag<Partial<T>> : std::true_type {};
 
-	struct Registry;
+template <typename T>
+concept OwnershipTag = IsValidOwnershipTag<T>::value;
+template <typename T>
+concept PartialTag = IsPartialTag<T>::value;
+template <typename T>
+concept OwnedTag = IsOwnedTag<T>::value;
 
-	struct GroupMetadata {
-		uint64_t groupSize;
-		Signature ownedComponents;
-		Signature partialComponents;
-		Signature affectedComponents; // ownedComponents | partialComponents
-		Registry* registry;
+struct Registry;
 
-		// TODO: interdependency issue now
-		template <OwnershipTag... WrappedTypes>
-		void create();
+struct GroupMetadata {
+  uint64_t groupSize;
+  Signature ownedComponents;
+  Signature partialComponents;
+  Signature affectedComponents;  // ownedComponents | partialComponents
+  Registry* registry;
 
-		bool ownedID(uint8_t id);
-		bool containsID(uint8_t id);
+  // TODO: interdependency issue now
+  /*! \brief Construct group metadata from a set of annotated types. */
+  template <OwnershipTag... WrappedTypes>
+  void create();
 
-		// Perfect match
-		bool ownsSignature(Signature const& signature);
-		// TODO: function should be inverted, suggests "signature" is subset of us, but tests for us being a subset of "signature"
-		bool containsSignature(Signature const& signature);
+  /*! \brief Return if this group owns a type index. */
+  bool ownedID(uint8_t id);
+  /*! \brief Return if this group affects a type index. */
+  bool containsID(uint8_t id);
 
-		// TODO: again need registry
-		template <typename T>
-		bool contains();
-		template <typename... Ts>
-		bool any();
-		template <typename... Ts>
-		bool all();
-	};
+  /*! \brief Check that the given signature contains exactly the owned
+   * components. */
+  bool ownsSignature(Signature const& signature);
+  // TODO: function should be inverted, suggests "signature" is subset of us,
+  // but tests for us being a subset of "signature"
+  /*! \brief Check that this signature contains exactly the affected types of
+   * this group. */
+  bool containsSignature(Signature const& signature);
 
-	template <typename T, OwnershipTag... Components>
-	constexpr inline bool _isOwnedType = (std::is_same_v<T, typename Components::type> || ...);
+  /*! \brief Returns if group affects the passed type. */
+  template <typename T>
+  bool contains();
+  /*! \brief Return if any of the passed types are contained. */
+  template <typename... Ts>
+  bool any();
+  /*! \brief Return if all of the passed types are contained. */
+  template <typename... Ts>
+  bool all();
+};
 
-	// https://internalpointers.com/post/writing-custom-iterators-modern-cpp
-	template <OwnershipTag... Components>
-	struct ViewElement {
-		uint64_t index;
-		Entity entity;
+template <typename T, OwnershipTag... Components>
+constexpr inline bool _isOwnedType =
+    (std::is_same_v<T, typename Components::type> || ...);
 
-		Registry* registry;
+// https://internalpointers.com/post/writing-custom-iterators-modern-cpp
+template <OwnershipTag... Components>
+struct ViewElement {
+  uint64_t index;
+  Entity entity;
 
-		template <typename T>
-		T& get();
+  Registry* registry;
 
-		template <typename T>
-		T const& get() const;
-	};
+  template <typename T>
+  T& get();
 
-	template <OwnershipTag... WrappedTypes>
-	struct View {
-		Registry* registry;
-		Entity* ownedEntityArray;
-		GroupMetadata* groupMetadata;
+  template <typename T>
+  T const& get() const;
+};
 
-		struct ViewIterator {
-			using iterator_category = std::forward_iterator_tag;
-			using difference_type = void;
-			using value_type = ViewElement<WrappedTypes...>;
-			using pointer = value_type*;
-			using reference = value_type&;
+template <OwnershipTag... WrappedTypes>
+struct View {
+  Registry* registry;
+  Entity* ownedEntityArray;
+  GroupMetadata* groupMetadata;
 
-			Registry* registry;
-			Entity* ownedEntityArray;
-			GroupMetadata* groupMetadata;
+  struct ViewIterator {
+    using iterator_category = std::forward_iterator_tag;
+    using difference_type = void;
+    using value_type = ViewElement<WrappedTypes...>;
+    using pointer = value_type*;
+    using reference = value_type&;
 
-			value_type current;
+    Registry* registry;
+    Entity* ownedEntityArray;
+    GroupMetadata* groupMetadata;
 
-			ViewIterator(Registry* registry, Entity* ownedEntityArray, GroupMetadata* groupMetadata, uint64_t startIndex, Entity entity);
+    value_type current;
 
-			reference operator*();
-			pointer operator->();
+    ViewIterator(Registry* registry, Entity* ownedEntityArray,
+                 GroupMetadata* groupMetadata, uint64_t startIndex,
+                 Entity entity);
 
-			ViewIterator& operator++();
-			ViewIterator operator++(int);
+    reference operator*();
+    pointer operator->();
 
-			bool operator==(ViewIterator const& other);
-			bool operator!=(ViewIterator const& other);
-		};
+    ViewIterator& operator++();
+    ViewIterator operator++(int);
 
-		ViewIterator begin();
-		ViewIterator end();
-	};
-}
+    bool operator==(ViewIterator const& other);
+    bool operator!=(ViewIterator const& other);
+  };
+
+  ViewIterator begin();
+  ViewIterator end();
+};
+}  // namespace Vivium

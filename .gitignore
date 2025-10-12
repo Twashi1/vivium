@@ -6,3 +6,5 @@ build/
 _deps/
 __pycache__/
 external/vulkansdk/
+# Don't include documentation because it's too big
+doxy_gen/

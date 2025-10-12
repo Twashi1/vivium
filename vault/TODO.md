@@ -1,5 +1,6 @@
 ## Next
 
+- testing suite
 - proof of concept game... minesweeper?
 - two executables, or use console commands to run editor/runtime
 - draw command
