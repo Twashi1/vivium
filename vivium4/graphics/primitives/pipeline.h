@@ -1,60 +1,53 @@
 #pragma once
 
-#include "shader.h"
 #include "buffer.h"
 #include "descriptor_layout.h"
+#include "shader.h"
 #include "uniform.h"
 
 namespace Vivium {
-	enum _RenderTarget {
-		FRAMEBUFFER,
-		WINDOW
-	};
+enum _RenderTarget { FRAMEBUFFER, WINDOW };
 
-	struct PipelineSpecification {
-		std::vector<ShaderReference> shaders;
-		BufferLayout bufferLayout;
-		std::vector<DescriptorLayoutReference> descriptorLayouts;
-		std::vector<PushConstant> pushConstants;
-			
-		_RenderTarget target;
+struct PipelineSpecification {
+  std::vector<ShaderReference> shaders;
+  BufferLayout bufferLayout;
+  std::vector<DescriptorLayoutReference> descriptorLayouts;
+  std::vector<PushConstant> pushConstants;
 
-		union {
-			VkRenderPass windowPass;
-			FramebufferReference framebuffer;
-		};
+  _RenderTarget target;
 
-		VkSampleCountFlagBits sampleCount;
+  union {
+    VkRenderPass windowPass;
+    FramebufferReference framebuffer;
+  };
 
-		PipelineSpecification() = default;
+  VkSampleCountFlagBits sampleCount;
 
-		static PipelineSpecification fromWindow(
-			const std::span<const ShaderReference> shaders,
-			const BufferLayout& bufferLayout,
-			const std::span<const DescriptorLayoutReference> descriptorLayouts,
-			const std::span<const PushConstant> pushConstants,
-			Window& window
-		);
+  PipelineSpecification() = default;
 
-		static PipelineSpecification fromFramebuffer(
-			const std::span<const ShaderReference> shaders,
-			const BufferLayout& bufferLayout,
-			const std::span<const DescriptorLayoutReference> descriptorLayouts,
-			const std::span<const PushConstant> pushConstants,
-			FramebufferReference framebuffer,
-			int multisampleCount
-		);
-	};
+  static PipelineSpecification fromWindow(
+      const std::span<const ShaderReference> shaders,
+      const BufferLayout& bufferLayout,
+      const std::span<const DescriptorLayoutReference> descriptorLayouts,
+      const std::span<const PushConstant> pushConstants, Window& window);
 
-	struct Pipeline {
-		VkPipelineLayout layout;
-		VkPipeline pipeline;
-		VkRenderPass renderPass;
-	};
+  static PipelineSpecification fromFramebuffer(
+      const std::span<const ShaderReference> shaders,
+      const BufferLayout& bufferLayout,
+      const std::span<const DescriptorLayoutReference> descriptorLayouts,
+      const std::span<const PushConstant> pushConstants,
+      FramebufferReference framebuffer, int multisampleCount);
+};
 
-	struct PipelineReference {
-		uint64_t referenceIndex;
-	};
+struct Pipeline {
+  VkPipelineLayout layout;
+  VkPipeline pipeline;
+  VkRenderPass renderPass;
+};
 
-	void dropPipeline(Pipeline& pipeline, Engine& engine);
-}
+struct PipelineReference {
+  uint64_t referenceIndex;
+};
+
+void dropPipeline(Pipeline& pipeline, Engine& engine);
+}  // namespace Vivium

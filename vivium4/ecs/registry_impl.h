@@ -285,7 +285,7 @@ void serialiseWrite(Registry const& registry, Interface& interface) {
 
   // Write paged array
   //	we assume that the paged array will have the same page size and capacity
-  //between runs 	but this could only change between builds so its very safe
+  // between runs 	but this could only change between builds so its very safe
 
   // We only want to write the enabled component arrays
   for (auto const& [key, index] : registry.typeIndexMap) {
@@ -328,7 +328,7 @@ void serialiseRead(Registry* registry, Interface& interface) {
 
   // Write paged array
   //	we assume that the paged array will have the same page size and capacity
-  //between runs 	but this could only change between builds so its very safe
+  // between runs 	but this could only change between builds so its very safe
 
   for (uint64_t i = 0; i < typeIndexMapSize; i++) {
     uint64_t componentIndex = 0;

@@ -3,13 +3,13 @@
 #include "../core.h"
 
 namespace Vivium {
-	enum class TextureFormat {
-		RGBA = VK_FORMAT_R8G8B8A8_SRGB,
-		MONOCHROME = VK_FORMAT_R8_UNORM
-	};
+enum class TextureFormat {
+  RGBA = VK_FORMAT_R8G8B8A8_SRGB,
+  MONOCHROME = VK_FORMAT_R8_UNORM
+};
 
-	int getTextureFormatStride(TextureFormat format);
-	int getTextureFormatChannels(TextureFormat format);
-	
-	std::string getString(TextureFormat format);
-}
+int getTextureFormatStride(TextureFormat format);
+int getTextureFormatChannels(TextureFormat format);
+
+std::string getString(TextureFormat format);
+}  // namespace Vivium

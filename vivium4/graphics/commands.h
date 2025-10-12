@@ -4,90 +4,135 @@
 
 #include "../engine.h"
 #include "primitives/buffer.h"
-#include "primitives/memory_type.h"
-#include "primitives/texture.h"
-#include "primitives/pipeline.h"
 #include "primitives/descriptor_layout.h"
 #include "primitives/descriptor_set.h"
+#include "primitives/memory_type.h"
+#include "primitives/pipeline.h"
+#include "primitives/texture.h"
 
 namespace Vivium {
-	struct ResourceManager;
+struct ResourceManager;
 
-	uint32_t _findMemoryType(Engine& engine, uint32_t typeFilter, VkMemoryPropertyFlags properties);
+uint32_t _findMemoryType(Engine& engine, uint32_t typeFilter,
+                         VkMemoryPropertyFlags properties);
 
-	// TODO: these still take allocation callbacks
-	void _cmdCreateBuffer(Engine& engine, VkBuffer* buffer, uint64_t size, BufferUsage usage, VkMemoryRequirements* memoryRequirements, const VkAllocationCallbacks* allocationCallbacks);
-	void _cmdCreateCommandPool(Engine& engine, VkCommandPool* pool, VkCommandPoolCreateFlags flags);
-	void _cmdCreateCommandBuffers(Engine& engine, VkCommandPool pool, VkCommandBuffer* commandBuffers, uint64_t count);
+// TODO: these still take allocation callbacks
+void _cmdCreateBuffer(Engine& engine, VkBuffer* buffer, uint64_t size,
+                      BufferUsage usage,
+                      VkMemoryRequirements* memoryRequirements,
+                      const VkAllocationCallbacks* allocationCallbacks);
+void _cmdCreateCommandPool(Engine& engine, VkCommandPool* pool,
+                           VkCommandPoolCreateFlags flags);
+void _cmdCreateCommandBuffers(Engine& engine, VkCommandPool pool,
+                              VkCommandBuffer* commandBuffers, uint64_t count);
 
-	void _cmdBeginCommandBuffer(VkCommandBuffer commandBuffer, VkCommandBufferUsageFlags usage);
-	void _cmdEndCommandBuffer(VkCommandBuffer* commandBuffers, uint64_t count, VkQueue queue);
+void _cmdBeginCommandBuffer(VkCommandBuffer commandBuffer,
+                            VkCommandBufferUsageFlags usage);
+void _cmdEndCommandBuffer(VkCommandBuffer* commandBuffers, uint64_t count,
+                          VkQueue queue);
 
-	void _cmdCreateTransientStagingBuffer(Engine& engine, VkBuffer* buffer, VkDeviceMemory* memory, uint64_t size, void** mapping);
-	void _cmdFreeTransientStagingBuffer(Engine& engine, VkBuffer buffer, VkDeviceMemory memory);
+void _cmdCreateTransientStagingBuffer(Engine& engine, VkBuffer* buffer,
+                                      VkDeviceMemory* memory, uint64_t size,
+                                      void** mapping);
+void _cmdFreeTransientStagingBuffer(Engine& engine, VkBuffer buffer,
+                                    VkDeviceMemory memory);
 
-	void _cmdTransitionImageLayout(VkImage image, VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout, VkPipelineStageFlags sourceStage, VkPipelineStageFlags destinationStage, VkAccessFlags sourceAccess, VkAccessFlags destinationAccess, VkImageMemoryBarrier* barrier);
+void _cmdTransitionImageLayout(VkImage image, VkCommandBuffer commandBuffer,
+                               VkImageLayout oldLayout, VkImageLayout newLayout,
+                               VkPipelineStageFlags sourceStage,
+                               VkPipelineStageFlags destinationStage,
+                               VkAccessFlags sourceAccess,
+                               VkAccessFlags destinationAccess,
+                               VkImageMemoryBarrier* barrier);
 
-	void _cmdCreateImage(Engine& engine, VkImage* image, uint32_t width, uint32_t height, TextureFormat format, VkSampleCountFlagBits sampleCount, VkImageLayout initialLayout, VkImageUsageFlags usage, const VkAllocationCallbacks* allocationCallbacks);
-	void _cmdCreateView(Engine& engine, VkImageView* view, TextureFormat format, VkImage image, const VkAllocationCallbacks* allocationCallbacks);
-	void _cmdCreateSampler(Engine& engine, VkSampler* sampler, TextureFilter filter, const VkAllocationCallbacks* allocationCallbacks);
-		
-	void _cmdCreatePipeline(Engine& engine, ResourceManager& manager, VkPipeline* pipeline, VkPipelineLayout* layout, VkRenderPass renderPass, const std::span<const ShaderReference> shaders, const std::span<const DescriptorLayoutReference> descriptorLayouts, const std::span<const PushConstant> pushConstants, BufferLayout const& bufferLayout, VkSampleCountFlagBits sampleCount, const VkAllocationCallbacks* layoutAllocationCallback, const VkAllocationCallbacks* pipelineAllocationCallback);
-	// TODO: need more options in order to use this to create a framebuffer render pass
-	void _cmdCreateRenderPass(Engine& engine, VkRenderPass* renderPass, VkFormat imageFormat, VkSampleCountFlagBits sampleCount);
+void _cmdCreateImage(Engine& engine, VkImage* image, uint32_t width,
+                     uint32_t height, TextureFormat format,
+                     VkSampleCountFlagBits sampleCount,
+                     VkImageLayout initialLayout, VkImageUsageFlags usage,
+                     const VkAllocationCallbacks* allocationCallbacks);
+void _cmdCreateView(Engine& engine, VkImageView* view, TextureFormat format,
+                    VkImage image,
+                    const VkAllocationCallbacks* allocationCallbacks);
+void _cmdCreateSampler(Engine& engine, VkSampler* sampler, TextureFilter filter,
+                       const VkAllocationCallbacks* allocationCallbacks);
 
-	void _cmdCopyBufferToImage(VkBuffer imageBuffer, VkImage image, VkCommandBuffer commandBuffer, uint32_t width, uint32_t height, VkBufferImageCopy* region);
-	
-	// TODO: some global for this? maybe vulkan has a good default for it as well?
-	inline const VkDeviceSize _literalZero = 0;
+void _cmdCreatePipeline(
+    Engine& engine, ResourceManager& manager, VkPipeline* pipeline,
+    VkPipelineLayout* layout, VkRenderPass renderPass,
+    const std::span<const ShaderReference> shaders,
+    const std::span<const DescriptorLayoutReference> descriptorLayouts,
+    const std::span<const PushConstant> pushConstants,
+    BufferLayout const& bufferLayout, VkSampleCountFlagBits sampleCount,
+    const VkAllocationCallbacks* layoutAllocationCallback,
+    const VkAllocationCallbacks* pipelineAllocationCallback);
+// TODO: need more options in order to use this to create a framebuffer render
+// pass
+void _cmdCreateRenderPass(Engine& engine, VkRenderPass* renderPass,
+                          VkFormat imageFormat,
+                          VkSampleCountFlagBits sampleCount);
 
-	struct CommandContext {
-		// TODO: yuck... look towards some proper temporary memory
-		typedef std::vector<std::function<void(void)>> FunctionArray;
+void _cmdCopyBufferToImage(VkBuffer imageBuffer, VkImage image,
+                           VkCommandBuffer commandBuffer, uint32_t width,
+                           uint32_t height, VkBufferImageCopy* region);
 
-		std::array<FunctionArray, VIVIUM_FRAMES_IN_FLIGHT> perFrameCleanupArrays;
-		uint32_t frameIndex;
-		VkCommandBuffer currentCommandBuffer;
+// TODO: some global for this? maybe vulkan has a good default for it as well?
+inline const VkDeviceSize _literalZero = 0;
 
-		VkCommandPool transferPool;
-		VkCommandBuffer transferCommandBuffer;
+struct CommandContext {
+  // TODO: yuck... look towards some proper temporary memory
+  typedef std::vector<std::function<void(void)>> FunctionArray;
 
-		bool inTransfer;
-	};
+  std::array<FunctionArray, VIVIUM_FRAMES_IN_FLIGHT> perFrameCleanupArrays;
+  uint32_t frameIndex;
+  VkCommandBuffer currentCommandBuffer;
 
-	CommandContext createCommandContext(Engine& engine);
+  VkCommandPool transferPool;
+  VkCommandBuffer transferCommandBuffer;
 
-	void _contextAddFunction(CommandContext& context, std::function<void(void)> function);
-	// TODO: must be done by user, not private
-	void _contextFlush(CommandContext& context, Engine& engine);
-	void contextBeginTransfer(CommandContext& context);
-	void contextEndTransfer(CommandContext& context, Engine& engine);
+  bool inTransfer;
+};
 
-	void dropCommandContext(CommandContext& context, Engine& engine);
+CommandContext createCommandContext(Engine& engine);
 
-	// TODO: allow passing region/buffer slice
-	/*! \brief Transfer a portion of a buffer to a destination buffer.
-	* Will perform the transfer in the transfer queue if possible.
-	* 
-	* \param source The source buffer.
-	* \param sourceSize The number of bytes to transfer from the source.
-	* \param sourceOffset The offset within the source to start the transfer.
-	* \param destination The destination buffer to transfer to.
-	*/
-	void cmdTransferBuffer(CommandContext& context, Buffer const& source, uint64_t sourceSize, uint64_t sourceOffset, Buffer& destination);
+void _contextAddFunction(CommandContext& context,
+                         std::function<void(void)> function);
+// TODO: must be done by user, not private
+void _contextFlush(CommandContext& context, Engine& engine);
+void contextBeginTransfer(CommandContext& context);
+void contextEndTransfer(CommandContext& context, Engine& engine);
 
-	/*! \brief Bind the pipeline to specify the current rendering.
-	* \param handle The pipeline to bind.
-	*/
-	void cmdBindPipeline(CommandContext& context, Pipeline const& handle);
-	/*! \brief Bind the vertex buffer to the command context.
-	*/
-	void cmdBindVertexBuffer(CommandContext& context, Buffer const& handle);
-	void cmdBindIndexBuffer(CommandContext& context, Buffer const& handle);
-	void cmdBindDescriptorSet(CommandContext& context, DescriptorSet const& descriptorSet, Pipeline const& pipeline);
+void dropCommandContext(CommandContext& context, Engine& engine);
 
-	/*! \brief Write data for push constants. */
-	void cmdWritePushConstants(CommandContext& context, const void* data, uint64_t size, uint64_t offset, ShaderStage stage, Pipeline const& pipeline);
+// TODO: allow passing region/buffer slice
+/*! \brief Transfer a portion of a buffer to a destination buffer.
+ * Will perform the transfer in the transfer queue if possible.
+ *
+ * \param source The source buffer.
+ * \param sourceSize The number of bytes to transfer from the source.
+ * \param sourceOffset The offset within the source to start the transfer.
+ * \param destination The destination buffer to transfer to.
+ */
+void cmdTransferBuffer(CommandContext& context, Buffer const& source,
+                       uint64_t sourceSize, uint64_t sourceOffset,
+                       Buffer& destination);
 
-	void cmdDrawIndexed(CommandContext& context, uint32_t indexCount, uint32_t instanceCount);
-}
+/*! \brief Bind the pipeline to specify the current rendering.
+ * \param handle The pipeline to bind.
+ */
+void cmdBindPipeline(CommandContext& context, Pipeline const& handle);
+/*! \brief Bind the vertex buffer to the command context.
+ */
+void cmdBindVertexBuffer(CommandContext& context, Buffer const& handle);
+void cmdBindIndexBuffer(CommandContext& context, Buffer const& handle);
+void cmdBindDescriptorSet(CommandContext& context,
+                          DescriptorSet const& descriptorSet,
+                          Pipeline const& pipeline);
+
+/*! \brief Write data for push constants. */
+void cmdWritePushConstants(CommandContext& context, const void* data,
+                           uint64_t size, uint64_t offset, ShaderStage stage,
+                           Pipeline const& pipeline);
+
+void cmdDrawIndexed(CommandContext& context, uint32_t indexCount,
+                    uint32_t instanceCount);
+}  // namespace Vivium

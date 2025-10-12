@@ -4,60 +4,62 @@
 #include "shader.h"
 
 namespace Vivium {
-	enum class BufferUsage : VkFlags {
-		STAGING = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VERTEX = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-		INDEX = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-		UNIFORM = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-		STORAGE = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
-	};
+enum class BufferUsage : VkFlags {
+  STAGING = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+  VERTEX = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+  INDEX = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+  UNIFORM = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+  STORAGE =
+      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
+};
 
-	std::string getString(BufferUsage usage);
+std::string getString(BufferUsage usage);
 
-	// TODO: still feels a little off
-	struct BufferLayout {
-		struct Element {
-			uint32_t size, offset;
+// TODO: still feels a little off
+struct BufferLayout {
+  struct Element {
+    uint32_t size, offset;
 
-			Element() = default;
-			Element(uint32_t size, uint32_t offset);
-		};
+    Element() = default;
+    Element(uint32_t size, uint32_t offset);
+  };
 
-		std::vector<Element> elements;
-		uint32_t stride;
+  std::vector<Element> elements;
+  uint32_t stride;
 
-		std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
-		VkVertexInputBindingDescription bindingDescription;
+  std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
+  VkVertexInputBindingDescription bindingDescription;
 
-		// TODO: shouldn't have static functions
-		static BufferLayout fromTypes(const std::span<const ShaderDataType> types);
-	};
+  // TODO: shouldn't have static functions
+  static BufferLayout fromTypes(const std::span<const ShaderDataType> types);
+};
 
-	struct Buffer {
-		VkBuffer buffer;
-		void* mapping;
-	};
+struct Buffer {
+  VkBuffer buffer;
+  void* mapping;
+};
 
-	// TODO: implementation undecided
-	struct BufferSlice {
-		Buffer buffer;
-		uint64_t bufferOffset;
-		uint64_t bufferSize;
-	};
+// TODO: implementation undecided
+struct BufferSlice {
+  Buffer buffer;
+  uint64_t bufferOffset;
+  uint64_t bufferSize;
+};
 
-	struct BufferSpecification {
-		uint64_t size;
-		BufferUsage usage;
-	};
+struct BufferSpecification {
+  uint64_t size;
+  BufferUsage usage;
+};
 
-	struct BufferReference {
-		uint64_t referenceIndex;
-		// TODO: Convert to an enum
-		uint8_t memoryIndex;
-	};
+struct BufferReference {
+  uint64_t referenceIndex;
+  // TODO: Convert to an enum
+  uint8_t memoryIndex;
+};
 
-	void setBuffer(Buffer& buffer, uint64_t bufferOffset, const void* data, uint64_t size);
-	void* getBufferMapping(Buffer& buffer);
-	
-	void dropBuffer(Buffer& buffer, Engine& engine);
-}
+void setBuffer(Buffer& buffer, uint64_t bufferOffset, const void* data,
+               uint64_t size);
+void* getBufferMapping(Buffer& buffer);
+
+void dropBuffer(Buffer& buffer, Engine& engine);
+}  // namespace Vivium
