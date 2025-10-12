@@ -5,6 +5,7 @@ How do we organise testing and create effective test suites?
 - We want to be able to create testing environments
     - Any individual test should be named
 - Tests should be easy and fast to create
+- We also want to be able to reuse a created environment or context, as well as dynamically recreating that environment as needed
 
 What domains are we looking to test?
 - ECS functionality
@@ -20,6 +21,44 @@ look into
 - jest
 - rust
 - other testing frameworks...
+
+Task list
+- should provide many versatile boolean comparisons for checking if values are approximately, etc.
+
+```c++
+// TODO: output format probably a pretty big function with lots of defines
+// need formats for many different things like
+// - suite headers
+// - suite result
+// - suite format
+// - suite finish
+TestSuite ecsSuite = createTestSuite("ECS", outputFormat, outputStream);
+
+TestResult testEntityCreation(TestSuite& suite, EcsEnvironment& env) {
+    Entity e = env.registry.create();
+
+    if (e == ENTITY_NULL) {
+        return testFailed("Returned null entity");
+    }
+
+    return testPassed();
+}
+
+suiteHeader("Running basic entity tests");
+suiteResult(ecsSuite, "Entity creation", testEntityCreation(ecsSuite, env));
+suiteResult(ecsSuite, "Entity add components", ...);
+suiteResult(ecsSuite, "Entity free", ...);
+suiteFormat("Additional formatting/printing");
+
+// Optional end of results
+suiteHeader("End of results");
+
+// Print-out of suite results
+suiteFinish(ecsSuite);
+
+dropTestSuite(ecsSuite);
+```
+
 ```c++
 void* createECSEnvironment() { ... };
 void freeECSEnvironment(void*) { ... };

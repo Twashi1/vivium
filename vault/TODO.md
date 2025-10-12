@@ -1,8 +1,8 @@
 ## Next
 
-- testing suite
+- lots of modification to testing suite to allow void* user data, and printing-as-you-go
 - proof of concept game... minesweeper?
-- two executables, or use console commands to run editor/runtime
+    - get POC working again
 - draw command
 - break up the big update functions
 
@@ -57,7 +57,6 @@ An entity passes to descriptor set can have both a buffer/texture/framebuffer, a
 - look into debug and simulation on CPU side (would require rasterization etc.)
 ## Current tasks
 
-- CMAKE of vivium library should be separate to CMAKE of editor/runtime
 - Comprehensive documentation of all structs/methods/etc.
 	- just use doxygen format, can build a custom tool later
 - Some GUI commands are randomly split between `context.h` and `base.h`
@@ -74,8 +73,10 @@ An entity passes to descriptor set can have both a buffer/texture/framebuffer, a
 - Resize-able framebuffers?
 - Shared command pool for framebuffers?
 - Scrollable containers/scroll bar
+
 ## ECS
 
+- TODO: i did this below already right?
 - fundamental issue with attempting to serialise the ECS
 	- we use pointer functions based on a passed-type to manage the components
 	- without the type to get these pointer functions, we cannot serialise the components safely
@@ -85,8 +86,7 @@ An entity passes to descriptor set can have both a buffer/texture/framebuffer, a
 	- to deserialise, we simply store the serialised data until that component type is registered again
 		- at which point we can properly deserialise the data and re-enable that component pool
 
-- nothing better?
-
+- TODO: this was also resolved when static type name hashing was introduced?
 - we already place a restriction on the number of components per registry
 	- additionally restrict number of registries?
 	- any component id is based on a family type generator
@@ -103,14 +103,13 @@ An entity passes to descriptor set can have both a buffer/texture/framebuffer, a
 ## Core
 
 - we need scripts, and to be able to control certain aspects through scripts
-	- need a scripting language
-	- looking closest towards using LUA?
 	- but a custom scripting language is also an option (more fun too)
 		- more easy to integrate in the end maybe
 	- most functionality would be integrated by built-in functions into the language itself
 	- when interpreting this language, its possible we can find some advantages in how resources are allocated? not having to worry about order so much because the interpreter sorts it out for us beforehand
 - certain pieces of data entry are just too cumbersome to do by hand
 	- we could do them by upload entries?
+    - we do them by scripts currently
 - rename entities
 - see explicit name of each component, bordered and containerised
 - We assign `BufferComponent` and `ShaderComponent` etc. to entities
@@ -215,6 +214,7 @@ An entity passes to descriptor set can have both a buffer/texture/framebuffer, a
 - Sub-steps
 - K-D Trees
 - Minimise transformations on bodies
+
 ## Minor
 
 - `VIVIUM_LOG_PERIODIC(interval, severity, message, ...)`
@@ -230,12 +230,15 @@ An entity passes to descriptor set can have both a buffer/texture/framebuffer, a
 - `math.h` and `math.cpp` contain wide variety of functions, mixing of texture indexing maths and camera maths
 - `T const&` a lot of things
 - `BufferReference::memoryIndex` should be an enum
-- Vulkan still prints sometimes
 - random thought, but could vulkan performance potentially be worse across very large device memory blocks, where its better to split up the blocks a little smaller? (relevant for static allocation)
+
 ## Possible
 
 - Consider a less literal usage of `const`, where `const` does apply to objects whose GPU/host memory is being modified
 - Consider a model where we don't return any values or rarely return values, instead opting for a result code for functions that could error
+    - this is increasngly likely to be the future route we take instead of logging errors constantly and having ambiguous fatal errors
+        - essentially get the same problem as exceptions except poorly documented
+    - again comes at a cost of making code more cumbersome
 ## Aspirational
 
 - 3D workflow (camera + controller math)

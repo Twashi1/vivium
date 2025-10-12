@@ -137,9 +137,11 @@ set(VIVIUM_SOURCES
   "vivium4/lang/guif/interpreter.cpp"
   "vivium4/lang/guif/lexer.cpp"
   "vivium4/lang/guif/parser.cpp"
+  "vivium4/test/suite.cpp"
 )
 
 set(VIVIUM_HEADERS
+  "vivium4/test/suite.h"
   "vivium4/error/result.h"
   "vivium4/utility/type_names.h"
   "vivium4/graphics/primitives/buffer.h"
@@ -229,11 +231,22 @@ set(RUNTIME_SOURCES
   "runtime/runtime.cpp"
 )
 
+set(TESTING_HEADERS
+  "testing/ecs.h"
+  "testing/shared.h"
+)
+
+set(TESTING_SOURCES
+  "testing/ecs.cpp"
+)
+
 add_executable(runtime ${VIVIUM_HEADERS} ${VIVIUM_SOURCES} ${RUNTIME_HEADERS} ${RUNTIME_SOURCES} "runtime/main.cpp")
 add_executable(editor ${VIVIUM_HEADERS} ${VIVIUM_SOURCES} ${EDITOR_HEADERS} ${EDITOR_SOURCES} "engine/main.cpp")
+add_executable(test ${VIVIUM_HEADERS} ${VIVIUM_SOURCES} ${TESTING_HEADERS} ${TESTING_SOURCES} "testing/main.cpp")
 
 target_compile_features(runtime PUBLIC cxx_std_20)
 target_compile_features(editor PUBLIC cxx_std_20)
+target_compile_features(test PUBLIC cxx_std_20)
 
 string(LENGTH "${CMAKE_SOURCE_DIR}/" VIVIUM_SOURCE_PATH_SIZE)
 message(VIVIUM_SOURCE_PATH_SIZE="${VIVIUM_SOURCE_PATH_SIZE}")
@@ -246,6 +259,9 @@ target_include_directories(runtime PUBLIC "${CMAKE_SOURCE_DIR}/external/stb_imag
 target_include_directories(editor PUBLIC "${CMAKE_SOURCE_DIR}/external/glm")
 target_include_directories(editor PUBLIC "${CMAKE_SOURCE_DIR}/external/stb_image")
 
+target_include_directories(test PUBLIC "${CMAKE_SOURCE_DIR}/external/glm")
+target_include_directories(test PUBLIC "${CMAKE_SOURCE_DIR}/external/stb_image")
+
 target_link_libraries(runtime PRIVATE Vulkan::Vulkan)
 target_link_libraries(runtime PRIVATE Freetype::Freetype)
 target_link_libraries(runtime PRIVATE glfw)
@@ -255,6 +271,11 @@ target_link_libraries(editor PRIVATE Vulkan::Vulkan)
 target_link_libraries(editor PRIVATE Freetype::Freetype)
 target_link_libraries(editor PRIVATE glfw)
 target_link_libraries(editor PRIVATE lua)
+
+target_link_libraries(test PRIVATE Vulkan::Vulkan)
+target_link_libraries(test PRIVATE Freetype::Freetype)
+target_link_libraries(test PRIVATE glfw)
+target_link_libraries(test PRIVATE lua)
 
 file(COPY "${CMAKE_SOURCE_DIR}/vivium4/res" DESTINATION "${CMAKE_BINARY_DIR}/vivium4/")
 file(COPY "${CMAKE_SOURCE_DIR}/engine/res" DESTINATION "${CMAKE_BINARY_DIR}/engine/")
