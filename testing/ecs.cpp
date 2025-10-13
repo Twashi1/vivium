@@ -7,7 +7,8 @@ void runECSTest() {
 
   VIVIUM_LOG(LogSeverity::DEBUG, "Created regsitry");
 
-  TestSuite suite = createSuite("ECS suite");
+  TestSuite suite =
+      createSuite("ECS suite", defaultFormatter(), consoleOutstream);
   pushHeader(suite, "Basic create and drop entity");
   pushResult(suite, "Create an entity", [&env]() {
     Entity entity = env.reg->create();
@@ -15,8 +16,8 @@ void runECSTest() {
                                      : testPassed("");
   }());
   pushResult(suite, "Dummy test", testPassed("Dummy passed"));
+  endHeader(suite);
   finishSuite(suite);
-  printSuite(suite);
   VIVIUM_LOG(LogSeverity::DEBUG, "Printed suite");
 
   delete env.reg;

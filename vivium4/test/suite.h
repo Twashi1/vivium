@@ -1,6 +1,7 @@
 #pragma once
 
 #include <format>
+#include <functional>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -19,14 +20,12 @@ TestResult testPassed(std::string message);
 
 struct TestSuiteContext {
   std::string suiteName;
-  int headerCount;
-  int testCount;
 };
 
 struct TestHeaderContext {
   std::string suiteName;
   std::string headerText;
-  int testCount;
+  int indentLevel;
 };
 
 struct TestContext {
@@ -52,9 +51,11 @@ using TestFormatResult = std::string (*)(TestFormatter const&,
                                          TestResult const&);
 using TestFormatFinish = std::string (*)(TestFormatter const&,
                                          TestFinishContext const&);
+
+struct TestSuite;
+
 using TestOutstream = void (*)(TestSuite const&, std::string const&);
 
-// TODO: implementation
 void consoleOutstream(TestSuite const& suite, std::string const& text);
 
 std::string defaultFormatSuite(TestFormatter const& format,
@@ -85,7 +86,9 @@ struct Test {
 
 struct TestHeader {
   std::string name;
+  std::vector<TestHeader> headers;
   std::vector<Test> tests;
+  int depth;
 };
 
 struct TestSuite {
@@ -93,6 +96,7 @@ struct TestSuite {
   std::vector<TestHeader> headers;
   TestFormatter formatter;
   TestOutstream outstream;
+  int headerDepth;
 };
 
 struct TestFinish {
@@ -100,11 +104,17 @@ struct TestFinish {
   int totalTests;
 };
 
+void _dfsHeader(TestHeader const& header,
+                std::function<void(TestHeader const&)> const& headerFunc,
+                std::function<void(Test const&)> const& testFunc, bool runHead);
+
 TestSuite createSuite(std::string_view suiteName, TestFormatter formatter,
                       TestOutstream stream);
 // TODO: headers could also operate like a stack?
 // would require pops..
 TestHeader pushHeader(TestSuite& suite, std::string_view headerName);
+void endHeader(TestSuite& suite);
+
 TestResult pushResult(TestSuite& suite, std::string_view name,
                       TestResult const& result);
 TestFinish finishSuite(TestSuite& suite);

@@ -1,6 +1,10 @@
 #include "suite.h"
 
 namespace Vivium {
+void consoleOutstream(TestSuite const& suite, std::string const& text) {
+  std::cout << text;
+}
+
 TestResult testFailed(std::string reason) {
   TestResult result;
   result.text = reason;
@@ -19,17 +23,21 @@ TestResult testPassed(std::string message) {
 
 std::string defaultFormatSuite(TestFormatter const& format,
                                TestSuiteContext const& ctx) {
-  return std::format("Suite {}; {} tests\n", ctx.suiteName, ctx.testCount);
+  return std::format("Starting suite {}\n", ctx.suiteName);
 }
 
 std::string defaultFormatHeader(TestFormatter const& format,
                                 TestHeaderContext const& ctx) {
-  return std::format("\t{}; running {} tests\n", ctx.headerText, ctx.testCount);
+  std::string whitespace = std::string(ctx.indentLevel, '\t');
+
+  return std::format("{}{}\n", whitespace, ctx.headerText);
 }
 
 std::string defaultFormatTest(TestFormatter const& format,
                               TestContext const& ctx) {
-  return std::format("\t\t{}: {}\n", ctx.testName,
+  std::string whitespace = std::string(ctx.header.indentLevel + 1, '\t');
+
+  return std::format("{}{}: {}\n", whitespace, ctx.testName,
                      format.formatResult(format, ctx.result));
 }
 
@@ -48,17 +56,8 @@ std::string defaultFormatFinish(TestFormatter const& format,
   float percentage =
       passedTests / static_cast<float>(context.totalTestsRun) * 100.0f;
 
-  std::ostringstream failedTestString;
-
-  // TODO: the header?
-  // TODO: maybe remove entirely
-  for (TestContext const& test : context.failedTests) {
-    failedTestString << std::format("{}\n", format.formatTest(format, test));
-  }
-
-  return std::format("Passed [{}/{}] {:.2f}%, printing failed tests: {}",
-                     passedTests, context.totalTestsRun, percentage,
-                     failedTestString.str());
+  return std::format("Passed [{}/{}] {:.2f}%\n", passedTests,
+                     context.totalTestsRun, percentage);
 }
 
 TestFormatter defaultFormatter() {
@@ -72,12 +71,41 @@ TestFormatter defaultFormatter() {
   return formatter;
 }
 
+void _dfsHeader(TestHeader const& header,
+                std::function<void(TestHeader const&)> const& headerFunc,
+                std::function<void(Test const&)> const& testFunc,
+                bool runHead) {
+  if (runHead) {
+    headerFunc(header);
+
+    for (Test const& test : header.tests) {
+      testFunc(test);
+    }
+  }
+
+  for (TestHeader const& child : header.headers) {
+    headerFunc(child);
+
+    for (Test const& test : child.tests) {
+      testFunc(test);
+    }
+
+    _dfsHeader(child, headerFunc, testFunc, false);
+  }
+}
+
 TestSuite createSuite(std::string_view suiteName, TestFormatter formatter,
                       TestOutstream outstream) {
   TestSuite suite;
   suite.name = suiteName;
   suite.formatter = formatter;
   suite.outstream = outstream;
+  suite.headerDepth = 0;
+
+  TestSuiteContext context;
+  context.suiteName = suite.name;
+
+  suite.outstream(suite, suite.formatter.formatSuite(suite.formatter, context));
 
   return suite;
 }
@@ -85,11 +113,22 @@ TestSuite createSuite(std::string_view suiteName, TestFormatter formatter,
 TestHeader pushHeader(TestSuite& suite, std::string_view headerName) {
   TestHeader header;
   header.name = headerName;
+  header.depth = ++suite.headerDepth;
 
   suite.headers.push_back(header);
 
+  TestHeaderContext context;
+  context.indentLevel = header.depth;
+  context.headerText = header.name;
+  context.suiteName = suite.name;
+
+  suite.outstream(suite,
+                  suite.formatter.formatHeader(suite.formatter, context));
+
   return header;
 }
+
+void endHeader(TestSuite& suite) { suite.headerDepth--; }
 
 TestResult pushResult(TestSuite& suite, std::string_view name,
                       TestResult const& result) {
@@ -104,58 +143,47 @@ TestResult pushResult(TestSuite& suite, std::string_view name,
 
   suite.headers.back().tests.push_back(test);
 
+  TestHeader const& header = suite.headers.back();
+
+  TestContext context;
+  TestHeaderContext headerContext;
+  headerContext.indentLevel = header.depth;
+  headerContext.headerText = header.name;
+  headerContext.suiteName = suite.name;
+
+  context.header = headerContext;
+  context.result = result;
+  context.testName = name;
+
+  suite.outstream(suite, suite.formatter.formatTest(suite.formatter, context));
+
   return result;
 }
 
 TestFinish finishSuite(TestSuite& suite) {
   TestFinish finish;
+  TestFinishContext context;
 
   finish.testResults = {};
   finish.totalTests = 0;
+  context.failedTests = {};
 
   for (TestHeader const& header : suite.headers) {
-    finish.totalTests += header.tests.size();
-
-    for (Test const& test : header.tests) {
-      finish.testResults.push_back(test);
-    }
+    _dfsHeader(
+        header,
+        [&finish](TestHeader const& child) {
+          finish.totalTests += child.tests.size();
+        },
+        [&finish](Test const& child) { finish.testResults.push_back(child); },
+        true);
   }
+
+  context.totalTestsRun = finish.totalTests;
+
+  suite.outstream(suite,
+                  suite.formatter.formatFinish(suite.formatter, context));
 
   return finish;
 }
 
-void printSuite(TestSuite& suite) {
-  TestSuiteContext suiteContext;
-  suiteContext.suiteName = suite.name;
-  suiteContext.testCount = 0;
-  suiteContext.headerCount = suite.headers.size();
-
-  TestFormatter const& format = suite.formatter;
-
-  for (TestHeader const& header : suite.headers) {
-    suiteContext.testCount = header.tests.size();
-  }
-
-  std::cout << format.formatSuite(format, suiteContext);
-
-  for (TestHeader const& header : suite.headers) {
-    TestHeaderContext headerContext;
-    headerContext.testCount = header.tests.size();
-    headerContext.suiteName = suite.name;
-    headerContext.headerText = header.name;
-
-    std::cout << format.formatHeader(format, headerContext);
-
-    for (Test const& test : header.tests) {
-      TestContext testContext;
-      testContext.header = headerContext;
-      testContext.result = test.result;
-      testContext.testName = test.name;
-
-      std::cout << format.formatTest(format, testContext);
-    }
-  }
-
-  std::cout << "Test Complete" << std::endl;
-}
 }  // namespace Vivium
