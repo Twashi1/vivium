@@ -5,6 +5,7 @@
 namespace Testing {
 struct ECSEnv {
   Registry* reg;
+  Entity e;
 };
 
 void runECSTest();

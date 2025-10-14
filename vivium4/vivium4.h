@@ -21,6 +21,6 @@
 #include "math/polygon.h"
 #include "physics/physics.h"
 #include "serialiser/serialiser.h"
-#include "test/suite.h"
+#include "test/suite_impl.h"
 #include "utility/type_names.h"
 #include "window.h"

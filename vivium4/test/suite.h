@@ -10,12 +10,15 @@
 #include "../error/log.h"
 
 namespace Vivium {
+enum class TestResultType { OK, FAIL, FATAL };
+
 struct TestResult {
   std::string text;
-  bool didPass;
+  TestResultType type;
 };
 
 TestResult testFailed(std::string reason);
+TestResult testFatalFailed(std::string message);
 TestResult testPassed(std::string message);
 
 struct TestSuiteContext {
@@ -97,11 +100,17 @@ struct TestSuite {
   TestFormatter formatter;
   TestOutstream outstream;
   int headerDepth;
+  bool encounteredFatal;
 };
 
 struct TestFinish {
   std::vector<Test> testResults;
   int totalTests;
+};
+
+template <typename T>
+concept ValidTestFunctor = requires(T f) {
+  { f() } -> std::same_as<TestResult>;
 };
 
 void _dfsHeader(TestHeader const& header,
@@ -110,16 +119,12 @@ void _dfsHeader(TestHeader const& header,
 
 TestSuite createSuite(std::string_view suiteName, TestFormatter formatter,
                       TestOutstream stream);
-// TODO: headers could also operate like a stack?
-// would require pops..
 TestHeader pushHeader(TestSuite& suite, std::string_view headerName);
 void endHeader(TestSuite& suite);
 
 TestResult pushResult(TestSuite& suite, std::string_view name,
                       TestResult const& result);
+template <ValidTestFunctor Functor>
+void pushTest(TestSuite& suite, std::string_view name, Functor testCode);
 TestFinish finishSuite(TestSuite& suite);
-
-// TODO: not great, we want live formatting and printing
-// TODO: also we are manually creating all the contexts
-void printSuite(TestSuite& suite);
 }  // namespace Vivium

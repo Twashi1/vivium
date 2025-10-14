@@ -77,3 +77,11 @@ bool passed = runSuite(ecsSuite);
 dropTestEnvironment(entity);
 dropTestSuite(ecsSuite);
 ```
+
+## TODO
+
+- maybe we need some wrapper macro to place a test into a lambda
+    - placing test in lambda gives us wayy more control, and additionally we can add code directly into that lambda as we need
+    - but do we have anything that necessitates this control?
+    - we could have timeouts, but would require running the test on a different thread
+- approximately equal function (either in math or in testing)

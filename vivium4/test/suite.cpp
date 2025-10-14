@@ -8,7 +8,7 @@ void consoleOutstream(TestSuite const& suite, std::string const& text) {
 TestResult testFailed(std::string reason) {
   TestResult result;
   result.text = reason;
-  result.didPass = false;
+  result.type = TestResultType::FAIL;
 
   return result;
 }
@@ -16,7 +16,15 @@ TestResult testFailed(std::string reason) {
 TestResult testPassed(std::string message) {
   TestResult result;
   result.text = message;
-  result.didPass = true;
+  result.type = TestResultType::OK;
+
+  return result;
+}
+
+TestResult testFatalFailed(std::string message) {
+  TestResult result;
+  result.text = message;
+  result.type = TestResultType::FATAL;
 
   return result;
 }
@@ -43,7 +51,8 @@ std::string defaultFormatTest(TestFormatter const& format,
 
 std::string defaultFormatResult(TestFormatter const& format,
                                 TestResult const& result) {
-  std::string_view passText = result.didPass ? "PASS" : "FAIL";
+  std::string_view passText =
+      (result.type == TestResultType::OK) ? "PASS" : "FAIL";
   std::string_view continuation = result.text.size() ? ": " : "";
 
   return std::string(passText) + std::string(continuation) + result.text;
@@ -101,6 +110,7 @@ TestSuite createSuite(std::string_view suiteName, TestFormatter formatter,
   suite.formatter = formatter;
   suite.outstream = outstream;
   suite.headerDepth = 0;
+  suite.encounteredFatal = false;
 
   TestSuiteContext context;
   context.suiteName = suite.name;
@@ -157,6 +167,10 @@ TestResult pushResult(TestSuite& suite, std::string_view name,
 
   suite.outstream(suite, suite.formatter.formatTest(suite.formatter, context));
 
+  if (test.result.type == TestResultType::FATAL) {
+    suite.encounteredFatal = true;
+  }
+
   return result;
 }
 
@@ -174,7 +188,23 @@ TestFinish finishSuite(TestSuite& suite) {
         [&finish](TestHeader const& child) {
           finish.totalTests += child.tests.size();
         },
-        [&finish](Test const& child) { finish.testResults.push_back(child); },
+        [&finish, &context, &suite, &header](Test const& child) {
+          finish.testResults.push_back(child);
+
+          if (child.result.type != TestResultType::OK) {
+            TestHeaderContext headerContext;
+            headerContext.suiteName = suite.name;
+            headerContext.headerText = header.name;
+            headerContext.indentLevel = header.depth;
+
+            TestContext testContext;
+            testContext.result = child.result;
+            testContext.header = headerContext;
+            testContext.testName = child.name;
+
+            context.failedTests.push_back(testContext);
+          }
+        },
         true);
   }
 

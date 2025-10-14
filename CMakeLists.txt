@@ -142,6 +142,7 @@ set(VIVIUM_SOURCES
 
 set(VIVIUM_HEADERS
   "vivium4/test/suite.h"
+  "vivium4/test/suite_impl.h"
   "vivium4/error/result.h"
   "vivium4/utility/type_names.h"
   "vivium4/graphics/primitives/buffer.h"
