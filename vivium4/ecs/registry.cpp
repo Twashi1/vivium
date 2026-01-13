@@ -79,17 +79,26 @@ void Registry::moveEntityIntoOwningGroup(Entity entity,
   for (ComponentArray* pool : componentPools) {
     if (pool == nullptr) continue;
     if (!pool->isOwned()) continue;
-    if (!pool->owner->containsSignature(signature)) continue;
+    // If this pool doesn't completely own the signature of the entity, we
+    // ignore it
+    if (!pool->owner->ownsSignature(signature)) continue;
 
     GroupMetadata* relevantGroup = pool->owner;
 
     // Not already in our affected groups
+    // TODO: potential that this equivalence is bad; since we do a pointer check
     if (std::find(affectedGroups.begin(), affectedGroups.end(),
                   relevantGroup) == affectedGroups.end()) {
       affectedGroups.push_back(relevantGroup);
     }
 
+    // TODO: replacement entity is invalid?
+    // TODO: we should only move an entity if we actually have an owning
+    // reference to it (aren't we already doing this with ownsSignature)
     Entity const& replacementEntity = pool->entities[pool->owner->groupSize];
+    VIVIUM_LOG(LogSeverity::DEBUG,
+               "Swapping entities replacement {}, entity {}, group size: {}",
+               replacementEntity, entity, pool->owner->groupSize);
     pool->swap(entity, replacementEntity);
 
     movedEntity = true;

@@ -1,5 +1,6 @@
 ## Next
 
+- fix view `Entity*` possible pointing to buffer that might reallocate 
 - lots of modification to testing suite to allow void* user data, and printing-as-you-go
 - proof of concept game... minesweeper?
     - get POC working again

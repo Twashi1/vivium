@@ -219,6 +219,8 @@ View<Components...> Registry::createView() {
       }(),
       ...);
 
+  // If no owning group, we can at least iterate the smallest pool to get best
+  // performance
   if (!ownedGroup) {
     (
         [&iteratingArray, &iteratingSize, this] {

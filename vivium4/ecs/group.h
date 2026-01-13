@@ -97,6 +97,9 @@ struct ViewElement {
 template <OwnershipTag... WrappedTypes>
 struct View {
   Registry* registry;
+  // TODO: if the array re-allocates, this will fail
+  //  because the owned entity array changes location
+  //  if this doesn't own group metadata, it also relies on that
   Entity* ownedEntityArray;
   GroupMetadata* groupMetadata;
 
