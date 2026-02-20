@@ -59,5 +59,5 @@ static_assert("Unknown platform")
 #if defined(VIVIUM_PLATFORM_WINDOWS)
 #define VIVIUM_GLSLC_PATH "external/win/vulkan/Bin/glslc.exe"
 #elif defined(VIVIUM_PLATFORM_LINUX)
-#define VIVIUM_GLSLC_PATH "external/linux/vulkan/x86_64/bin/glslc"
+#define VIVIUM_GLSLC_PATH "external/vulkansdk/glslc"
 #endif

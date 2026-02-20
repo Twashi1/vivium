@@ -9,8 +9,10 @@ ShaderStage operator|(ShaderStage lhs, ShaderStage rhs) {
 ShaderSpecification compileShader(ShaderStage stage, const char* sourceFilename,
                                   const char* destFilename) {
   if (!std::filesystem::exists(VIVIUM_GLSLC_PATH)) {
-    VIVIUM_LOG(LogSeverity::FATAL,
-               "Couldn't find glslc.exe for compiling shaders");
+    VIVIUM_LOG(
+        LogSeverity::FATAL,
+        "Couldn't find glslc binary for compiling shaders, expected at {}",
+        VIVIUM_GLSLC_PATH);
   }
 
   std::string stageOption;

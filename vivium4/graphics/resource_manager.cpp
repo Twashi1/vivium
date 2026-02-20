@@ -521,6 +521,11 @@ void _allocateDescriptorSets(ResourceManager& manager, Engine& engine) {
         }
       }
 
+      // TODO: very temporary, bypassing the duplicate detection
+      // reason being this seems to underestimate the number of required
+      // descriptor sets sometimes?
+      j = 0;
+
       if (j == UINT64_MAX) {
         continue;
       } else {
@@ -556,6 +561,15 @@ void _allocateDescriptorSets(ResourceManager& manager, Engine& engine) {
     }
   }
 
+  VIVIUM_LOG(LogSeverity::DEBUG, "Uniform buffer descriptor count: {}",
+             poolSizeCounts[0].descriptorCount);
+  VIVIUM_LOG(LogSeverity::DEBUG, "Combined image sampler descriptor count: {}",
+             poolSizeCounts[1].descriptorCount);
+  VIVIUM_LOG(LogSeverity::DEBUG, "Storage buffer descriptor count: {}",
+             poolSizeCounts[2].descriptorCount);
+  VIVIUM_LOG(LogSeverity::DEBUG, "Uniform dynamic buffer descriptor count: {}",
+             poolSizeCounts[3].descriptorCount);
+
   std::vector<VkDescriptorPoolSize> nonZeroPoolSizes;
   nonZeroPoolSizes.reserve(4);
 
@@ -566,6 +580,9 @@ void _allocateDescriptorSets(ResourceManager& manager, Engine& engine) {
   }
 
   VIVIUM_ASSERT(nonZeroPoolSizes.size() > 0, "No valid specifications passed");
+
+  VIVIUM_LOG(LogSeverity::DEBUG, "Max number of sets: {}",
+             manager.descriptorSets.specifications.size());
 
   VkDescriptorPoolCreateInfo poolInfo{};
   poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;

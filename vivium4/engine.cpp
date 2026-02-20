@@ -1,5 +1,6 @@
 #include "engine.h"
 
+#include "error/log.h"
 #include "graphics/commands.h"
 
 namespace Vivium {

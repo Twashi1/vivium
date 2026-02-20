@@ -288,5 +288,5 @@ if (WIN32)
   configure_file("${CMAKE_SOURCE_DIR}/external/win/vulkan/Bin/glslc.exe" "${CMAKE_BINARY_DIR}/external/win/vulkan/Bin/glslc.exe" COPYONLY)
 else()
   # NOTE: not required on linux anymore, but update code to reflect that
-  # configure_file("${CMAKE_SOURCE_DIR}/external/linux/vulkan/x86_64/bin/glslc" "${CMAKE_BINARY_DIR}/external/linux/vulkan/x86_64/bin/glslc" COPYONLY)
+  configure_file("${CMAKE_SOURCE_DIR}/external/vulkansdk/glslc" "${CMAKE_BINARY_DIR}/external/vulkansdk/glslc" COPYONLY)
 endif()
