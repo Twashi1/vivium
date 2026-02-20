@@ -1,6 +1,26 @@
 #include "state.h"
 
 namespace Verlet {
+Point createPoint(F32x2 pos, float radius, Color color) {
+  Point p;
+  p.current = pos;
+  p.previous = pos;
+  p.radius = radius;
+  p.color = color;
+  p.acceleration = F32x2(0.0f);
+
+  return p;
+}
+
+void updatePoint(Point& point, float dt) {
+  F32x2 vel = point.current - point.previous;
+
+  point.previous = point.current;
+  // NOTE: no delta time on velocity, since we already adjusted for that
+  point.current = point.current + vel + point.acceleration * (dt * dt);
+  point.acceleration = F32x2(0.0f);
+}
+
 void _submit(State& state) {}
 
 void _setup(State& state) {}
