@@ -19,6 +19,7 @@
 #include "lang/guif/interpreter.h"
 #include "math/math.h"
 #include "math/polygon.h"
+#include "math/random.h"
 #include "physics/physics.h"
 #include "serialiser/serialiser.h"
 #include "test/suite_impl.h"

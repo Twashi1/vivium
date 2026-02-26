@@ -61,3 +61,11 @@ static_assert("Unknown platform")
 #elif defined(VIVIUM_PLATFORM_LINUX)
 #define VIVIUM_GLSLC_PATH "external/vulkansdk/glslc"
 #endif
+
+#if defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
+#define VIVIUM_LIKELY(x) __builtin_expect(!!(x), 1)
+#define VIVIUM_UNLIKELY(x) __builtin_expect(!!(x), 0)
+#else
+#define VIVIUM_LIKELY(x) (x)
+#define VIVIUM_UNLIKELY(x) (x)
+#endif

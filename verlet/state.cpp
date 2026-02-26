@@ -29,9 +29,13 @@ void addPointToWorld(World& world, Point point) {
 void updatePoint(Point& point, float dt) {
   F32x2 vel = point.current - point.previous;
 
+  // Air friciton approximation
+  float const VELOCITY_DAMPING = 40.0f;
+
   point.previous = point.current;
   // NOTE: no delta time on velocity, since we already adjusted for that
-  point.current = point.current + vel + point.acceleration * (dt * dt);
+  point.current = point.current + vel +
+                  (point.acceleration - vel * VELOCITY_DAMPING) * (dt * dt);
   point.acceleration = F32x2(0.0f);
 }
 
@@ -54,10 +58,10 @@ void swapRemoveFromCell(Cell& cell, uint16_t index) {
 
 World createWorld(F32x2 screenDim, uint16_t gridWidth, uint16_t gridHeight) {
   World world;
-  world.gravity = F32x2(0.0f, -450.0f);
-  world.center = F32x2(400.0f, 300.0f);
-  world.dim = F32x2(0.0f);
-  world.radius = 200.0f;
+  world.gravity = F32x2(0.0f, -1000.0f);
+  world.center = screenDim * 0.5f;
+  world.dim = screenDim * 0.5f - F32x2(20.0f);
+  world.radius = 400.0f;
 
   world.gridHeight = gridHeight;
   world.gridWidth = gridWidth;
@@ -96,6 +100,14 @@ void updateCells(World& world) {
         Vec2<uint16_t> gridPos =
             F32x2::floor(F32x2(point.current) * world.igridDimensions);
 
+        if (gridPos.x < 0 || gridPos.y < 0 || gridPos.x >= world.gridWidth ||
+            gridPos.y >= world.gridHeight) {
+          VIVIUM_LOG(LogSeverity::ERROR,
+                     "Object at {} {} attempted to go to grid cell {} {} (OOB)",
+                     point.current.x, point.current.y, gridPos.x, gridPos.y);
+          continue;
+        }
+
         if (gridPos.x == gx && gridPos.y == gy) {
           continue;
         }
@@ -118,6 +130,7 @@ void applyGravity(World& world) {
 }
 
 void constraintSquare(World& world) {
+  float const margin = 20.0f;
   float left = world.center.x - world.dim.x;
   float right = world.center.x + world.dim.x;
   float bot = world.center.y - world.dim.y;
@@ -128,12 +141,12 @@ void constraintSquare(World& world) {
 
     if (point.current.x - point.radius < left) {
       point.current.x = left + point.radius;
-    } else if (point.current.x + point.radius > right) {
-      point.current.x = right - point.radius;
+    } else if (point.current.x + point.radius + margin > right) {
+      point.current.x = right - point.radius - margin;
     }
 
-    if (point.current.y - point.radius < bot) {
-      point.current.y = bot + point.radius;
+    if (point.current.y - point.radius - margin < bot) {
+      point.current.y = bot + point.radius + margin;
     } else if (point.current.y + point.radius > top) {
       point.current.y = top - point.radius;
     }
@@ -184,7 +197,8 @@ void resolveCells(World& world, Cell& cellA, Cell& cellB) {
 }
 
 void resolveCollision(Point& a, Point& b) {
-  const float restitution = 0.65f;
+  const float restitution = 0.8f;
+  const float epsilon = 0.0001f;
 
   F32x2 v = a.current - b.current;
   float distSquared = F32x2::dot(v, v);
@@ -193,7 +207,7 @@ void resolveCollision(Point& a, Point& b) {
   float radiusSumSquared = radiusSum * radiusSum;
 
   // TODO: customised epsilon
-  if (distSquared < radiusSumSquared && distSquared > 0.01f) {
+  if (distSquared < radiusSumSquared && distSquared > epsilon) {
     // TODO: use vector norm so easier to optimise for compiler
     float dist = std::sqrt(distSquared);
     F32x2 normalised = v / dist;
@@ -201,12 +215,12 @@ void resolveCollision(Point& a, Point& b) {
     float aMassRatio = a.radius / radiusSum;
     float bMassRatio = b.radius / radiusSum;
 
-    float delta = 0.5f * (dist - radiusSum);
+    float delta = restitution * 0.5f * (dist - radiusSum);
 
-    normalised *= delta * restitution;
+    normalised *= delta;
 
     a.current -= bMassRatio * normalised;
-    b.current += bMassRatio * normalised;
+    b.current += aMassRatio * normalised;
   }
 }
 
@@ -217,18 +231,17 @@ void updatePosition(World& world, float dt) {
 }
 
 void update(World& world) {
-  const int physicsSubsteps = 4;
+  const int physicsSubsteps = 6;
   // 60fps rendering rate
   const float timePerFrame = 0.016f;
   const float substepDt = timePerFrame / physicsSubsteps;
 
-  updateCells(world);
-
   for (int i = 0; i < physicsSubsteps; i++) {
-    applyGravity(world);
-    constraintSquare(world);
+    updateCells(world);
     collisionResolution(world);
+    applyGravity(world);
     updatePosition(world, substepDt);
+    constraintSquare(world);
   }
 }
 
@@ -330,6 +343,9 @@ void _submit(State& state) {
 void _setup(State& state) {
   convertResourceReference(state.manager, state.fontTexture);
 
+  convertResourceReference(state.manager, state.indexBuffer);
+  convertResourceReference(state.manager, state.vertexBuffer);
+
   convertResourceReference(state.manager, state.text.pipeline);
   convertResourceReference(state.manager, state.text.descriptorLayout);
   convertResourceReference(state.manager, state.text.fragmentShader);
@@ -379,7 +395,7 @@ void _setup(State& state) {
   dropShader(state.points.vertexShader.resource, state.engine);
 }
 
-void _update(State& state) {}
+void _update(State& state) { update(state.world); }
 
 void _draw(State& state) {
   Perspective perspective = orthogonalPerspective2D(
@@ -429,7 +445,7 @@ void _drop(State& state) {
   dropBuffer(state.vertexBuffer.resource, state.engine);
 }
 
-void init(State& state, std::string bytecodeFilename) {
+void init(State& state) {
   _logInit();
   _fontInit();
 
@@ -437,6 +453,18 @@ void init(State& state, std::string bytecodeFilename) {
   state.window = createWindow(WindowOptions{}, state.engine);
   state.manager = createManager();
   state.context = createCommandContext(state.engine);
+
+  // TODO: optimise dimensions of grid, something like 2x radius of ball?
+  state.world = createWorld(windowDimensions(state.window), 20, 20);
+
+  // TODO: move the code, should be done in some initialisation function
+  // Generate the font if it doesn't exist
+  if (!std::filesystem::exists("vivium4/res/fonts/consola.sdf")) {
+    compileSignedDistanceField("vivium4/res/fonts/consola.ttf", 512,
+                               "vivium4/res/fonts/consola.sdf", 48, 1.0f);
+  }
+
+  state.font = createFontDistanceField("vivium4/res/fonts/consola.sdf");
 
   Input::init(state.window);
 
@@ -448,10 +476,32 @@ void init(State& state, std::string bytecodeFilename) {
 }
 
 void run(State& state) {
+  int ticks = 0;
+
   while (windowIsOpen(state.window, state.engine)) {
     engineBeginFrame(state.engine, state.context);
 
     Input::update(state.window);
+
+    // TODO: move to the update function?
+    // Spawn in a ball
+    if (ticks % 2 == 0 && state.world.size < 800) {
+      // TODO: initial velocity
+      Color c = Color(0.0f, 0.0f, 0.0f);
+      c.b = randomFloat();
+      c.g = randomFloat();
+      c.r = randomFloat();
+
+      float radius = randomFloat(5.0f, 15.0f);
+      float maxRadius = 15.0f;
+
+      Point newPoint = createPoint(F32x2(150.0f, 150.0f), radius, c);
+      newPoint.current += randomVectorCirucmference(maxRadius);
+      // TODO: big typo..
+      newPoint.previous = newPoint.current + randomVectorCircle(0.5f);
+
+      addPointToWorld(state.world, newPoint);
+    }
 
     _update(state);
 
@@ -462,6 +512,8 @@ void run(State& state) {
 
     windowEndRender(state.window);
     windowEndFrame(state.window, state.engine);
+
+    ++ticks;
 
     engineEndFrame(state.engine);
   }

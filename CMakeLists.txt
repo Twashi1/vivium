@@ -138,9 +138,11 @@ set(VIVIUM_SOURCES
   "vivium4/lang/guif/lexer.cpp"
   "vivium4/lang/guif/parser.cpp"
   "vivium4/test/suite.cpp"
+  "vivium4/math/random.cpp"
 )
 
 set(VIVIUM_HEADERS
+  "vivium4/math/random.h"
   "vivium4/test/suite.h"
   "vivium4/test/suite_impl.h"
   "vivium4/error/result.h"
@@ -247,12 +249,12 @@ set(VERLET_SOURCES "verlet/state.cpp")
 add_executable(runtime ${VIVIUM_HEADERS} ${VIVIUM_SOURCES} ${RUNTIME_HEADERS} ${RUNTIME_SOURCES} "runtime/main.cpp")
 add_executable(editor ${VIVIUM_HEADERS} ${VIVIUM_SOURCES} ${EDITOR_HEADERS} ${EDITOR_SOURCES} "engine/main.cpp")
 add_executable(test ${VIVIUM_HEADERS} ${VIVIUM_SOURCES} ${TESTING_HEADERS} ${TESTING_SOURCES} "testing/main.cpp")
-add_executable(verlet ${VIVIUM_HEADERS} ${VIVIUM_SOURCES} ${VERLET_HEADERS} ${VERLET_SOURCES} "verlet/main.cpp")
+add_executable(verlet_run ${VIVIUM_HEADERS} ${VIVIUM_SOURCES} ${VERLET_HEADERS} ${VERLET_SOURCES} "verlet/main.cpp")
 
 target_compile_features(runtime PUBLIC cxx_std_20)
 target_compile_features(editor PUBLIC cxx_std_20)
 target_compile_features(test PUBLIC cxx_std_20)
-target_compile_features(verlet PUBLIC cxx_std_20)
+target_compile_features(verlet_run PUBLIC cxx_std_20)
 
 string(LENGTH "${CMAKE_SOURCE_DIR}/" VIVIUM_SOURCE_PATH_SIZE)
 message(VIVIUM_SOURCE_PATH_SIZE="${VIVIUM_SOURCE_PATH_SIZE}")
@@ -268,8 +270,8 @@ target_include_directories(editor PUBLIC "${CMAKE_SOURCE_DIR}/external/stb_image
 target_include_directories(test PUBLIC "${CMAKE_SOURCE_DIR}/external/glm")
 target_include_directories(test PUBLIC "${CMAKE_SOURCE_DIR}/external/stb_image")
 
-target_include_directories(verlet PUBLIC "${CMAKE_SOURCE_DIR}/external/glm")
-target_include_directories(verlet PUBLIC "${CMAKE_SOURCE_DIR}/external/stb_image")
+target_include_directories(verlet_run PUBLIC "${CMAKE_SOURCE_DIR}/external/glm")
+target_include_directories(verlet_run PUBLIC "${CMAKE_SOURCE_DIR}/external/stb_image")
 
 target_link_libraries(runtime PRIVATE Vulkan::Vulkan)
 target_link_libraries(runtime PRIVATE Freetype::Freetype)
@@ -286,13 +288,15 @@ target_link_libraries(test PRIVATE Freetype::Freetype)
 target_link_libraries(test PRIVATE glfw)
 target_link_libraries(test PRIVATE lua)
 
-target_link_libraries(verlet PRIVATE Vulkan::Vulkan)
-target_link_libraries(verlet PRIVATE Freetype::Freetype)
-target_link_libraries(verlet PRIVATE glfw)
-target_link_libraries(verlet PRIVATE lua)
+target_link_libraries(verlet_run PRIVATE Vulkan::Vulkan)
+target_link_libraries(verlet_run PRIVATE Freetype::Freetype)
+target_link_libraries(verlet_run PRIVATE glfw)
+target_link_libraries(verlet_run PRIVATE lua)
 
+# TODO: implement these with custom target
 file(COPY "${CMAKE_SOURCE_DIR}/vivium4/res" DESTINATION "${CMAKE_BINARY_DIR}/vivium4/")
 file(COPY "${CMAKE_SOURCE_DIR}/engine/res" DESTINATION "${CMAKE_BINARY_DIR}/engine/")
+file(COPY "${CMAKE_SOURCE_DIR}/verlet/res" DESTINATION "${CMAKE_BINARY_DIR}/verlet/")
 
 # TODO: need to redo-this and find the glslc binaries from the correct location
 # Probably need to redo this

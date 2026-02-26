@@ -46,9 +46,7 @@ struct World {
 
   uint64_t resolutionCounter;
 
-  Time::Timer timer;
-
-  // TODO: rendering information, maybe separate out
+  Time::Timer timer;  // TODO: don't need this?
 };
 
 struct State {
@@ -114,9 +112,9 @@ void updatePosition(World& world, float dt);
 void resolveCollision(Point& a, Point& b);
 void resolveCells(World& world, Cell& cellA, Cell& cellB);
 
-void init(State* state);
-void run(State* state);
-void drop(State* state);
+void init(State& state);
+void run(State& state);
+void drop(State& state);
 
 void _submit(State& state);
 void _setup(State& state);
