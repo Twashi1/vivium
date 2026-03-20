@@ -3,6 +3,7 @@
 layout(location = 0) in vec2 inPosition;
 layout(location = 0) out vec3 vColor;
 layout(location = 1) out vec2 vPosition;
+layout(location = 2) out vec2 vVel;
 
 layout(push_constant) uniform Matrices {
   mat4 view;
@@ -10,10 +11,12 @@ layout(push_constant) uniform Matrices {
 };
 
 struct PointData {
-  vec2 position;
-  vec2 scale;
-  vec3 color;
-  float _fill0;
+  vec2 position; // 8 (8)
+  vec2 scale; // 8 (16)
+  vec2 normalVel; // 8 (24)
+  vec2 _fill0; // 8 (32)
+  vec3 color; // 12 (44)
+  float _fill1; // 4 (48)
 };
 
 layout(std140, binding = 0) readonly buffer InstanceData {
@@ -29,4 +32,5 @@ void main() {
 
   vColor = point.color;
   vPosition = inPosition;
+  vVel = point.normalVel;
 }

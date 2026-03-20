@@ -19,7 +19,7 @@ void addPointToWorld(World& world, Point point) {
   world.points[world.size] = point;
   // TODO: initiate with random velocity
   Vec2<uint16_t> gridPos =
-      F32x2::floor(F32x2(point.current) * world.igridDimensions);
+      F32x2::floor(F32x2(point.current) * world.icellDimensions);
   Cell& cell = world.cells[gridPos.x + gridPos.y * world.gridWidth];
   cell.pointIndices[cell.pointCount++] = world.size;
 
@@ -27,10 +27,14 @@ void addPointToWorld(World& world, Point point) {
 }
 
 void updatePoint(Point& point, float dt) {
+  // TODO: flag when velocity is too dramatic
   F32x2 vel = point.current - point.previous;
 
   // Air friciton approximation
-  float const VELOCITY_DAMPING = 40.0f;
+  // TODO: move constant elsewhere? somewhere easily visible
+  // TODO: investigate effect on scale
+  // TODO: much better ways of implementing this?
+  float const VELOCITY_DAMPING = 4.0f;
 
   point.previous = point.current;
   // NOTE: no delta time on velocity, since we already adjusted for that
@@ -56,19 +60,19 @@ void swapRemoveFromCell(Cell& cell, uint16_t index) {
   cell.pointIndices[index] = cell.pointIndices[--cell.pointCount];
 }
 
-World createWorld(F32x2 screenDim, uint16_t gridWidth, uint16_t gridHeight) {
+World createWorld(F32x2 worldCenter, F32x2 worldDim, uint16_t gridWidth,
+                  uint16_t gridHeight) {
   World world;
-  world.gravity = F32x2(0.0f, -1000.0f);
-  world.center = screenDim * 0.5f;
-  world.dim = screenDim * 0.5f - F32x2(20.0f);
-  world.radius = 400.0f;
+  world.gravity = F32x2(0.0f, -0.5f);
+  world.center = worldCenter;
+  world.dim = worldDim;
 
   world.gridHeight = gridHeight;
   world.gridWidth = gridWidth;
 
   world.size = 0;
-  world.gridDimensions = screenDim / F32x2(gridWidth, gridHeight);
-  world.igridDimensions = F32x2(1.0f) / world.gridDimensions;
+  world.cellDimensions = F32x2(1.0f) / F32x2(gridWidth, gridHeight);
+  world.icellDimensions = F32x2(1.0f) / world.cellDimensions;
   world.resolutionCounter = 0;
 
   world.points = std::vector<Point>(MAX_VERLET_OBJECTS);
@@ -87,6 +91,53 @@ void dropWorld(World& world) {
   }
 }
 
+void record(World& world, std::string const& imagePath) {
+  world.recordedPoints = world.points;
+
+  Image img = loadImage(imagePath.c_str(), TextureFormat::RGBA);
+
+  // Basing the extent of the world on the position of points within
+  //  alternatively use the world dimensions
+  // TODO: get an actual maximum
+  F32x2 worldMin = F32x2::inf();
+  F32x2 worldMax = -F32x2::inf();
+  F32x2 worldExtent = F32x2(0.0);
+
+  for (Point const& p : world.points) {
+    worldMin.x = std::min(worldMin.x, p.current.x);
+    worldMin.y = std::min(worldMin.y, p.current.y);
+
+    worldMax.x = std::max(worldMax.x, p.current.x);
+    worldMax.y = std::max(worldMax.y, p.current.y);
+  }
+
+  // TODO: take floor or something instead
+  worldExtent = worldMax - worldMin;
+
+  std::vector<ColorAlpha> assignedColor =
+      std::vector<ColorAlpha>(world.points.size());
+
+  for (int i = 0; i < world.points.size(); i++) {
+    F32x2 pos = world.points[i].current;
+
+    // Should scale to 0-1
+    pos = pos * F32x2(1.0f) / worldExtent;
+    // Re-project to image dimensions
+    // TODO: this doesn't consider the difference in dimensions
+    pos *= F32x2(img.size);
+
+    I32x2 imgCoords = I32x2(F32x2::floor(pos));
+    int imagePixel = img.size.x * imgCoords.y + imgCoords.x;
+    int const stride = 4;
+    uint8_t r = imagePixel * stride + 0;
+    uint8_t g = imagePixel * stride + 1;
+    uint8_t b = imagePixel * stride + 2;
+    uint8_t a = imagePixel * stride + 3;
+
+    assignedColor[i] = ColorAlpha(r, g, b, a);
+  }
+}
+
 void updateCells(World& world) {
   for (uint32_t gy = 0; gy < world.gridHeight; gy++) {
     for (uint32_t gx = 0; gx < world.gridWidth; gx++) {
@@ -98,7 +149,7 @@ void updateCells(World& world) {
         Point& point = world.points[objIndex];
 
         Vec2<uint16_t> gridPos =
-            F32x2::floor(F32x2(point.current) * world.igridDimensions);
+            F32x2::floor(F32x2(point.current) * world.icellDimensions);
 
         if (gridPos.x < 0 || gridPos.y < 0 || gridPos.x >= world.gridWidth ||
             gridPos.y >= world.gridHeight) {
@@ -126,30 +177,6 @@ void updateCells(World& world) {
 void applyGravity(World& world) {
   for (uint64_t i = 0; i < world.size; i++) {
     world.points[i].acceleration += world.gravity;
-  }
-}
-
-void constraintSquare(World& world) {
-  float const margin = 20.0f;
-  float left = world.center.x - world.dim.x;
-  float right = world.center.x + world.dim.x;
-  float bot = world.center.y - world.dim.y;
-  float top = world.center.y + world.dim.y;
-
-  for (uint64_t i = 0; i < world.size; i++) {
-    Point& point = world.points[i];
-
-    if (point.current.x - point.radius < left) {
-      point.current.x = left + point.radius;
-    } else if (point.current.x + point.radius + margin > right) {
-      point.current.x = right - point.radius - margin;
-    }
-
-    if (point.current.y - point.radius - margin < bot) {
-      point.current.y = bot + point.radius + margin;
-    } else if (point.current.y + point.radius > top) {
-      point.current.y = top - point.radius;
-    }
   }
 }
 
@@ -197,6 +224,7 @@ void resolveCells(World& world, Cell& cellA, Cell& cellB) {
 }
 
 void resolveCollision(Point& a, Point& b) {
+  // TODO: flag when energy transfer is too high
   const float restitution = 0.8f;
   const float epsilon = 0.0001f;
 
@@ -233,7 +261,7 @@ void updatePosition(World& world, float dt) {
 void update(World& world) {
   const int physicsSubsteps = 6;
   // 60fps rendering rate
-  const float timePerFrame = 0.016f;
+  const float timePerFrame = 0.001f;
   const float substepDt = timePerFrame / physicsSubsteps;
 
   for (int i = 0; i < physicsSubsteps; i++) {
@@ -241,7 +269,8 @@ void update(World& world) {
     collisionResolution(world);
     applyGravity(world);
     updatePosition(world, substepDt);
-    constraintSquare(world);
+    updateConstraints(world, substepDt);
+    runConstraints(world, substepDt);
   }
 }
 
@@ -406,13 +435,20 @@ void _draw(State& state) {
   std::vector<_PointInstanceData> points;
   points.reserve(state.world.size);
 
+  F32x2 worldScale = state.world.dim;
+  F32x2 worldCenter = state.world.center;
+  float minimumScaleWorld = std::min(worldCenter.x, worldCenter.y);
+
   for (uint64_t i = 0; i < state.world.size; i++) {
     Point const& point = state.world.points[i];
 
     _PointInstanceData instance;
     instance.color = point.color;
-    instance.position = point.current;
-    instance.scale = F32x2(point.radius);
+    // TODO: this part doesnt make mathematical sense, or does it?
+    instance.position =
+        (point.current - F32x2(0.5f)) * minimumScaleWorld + worldCenter;
+    instance.scale = F32x2(point.radius) * minimumScaleWorld;
+    instance.normalVel = F32x2::normalise(point.current - point.previous);
 
     points.push_back(std::move(instance));
   }
@@ -455,7 +491,17 @@ void init(State& state) {
   state.context = createCommandContext(state.engine);
 
   // TODO: optimise dimensions of grid, something like 2x radius of ball?
-  state.world = createWorld(windowDimensions(state.window), 20, 20);
+  // TODO: window dimensions dynamically change
+  // NOTE: correct solution
+  // - just keep all balls in the space of 0-1
+  // - radius also a percentage of this space
+  // - project the space up to the appropriate size of the screen in the
+  // rendering code
+  state.world = createWorld(F32x2(0.0), F32x2(1.0, 1.0), 60, 60);
+  // Create a circle constraint
+  CircleConstraint circle =
+      createCircleConstraint(F32x2(0.5f), 0.4f, F32x2(0.0f), 0.0f, 0.0f, true);
+  addConstraint(state.world, circle);
 
   // TODO: move the code, should be done in some initialisation function
   // Generate the font if it doesn't exist
@@ -483,22 +529,26 @@ void run(State& state) {
 
     Input::update(state.window);
 
+    state.world.dim = F32x2(windowDimensions(state.window));
+    state.world.center = F32x2(windowDimensions(state.window)) * 0.5f;
+
     // TODO: move to the update function?
     // Spawn in a ball
-    if (ticks % 2 == 0 && state.world.size < 800) {
+    if ((Input::get(Input::BTN_LEFT).state == Input::State::DOWN) &&
+        state.world.size < 800) {
       // TODO: initial velocity
       Color c = Color(0.0f, 0.0f, 0.0f);
       c.b = randomFloat();
       c.g = randomFloat();
       c.r = randomFloat();
 
-      float radius = randomFloat(5.0f, 15.0f);
-      float maxRadius = 15.0f;
+      float maxRadius = 0.05f;
+      float radius = randomFloat(0.03f, maxRadius);
 
-      Point newPoint = createPoint(F32x2(150.0f, 150.0f), radius, c);
+      Point newPoint = createPoint(F32x2(0.5f, 0.5f), radius, c);
       newPoint.current += randomVectorCirucmference(maxRadius);
       // TODO: big typo..
-      newPoint.previous = newPoint.current + randomVectorCircle(0.5f);
+      newPoint.previous = newPoint.current + randomVectorCircle(0.01f);
 
       addPointToWorld(state.world, newPoint);
     }
@@ -519,6 +569,250 @@ void run(State& state) {
   }
 
   VIVIUM_LOG(LogSeverity::DEBUG, "Window is closing now");
+}
+
+F32x2 approximateContactVelocity(QuadConstraint const& constraint,
+                                 F32x2 currentPoint, float dt) {
+  // TODO: should validate that the transformations we do here are correct
+  // Calculate vector from point to constraint center
+  F32x2 v = currentPoint - constraint.center;
+  // Calculate change in angle
+  // NOTE: this assumes we have constant angular velocity, consistent with an
+  // object of infinite mass
+  // Going back in time, hence minus
+  float deltaAngle = -(constraint.angularVelocity * dt);
+  // Use angle to calculate previous position, by rotating vector v around
+  // origin
+  // cos, -sin
+  // sin, cos
+  float oldX = v.x * std::cos(deltaAngle) - v.y * std::sin(deltaAngle);
+  float oldY = v.y * std::sin(deltaAngle) + v.y * std::cos(deltaAngle);
+
+  // Additionally consider constraint's velocity
+  F32x2 previousPosition = F32x2(oldX, oldY);
+  // Note again, negative since going back
+  previousPosition += -constraint.velocity;
+
+  // NOTE: this is the previous position of the constraint, we can use this to
+  // approximately compute the velocity in verlet integration, we don't multiply
+  // velocity by dt, we assume that's already factored in
+  return previousPosition;
+}
+
+F32x2 approximateContactVelocity(CircleConstraint const& constraint,
+                                 F32x2 currentPoint, float dt) {
+  return constraint.center - constraint.velocity;
+}
+
+QuadConstraint createQuadConstraint(F32x2 pos, F32x2 dim, F32x2 velocity,
+                                    float initialAngle, float angularVelocity,
+                                    bool keepInside) {
+  QuadConstraint c;
+  c.velocity = velocity;
+  c.center = pos;
+  c.dimensions = dim;
+  c.angle = initialAngle;
+  c.angularVelocity = angularVelocity;
+  c.keepInside = keepInside;
+
+  return c;
+}
+
+CircleConstraint createCircleConstraint(F32x2 pos, float radius, F32x2 velocity,
+                                        float initialAngle,
+                                        float angularVelocity,
+                                        bool keepInside) {
+  CircleConstraint c;
+  c.velocity = velocity;
+  c.center = pos;
+  c.radius = radius;
+  c.angle = initialAngle;
+  c.angularVelocity = angularVelocity;
+  c.keepInside = keepInside;
+
+  return c;
+}
+
+void addConstraint(World& world, QuadConstraint const& constraint) {
+  world.quadConstraints.push_back(constraint);
+}
+
+void addConstraint(World& world, CircleConstraint const& constraint) {
+  world.circleConstraints.push_back(constraint);
+}
+
+void updateConstraint(World& world, QuadConstraint& constraint, float dt) {
+  constraint.angle += constraint.angularVelocity * dt;
+  constraint.center += constraint.velocity;
+}
+
+void updateConstraint(World& world, CircleConstraint& constraint, float dt) {
+  constraint.angle += constraint.angularVelocity * dt;
+  constraint.center += constraint.velocity;
+}
+
+void considerConstraintCollisions(World& world, Point& point, float dt) {
+  for (QuadConstraint const& quad : world.quadConstraints) {
+    considerQuadConstraintCollision(quad, point, dt);
+  }
+
+  for (CircleConstraint const& circle : world.circleConstraints) {
+    considerCircleConstraintCollision(circle, point, dt);
+  }
+}
+
+// TODO: need to do some extra math given the approximate contact velocity
+// Compute normal to the contact velocity?
+void considerQuadConstraintCollision(QuadConstraint const& constraint,
+                                     Point& point, float dt) {
+  F32x2 constraintVelocity =
+      approximateContactVelocity(constraint, point.current, dt);
+  // Take normal
+  // TODO: non trivial, need odwards-facing normal, should be towards the object
+  // easy but poor solution: just compute both normals and take dot product,
+  // take min dot product
+
+  // 1. transform both objects to centerpoint
+  F32x2 quadCenter = constraint.center;
+  // The position of the point relative to the centerpoint of the quad
+  F32x2 pointRelativeToQuad = point.current - constraint.center;
+
+  // TODO: near phase collision check
+  // TODO: transform the point such that it is in the same space as the rotated
+  // square
+  Mat2x2 quadRotation = Mat2x2::fromAngle(constraint.angle);
+  F32x2 pointInQuadSpace = quadRotation * pointRelativeToQuad;
+
+  F32x2 halfDim = constraint.dimensions * 0.5;
+
+  // Now detect whether the point is in the correct side
+  bool pointInConstraint = pointInAABB(pointInQuadSpace, -halfDim, halfDim);
+
+  // TODO: compute all outwards-facing normals
+  // TODO: only store edges, compute everything else with left/right rotations;
+  // note clockwise direction
+  std::vector<F32x2> const outwardsNormals = std::vector<F32x2>(
+      {F32x2(-1, 0), F32x2(0, 1), F32x2(1, 0), F32x2(0, -1)});
+  std::vector<F32x2> const edgeVectors = std::vector<F32x2>(
+      {F32x2(0, 1), F32x2(1, 0), F32x2(0, -1), F32x2(-1, 0)});
+
+  // TODO: save computation, if this point is not interesting to us given our
+  // constraint,then just leave here
+
+  // TODO: find closest edge here
+  int closestEdgeIndex = -1;
+  // TODO: note distance sqaured
+  float closestEdgeDistance = std::numeric_limits<float>::max();
+
+  for (int i = 0; i < outwardsNormals.size(); i++) {
+    F32x2 normal = outwardsNormals[i];
+    F32x2 edge = edgeVectors[i];
+    // TODO: POTENTIALLY WRONG,have no clue about this maths just made it up
+    F32x2 closestPoint = pointInQuadSpace * F32x2::dot(pointInQuadSpace, edge);
+    F32x2 closestVector = pointInQuadSpace - closestPoint;
+    float distanceSquared = F32x2::dot(closestVector, closestVector);
+
+    if (distanceSquared < closestEdgeDistance) {
+      closestEdgeDistance = distanceSquared;
+      closestEdgeIndex = i;
+    }
+  }
+
+  // TODO: validate closestEdgeIndex,should just be an assertion
+  if (closestEdgeIndex == -1) {
+    VIVIUM_LOG(LogSeverity::FATAL, "Closest edge index was -1, impossibility");
+  }
+
+  F32x2 selectedNormal;
+
+  // TODO: for these functions, just select the correct direction of normals,
+  // and the correct one as well? that should be sufficient to keep the rest of
+  // the code not in a branhc
+  if (constraint.keepInside && !pointInConstraint) {
+    selectedNormal = -outwardsNormals[closestEdgeIndex];
+    // TODO: we should move this point back into the constraint;
+    // for this, select the correct normals
+  } else if (!constraint.keepInside && pointInConstraint) {
+    // TODO: select outwards facing normals
+    selectedNormal = outwardsNormals[closestEdgeIndex];
+  } else {
+    return;
+  }
+
+  // TODO: consider margin additioanlly
+  // TODO: validate correctness of computation
+  pointInQuadSpace =
+      pointInQuadSpace +
+      selectedNormal * (std::sqrt(closestEdgeDistance) + point.radius);
+
+  Mat2x2 inverseRotation = quadRotation.transpose();
+  F32x2 untransformedPoint = inverseRotation * pointInQuadSpace;
+  // TODO: unsure if correct
+  untransformedPoint += constraint.center;
+
+  // TODO: current, or previous?
+  point.current = untransformedPoint;
+
+  // TODO: implementation of moving along that vector
+  // TODO: rotation out of quad space
+  // TODO: set old/new position to whatever it should be?
+
+  // Calculate every edge of the quad
+  // If the point lies within, or outside our shape (depending on keepInside)
+  // we consider it
+
+  // Given distance to the nearest edge
+  // 1. we set the ball to the closest point to that edge, and output the ball
+  // (inside, or outside), along the correct normal as to push it in the
+  // constraint's desired direction
+}
+
+void considerCircleConstraintCollision(CircleConstraint const& constraint,
+                                       Point& point, float dt) {
+  F32x2 delta = point.current - constraint.center;
+  float dist = F32x2::length(delta);
+  float radiusSum = constraint.radius + point.radius;
+
+  if (dist == 0.0f) return;
+
+  F32x2 normal = delta / dist;
+
+  const float margin = 0.001f;
+
+  // outside when should be inside
+  if (constraint.keepInside && dist > radiusSum) {
+    float penetration = dist - radiusSum;
+    point.current -= penetration * normal + F32x2(margin);
+  }
+
+  // inside when should be outside
+  // TODO: check maths on this
+  else if (!constraint.keepInside && dist < radiusSum) {
+    float penetration = radiusSum - dist;
+    point.current = constraint.center + penetration * normal + F32x2(margin);
+  }
+}
+
+void updateConstraints(World& world, float dt) {
+  for (CircleConstraint& c : world.circleConstraints) {
+    updateConstraint(world, c, dt);
+  }
+
+  for (QuadConstraint& c : world.quadConstraints) {
+    updateConstraint(world, c, dt);
+  }
+}
+
+void runConstraints(World& world, float dt) {
+  for (Point& point : world.points) {
+    for (CircleConstraint const& c : world.circleConstraints) {
+      considerCircleConstraintCollision(c, point, dt);
+    }
+
+    for (QuadConstraint const& c : world.quadConstraints) {
+      considerQuadConstraintCollision(c, point, dt);
+    }
+  }
 }
 
 void drop(State& state) {
