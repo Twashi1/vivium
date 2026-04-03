@@ -11,6 +11,7 @@ inline std::mt19937 _randomGenerator;
 
 void _randomInit();
 
+void randomSeed(uint64_t seed);
 bool randomBool();
 int randomInt(int min, int max);
 float randomFloat(float min = 0.0f, float max = 1.0f);

@@ -12,6 +12,17 @@ Point createPoint(F32x2 pos, float radius, Color color) {
   return p;
 }
 
+Color rainbow(float t) {
+  const float phase = 0.33f * 2.0f * 3.14159f;
+  t *= 2.0f * 3.14159f;
+
+  float r = sin(t) + 1.0f;
+  float g = sin(phase + t) + 1.0f;
+  float b = sin(phase * 2.0f + t) + 1.0f;
+
+  return Color(r * 0.5f, g * 0.5f, b * 0.5f);
+}
+
 void addPointToWorld(World& world, Point point) {
   // TODO: maybe some logs
   if (world.size >= MAX_VERLET_OBJECTS) return;
@@ -20,6 +31,15 @@ void addPointToWorld(World& world, Point point) {
   // TODO: initiate with random velocity
   Vec2<uint16_t> gridPos =
       F32x2::floor(F32x2(point.current) * world.icellDimensions);
+
+  if (gridPos.x + gridPos.y * world.gridWidth >= world.cells.size()) {
+    VIVIUM_LOG(LogSeverity::ERROR,
+               "Attempted to place point {} {} OOB at cell {} {}",
+               point.current.x, point.current.y, gridPos.x, gridPos.y);
+
+    return;
+  }
+
   Cell& cell = world.cells[gridPos.x + gridPos.y * world.gridWidth];
   cell.pointIndices[cell.pointCount++] = world.size;
 
@@ -30,16 +50,13 @@ void updatePoint(Point& point, float dt) {
   // TODO: flag when velocity is too dramatic
   F32x2 vel = point.current - point.previous;
 
-  // Air friciton approximation
-  // TODO: move constant elsewhere? somewhere easily visible
-  // TODO: investigate effect on scale
-  // TODO: much better ways of implementing this?
-  float const VELOCITY_DAMPING = 4.0f;
+  float const VELOCITY_DAMPING = 0.0f;
 
   point.previous = point.current;
   // NOTE: no delta time on velocity, since we already adjusted for that
-  point.current = point.current + vel +
-                  (point.acceleration - vel * VELOCITY_DAMPING) * (dt * dt);
+  // TODO: air friction should depend on delta time
+  point.current = point.current + vel * (1.0f - VELOCITY_DAMPING) +
+                  point.acceleration * (dt * dt);
   point.acceleration = F32x2(0.0f);
 }
 
@@ -60,18 +77,27 @@ void swapRemoveFromCell(Cell& cell, uint16_t index) {
   cell.pointIndices[index] = cell.pointIndices[--cell.pointCount];
 }
 
-World createWorld(F32x2 worldCenter, F32x2 worldDim, uint16_t gridWidth,
-                  uint16_t gridHeight) {
+void resetWorld(World& world) {
+  world.size = 0;
+
+  for (uint64_t i = 0; i < world.gridWidth * world.gridHeight; i++) {
+    world.cells[i].pointCount = 0;
+  }
+}
+
+World createWorld(F32x2 worldCenter, F32x2 worldDim, F32x2 worldSpace,
+                  uint16_t gridWidth, uint16_t gridHeight) {
   World world;
   world.gravity = F32x2(0.0f, -0.5f);
   world.center = worldCenter;
   world.dim = worldDim;
+  world.space = worldSpace;
 
   world.gridHeight = gridHeight;
   world.gridWidth = gridWidth;
 
   world.size = 0;
-  world.cellDimensions = F32x2(1.0f) / F32x2(gridWidth, gridHeight);
+  world.cellDimensions = world.space / F32x2(gridWidth, gridHeight);
   world.icellDimensions = F32x2(1.0f) / world.cellDimensions;
   world.resolutionCounter = 0;
 
@@ -92,8 +118,6 @@ void dropWorld(World& world) {
 }
 
 void record(World& world, std::string const& imagePath) {
-  world.recordedPoints = world.points;
-
   Image img = loadImage(imagePath.c_str(), TextureFormat::RGBA);
 
   // Basing the extent of the world on the position of points within
@@ -114,14 +138,15 @@ void record(World& world, std::string const& imagePath) {
   // TODO: take floor or something instead
   worldExtent = worldMax - worldMin;
 
-  std::vector<ColorAlpha> assignedColor =
-      std::vector<ColorAlpha>(world.points.size());
+  world.finalColors.resize(world.size);
 
-  for (int i = 0; i < world.points.size(); i++) {
+  for (int i = 0; i < world.size; i++) {
     F32x2 pos = world.points[i].current;
 
     // Should scale to 0-1
     pos = pos * F32x2(1.0f) / worldExtent;
+    // Vertical flip
+    pos.y = 1.0f - pos.y;
     // Re-project to image dimensions
     // TODO: this doesn't consider the difference in dimensions
     pos *= F32x2(img.size);
@@ -129,13 +154,15 @@ void record(World& world, std::string const& imagePath) {
     I32x2 imgCoords = I32x2(F32x2::floor(pos));
     int imagePixel = img.size.x * imgCoords.y + imgCoords.x;
     int const stride = 4;
-    uint8_t r = imagePixel * stride + 0;
-    uint8_t g = imagePixel * stride + 1;
-    uint8_t b = imagePixel * stride + 2;
-    uint8_t a = imagePixel * stride + 3;
+    uint8_t r = img.data[imagePixel * stride + 0];
+    uint8_t g = img.data[imagePixel * stride + 1];
+    uint8_t b = img.data[imagePixel * stride + 2];
+    uint8_t a = img.data[imagePixel * stride + 3];
 
-    assignedColor[i] = ColorAlpha(r, g, b, a);
+    world.finalColors[i] = Color(r, g, b);
   }
+
+  dropImage(img);
 }
 
 void updateCells(World& world) {
@@ -224,7 +251,31 @@ void resolveCells(World& world, Cell& cellA, Cell& cellB) {
 }
 
 void resolveCollision(Point& a, Point& b) {
-  // TODO: flag when energy transfer is too high
+  // const float restitution = 0.65f;
+  // // TODO: fix epsilon
+  // const float epsilon = 0.01f;
+  //
+  // F32x2 v = a.current - b.current;
+  // float distSquared = F32x2::dot(v, v);
+  //
+  // if (distSquared == 0.0f) return;
+  //
+  // float radiusSum = a.radius + b.radius;
+  // float radiusSumSquared = radiusSum * radiusSum;
+  // float totalArea = (a.radius * a.radius) + (b.radius * b.radius);
+  //
+  // // TODO: instead check if the gap between them is greater than an epsilon
+  // if (distSquared < radiusSumSquared && distSquared > epsilon) {
+  //   float dist = std::sqrt(distSquared);
+  //   float delta = restitution * 0.5f * (dist - radiusSum);
+  //   F32x2 normal = v / dist;
+  //
+  //   float aMassRatio = (a.radius) / radiusSum;
+  //   float bMassRatio = (b.radius) / radiusSum;
+  //
+  //   a.current -= normal * delta * bMassRatio;
+  //   b.current += normal * delta * aMassRatio;
+  // }
   const float restitution = 0.8f;
   const float epsilon = 0.0001f;
 
@@ -261,7 +312,7 @@ void updatePosition(World& world, float dt) {
 void update(World& world) {
   const int physicsSubsteps = 6;
   // 60fps rendering rate
-  const float timePerFrame = 0.001f;
+  const float timePerFrame = 0.016f;
   const float substepDt = timePerFrame / physicsSubsteps;
 
   for (int i = 0; i < physicsSubsteps; i++) {
@@ -435,9 +486,10 @@ void _draw(State& state) {
   std::vector<_PointInstanceData> points;
   points.reserve(state.world.size);
 
-  F32x2 worldScale = state.world.dim;
+  F32x2 worldScale = state.world.dim / state.world.space;
   F32x2 worldCenter = state.world.center;
-  float minimumScaleWorld = std::min(worldCenter.x, worldCenter.y);
+  F32x2 spaceCenter = state.world.space * 0.5f;
+  float minimumScaleWorld = std::min(worldScale.x, worldScale.y);
 
   for (uint64_t i = 0; i < state.world.size; i++) {
     Point const& point = state.world.points[i];
@@ -446,8 +498,8 @@ void _draw(State& state) {
     instance.color = point.color;
     // TODO: this part doesnt make mathematical sense, or does it?
     instance.position =
-        (point.current - F32x2(0.5f)) * minimumScaleWorld + worldCenter;
-    instance.scale = F32x2(point.radius) * minimumScaleWorld;
+        (point.current - spaceCenter) * minimumScaleWorld + worldCenter;
+    instance.scale = F32x2(point.radius) * minimumScaleWorld * 2.0f;
     instance.normalVel = F32x2::normalise(point.current - point.previous);
 
     points.push_back(std::move(instance));
@@ -468,6 +520,8 @@ void _draw(State& state) {
 }
 
 void _drop(State& state) {
+  dropWorld(state.world);
+
   dropTexture(state.fontTexture.resource, state.engine);
 
   dropDescriptorLayout(state.text.descriptorLayout.resource, state.engine);
@@ -497,10 +551,11 @@ void init(State& state) {
   // - radius also a percentage of this space
   // - project the space up to the appropriate size of the screen in the
   // rendering code
-  state.world = createWorld(F32x2(0.0), F32x2(1.0, 1.0), 60, 60);
+  state.world =
+      createWorld(F32x2(0.0), F32x2(1000.0f, 1000.0f), F32x2(1.0f), 50, 50);
   // Create a circle constraint
   CircleConstraint circle =
-      createCircleConstraint(F32x2(0.5f), 0.4f, F32x2(0.0f), 0.0f, 0.0f, true);
+      createCircleConstraint(F32x2(0.5f), 0.45f, F32x2(0.0f), 0.0f, 0.0f, true);
   addConstraint(state.world, circle);
 
   // TODO: move the code, should be done in some initialisation function
@@ -523,6 +578,12 @@ void init(State& state) {
 
 void run(State& state) {
   int ticks = 0;
+  const int spawnFrequency = 1;
+  const int maxPoints = 1400;
+  bool haveReplayed = false;
+  bool aboutToReplay = false;
+
+  randomSeed(0);
 
   while (windowIsOpen(state.window, state.engine)) {
     engineBeginFrame(state.engine, state.context);
@@ -534,26 +595,35 @@ void run(State& state) {
 
     // TODO: move to the update function?
     // Spawn in a ball
-    if ((Input::get(Input::BTN_LEFT).state == Input::State::DOWN) &&
-        state.world.size < 800) {
+    if (state.world.size < maxPoints && ticks % spawnFrequency == 0) {
       // TODO: initial velocity
-      Color c = Color(0.0f, 0.0f, 0.0f);
-      c.b = randomFloat();
-      c.g = randomFloat();
-      c.r = randomFloat();
+      Color c = rainbow(static_cast<float>(state.world.size) / 100.0f);
 
-      float maxRadius = 0.05f;
-      float radius = randomFloat(0.03f, maxRadius);
+      if (haveReplayed) {
+        c = state.world.finalColors[state.world.size];
+      }
+
+      float maxRadius = 0.015f;
+      float radius = randomFloat(0.008f, maxRadius);
 
       Point newPoint = createPoint(F32x2(0.5f, 0.5f), radius, c);
+      // TODO: big typo on Circumference
       newPoint.current += randomVectorCirucmference(maxRadius);
-      // TODO: big typo..
-      newPoint.previous = newPoint.current + randomVectorCircle(0.01f);
+      // TODO: we need the delta time somewhere
+      newPoint.previous = newPoint.current + randomVectorCircle(0.002f);
 
       addPointToWorld(state.world, newPoint);
     }
 
     _update(state);
+
+    if (!haveReplayed && state.world.size == maxPoints) {
+      haveReplayed = true;
+      aboutToReplay = true;
+      record(state.world, "verlet/res/creeper.png");
+      resetWorld(state.world);
+      randomSeed(0);
+    }
 
     windowBeginFrame(state.window, state.context, state.engine);
     windowBeginRender(state.window);
@@ -566,6 +636,13 @@ void run(State& state) {
     ++ticks;
 
     engineEndFrame(state.engine);
+
+    if (aboutToReplay) {
+      aboutToReplay = false;
+      VIVIUM_LOG(LogSeverity::DEBUG,
+                 "About to sleep for a second before replaying");
+      // Time::nanosleep(1'000'000'000);
+    }
   }
 
   VIVIUM_LOG(LogSeverity::DEBUG, "Window is closing now");
@@ -769,27 +846,28 @@ void considerQuadConstraintCollision(QuadConstraint const& constraint,
 
 void considerCircleConstraintCollision(CircleConstraint const& constraint,
                                        Point& point, float dt) {
-  F32x2 delta = point.current - constraint.center;
-  float dist = F32x2::length(delta);
+  F32x2 delta = constraint.center - point.current;
+  float distSquared = F32x2::dot(delta, delta);
+
+  // TODO: maybe we still consider this scenario but just add small offset
+  if (distSquared == 0.0f) return;
+
+  float dist = std::sqrt(distSquared);
+  F32x2 normal = delta / dist;
   float radiusSum = constraint.radius + point.radius;
 
-  if (dist == 0.0f) return;
-
-  F32x2 normal = delta / dist;
-
-  const float margin = 0.001f;
-
   // outside when should be inside
-  if (constraint.keepInside && dist > radiusSum) {
-    float penetration = dist - radiusSum;
-    point.current -= penetration * normal + F32x2(margin);
+  if (constraint.keepInside && dist > (constraint.radius - point.radius)) {
+    point.current =
+        constraint.center - normal * (constraint.radius - point.radius);
   }
 
   // inside when should be outside
   // TODO: check maths on this
   else if (!constraint.keepInside && dist < radiusSum) {
-    float penetration = radiusSum - dist;
-    point.current = constraint.center + penetration * normal + F32x2(margin);
+    // TODO: unsure if add or subtract margin
+    // float penetration = constraint.radius - 2 * point.radius;
+    // point.current = constraint.center + penetration * normal;
   }
 }
 

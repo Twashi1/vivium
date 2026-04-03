@@ -58,7 +58,8 @@ struct CircleConstraint {
 struct World {
   F32x2 gravity;
   F32x2 center;
-  F32x2 dim;
+  F32x2 dim;  // TODO: useless property somewhat
+  F32x2 space;
 
   uint64_t size;
   std::vector<Point> points;
@@ -72,7 +73,6 @@ struct World {
 
   uint64_t resolutionCounter;
 
-  std::vector<Point> recordedPoints;
   std::vector<Color> finalColors;
   std::vector<QuadConstraint> quadConstraints;
   std::vector<CircleConstraint> circleConstraints;
@@ -117,6 +117,8 @@ struct State {
   World world;
 };
 
+Color rainbow(float t);
+
 Point createPoint(F32x2 pos, float radius, Color color);
 void updatePoint(Point& point, float dt);
 
@@ -150,6 +152,7 @@ void dropCell(Cell& cell);
 
 World createWorld(F32x2 worldCenter, F32x2 worldDim, uint16_t gridWidth,
                   uint16_t gridHeight);
+void resetWorld(World& world);
 void dropWorld(World& world);
 
 void addPointToWorld(World& world, Point point);

@@ -6,6 +6,8 @@ namespace Vivium {
 // Note, not random device since we don't care, not a cryptographic module
 void _randomInit() { _randomGenerator = std::mt19937{0}; }
 
+void randomSeed(uint64_t seed) { _randomGenerator = std::mt19937{0}; }
+
 bool randomBool() {
   std::uniform_int_distribution<int> dist(0, 1);
   return dist(_randomGenerator);

@@ -31,6 +31,9 @@ void main() {
   // calculate mask for line
   float lineAlpha = smoothstep(lineThickness, 0.0, lineDist);
 
+  // disable line
+  lineAlpha = 0.0;
+
   vec3 circleColor = vColor;
   float outAlpha = max(circleAlpha, lineAlpha);
 
