@@ -2,86 +2,9 @@
 
 project ("vivium4" LANGUAGES C CXX)
 
-# TODO: don't know if required
-include(FetchContent)
-
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
-
-set(GLFW3_VERSION 3.4)
-set(VULKAN_VERSION v1.4.326)
-set(FREETYPE_VERSION VER-2-13-3)
-set(LUA_VERSION v5.4.8)
-set(LUA_VERSION_MIN 5.4)
-
-find_package(glfw3 ${GLFW3_VERSION} QUIET)
-if (NOT glfw3_FOUND)
-  message(STATUS "Fetching GLFW3")
-
-  FetchContent_Declare(
-    glfw3
-    GIT_REPOSITORY https://github.com/glfw/glfw.git
-    GIT_TAG ${GLFW3_VERSION}
-    GIT_SHALLOW TRUE
-    GIT_PROGRESS TRUE
-  )
-
-  set(GLFW_INSTALL OFF)
-  set(BUILD_SHARED_LIBS ON)
-  set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-  set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-  set(GLFW_BUILD_WAYLAND OFF)
-  set(GLFW_BUILD_COCOA OFF)
-  set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-
-  FetchContent_MakeAvailable(glfw3)
-endif()
-
-# TODO: use find_package for all?
-find_package(Vulkan COMPONENTS glslc)
-if (NOT Vulkan_FOUND)
-  message(FATAL_ERROR "Failed to find Vulkan, install the SDK following README.md")
-endif()
-
-find_package(Freetype)
-if (NOT Freetype_FOUND)
-  message(STATUS "Fetching Freetype")
-
-  FetchContent_Declare(
-    Freetype
-    GIT_REPOSITORY https://github.com/freetype/freetype.git
-    GIT_TAG ${FREETYPE_VERSION}
-    GIT_SHALLOW TRUE
-    GIT_PROGRESS TRUE
-  )
-
-  FetchContent_MakeAvailable(Freetype)
-endif()
-
-# TODO: pretty sure if LUA is found, this wont run correctly
-#find_package(Lua ${LUA_VERSION_MIN}) 
-if (TRUE)
-  message(STATUS "Fetching Lua")
-
-  FetchContent_Declare(
-    lua    
-    GIT_REPOSITORY https://github.com/lua/lua.git
-    GIT_TAG ${LUA_VERSION}
-    GIT_PROGRESS TRUE
-  )
-
-  FetchContent_MakeAvailable(lua)
-
-  file(GLOB LUA_SOURCES "${lua_SOURCE_DIR}/*.c")
-  list(FILTER LUA_SOURCES EXCLUDE REGEX ".*/onelua\\.c$")
-  add_library(lua STATIC ${LUA_SOURCES})
-  target_include_directories(lua PUBLIC ${lua_SOURCE_DIR})
-
-  if (MSVC)
-    target_compile_definitions(lua PRIVATE _CRT_SECURE_NO_WARNINGS)
-  else()
-    target_compile_options(lua PRIVATE -O3)
-  endif()
-endif()
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(VIVIUM_SOURCES
   "vivium4/core.cpp"
@@ -246,58 +169,37 @@ set(TESTING_SOURCES
 set(VERLET_HEADERS "verlet/state.h")
 set(VERLET_SOURCES "verlet/state.cpp")
 
-add_executable(runtime ${VIVIUM_HEADERS} ${VIVIUM_SOURCES} ${RUNTIME_HEADERS} ${RUNTIME_SOURCES} "runtime/main.cpp")
-add_executable(editor ${VIVIUM_HEADERS} ${VIVIUM_SOURCES} ${EDITOR_HEADERS} ${EDITOR_SOURCES} "engine/main.cpp")
-add_executable(test ${VIVIUM_HEADERS} ${VIVIUM_SOURCES} ${TESTING_HEADERS} ${TESTING_SOURCES} "testing/main.cpp")
-add_executable(verlet_run ${VIVIUM_HEADERS} ${VIVIUM_SOURCES} ${VERLET_HEADERS} ${VERLET_SOURCES} "verlet/main.cpp")
+find_package(Vulkan REQUIRED)
+find_package(VulkanUtilityLibraries CONFIG REQUIRED)
+find_package(glfw3 CONFIG REQUIRED)
+find_package(glm CONFIG REQUIRED)
+find_package(Freetype REQUIRED)
+find_package(lua CONFIG REQUIRED)
 
-target_compile_features(runtime PUBLIC cxx_std_20)
-target_compile_features(editor PUBLIC cxx_std_20)
-target_compile_features(test PUBLIC cxx_std_20)
-target_compile_features(verlet_run PUBLIC cxx_std_20)
+add_library(vivium_core STATIC ${VIVIUM_SOURCES} ${VIVIUM_HEADERS})
+target_include_directories(vivium_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(vivium_core PUBLIC Vulkan::Vulkan Vulkan::UtilityHeaders glfw glm::glm Freetype::Freetype unofficial::lua::lua)
+
+add_executable(runtime ${RUNTIME_HEADERS} ${RUNTIME_SOURCES} "runtime/main.cpp")
+add_executable(editor ${EDITOR_HEADERS} ${EDITOR_SOURCES} "engine/main.cpp")
+add_executable(test ${TESTING_HEADERS} ${TESTING_SOURCES} "testing/main.cpp")
+add_executable(verlet_run ${VERLET_HEADERS} ${VERLET_SOURCES} "verlet/main.cpp")
+
+target_link_libraries(runtime PRIVATE vivium_core)
+target_link_libraries(editor PRIVATE vivium_core)
+target_link_libraries(test PRIVATE vivium_core)
+target_link_libraries(verlet_run PRIVATE vivium_core)
 
 string(LENGTH "${CMAKE_SOURCE_DIR}/" VIVIUM_SOURCE_PATH_SIZE)
 message(VIVIUM_SOURCE_PATH_SIZE="${VIVIUM_SOURCE_PATH_SIZE}")
 add_definitions("-DVIVIUM_SOURCE_PATH_SIZE=${VIVIUM_SOURCE_PATH_SIZE}")
-
-# Header-only, build same regardless of system
-target_include_directories(runtime PUBLIC "${CMAKE_SOURCE_DIR}/external/glm")
-target_include_directories(runtime PUBLIC "${CMAKE_SOURCE_DIR}/external/stb_image")
-
-target_include_directories(editor PUBLIC "${CMAKE_SOURCE_DIR}/external/glm")
-target_include_directories(editor PUBLIC "${CMAKE_SOURCE_DIR}/external/stb_image")
-
-target_include_directories(test PUBLIC "${CMAKE_SOURCE_DIR}/external/glm")
-target_include_directories(test PUBLIC "${CMAKE_SOURCE_DIR}/external/stb_image")
-
-target_include_directories(verlet_run PUBLIC "${CMAKE_SOURCE_DIR}/external/glm")
-target_include_directories(verlet_run PUBLIC "${CMAKE_SOURCE_DIR}/external/stb_image")
-
-target_link_libraries(runtime PRIVATE Vulkan::Vulkan)
-target_link_libraries(runtime PRIVATE Freetype::Freetype)
-target_link_libraries(runtime PRIVATE glfw)
-target_link_libraries(runtime PRIVATE lua)
-
-target_link_libraries(editor PRIVATE Vulkan::Vulkan)
-target_link_libraries(editor PRIVATE Freetype::Freetype)
-target_link_libraries(editor PRIVATE glfw)
-target_link_libraries(editor PRIVATE lua)
-
-target_link_libraries(test PRIVATE Vulkan::Vulkan)
-target_link_libraries(test PRIVATE Freetype::Freetype)
-target_link_libraries(test PRIVATE glfw)
-target_link_libraries(test PRIVATE lua)
-
-target_link_libraries(verlet_run PRIVATE Vulkan::Vulkan)
-target_link_libraries(verlet_run PRIVATE Freetype::Freetype)
-target_link_libraries(verlet_run PRIVATE glfw)
-target_link_libraries(verlet_run PRIVATE lua)
 
 # TODO: implement these with custom target
 file(COPY "${CMAKE_SOURCE_DIR}/vivium4/res" DESTINATION "${CMAKE_BINARY_DIR}/vivium4/")
 file(COPY "${CMAKE_SOURCE_DIR}/engine/res" DESTINATION "${CMAKE_BINARY_DIR}/engine/")
 file(COPY "${CMAKE_SOURCE_DIR}/verlet/res" DESTINATION "${CMAKE_BINARY_DIR}/verlet/")
 
+# TODO: need to see how this works with vcpkg
 # TODO: need to redo-this and find the glslc binaries from the correct location
 # Probably need to redo this
 # Vulkan_GLSLC_EXECUTABLE
