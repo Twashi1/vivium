@@ -1,6 +1,7 @@
 #pragma once
 
 #include <regex>
+#include <type_traits>
 
 #include "../../../ecs/defines.h"
 #include "../../../input.h"
@@ -10,6 +11,19 @@
 #include "panel.h"
 
 namespace Vivium {
+template <typename T, typename = void>
+struct ValueTypeOf {
+  using type = T;
+};
+
+template <typename T>
+struct ValueTypeOf<T, std::void_t<typename T::ValueType>> {
+  using type = typename T::ValueType;
+};
+
+template <typename T>
+using ValueTypeOf_t = typename ValueTypeOf<T>::type;
+
 // TODO: validation with concept
 template <typename EntryType>
 struct EntrySpecification;
@@ -84,13 +98,13 @@ struct ObjectEntry {
 
   // TODO: we need to create a drop-down menu
   //	so a vbox with a bunch of buttons with the representation of each
-  //element 	vbox might be big so we ideally want it to be scrollable? 	this would
-  //require clipping content
+  // element 	vbox might be big so we ideally want it to be scrollable? 	this
+  // would require clipping content
 };
 
 template <typename ValueEntry>
 struct ListEntry {
-  using ValueType = std::vector<typename ValueEntry::ValueType>;
+  using ValueType = std::vector<ValueTypeOf_t<ValueEntry>>;
 
   GUIElementReference base;
 
@@ -424,7 +438,7 @@ void updateEntry(UploadEntry<T>& entry, GUIContext& guiContext, Engine& engine,
       }
       // TODO: We should release the held item... how?
       //	could just leave it to the application being responsible for
-      //releasing it
+      // releasing it
     }
   }
 }

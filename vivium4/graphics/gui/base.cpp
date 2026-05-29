@@ -79,11 +79,11 @@ void updateGUIElement(GUIElementReference const element,
                       GUIContext& context) {
   // If we have no parent, resort to using window as a pseudo-parent
   F32x2 parentDimensions =
-      parent.index == NULL
+      parent == nullGUIParent()
           ? windowDimensions
           : context.guiElements[parent.index].properties.trueDimensions;
   F32x2 parentPosition =
-      parent.index == NULL
+      parent == nullGUIParent()
           ? F32x2(0.0f)
           : context.guiElements[parent.index].properties.truePosition;
 
@@ -289,6 +289,7 @@ void swapChildren(GUIElementReference const parent, uint64_t a, uint64_t b,
 
 std::vector<GUIElementReference> const& getChildren(
     GUIElementReference const parent, GUIContext& guiContext) {
+  // TODO: should throw error?
   if (parent == nullGUIParent()) return {};
 
   GUIElement const& parentObject = guiContext.guiElements[parent.index];

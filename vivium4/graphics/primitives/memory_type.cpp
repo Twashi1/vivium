@@ -22,6 +22,6 @@ uint32_t findMemoryType(Engine& engine, uint32_t typeFilter,
 
   VIVIUM_LOG(LogSeverity::FATAL, "Failed to find suitable memory type");
 
-  return NULL;
+  return UINT32_MAX;
 }
 }  // namespace Vivium
