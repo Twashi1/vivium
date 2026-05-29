@@ -29,15 +29,18 @@ ShaderSpecification compileShader(ShaderStage stage, const char* sourceFilename,
   // https://learn.microsoft.com/en-us/windows/win32/procthread/creating-processes
   // TODO: test works cross platform, prefer the dedicated unix/windows
   // functions for starting processes
-  std::string fullCommand = std::format("\"{}\" {} -o {}", VIVIUM_GLSLC_PATH,
-                                        sourceFilename, destFilename);
+  std::string fullCommand = std::format(
+      "\"{}\" {} -o {} 2>&1", VIVIUM_GLSLC_PATH, sourceFilename, destFilename);
   system(fullCommand.c_str());
 
   std::ifstream shaderBinaryFile;
   shaderBinaryFile.open(destFilename, std::ios::binary);
 
   if (!shaderBinaryFile.is_open())
-    VIVIUM_LOG(LogSeverity::FATAL, "Failed to open shader binary file");
+    VIVIUM_LOG(LogSeverity::FATAL,
+               "Failed to open shader binary file, does file exist at {}? Does "
+               "original exist at {}",
+               destFilename, sourceFilename);
 
   std::string binaryCode;
   // Get length before reading

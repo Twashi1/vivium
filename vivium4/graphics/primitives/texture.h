@@ -1,5 +1,7 @@
 #pragma once
 
+#include <type_traits>
+
 #include "../../core.h"
 #include "../../engine.h"
 #include "../gui/font.h"
@@ -7,7 +9,7 @@
 #include "../texture_format.h"
 
 namespace Vivium {
-enum class TextureFilter {
+enum class TextureFilter : std::underlying_type_t<VkFilter> {
   NEAREST = VK_FILTER_NEAREST,
   LINEAR = VK_FILTER_LINEAR
 };

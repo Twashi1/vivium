@@ -23,7 +23,8 @@ ResourceManager::DeviceMemoryHandle _allocateDeviceMemory(
 
   if (isMappable(memoryType)) {
     VIVIUM_VK_CHECK(vkMapMemory(engine.device, deviceMemoryHandle.memory, 0,
-                                size, NULL, &deviceMemoryHandle.mapping),
+                                size, static_cast<VkMemoryMapFlags>(NULL),
+                                &deviceMemoryHandle.mapping),
                     "Failed to map memory");
   }
 
@@ -320,7 +321,7 @@ void _allocateTextures(ResourceManager& manager, Engine& engine) {
 
 void _allocateFramebuffers(ResourceManager& manager, Engine& engine) {
   uint64_t totalMemoryRequired = 0;
-  uint32_t memoryTypeBits = NULL;
+  uint32_t memoryTypeBits = static_cast<uint32_t>(NULL);
 
   std::vector<uint64_t> imageMemoryLocations(
       manager.framebuffers.specifications.size());
@@ -1019,6 +1020,7 @@ Buffer& _getReference(ResourceManager& manager, BufferReference reference) {
   }
 
   VIVIUM_LOG(LogSeverity::FATAL, "Reference malformed");
+  std::unreachable();
 }
 
 Texture& _getReference(ResourceManager& manager, TextureReference reference) {

@@ -1,5 +1,7 @@
 #include "commands.h"
 
+#include <vulkan/vulkan_core.h>
+
 #include "resource_manager.h"
 
 namespace Vivium {
@@ -18,7 +20,7 @@ uint32_t _findMemoryType(Engine& engine, uint32_t typeFilter,
 
   VIVIUM_LOG(LogSeverity::FATAL, "Failed to find suitable memory type");
 
-  return NULL;
+  return static_cast<uint32_t>(NULL);
 }
 
 CommandContext createCommandContext(Engine& engine) {
@@ -235,7 +237,8 @@ void _cmdCreateTransientStagingBuffer(Engine& engine, VkBuffer* buffer,
       vkAllocateMemory(engine.device, &allocateInfo, nullptr, memory),
       "Failed to allocate memory");
 
-  VIVIUM_VK_CHECK(vkMapMemory(engine.device, *memory, 0, size, NULL, mapping),
+  VIVIUM_VK_CHECK(vkMapMemory(engine.device, *memory, 0, size,
+                              static_cast<VkMemoryMapFlags>(NULL), mapping),
                   "Failed to map memory");
 
   VIVIUM_VK_CHECK(vkBindBufferMemory(engine.device, *buffer, *memory, 0),

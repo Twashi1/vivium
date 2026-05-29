@@ -353,7 +353,7 @@ Font createFontFile(const char* filename, int fontSize) {
     font.characters[character] = FontCharacter{
         I32x2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
         I32x2(face->glyph->bitmap_left, face->glyph->bitmap_top),
-        face->glyph->advance.x >> 6,
+        static_cast<int>(face->glyph->advance.x >> 6),
         index.left,
         index.left + face->glyph->bitmap.width /
                          static_cast<float>(font.imageDimensions.x),
