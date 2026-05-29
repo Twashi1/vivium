@@ -1,0 +1,11 @@
+{
+  "dependencies": [
+    "freetype",
+    "glfw3",
+    "glm",
+    "lua",
+    "stb",
+    "vulkan",
+    "vulkan-utility-libraries"
+  ]
+}

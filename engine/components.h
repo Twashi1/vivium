@@ -42,7 +42,7 @@ guiContext.button.buttons.clear();
 //	compile to intermediary
 //	interpret intermediary to create vulkan objects
 
-enum VulkanComponent : uint32_t {
+enum class VulkanComponent : uint32_t {
   PIPELINE,
   BUFFER_LAYOUT,
   DESCRIPTOR_LAYOUT,
