@@ -1,10 +1,10 @@
 #include "ecs.h"
+#include "engine.h"
 
 int main() {
-  _logInit();
-  VIVIUM_LOG(LogSeverity::DEBUG, "Running ECS test");
-  Testing::runECSTest();
-  VIVIUM_LOG(LogSeverity::DEBUG, "Finished all tests");
+  // Testing::runECSTest();
+  // VIVIUM_LOG(LogSeverity::DEBUG, "Finished all tests");
+  Testing::runEngineTest();
 
   return 0;
 }

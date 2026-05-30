@@ -25,6 +25,7 @@ PipelineSpecification PipelineSpecification::fromWindow(
   specification.windowPass = window.renderPass;
   specification.target = _RenderTarget::WINDOW;
   specification.sampleCount = window.multisampleCount;
+  specification.bindPoint = PipelineBindPoint::GRAPHICS;
 
   return specification;
 }
@@ -48,6 +49,27 @@ PipelineSpecification PipelineSpecification::fromFramebuffer(
   specification.target = _RenderTarget::FRAMEBUFFER;
   specification.sampleCount =
       static_cast<VkSampleCountFlagBits>(multisampleCount);
+  specification.bindPoint = PipelineBindPoint::GRAPHICS;
+
+  return specification;
+}
+
+PipelineSpecification PipelineSpecification::fromCompute(
+    const std::span<const ShaderReference> shaders,
+    const BufferLayout& bufferLayout,
+    const std::span<const DescriptorLayoutReference> descriptorLayouts,
+    const std::span<const PushConstant> pushConstants) {
+  PipelineSpecification specification;
+
+  specification.shaders =
+      std::vector<ShaderReference>(shaders.begin(), shaders.end());
+  specification.bufferLayout = bufferLayout;
+  specification.descriptorLayouts = std::vector<DescriptorLayoutReference>(
+      descriptorLayouts.begin(), descriptorLayouts.end());
+  specification.pushConstants =
+      std::vector<PushConstant>(pushConstants.begin(), pushConstants.end());
+  specification.bindPoint = PipelineBindPoint::COMPUTE;
+  specification.target = _RenderTarget::NONE;
 
   return specification;
 }

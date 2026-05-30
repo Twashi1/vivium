@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <type_traits>
 
 #include "../../core.h"
 #include "../../engine.h"
@@ -40,10 +41,11 @@ VkFormat _formatOfShaderDataType(ShaderDataType type);
 
 char const* getString(ShaderDataType type);
 
-enum class ShaderStage {
+enum class ShaderStage : uint64_t {
   VERTEX = VK_SHADER_STAGE_VERTEX_BIT,
   FRAGMENT = VK_SHADER_STAGE_FRAGMENT_BIT,
-  GEOMETRY = VK_SHADER_STAGE_GEOMETRY_BIT
+  GEOMETRY = VK_SHADER_STAGE_GEOMETRY_BIT,
+  COMPUTE = VK_SHADER_STAGE_COMPUTE_BIT
 };
 
 ShaderStage operator|(ShaderStage lhs, ShaderStage rhs);

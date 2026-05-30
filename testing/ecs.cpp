@@ -2,6 +2,8 @@
 
 namespace Testing {
 void runECSTest() {
+  _logInit();
+
   ECSEnv env;
   env.reg = new Registry();
 

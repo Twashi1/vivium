@@ -18,10 +18,17 @@ ShaderSpecification compileShader(ShaderStage stage, const char* sourceFilename,
   std::string stageOption;
 
   switch (stage) {
-    case ShaderStage::FRAGMENT:
-      stageOption = "-fs";
+    case ShaderStage::VERTEX:
+      stageOption = "-fshader-stage=vert";
       break;
-    default:
+    case ShaderStage::GEOMETRY:
+      stageOption = "-fshader-stage=geom";
+      break;
+    case ShaderStage::COMPUTE:
+      stageOption = "-fshader-stage=comp";
+      break;
+    case ShaderStage::FRAGMENT:
+      stageOption = "-fshader-stage=frag";
       break;
   }
 
@@ -29,8 +36,9 @@ ShaderSpecification compileShader(ShaderStage stage, const char* sourceFilename,
   // https://learn.microsoft.com/en-us/windows/win32/procthread/creating-processes
   // TODO: test works cross platform, prefer the dedicated unix/windows
   // functions for starting processes
-  std::string fullCommand = std::format(
-      "\"{}\" {} -o {} 2>&1", VIVIUM_GLSLC_PATH, sourceFilename, destFilename);
+  std::string fullCommand =
+      std::format("\"{}\" {} {} -o {} 2>&1", VIVIUM_GLSLC_PATH, stageOption,
+                  sourceFilename, destFilename);
   system(fullCommand.c_str());
 
   std::ifstream shaderBinaryFile;
@@ -116,6 +124,8 @@ char const* getString(ShaderStage stage) {
       return "Fragment";
     case ShaderStage::GEOMETRY:
       return "Geometry";
+    case ShaderStage::COMPUTE:
+      return "Compute";
     default:
       return "Unknown";
   }

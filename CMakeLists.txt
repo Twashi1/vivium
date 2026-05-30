@@ -159,11 +159,13 @@ set(RUNTIME_SOURCES
 
 set(TESTING_HEADERS
   "testing/ecs.h"
+  "testing/engine.h"
   "testing/shared.h"
 )
 
 set(TESTING_SOURCES
   "testing/ecs.cpp"
+  "testing/engine.cpp"
 )
 
 find_package(Vulkan REQUIRED)

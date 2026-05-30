@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vulkan/vulkan_core.h>
+
 #include <functional>
 
 #include "../engine.h"
@@ -119,14 +121,16 @@ void cmdTransferBuffer(CommandContext& context, Buffer const& source,
 /*! \brief Bind the pipeline to specify the current rendering.
  * \param handle The pipeline to bind.
  */
-void cmdBindPipeline(CommandContext& context, Pipeline const& handle);
+void cmdBindPipeline(CommandContext& context, Pipeline const& handle,
+                     PipelineBindPoint bindPoint = PipelineBindPoint::GRAPHICS);
 /*! \brief Bind the vertex buffer to the command context.
  */
 void cmdBindVertexBuffer(CommandContext& context, Buffer const& handle);
 void cmdBindIndexBuffer(CommandContext& context, Buffer const& handle);
-void cmdBindDescriptorSet(CommandContext& context,
-                          DescriptorSet const& descriptorSet,
-                          Pipeline const& pipeline);
+void cmdBindDescriptorSet(
+    CommandContext& context, DescriptorSet const& descriptorSet,
+    Pipeline const& pipeline,
+    PipelineBindPoint bindPoint = PipelineBindPoint::GRAPHICS);
 
 /*! \brief Write data for push constants. */
 void cmdWritePushConstants(CommandContext& context, const void* data,
@@ -135,4 +139,6 @@ void cmdWritePushConstants(CommandContext& context, const void* data,
 
 void cmdDrawIndexed(CommandContext& context, uint32_t indexCount,
                     uint32_t instanceCount);
+void cmdDispatch(CommandContext& context, uint32_t groupX, uint32_t groupY,
+                 uint32_t groupZ);
 }  // namespace Vivium

@@ -25,6 +25,8 @@ std::string getString(BufferUsage usage) {
       return "Storage";
     case BufferUsage::UNIFORM:
       return "Uniform";
+    case BufferUsage::COMPUTE:
+      return "Compute";
     default:
       return "Unknown";
   }

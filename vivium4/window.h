@@ -96,6 +96,7 @@ void dropWindow(Window& window, Engine& engine);
 I32x2 windowDimensions(Window& window);
 /*! \brief Returns true if window has not been closed. */
 bool windowIsOpen(Window& window, Engine& engine);
+void windowClose(Window& window);
 
 /*! \brief Begin processing of the next frame. */
 void windowBeginFrame(Window& window, CommandContext& context, Engine& engine);

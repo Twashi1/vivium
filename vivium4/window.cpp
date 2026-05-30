@@ -513,6 +513,10 @@ bool windowIsOpen(Window& window, Engine& engine) {
   return !shouldClose;
 }
 
+void windowClose(Window& window) {
+  glfwSetWindowShouldClose(window.glfwWindow, GLFW_TRUE);
+}
+
 void windowBeginRender(Window& window) {
   VkRenderPassBeginInfo renderPassInfo{};
   renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

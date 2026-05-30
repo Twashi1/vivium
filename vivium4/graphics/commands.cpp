@@ -530,9 +530,11 @@ void cmdTransferBuffer(CommandContext& context, Buffer const& source,
   _contextAddFunction(context, [copyRegion]() { delete copyRegion; });
 }
 
-void cmdBindPipeline(CommandContext& context, Pipeline const& handle) {
+void cmdBindPipeline(CommandContext& context, Pipeline const& handle,
+                     PipelineBindPoint bindPoint) {
   vkCmdBindPipeline(context.currentCommandBuffer,
-                    VK_PIPELINE_BIND_POINT_GRAPHICS, handle.pipeline);
+                    static_cast<VkPipelineBindPoint>(bindPoint),
+                    handle.pipeline);
 }
 
 void cmdBindVertexBuffer(CommandContext& context, Buffer const& handle) {
@@ -551,10 +553,11 @@ void cmdBindIndexBuffer(CommandContext& context, Buffer const& handle) {
 
 void cmdBindDescriptorSet(CommandContext& context,
                           DescriptorSet const& descriptorSet,
-                          Pipeline const& pipeline) {
-  vkCmdBindDescriptorSets(context.currentCommandBuffer,
-                          VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.layout, 0,
-                          1, &descriptorSet.descriptorSet, 0, nullptr);
+                          Pipeline const& pipeline,
+                          PipelineBindPoint bindPoint) {
+  vkCmdBindDescriptorSets(
+      context.currentCommandBuffer, static_cast<VkPipelineBindPoint>(bindPoint),
+      pipeline.layout, 0, 1, &descriptorSet.descriptorSet, 0, nullptr);
 }
 
 void cmdWritePushConstants(CommandContext& context, const void* data,
@@ -572,4 +575,10 @@ void cmdDrawIndexed(CommandContext& context, uint32_t indexCount,
   vkCmdDrawIndexed(context.currentCommandBuffer, indexCount, instanceCount, 0,
                    0, 0);
 }
+
+void cmdDispatch(CommandContext& context, uint32_t groupX, uint32_t groupY,
+                 uint32_t groupZ) {
+  vkCmdDispatch(context.currentCommandBuffer, groupX, groupY, groupZ);
+}
+
 }  // namespace Vivium
