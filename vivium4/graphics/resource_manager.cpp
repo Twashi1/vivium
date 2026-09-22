@@ -788,14 +788,22 @@ void _allocatePipelines(ResourceManager& manager, Engine& engine) {
     pipelineLayoutInfo.pSetLayouts = descriptorLayouts.data();
     pipelineLayoutInfo.setLayoutCount =
         static_cast<uint32_t>(descriptorLayouts.size());
-    // TODO: dirty, better to just make the copy
-    // TODO: how does this resolve for no push constants?, should force nullptr
-    // when size is 0
-    pipelineLayoutInfo.pPushConstantRanges =
-        reinterpret_cast<const VkPushConstantRange*>(
-            specification.pushConstants.data());
-    pipelineLayoutInfo.pushConstantRangeCount =
-        static_cast<uint32_t>(specification.pushConstants.size());
+
+    std::vector<VkPushConstantRange> pushConstantRanges(
+        specification.pushConstants.size());
+
+    for (uint64_t i = 0; i < specification.pushConstants.size(); i++) {
+      VkPushConstantRange pushConstantRange{};
+      pushConstantRange.stageFlags =
+          static_cast<VkShaderStageFlags>(specification.pushConstants[i].stage);
+      pushConstantRange.offset = specification.pushConstants[i].offset;
+      pushConstantRange.size = specification.pushConstants[i].size;
+
+      pushConstantRanges[i] = pushConstantRange;
+    }
+
+    pipelineLayoutInfo.pPushConstantRanges = pushConstantRanges.data();
+    pipelineLayoutInfo.pushConstantRangeCount = pushConstantRanges.size();
 
     VIVIUM_LOG(LogSeverity::DEBUG, "About to construct pipeline layout");
 

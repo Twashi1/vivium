@@ -34,14 +34,18 @@ extern "C" {
 #define VIVIUM_IS_DEBUG 0
 #else
 #define VIVIUM_DEBUG_ONLY(statement) statement
-#define VIVIUM_ASSERT(condition, msg, ...)                                \
-  if (!(condition))                                                       \
-  VIVIUM_LOG(Vivium::LogSeverity::FATAL, "[ASSERT] ({}): {}", #condition, \
-             std::format(msg __VA_OPT__(, ) __VA_ARGS__))
-#define VIVIUM_VK_CHECK(command, message)                  \
-  if (VkResult result = command; result != VK_SUCCESS)     \
-  VIVIUM_LOG(Vivium::LogSeverity::ERROR, "[VULKAN:{}] {}", \
-             string_VkResult(result), message)
+#define VIVIUM_ASSERT(condition, msg, ...)                                    \
+  do {                                                                        \
+    if (!(condition))                                                         \
+      VIVIUM_LOG(Vivium::LogSeverity::FATAL, "[ASSERT] ({}): {}", #condition, \
+                 std::format(msg __VA_OPT__(, ) __VA_ARGS__));                \
+  } while (0)
+#define VIVIUM_VK_CHECK(command, message)                      \
+  do {                                                         \
+    if (VkResult result = command; result != VK_SUCCESS)       \
+      VIVIUM_LOG(Vivium::LogSeverity::ERROR, "[VULKAN:{}] {}", \
+                 string_VkResult(result), message);            \
+  } while (0)
 #define VIVIUM_IS_DEBUG 1
 #endif
 

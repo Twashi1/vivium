@@ -191,10 +191,6 @@ string(LENGTH "${CMAKE_SOURCE_DIR}/" VIVIUM_SOURCE_PATH_SIZE)
 message(VIVIUM_SOURCE_PATH_SIZE="${VIVIUM_SOURCE_PATH_SIZE}")
 add_definitions("-DVIVIUM_SOURCE_PATH_SIZE=${VIVIUM_SOURCE_PATH_SIZE}")
 
-# TODO: implement these with custom target
-file(COPY "${CMAKE_SOURCE_DIR}/vivium4/res" DESTINATION "${CMAKE_BINARY_DIR}/vivium4/")
-file(COPY "${CMAKE_SOURCE_DIR}/engine/res" DESTINATION "${CMAKE_BINARY_DIR}/engine/")
-
 # TODO: need to see how this works with vcpkg
 # TODO: need to redo-this and find the glslc binaries from the correct location
 # Probably need to redo this
@@ -202,12 +198,23 @@ file(COPY "${CMAKE_SOURCE_DIR}/engine/res" DESTINATION "${CMAKE_BINARY_DIR}/engi
 if (WIN32)
   configure_file("${CMAKE_SOURCE_DIR}/external/win/vulkan/Bin/glslc.exe" "${CMAKE_BINARY_DIR}/external/win/vulkan/Bin/glslc.exe" COPYONLY)
 else()
-  # NOTE: not required on linux anymore, but update code to reflect that
 
 add_custom_command(
     TARGET vivium_core POST_BUILD
+    # Copy resource folders
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_SOURCE_DIR}/vivium4/res"
+            "$<TARGET_FILE_DIR:vivium_core>/vivium4/res"
+
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_SOURCE_DIR}/engine/res"
+            "$<TARGET_FILE_DIR:vivium_core>/engine/res"
+
+    # TODO: modify source code to use the resources folder to find resources like glslc, or use glslc library/api
+    # Copying glslc binary to where we expect it
     COMMAND ${CMAKE_COMMAND} -E make_directory
             "${CMAKE_BINARY_DIR}/external/vulkansdk"
+
     COMMAND ${CMAKE_COMMAND} -E copy
             "$<TARGET_FILE:Vulkan::glslc>"
             "${CMAKE_BINARY_DIR}/external/vulkansdk/$<TARGET_FILE_NAME:Vulkan::glslc>"
