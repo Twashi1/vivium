@@ -16,5 +16,5 @@ void ecs() { groupTest(); }
 int main(void) {
   editor();
 
-  return NULL;
+  return 0;
 }

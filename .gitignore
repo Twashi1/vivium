@@ -11,3 +11,6 @@ doxy_gen/
 
 # vcpkg stuff
 vcpkg_installed/
+
+# Ignore compiled shader SPIR-V files
+*.spv

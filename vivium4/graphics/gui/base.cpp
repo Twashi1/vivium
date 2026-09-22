@@ -309,7 +309,7 @@ GUIElement const& _getGUIElement(GUIElementReference const reference,
 }
 
 void updateGUI(F32x2 windowDimensions, GUIContext& guiContext) {
-  updateGUIElement(guiContext.defaultParent, guiContext.defaultParent,
-                   windowDimensions, guiContext);
+  updateGUIElement(guiContext.defaultParent, nullGUIParent(), windowDimensions,
+                   guiContext);
 }
 }  // namespace Vivium

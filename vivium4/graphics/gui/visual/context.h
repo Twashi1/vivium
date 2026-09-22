@@ -146,7 +146,8 @@ struct GUIContext {
     std::vector<_GUISpriteInstanceData> sprites;
   } sprite;
 
-  GUIElementReference defaultParent;
+  GUIElementReference
+      defaultParent;  // What's the size and dimensions of the default parent?
   std::vector<GUIElement> guiElements;
 };
 
