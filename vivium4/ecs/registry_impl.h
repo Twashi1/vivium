@@ -248,7 +248,16 @@ View<Components...> Registry::createView() {
     }
   }
 
-  return View<Components...>{this, iteratingArray->entities, metadata};
+  // TODO: would be ideal to provide some lifetime guarantee here that the
+  // entity array will not be re-allocated to a new location, or to error if
+  // that does occur
+  std::shared_ptr<Entity[]> ownedEntityArray =
+      std::shared_ptr<Entity[]>(new Entity[iteratingArray->size]);
+  std::copy(iteratingArray->entities,
+            iteratingArray->entities + iteratingArray->size,
+            ownedEntityArray.get());
+
+  return View<Components...>{this, ownedEntityArray, metadata};
 }
 
 // Release ownership for affected pools

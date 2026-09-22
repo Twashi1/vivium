@@ -29,7 +29,6 @@ void _activateVirtualTerminal() {
 
   if (!Windows::GetConsoleMode(handleOutput, &originalOutputMode)) return;
 
-  // TODO: macros should be specially defined
   Windows::DWORD requestedOutputModes =
       originalOutputMode | Windows::_ENABLE_VIRTUAL_TERMINAL_PROCESSING |
       Windows::_DISABLE_NEWLINE_AUTO_RETURN;

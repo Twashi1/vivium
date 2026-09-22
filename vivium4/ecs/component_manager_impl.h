@@ -12,11 +12,8 @@ void defaultMoveComponent(void* source, void* dest) {
   } else if constexpr (std::is_move_constructible_v<T>) {
     new (dest) T(std::move(*reinterpret_cast<T*>(source)));
   } else {
-    // TODO: assertion failed too much?
-    // static_assert(false && "Failed to specialise move component");
-    int x = 5;
+    static_assert(false && "Failed to specialise move component");
   }
-  // TODO: test this assertion fails
 }
 
 template <ValidComponent T>

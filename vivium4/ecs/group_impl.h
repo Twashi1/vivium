@@ -66,11 +66,9 @@ T const& ViewElement<Components...>::get() const {
 }
 
 template <OwnershipTag... WrappedTypes>
-View<WrappedTypes...>::ViewIterator::ViewIterator(Registry* registry,
-                                                  Entity* ownedEntityArray,
-                                                  GroupMetadata* groupMetadata,
-                                                  uint64_t startIndex,
-                                                  Entity entity)
+View<WrappedTypes...>::ViewIterator::ViewIterator(
+    Registry* registry, std::shared_ptr<Entity[]> ownedEntityArray,
+    GroupMetadata* groupMetadata, uint64_t startIndex, Entity entity)
     : registry(registry),
       ownedEntityArray(ownedEntityArray),
       groupMetadata(groupMetadata) {
@@ -132,7 +130,7 @@ template <OwnershipTag... WrappedTypes>
 View<WrappedTypes...>::ViewIterator View<WrappedTypes...>::begin() {
   Entity entity = ECS_ENTITY_DEAD;
   if (ownedEntityArray != nullptr) {
-    entity = ownedEntityArray[0];
+    entity = ownedEntityArray.get()[0];
   }
   return ViewIterator(registry, ownedEntityArray, groupMetadata, 0, entity);
 }

@@ -97,10 +97,7 @@ struct ViewElement {
 template <OwnershipTag... WrappedTypes>
 struct View {
   Registry* registry;
-  // TODO: if the array re-allocates, this will fail
-  //  because the owned entity array changes location
-  //  if this doesn't own group metadata, it also relies on that
-  Entity* ownedEntityArray;
+  std::shared_ptr<Entity[]> ownedEntityArray;
   GroupMetadata* groupMetadata;
 
   struct ViewIterator {
@@ -111,12 +108,12 @@ struct View {
     using reference = value_type&;
 
     Registry* registry;
-    Entity* ownedEntityArray;
+    std::shared_ptr<Entity[]> ownedEntityArray;
     GroupMetadata* groupMetadata;
 
     value_type current;
 
-    ViewIterator(Registry* registry, Entity* ownedEntityArray,
+    ViewIterator(Registry* registry, std::shared_ptr<Entity[]> ownedEntityArray,
                  GroupMetadata* groupMetadata, uint64_t startIndex,
                  Entity entity);
 
