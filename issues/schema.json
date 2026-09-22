@@ -1,0 +1,32 @@
+{
+	"properties": {
+    "sep": "::",
+    "term": ";",
+    "date_format": "D-M"
+	},
+	"tags": {
+		"subject": {
+			"alias": "@",
+			"type": "string",
+			"required": true 
+		},
+    "entity": {
+      "alias": "$",
+      "type": "int64",
+      "required": false
+    },
+    "status": {
+      "alias": "#",
+      "type": "string",
+      "required": false
+    },
+    "created": {
+      "type": "date",
+      "required": false
+    },
+    "priority": {
+      "type": "string",
+      "required": false
+    }
+	}
+}
