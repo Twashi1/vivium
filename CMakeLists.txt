@@ -199,9 +199,19 @@ if (WIN32)
   configure_file("${CMAKE_SOURCE_DIR}/external/win/vulkan/Bin/glslc.exe" "${CMAKE_BINARY_DIR}/external/win/vulkan/Bin/glslc.exe" COPYONLY)
 else()
 
-add_custom_command(
-    TARGET vivium_core POST_BUILD
-    # Copy resource folders
+# Generate a list of resources that need to be copied
+file(GLOB_RECURSE VIVIUM_RESOURCES
+    CONFIGURE_DEPENDS
+    "${CMAKE_SOURCE_DIR}/vivium4/res/*"
+)
+
+file(GLOB_RECURSE ENGINE_RESOURCES
+    CONFIGURE_DEPENDS
+    "${CMAKE_SOURCE_DIR}/engine/res/*"
+)
+
+# Create the copy_resources target, we set this as dependency for vivium so we copy in the new shaders/images to the build directory
+add_custom_target(copy_resources ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory
             "${CMAKE_SOURCE_DIR}/vivium4/res"
             "$<TARGET_FILE_DIR:vivium_core>/vivium4/res"
@@ -210,6 +220,15 @@ add_custom_command(
             "${CMAKE_SOURCE_DIR}/engine/res"
             "$<TARGET_FILE_DIR:vivium_core>/engine/res"
 
+    DEPENDS
+        ${VIVIUM_RESOURCES}
+        ${ENGINE_RESOURCES}
+)
+
+add_dependencies(vivium_core copy_resources)
+
+add_custom_command(
+    TARGET vivium_core POST_BUILD
     # TODO: modify source code to use the resources folder to find resources like glslc, or use glslc library/api
     # Copying glslc binary to where we expect it
     COMMAND ${CMAKE_COMMAND} -E make_directory
