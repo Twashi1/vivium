@@ -19,4 +19,6 @@ template <typename T>
 T nearestMultiple(T number, T multiple) {
   return (number + multiple - 1) & (-multiple);
 }
+
+uint64_t integerPower(uint64_t base, uint64_t exp);
 }  // namespace Vivium

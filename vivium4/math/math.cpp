@@ -15,4 +15,16 @@ Perspective orthogonalPerspective2D(F32x2 windowDimensions, F32x2 position,
 
   return perspective;
 }
+
+uint64_t integerPower(uint64_t base, uint64_t exp) {
+  uint64_t res = 1;
+
+  while (exp) {
+    if (exp & 1) res *= base;
+    exp >>= 1;
+    base *= base;
+  }
+
+  return res;
+}
 }  // namespace Vivium
