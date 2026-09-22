@@ -168,7 +168,7 @@ set(TESTING_SOURCES
   "testing/engine.cpp"
 )
 
-find_package(Vulkan REQUIRED)
+find_package(Vulkan REQUIRED COMPONENTS glslc glslangValidator)
 find_package(VulkanUtilityLibraries CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
@@ -203,5 +203,13 @@ if (WIN32)
   configure_file("${CMAKE_SOURCE_DIR}/external/win/vulkan/Bin/glslc.exe" "${CMAKE_BINARY_DIR}/external/win/vulkan/Bin/glslc.exe" COPYONLY)
 else()
   # NOTE: not required on linux anymore, but update code to reflect that
-  configure_file("${CMAKE_SOURCE_DIR}/external/vulkansdk/glslc" "${CMAKE_BINARY_DIR}/external/vulkansdk/glslc" COPYONLY)
+
+add_custom_command(
+    TARGET vivium_core POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+            "${CMAKE_BINARY_DIR}/external/vulkansdk"
+    COMMAND ${CMAKE_COMMAND} -E copy
+            "$<TARGET_FILE:Vulkan::glslc>"
+            "${CMAKE_BINARY_DIR}/external/vulkansdk/$<TARGET_FILE_NAME:Vulkan::glslc>"
+)
 endif()
