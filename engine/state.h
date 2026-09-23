@@ -54,12 +54,14 @@ struct State {
 
   Registry registry;
 
+  std::string projectFile;
+
   struct {
     Panel background;
 
     // Need to be able to render a variable amount of different entries
     //	we know each entity can have strictly one of each type of component
-    //entry
+    // entry
     Container inspectorContainer;
     ObjectEntry<VulkanComponent> createComponent;
     std::array<PropertyDisplay, MAX_CONCURRENT_ENTITY_PANELS> propertyDisplays;
@@ -114,7 +116,7 @@ void _draw(State& state);
 
 StitchedAtlas _createSpriteAtlas(State& state);
 
-void initialise(State& state);
+void initialise(State& state, std::string const& projectFile);
 void gameloop(State& state);
 void terminate(State& state);
 

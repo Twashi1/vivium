@@ -1,10 +1,10 @@
 #include "ecstest.h"
 #include "state.h"
 
-void editor() {
+void editor(std::string const& projectFile) {
   State* state = new State();
 
-  initialise(*state);
+  initialise(*state, projectFile);
   gameloop(*state);
   terminate(*state);
 
@@ -13,8 +13,15 @@ void editor() {
 
 void ecs() { groupTest(); }
 
-int main(void) {
-  editor();
+int main(int argc, char** argv) {
+  std::string projectFile = "minesweeper/res/project.dat";
+
+  if (argc > 1) {
+    // Expect project name/directory
+    projectFile = argv[1];
+  }
+
+  editor(projectFile);
 
   return 0;
 }

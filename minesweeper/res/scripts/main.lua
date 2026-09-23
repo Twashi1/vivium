@@ -55,13 +55,12 @@ local Y_COORD = 2
 -- TODO: ensure everything is 1 indexed correctly, even with 2D arrays, use helper functions
 
 --[[
-TODO: redo this it changed
-Entity 0 - Pipeline
-Entity 1 - Texture, BufferLayout (VEC2, VEC2), DescriptorLayout (Vertex Storage, Fragment Texture)
+Entity 0 - Pipeline (1, 1, 2, 3, 2, 3, 5)
+Entity 1 - Texture (minesweeper/res/atlas.png, NEAREST, RGBA), BufferLayout (VEC2, VEC2), DescriptorLayout (Vertex Storage 0, Fragment Texture 1) [Nothing script-side]
 Entity 2 - Vertex buffer, Vertex shader
 Entity 3 - Index buffer, Fragment shader
 Entity 4 - Storage buffer,
-Entity 5 - Descriptor Set (4, 1)
+Entity 5 - Descriptor Set (4, 1) [Nothing script-side]
 ]]
 
 -- Given 2D 1-based index, return 1D 1-based index
@@ -421,6 +420,8 @@ end
 local function vDraw()
 	vDrawIndex(entity0, gridSize)
 end
+
+print("Returning functions")
 
 return {
 	vSubmit = vSubmit,

@@ -261,11 +261,11 @@ void _update(State& state) {
                 state.guiContext, "Load");
 
   if (clicked && hoverSaveProject) {
-    _saveState(state, "vivium4/res/saves/editor.dat");
+    _saveState(state, state.projectFile);
   }
 
   if (clicked && hoverLoadProject) {
-    _loadState(state, "vivium4/res/saves/editor.dat");
+    _loadState(state, state.projectFile);
   }
 
   if (clicked &&
@@ -443,10 +443,11 @@ StitchedAtlas _createSpriteAtlas(State& state) {
   return atlas;
 }
 
-void initialise(State& state) {
+void initialise(State& state, std::string const& projectFile) {
   _logInit();  // TODO: ugly that we have to initialise this
   _fontInit();
 
+  state.projectFile = projectFile;
   state.engine = createEngine(EngineOptions{});
   state.window = createWindow(WindowOptions{}, state.engine);
 
@@ -456,6 +457,7 @@ void initialise(State& state) {
 
   state.manager = createManager();
 
+  // TODO: this is unused testing code
   StitchedAtlas atlas = _createSpriteAtlas(state);
 
   state.guiContext =
@@ -929,8 +931,8 @@ void _saveState(State& state, std::string_view filename) {
   store.begin(std::string(filename), false);
 
   // Write the registry
-  serialiseWrite(state.registry, store);
   serialiseWrite(state.editor.entityView.entities, store);
+  serialiseWrite(state.registry, store);
   // Write the structure of, and entities in the entity tree
   // TODO: not very safe at all
   // serialiseWrite(state.editor.entityView.entityTree, store);

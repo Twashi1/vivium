@@ -87,6 +87,7 @@ struct State {
   ResourceManager manager;
 
   std::vector<ScriptMetadata> scripts;
+  std::string scriptsPath;
 
   SerialiserFileInterface store;
   Registry registry;

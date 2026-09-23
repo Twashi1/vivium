@@ -21,3 +21,7 @@ Implement auto-wrapping text rendering :: @gui #todo;
 `calculateTextMetrics` is slow, and being run every frame, substantial cost :: @gui #todo;
 Multiple pipelines/draw calls required for each different type of GUI element, most could be wrapped up into one monolith shader (if beneficial to performance) :: @graphics #todo;
 Script logic and rendering should be run on separate threads :: @scripting #todo;
+Remove unused `StitchedAtlas` creation and images from resources/engine :: @refactor #todo;
+Runtime should provide CLI to point to a specific file to run :: @runtime #todo;
+Currently entities are just used to store various unrelated components, we don't create actual meaningful things through compositions of entities as is intented. Partly because components are too low-level, and we don't have a way to create "classes" - can take inspiration from how Godot PackedScene works for this, or Unity prefabs :: @engine #todo;
+Compile tree and save tree do the same thing :: @editor #todo;

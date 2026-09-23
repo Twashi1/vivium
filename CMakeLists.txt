@@ -210,6 +210,12 @@ file(GLOB_RECURSE ENGINE_RESOURCES
     "${CMAKE_SOURCE_DIR}/engine/res/*"
 )
 
+file(GLOB_RECURSE MINESWEEPER_RESOURCES 
+    CONFIGURE_DEPENDS
+    "${CMAKE_SOURCE_DIR}/minesweeper/res/*"
+)
+
+# TODO: copies all resource folders even if just one file in one folder is changed
 # Create the copy_resources target, we set this as dependency for vivium so we copy in the new shaders/images to the build directory
 add_custom_target(copy_resources ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory
@@ -220,9 +226,14 @@ add_custom_target(copy_resources ALL
             "${CMAKE_SOURCE_DIR}/engine/res"
             "$<TARGET_FILE_DIR:vivium_core>/engine/res"
 
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_SOURCE_DIR}/minesweeper/res"
+            "$<TARGET_FILE_DIR:vivium_core>/minesweeper/res"
+
     DEPENDS
         ${VIVIUM_RESOURCES}
         ${ENGINE_RESOURCES}
+        ${MINESWEEPER_RESOURCES}
 )
 
 add_dependencies(vivium_core copy_resources)

@@ -2,11 +2,15 @@
 
 namespace Runtime {
 void _submit(State& state) {
+  VIVIUM_LOG(LogSeverity::DEBUG, "About to read old project save");
+
   _loadRegistry(state);
   state.luaContext.registry = &state.registry;
   state.luaContext.stage = Stage::SUBMIT;
   state.luaContext.entityMap = &state.entityMap;
   state.luaContext.pipelineInstances = &state.pipelineInstances;
+
+  VIVIUM_LOG(LogSeverity::DEBUG, "Submitting runtime state");
 
   for (ScriptMetadata& metadata : state.scripts) {
     _runScriptFunction(state, metadata.submitRef);
@@ -173,7 +177,7 @@ PipelineInstance _pipelineInstanceFromComponent(
 
 void _loadScripts(State& state) {
   for (std::filesystem::directory_entry const& entry :
-       std::filesystem::directory_iterator("vivium4/res/scripts/")) {
+       std::filesystem::directory_iterator(state.scriptsPath)) {
     if (!entry.is_regular_file()) {
       continue;
     }

@@ -100,6 +100,9 @@ void runGUIF() {
 }
 
 int main(int argc, char* argv[]) {
+  // TODO: provide real CLI, or provide GUI for selecting files -- likely CLI
+  // and then editor runs files or we figure out how to ship an executable that
+  // points to the correct files to run
   if (argc > 1) {
     // Attempt to run the inputted program
     char const* bytecodeFile = argv[2];
@@ -115,7 +118,8 @@ int main(int argc, char* argv[]) {
   } else {
     // Default to running editor
     Runtime::State* state = new Runtime::State();
-    Runtime::init(*state, "vivium4/res/saves/compiled.dat");
+    state->scriptsPath = "minesweeper/res/scripts";
+    Runtime::init(*state, "minesweeper/res/project.dat");
     Runtime::run(*state);
     Runtime::drop(*state);
 
