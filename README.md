@@ -4,6 +4,16 @@
 
 Most of the verlet integration code and maths was taken from [Pezza's work github](https://github.com/johnBuffer/VerletSFML-Multithread/)
 
+## Run minesweeper demo
+
+```bash
+git clone https://github.com/Twashi1/vivium
+git switch minesweeper_poc
+cmake --preset default
+cmake --build build
+./build/runtime
+```
+
 ## Build
 
 1. Clone the repository and cd in

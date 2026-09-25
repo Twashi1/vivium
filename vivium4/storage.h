@@ -92,4 +92,38 @@ void dropBlockAllocator(BlockAllocator& block);
  * \return Returns pointer to allocation or nullpointer if failed.
  */
 std::byte* allocate(BlockAllocator& block, uint64_t size, uint64_t alignment);
+
+// TODO: more of a re-usable memory allocator than actual dynamic memory,
+// allocations will never shrink
+struct ImplicitListAllocator {
+  struct Group {
+    // TODO: consider a binary tree in future, where the pointer addresses are
+    // the comparison values
+    BlockAllocator memory;
+    uint32_t next;
+    uint32_t groupSize;
+  };
+
+  Group group4;
+  Group group8;
+  Group group16;
+  Group group32;
+  Group group64;
+  Group group256;
+  Group group512;
+};
+
+std::byte* allocate(ImplicitListAllocator::Group& group, uint64_t size,
+                    uint64_t alignment);
+bool free(ImplicitListAllocator::Group& group, std::byte* memory);
+void dropGroup(ImplicitListAllocator::Group& group);
+ImplicitListAllocator::Group createGroup(uint32_t groupSize);
+
+std::byte* allocate(ImplicitListAllocator& allocator, uint64_t size,
+                    uint64_t alignment);
+void free(ImplicitListAllocator& allocator, std::byte* memory);
+void freeFast(ImplicitListAllocator& allocator, std::byte* memory,
+              uint64_t knownByteSize);
+void dropImplicitListAllocator(ImplicitListAllocator& allocator);
+ImplicitListAllocator createImplicitListAllocator();
 }  // namespace Vivium

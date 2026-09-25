@@ -14,9 +14,9 @@ layout(location = 0) out vec2 vTextureCoords;
 // TODO: texture scale and tile scale don't need to be defined per-tile
 struct TileInstanceData {
 	vec2 tileTranslation;
+	vec2 tileScale;
 	vec2 textureTranslation;
 	vec2 textureScale;
-	vec2 tileScale;
 };
 
 layout (std140, set = 0, binding = 0) readonly buffer TileInstanceArray {

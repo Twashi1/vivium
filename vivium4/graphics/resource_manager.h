@@ -65,6 +65,12 @@ union Ref<Texture> {
   TextureReference reference;
 };
 
+// TODO: concept
+template <typename ReferenceType>
+bool isNullReference(ReferenceType const& reference) {
+  return reference.reference.referenceIndex == VIVIUM_NULL_REFERENCE;
+}
+
 struct ResourceManager {
   struct DeviceMemoryHandle {
     VkDeviceMemory memory;

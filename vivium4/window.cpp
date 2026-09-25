@@ -556,6 +556,7 @@ void windowEndRender(Window& window) {
 }
 
 void windowBeginFrame(Window& window, CommandContext& context, Engine& engine) {
+  // Waiting for last frame's GPU work to finish
   vkWaitForFences(engine.device, 1,
                   &window.inFlightFences[window.currentFrameIndex], VK_TRUE,
                   UINT64_MAX);
@@ -600,6 +601,7 @@ void windowEndFrame(Window& window, Engine& engine) {
   VkSubmitInfo submitInfo{};
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
+  // Wait for image to be available (acquired) before rendering
   VkSemaphore waitSemaphores[] = {
       window.imageAvailableSemaphores[window.currentFrameIndex]};
   VkPipelineStageFlags waitStages[] = {

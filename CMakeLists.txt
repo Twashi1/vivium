@@ -168,6 +168,9 @@ set(TESTING_SOURCES
   "testing/engine.cpp"
 )
 
+set(TDGAME_HEADERS "tdgame/state.h" "tdgame/grid.h")
+set(TDGAME_SOURCES "tdgame/state.cpp" "tdgame/grid.cpp")
+
 find_package(Vulkan REQUIRED COMPONENTS glslc glslangValidator)
 find_package(VulkanUtilityLibraries CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
@@ -176,16 +179,18 @@ find_package(Freetype REQUIRED)
 find_package(lua CONFIG REQUIRED)
 
 add_library(vivium_core STATIC ${VIVIUM_SOURCES} ${VIVIUM_HEADERS})
-target_include_directories(vivium_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_include_directories(vivium_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src) #TODO: there's no src folder?
 target_link_libraries(vivium_core PUBLIC Vulkan::Vulkan Vulkan::UtilityHeaders glfw glm::glm Freetype::Freetype unofficial::lua::lua)
 
 add_executable(runtime ${RUNTIME_HEADERS} ${RUNTIME_SOURCES} "runtime/main.cpp")
 add_executable(editor ${EDITOR_HEADERS} ${EDITOR_SOURCES} "engine/main.cpp")
 add_executable(test ${TESTING_HEADERS} ${TESTING_SOURCES} "testing/main.cpp")
+add_executable(tdgame ${TDGAME_HEADERS} ${TDGAME_SOURCES} "tdgame/main.cpp")
 
 target_link_libraries(runtime PRIVATE vivium_core)
 target_link_libraries(editor PRIVATE vivium_core)
 target_link_libraries(test PRIVATE vivium_core)
+target_link_libraries(tdgame PRIVATE vivium_core)
 
 string(LENGTH "${CMAKE_SOURCE_DIR}/" VIVIUM_SOURCE_PATH_SIZE)
 message(VIVIUM_SOURCE_PATH_SIZE="${VIVIUM_SOURCE_PATH_SIZE}")
@@ -210,11 +215,6 @@ file(GLOB_RECURSE ENGINE_RESOURCES
     "${CMAKE_SOURCE_DIR}/engine/res/*"
 )
 
-file(GLOB_RECURSE MINESWEEPER_RESOURCES 
-    CONFIGURE_DEPENDS
-    "${CMAKE_SOURCE_DIR}/minesweeper/res/*"
-)
-
 # TODO: copies all resource folders even if just one file in one folder is changed
 # Create the copy_resources target, we set this as dependency for vivium so we copy in the new shaders/images to the build directory
 add_custom_target(copy_resources ALL
@@ -226,14 +226,9 @@ add_custom_target(copy_resources ALL
             "${CMAKE_SOURCE_DIR}/engine/res"
             "$<TARGET_FILE_DIR:vivium_core>/engine/res"
 
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${CMAKE_SOURCE_DIR}/minesweeper/res"
-            "$<TARGET_FILE_DIR:vivium_core>/minesweeper/res"
-
     DEPENDS
         ${VIVIUM_RESOURCES}
         ${ENGINE_RESOURCES}
-        ${MINESWEEPER_RESOURCES}
 )
 
 add_dependencies(vivium_core copy_resources)

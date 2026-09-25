@@ -8,13 +8,14 @@
 namespace Vivium {
 // TODO: want to integrate host visible, coherent, and device local memory
 //		however some systems might not have this available, so needs to account
-//for that
-// TODO: memory type should not need to be restricted to buffers,
-//		should be in Vivium namespace
+// for that
 // TODO: eventually want to make DYNAMIC_UNIFORM not coherent
+// TODO: in some cases, SSBOs might want device-local memory + staging, have to
+// leave this to the user to decide, also need to confirm we don't always assume
+// SSBOs to be STAGING
 enum class MemoryType {
   STAGING = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+      VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
   DEVICE = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
   UNIFORM = STAGING,
   DYNAMIC_UNIFORM = STAGING

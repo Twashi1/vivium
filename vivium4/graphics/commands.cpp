@@ -285,6 +285,8 @@ void _cmdCreateImage(Engine& engine, VkImage* image, uint32_t width,
   VkImageCreateInfo imageCreateInfo{};
   imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
   imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+  VIVIUM_LOG(LogSeverity::DEBUG, "Creating image with width: {}, height: {}",
+             width, height);
   imageCreateInfo.extent.width = width;
   imageCreateInfo.extent.height = height;
   imageCreateInfo.extent.depth = 1;

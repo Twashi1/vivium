@@ -210,6 +210,12 @@ void _submitSliderGUIContext(GUIContext& guiContext, ResourceManager& manager,
 
 void _submitSpriteGUIContext(GUIContext& guiContext, ResourceManager& manager,
                              Engine& engine, Window& window) {
+  if (guiContext.sprite.atlas->data == nullptr) {
+    VIVIUM_LOG(LogSeverity::ERROR,
+               "Sprite atlas is null data, not constructing it");
+
+    return;
+  }
   submitResource(manager, &guiContext.sprite.storageBuffer.reference,
                  MemoryType::UNIFORM,
                  std::vector<BufferSpecification>({BufferSpecification(
@@ -389,7 +395,8 @@ void renderGUI(CommandContext& context, GUIContext& guiContext,
   renderPanels(context, guiContext, window);
   renderSliders(context, guiContext, window);
   renderButtons(context, guiContext, window);
-  renderSprites(context, guiContext, window);
+  if (guiContext.sprite.atlas->data != nullptr)
+    renderSprites(context, guiContext, window);
   renderTextBatch(context, guiContext, window);
   renderDebugRects(context, guiContext, window);
 }
@@ -424,14 +431,16 @@ void setupGUIContext(GUIContext& guiContext, ResourceManager& manager,
   convertResourceReference(manager, guiContext.slider.storageBuffer);
   convertResourceReference(manager, guiContext.slider.descriptorSet);
 
-  convertResourceReference(manager, guiContext.sprite.pipeline);
-  convertResourceReference(manager, guiContext.sprite.descriptorLayout);
-  convertResourceReference(manager,
-                           guiContext.sprite.texture);  // TODO: necessary?
-  convertResourceReference(manager, guiContext.sprite.fragmentShader);
-  convertResourceReference(manager, guiContext.sprite.vertexShader);
-  convertResourceReference(manager, guiContext.sprite.storageBuffer);
-  convertResourceReference(manager, guiContext.sprite.descriptorSet);
+  if (guiContext.sprite.atlas->data != nullptr) {
+    convertResourceReference(manager, guiContext.sprite.pipeline);
+    convertResourceReference(manager, guiContext.sprite.descriptorLayout);
+    convertResourceReference(manager,
+                             guiContext.sprite.texture);  // TODO: necessary?
+    convertResourceReference(manager, guiContext.sprite.fragmentShader);
+    convertResourceReference(manager, guiContext.sprite.vertexShader);
+    convertResourceReference(manager, guiContext.sprite.storageBuffer);
+    convertResourceReference(manager, guiContext.sprite.descriptorSet);
+  }
 
   convertResourceReference(manager, guiContext.debugRect.pipeline);
   convertResourceReference(manager, guiContext.debugRect.descriptorLayout);
@@ -493,8 +502,10 @@ void setupGUIContext(GUIContext& guiContext, ResourceManager& manager,
   dropShader(guiContext.slider.fragmentShader.resource, engine);
   dropShader(guiContext.slider.vertexShader.resource, engine);
 
-  dropShader(guiContext.sprite.fragmentShader.resource, engine);
-  dropShader(guiContext.sprite.vertexShader.resource, engine);
+  if (guiContext.sprite.atlas->data != nullptr) {
+    dropShader(guiContext.sprite.fragmentShader.resource, engine);
+    dropShader(guiContext.sprite.vertexShader.resource, engine);
+  }
 
   dropShader(guiContext.debugRect.fragmentShader.resource, engine);
   dropShader(guiContext.debugRect.vertexShader.resource, engine);
@@ -511,27 +522,30 @@ void dropGUIContext(GUIContext& guiContext, Engine& engine) {
   guiContext.guiElements = {};
 
   dropTexture(guiContext.consolas64Texture.resource, engine);
-  dropTexture(guiContext.sprite.texture.resource, engine);
 
   dropDescriptorLayout(guiContext.text.descriptorLayout.resource, engine);
   dropDescriptorLayout(guiContext.button.descriptorLayout.resource, engine);
   dropDescriptorLayout(guiContext.panel.descriptorLayout.resource, engine);
   dropDescriptorLayout(guiContext.slider.descriptorLayout.resource, engine);
-  dropDescriptorLayout(guiContext.sprite.descriptorLayout.resource, engine);
   dropDescriptorLayout(guiContext.debugRect.descriptorLayout.resource, engine);
 
   dropPipeline(guiContext.text.pipeline.resource, engine);
   dropPipeline(guiContext.button.pipeline.resource, engine);
   dropPipeline(guiContext.panel.pipeline.resource, engine);
   dropPipeline(guiContext.slider.pipeline.resource, engine);
-  dropPipeline(guiContext.sprite.pipeline.resource, engine);
   dropPipeline(guiContext.debugRect.pipeline.resource, engine);
 
   dropBuffer(guiContext.button.storageBuffer.resource, engine);
   dropBuffer(guiContext.panel.storageBuffer.resource, engine);
   dropBuffer(guiContext.slider.storageBuffer.resource, engine);
-  dropBuffer(guiContext.sprite.storageBuffer.resource, engine);
   dropBuffer(guiContext.debugRect.storageBuffer.resource, engine);
+
+  if (guiContext.sprite.atlas->data != nullptr) {
+    dropTexture(guiContext.sprite.texture.resource, engine);
+    dropDescriptorLayout(guiContext.sprite.descriptorLayout.resource, engine);
+    dropBuffer(guiContext.sprite.storageBuffer.resource, engine);
+    dropPipeline(guiContext.sprite.pipeline.resource, engine);
+  }
 
   dropBuffer(guiContext.rectVertexBuffer.resource, engine);
   dropBuffer(guiContext.rectIndexBuffer.resource, engine);

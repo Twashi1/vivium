@@ -38,6 +38,9 @@ TextureSpecification TextureSpecification::fromImageFile(
   specification.data = std::vector<uint8_t>(imageSize);
   std::memcpy(specification.data.data(), data, imageSize);
 
+  VIVIUM_LOG(LogSeverity::DEBUG, "Loaded image file {}, width: {}, height: {}",
+             imageFile, specification.width, specification.height);
+
   specification.imageFormat = imageFormat;
   specification.imageFilter = imageFilter;
 

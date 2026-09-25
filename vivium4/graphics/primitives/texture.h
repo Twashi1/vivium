@@ -30,7 +30,6 @@ struct TextureSpecification {
   TextureFormat imageFormat;
   TextureFilter imageFilter;
 
-  // TODO: from raw data
   static TextureSpecification fromImageFile(const char* imageFile,
                                             TextureFormat imageFormat,
                                             TextureFilter imageFilter);

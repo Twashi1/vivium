@@ -14,6 +14,7 @@ struct Framebuffer {
   VkRenderPass renderPass;
   VkFramebuffer framebuffer;
 
+  // TODO: share the command pool
   VkCommandPool commandPool;
   std::array<VkCommandBuffer, VIVIUM_FRAMES_IN_FLIGHT> commandBuffers;
 

@@ -323,7 +323,7 @@ void _allocateTextures(ResourceManager& manager, Engine& engine) {
 
 void _allocateFramebuffers(ResourceManager& manager, Engine& engine) {
   uint64_t totalMemoryRequired = 0;
-  uint32_t memoryTypeBits = static_cast<uint32_t>(NULL);
+  uint32_t memoryTypeBits = 0;
 
   std::vector<uint64_t> imageMemoryLocations(
       manager.framebuffers.specifications.size());
@@ -349,7 +349,16 @@ void _allocateFramebuffers(ResourceManager& manager, Engine& engine) {
     imageMemoryLocations[i] = resourceOffset;
     totalMemoryRequired = resourceOffset + requirements.size;
 
-    memoryTypeBits |= requirements.memoryTypeBits;
+    // TODO: likely want intersection of memory types, need to satisfy all of
+    // them; or we figure out which framebuffers want which memory types (they
+    // should all want the same one), and give different device memory to each.
+    if (memoryTypeBits == 0) {
+      memoryTypeBits = requirements.memoryTypeBits;
+    }
+
+    VIVIUM_ASSERT(
+        memoryTypeBits == requirements.memoryTypeBits,
+        "All framebuffers must have the same memory type requirements");
   }
 
   ResourceManager::DeviceMemoryHandle memory = _allocateDeviceMemory(
@@ -399,10 +408,9 @@ void _allocateFramebuffers(ResourceManager& manager, Engine& engine) {
     dependencies[0].dstSubpass = 0;
     dependencies[0].srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
     dependencies[0].dstStageMask =
-        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT |
-        VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-    VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-    dependencies[0].srcAccessMask = VK_ACCESS_NONE_KHR;
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[0].srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    // TODO: just need write?
     dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
                                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
     dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
@@ -410,13 +418,12 @@ void _allocateFramebuffers(ResourceManager& manager, Engine& engine) {
     dependencies[1].srcSubpass = 0;
     dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
     dependencies[1].srcStageMask =
-        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-        VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
-        VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     dependencies[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    // TODO: just need write?
     dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
                                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+    dependencies[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
     dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
     VkRenderPassCreateInfo renderPassInfo{};
@@ -449,6 +456,9 @@ void _allocateFramebuffers(ResourceManager& manager, Engine& engine) {
     Engine::QueueFamilyIndices queueFamilyIndices =
         _findQueueFamilies(engine.physicalDevice);
 
+    VIVIUM_ASSERT(queueFamilyIndices.graphicsFamily != UINT32_MAX,
+                  "Graphics queue was not available");
+
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
@@ -477,18 +487,17 @@ void _allocateFramebuffers(ResourceManager& manager, Engine& engine) {
     fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
     for (uint32_t i = 0; i < VIVIUM_FRAMES_IN_FLIGHT; i++) {
-      // TODO: VkCheck this
-      if (vkCreateSemaphore(engine.device, &semaphoreInfo, nullptr,
-                            &resource.imageAvailableSemaphores[i]) !=
-              VK_SUCCESS ||
-          vkCreateSemaphore(engine.device, &semaphoreInfo, nullptr,
-                            &resource.renderFinishedSemaphores[i]) !=
-              VK_SUCCESS ||
-          vkCreateFence(engine.device, &fenceInfo, nullptr,
-                        &resource.inFlightFences[i]) != VK_SUCCESS) {
-        VIVIUM_LOG(LogSeverity::FATAL,
-                   "Failed to create sync objects for a frame");
-      }
+      VIVIUM_VK_CHECK(vkCreateSemaphore(engine.device, &semaphoreInfo, nullptr,
+                                        &resource.imageAvailableSemaphores[i]),
+                      "Failed to create image-available semaphore");
+
+      VIVIUM_VK_CHECK(vkCreateSemaphore(engine.device, &semaphoreInfo, nullptr,
+                                        &resource.renderFinishedSemaphores[i]),
+                      "Failed to create render-finished semaphore");
+
+      VIVIUM_VK_CHECK(vkCreateFence(engine.device, &fenceInfo, nullptr,
+                                    &resource.inFlightFences[i]),
+                      "Failed to create in-flight fence");
     }
   }
 }
