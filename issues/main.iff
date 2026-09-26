@@ -38,3 +38,7 @@ Swapchain image index and current frame index have been confused, might lead to 
 Rename engine to editor :: @refactor #todo;
 Better support for transient staging buffers :: @graphics #todo;
 Barrier support for having staging -> device transfers with dependencies in same command buffer :: @graphics #todo;
+Texture atlas bleeding issues :: @tdgame #todo;
+Texture array support https://kylehalladay.com/blog/tutorial/vulkan/2018/01/28/Textue-Arrays-Vulkan.html :: @graphics #todo;
+Don't prefer instanced rendering for small models - use batching instead? - or profile performance with geometry shader :: @tdgame #todo;
+Weird rotations on the textures for paths, directions generating wrong or weird texture coordinates :: @tdgame #todo;
